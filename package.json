@@ -1,0 +1,46 @@
+{
+  "name": "ai-studio-applet",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "clean": "next clean"
+  },
+  "dependencies": {
+    "@google/genai": "*",
+    "@hookform/resolvers": "^3.9.1",
+    "autoprefixer": "^10.4.20",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "firebase": "^10.14.1",
+    "html-to-image": "^1.11.11",
+    "html2canvas": "^1.4.1",
+    "lucide-react": "^0.468.0",
+    "motion": "^11.11.17",
+    "next": "^15.1.0",
+    "nodemailer": "^6.9.15",
+    "postcss": "^8.4.49",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "stripe": "^17.4.0",
+    "tailwind-merge": "^2.5.5"
+  },
+  "devDependencies": {
+    "@firebase/eslint-plugin-security-rules": "^0.0.2",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@tailwindcss/typography": "^0.5.15",
+    "@types/node": "^20.17.10",
+    "@types/nodemailer": "^6.4.16",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "15.1.0",
+    "firebase-tools": "^13.29.1",
+    "tailwindcss": "^4.0.0",
+    "tw-animate-css": "^1.1.8",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "user": {
+      "title": "User Profile",
+      "description": "Coach user profile with personal details, club affiliations, and subscription tier.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Unique identifier of the coach." },
+        "email": { "type": "string", "maxLength": 128, "description": "Email address of the coach." },
+        "firstName": { "type": "string", "maxLength": 64, "description": "Coach first name." },
+        "lastName": { "type": "string", "maxLength": 64, "description": "Coach last name." },
+        "club": { "type": "string", "maxLength": 100, "description": "Club or academy name." },
+        "role": { "type": "string", "maxLength": 64, "description": "Role within the club." },
+        "preferredSport": { "type": "string", "maxLength": 32, "description": "Primary sport (football, rugby, etc.)." },
+        "isAdmin": { "type": "boolean", "description": "Flag indicating administrative privilege." },
+        "activePlan": { "type": "string", "maxLength": 32, "description": "Subscription plan (free, pro, pro_plus, club, annuel)." },
+        "trialBonusDays": { "type": "number", "description": "Additional trial bonus days granted." },
+        "createdAt": { "type": "string", "maxLength": 64, "description": "ISO timestamp of account creation." },
+        "updatedAt": { "type": "string", "maxLength": 64, "description": "ISO timestamp of latest profile update." }
+      },
+      "required": ["id", "email", "firstName", "lastName", "club", "role", "preferredSport"]
+    },
+    "admin": {
+      "title": "Admin Permission",
+      "description": "Root admin whitelist entry.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 128, "description": "Email address of the authorized admin." },
+        "role": { "type": "string", "maxLength": 32, "description": "Admin access level." },
+        "grantedAt": { "type": "string", "maxLength": 64, "description": "ISO timestamp of assignment." }
+      },
+      "required": ["email", "role"]
+    },
+    "tactic": {
+      "title": "Tactic Playbook",
+      "description": "Saved tactical board schema or playbook drawing with player coordinates and arrows.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Unique identifier of the tactic." },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "UID of authoring coach." },
+        "name": { "type": "string", "maxLength": 100, "description": "Name or title of tactical schema." },
+        "sport": { "type": "string", "maxLength": 32, "description": "Target sport." },
+        "pitchType": { "type": "string", "maxLength": 32, "description": "Pitch layout variant." },
+        "notes": { "type": "string", "maxLength": 5000, "description": "Coaching instructions and notes." },
+        "payload": { "type": "string", "maxLength": 500000, "description": "JSON serialized tactical entities and drawings." },
+        "createdAt": { "type": "string", "maxLength": 64, "description": "Creation timestamp." },
+        "updatedAt": { "type": "string", "maxLength": 64, "description": "Last update timestamp." }
+      },
+      "required": ["id", "userId", "name", "sport", "payload"]
+    },
+    "match": {
+      "title": "Match Sheet",
+      "description": "Match tracking data including lineups, live events, timer, notes, and set-piece roles.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Match identifier." },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Owner coach UID." },
+        "name": { "type": "string", "maxLength": 120, "description": "Match title or fixture designation." },
+        "sport": { "type": "string", "maxLength": 32, "description": "Sport for the match." },
+        "homeTeam": { "type": "string", "maxLength": 80, "description": "Home team name." },
+        "awayTeam": { "type": "string", "maxLength": 80, "description": "Away team name." },
+        "date": { "type": "string", "maxLength": 64, "description": "Scheduled or actual match date." },
+        "status": { "type": "string", "maxLength": 32, "description": "Match status (upcoming, live, finished)." },
+        "homeScore": { "type": "number", "description": "Current home team score." },
+        "awayScore": { "type": "number", "description": "Current away team score." },
+        "matchTimerSeconds": { "type": "number", "description": "Elapsed time in seconds." },
+        "isTimerRunning": { "type": "boolean", "description": "Whether live match clock is active." },
+        "tacticalNotes": { "type": "string", "maxLength": 5000, "description": "Real-time tactical notes." },
+        "dataPayload": { "type": "string", "maxLength": 500000, "description": "Serialized match state, events, substitutes, and set-piece roles." },
+        "createdAt": { "type": "string", "maxLength": 64, "description": "Creation timestamp." },
+        "updatedAt": { "type": "string", "maxLength": 64, "description": "Update timestamp." }
+      },
+      "required": ["id", "userId", "name", "sport", "homeTeam", "awayTeam"]
+    },
+    "team": {
+      "title": "Squad Team",
+      "description": "Squad team with player roster and tactical attributes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Unique team ID." },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Owner coach UID." },
+        "name": { "type": "string", "maxLength": 100, "description": "Team name." },
+        "sport": { "type": "string", "maxLength": 32, "description": "Sport discipline." },
+        "category": { "type": "string", "maxLength": 64, "description": "Age category or league division." },
+        "playersPayload": { "type": "string", "maxLength": 100000, "description": "Serialized roster players." },
+        "createdAt": { "type": "string", "maxLength": 64, "description": "Creation timestamp." },
+        "updatedAt": { "type": "string", "maxLength": 64, "description": "Update timestamp." }
+      },
+      "required": ["id", "userId", "name", "sport", "playersPayload"]
+    },
+    "appConfig": {
+      "title": "Platform Configuration",
+      "description": "System-wide sports access controls managed by administrators.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "description": "Config identifier." },
+        "blockedSports": { "type": "string", "maxLength": 1000, "description": "JSON array of restricted sport slugs." },
+        "sportsConfig": { "type": "string", "maxLength": 10000, "description": "JSON array of sport metadata." },
+        "updatedAt": { "type": "string", "maxLength": 64, "description": "Timestamp of configuration change." },
+        "updatedBy": { "type": "string", "maxLength": 128, "description": "Admin UID who applied update." }
+      },
+      "required": ["id", "blockedSports", "sportsConfig"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "Private coach profile and account metadata."
+    },
+    "/admins/{adminId}": {
+      "schema": "admin",
+      "description": "Registry of system administrators with elevated permissions."
+    },
+    "/tactics/{tacticId}": {
+      "schema": "tactic",
+      "description": "Tactical playbook boards and drills saved by coaches."
+    },
+    "/matches/{matchId}": {
+      "schema": "match",
+      "description": "Match fixtures, timelines, substitutions, and live score sheets."
+    },
+    "/teams/{teamId}": {
+      "schema": "team",
+      "description": "Squad rosters and team formations created by coaches."
+    },
+    "/app_config/{configId}": {
+      "schema": "appConfig",
+      "description": "Global application configuration documents for platform administration."
+    }
+  }
+}

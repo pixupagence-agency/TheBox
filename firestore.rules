@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Security Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.uid == 'zWx5tcF4sehRBpuGtQ0rqg2WXMf2' ||
+        (request.auth.token.keys().hasAll(['email']) && request.auth.token.email == 'pixup.agence@gmail.com') ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- User Profiles ---
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isSuperAdmin();
+
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        incoming().id == userId &&
+        (incoming().isAdmin != true || isSuperAdmin());
+
+      allow update: if (isOwner(userId) || isSuperAdmin()) &&
+        isValidId(userId) &&
+        incoming().id == existing().id &&
+        (incoming().isAdmin == existing().isAdmin || isSuperAdmin());
+
+      allow delete: if isSuperAdmin();
+    }
+
+    // --- Admins Whitelist ---
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+
+    // --- Tactics / Playbooks ---
+    match /tactics/{tacticId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isSuperAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
+
+      allow create: if isSignedIn() &&
+        isValidId(tacticId) &&
+        (incoming().userId == request.auth.uid || isSuperAdmin());
+
+      allow update: if isSignedIn() &&
+        isValidId(tacticId) &&
+        (existing().userId == request.auth.uid || isSuperAdmin()) &&
+        (incoming().userId == existing().userId || isSuperAdmin());
+
+      allow delete: if isSignedIn() &&
+        isValidId(tacticId) &&
+        (existing().userId == request.auth.uid || isSuperAdmin());
+    }
+
+    // --- Matches & Live Match Sheets ---
+    match /matches/{matchId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isSuperAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
+
+      allow create: if isSignedIn() &&
+        isValidId(matchId) &&
+        (incoming().userId == request.auth.uid || isSuperAdmin());
+
+      allow update: if isSignedIn() &&
+        isValidId(matchId) &&
+        (existing().userId == request.auth.uid || isSuperAdmin()) &&
+        (incoming().userId == existing().userId || isSuperAdmin());
+
+      allow delete: if isSignedIn() &&
+        isValidId(matchId) &&
+        (existing().userId == request.auth.uid || isSuperAdmin());
+    }
+
+    // --- Teams & Rosters ---
+    match /teams/{teamId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isSuperAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
+
+      allow create: if isSignedIn() &&
+        isValidId(teamId) &&
+        (incoming().userId == request.auth.uid || isSuperAdmin());
+
+      allow update: if isSignedIn() &&
+        isValidId(teamId) &&
+        (existing().userId == request.auth.uid || isSuperAdmin()) &&
+        (incoming().userId == existing().userId || isSuperAdmin());
+
+      allow delete: if isSignedIn() &&
+        isValidId(teamId) &&
+        (existing().userId == request.auth.uid || isSuperAdmin());
+    }
+
+    // --- Global App Config (Admin Managed) ---
+    match /app_config/{configId} {
+      allow read: if true;
+      allow write: if isSuperAdmin() && isValidId(configId);
+    }
+  }
+}

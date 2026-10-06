@@ -1,0 +1,10 @@
+{
+  "name": "Remix THE BOX ",
+  "description": "Application professionnelle de coaching, tableau blanc tactique ",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
