@@ -59,11 +59,11 @@ export default function LandingPage({
       if (data.url) {
         window.location.assign(data.url);
       } else {
-        alert(data.error || "Erreur lors de la redirection vers Stripe.");
+        alert(data.error || "Erreur lors de la redirection vers le paiement.");
         setStripeLoadingPlan(null);
       }
     } catch (e: any) {
-      alert("Erreur de connexion à la passerelle Stripe.");
+      alert("Erreur de connexion à la passerelle de paiement.");
       setStripeLoadingPlan(null);
     }
   };
@@ -461,7 +461,7 @@ export default function LandingPage({
                   className="w-full py-2.5 px-3 bg-[#111927] hover:bg-[#182337] border border-[#00E599]/30 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Zap className="h-3.5 w-3.5 text-[#00E599]" />
-                  <span>{stripeLoadingPlan === "pro" ? "Redirection Stripe..." : "S'abonner via Stripe (9.90€ / mois)"}</span>
+                  <span>{stripeLoadingPlan === "pro" ? "Redirection..." : "S'abonner à la Formule PRO (9.90€ / mois)"}</span>
                 </button>
               </div>
             </div>
@@ -504,7 +504,7 @@ export default function LandingPage({
                   className="w-full py-2.5 px-3 bg-[#111927] hover:bg-[#182337] border border-amber-500/30 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Zap className="h-3.5 w-3.5 text-amber-400" />
-                  <span>{stripeLoadingPlan === "club" ? "Redirection Stripe..." : "S'abonner via Stripe (14.90€ / mois)"}</span>
+                  <span>{stripeLoadingPlan === "club" ? "Redirection..." : "S'abonner à la Formule PRO+ (14.90€ / mois)"}</span>
                 </button>
               </div>
             </div>

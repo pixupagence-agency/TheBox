@@ -201,10 +201,10 @@ export default function Home() {
           parsed[activeCoachId] = plan;
           localStorage.setItem("thebox_admin_user_plans", JSON.stringify(parsed));
         }
-        alert(`🎉 Félicitations ! Votre paiement Stripe a été validé avec succès. Votre formule ${plan.toUpperCase()} est désormais active.`);
+        alert(`🎉 Félicitations ! Votre paiement a été validé avec succès. Votre formule ${plan.toUpperCase()} est désormais active.`);
         window.history.replaceState({}, document.title, window.location.pathname);
       } else if (stripeStatus === "cancel") {
-        alert("Paiement Stripe annulé. Vous pouvez réessayer à tout moment depuis votre espace.");
+        alert("Paiement annulé. Vous pouvez réessayer à tout moment depuis votre espace.");
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }

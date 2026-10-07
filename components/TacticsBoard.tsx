@@ -9093,7 +9093,7 @@ export default function TacticsBoard({
             </div>
 
             <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-[#62728f]">
-              <span>🔒 Paiement sécurisé opéré par Stripe. Annulation en 1 clic possible à tout moment.</span>
+              <span>🔒 Paiement sécurisé par carte bancaire. Annulation en 1 clic possible à tout moment.</span>
             </div>
 
           </div>
@@ -12346,7 +12346,7 @@ export default function TacticsBoard({
                     </label>
                   </div>
                   <span className="text-[8px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    STRIPE READY ⚡
+                    PAIEMENT SÉCURISÉ ⚡
                   </span>
                 </div>
 
@@ -12359,7 +12359,7 @@ export default function TacticsBoard({
                       </span>
                     </div>
                     <p className="text-[9.5px] text-[#62728f] mt-1 font-medium">
-                      Portail sécurisé Stripe • Modification et facturation en ligne sans engagement.
+                      Portail sécurisé • Modification et facturation en ligne sans engagement.
                     </p>
                   </div>
 

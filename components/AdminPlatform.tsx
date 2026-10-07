@@ -506,7 +506,7 @@ export default function AdminPlatform({
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-black text-white uppercase tracking-wider">Passerelle de Paiement Stripe</h4>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">Passerelle de Paiement</h4>
                       <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-[#00E599] border border-emerald-500/30">
                         Connecteur API v2025 Prêt
                       </span>
@@ -541,10 +541,10 @@ export default function AdminPlatform({
                         if (data.url) {
                           window.open(data.url, "_blank");
                         } else {
-                          alert(`Erreur Stripe : ${data.error}`);
+                          alert(`Erreur de paiement : ${data.error}`);
                         }
                       } catch (err: any) {
-                        alert("Erreur lors de la création de la session de test Stripe.");
+                        alert("Erreur lors de la création de la session de test.");
                       }
                     }}
                     className="px-3 py-1.5 bg-[#00E599] hover:bg-[#06b87d] text-[#07090e] font-black text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow"
@@ -558,7 +558,7 @@ export default function AdminPlatform({
                     rel="noreferrer"
                     className="px-3 py-1.5 bg-[#162133] hover:bg-[#1e2d45] border border-[#273854] text-slate-200 hover:text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5"
                   >
-                    <span>Dashboard Stripe ↗</span>
+                    <span>Tableau de Bord Paiements ↗</span>
                   </a>
                 </div>
               </div>

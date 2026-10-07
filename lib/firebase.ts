@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { 
   getFirestore, 
   doc, 
@@ -91,8 +91,18 @@ export async function loginWithGoogle() {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Firebase Google Auth Error:", err);
+    if (err?.code === "auth/popup-blocked") {
+      console.warn("Popup bloqué par le navigateur. Redirection vers la connexion Google...");
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
+    if (err?.code === "auth/unauthorized-domain") {
+      const msg = `[Firebase Auth] Le domaine "${typeof window !== 'undefined' ? window.location.hostname : ''}" n'est pas autorisé dans la console Firebase. Veuillez l'ajouter sous Firebase Console > Authentication > Settings > Authorized domains.`;
+      console.error(msg);
+      alert("Connexion Google impossible : Le domaine Vercel n'est pas autorisé dans la console Firebase (Domaines autorisés). Veuillez suivre les instructions de configuration.");
+    }
     throw err;
   }
 }

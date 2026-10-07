@@ -138,7 +138,7 @@ export default function SubscriptionPlans({
 
       if (stripeResult === "success" && upgradedPlan) {
         setActivePlan(upgradedPlan);
-        alert(`🎉 Paiement Stripe confirmé avec succès ! Votre abonnement "${upgradedPlan.toUpperCase()}" est maintenant actif.`);
+        alert(`🎉 Paiement confirmé avec succès ! Votre abonnement "${upgradedPlan.toUpperCase()}" est maintenant actif.`);
         // Clean up URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -166,25 +166,24 @@ export default function SubscriptionPlans({
 
       if (!res.ok) {
         if (data.requiresConfig) {
-          setStripeError("Stripe n'est pas encore configuré : ajoutez votre clé secrète STRIPE_SECRET_KEY dans les variables d'environnement.");
-          setShowStripeGuide(true);
+          setStripeError("Le service de paiement n'est pas encore configuré.");
           setCheckoutMode("simulator");
         } else {
-          setStripeError(data.error || "Impossible de contacter l'API Stripe.");
+          setStripeError(data.error || "Impossible de contacter le service de paiement.");
         }
         setIsStripeLoading(false);
         return;
       }
 
       if (data.url) {
-        // Redirect directly to Stripe hosted checkout page
+        // Redirect directly to hosted checkout page
         window.location.assign(data.url);
       } else {
-        throw new Error("URL de redirection Stripe non renvoyée.");
+        throw new Error("URL de redirection non renvoyée.");
       }
     } catch (err: any) {
       console.error("Erreur checkout:", err);
-      setStripeError(err?.message || "Erreur réseau lors de la connexion à Stripe.");
+      setStripeError(err?.message || "Erreur réseau lors de la connexion au service de paiement.");
       setIsStripeLoading(false);
     }
   };
@@ -238,36 +237,24 @@ export default function SubscriptionPlans({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold tracking-tight">Abonnements & Licences Club</h2>
-              <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
-                stripeStatus.configured
-                  ? "bg-emerald-500/10 text-[#00E599] border-emerald-500/30"
-                  : "bg-amber-500/10 text-amber-400 border-amber-500/30"
-              }`}>
-                {stripeStatus.configured ? `Stripe ${stripeStatus.mode.toUpperCase()}` : "Stripe Prêt à brancher"}
+              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border bg-emerald-500/10 text-[#00E599] border-emerald-500/30">
+                Paiement Sécurisé
               </span>
             </div>
             <p className="text-xs text-brand-sage font-medium mt-0.5">
-              Passerelle de paiement officielle Stripe Checkout & Gestion récurrente
+              Passerelle de paiement sécurisée & Gestion récurrente
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowStripeGuide(!showStripeGuide)}
-            className="px-3 py-1.5 bg-[#121926] hover:bg-[#1a233a] border border-[#233149] hover:border-[#00E599] text-xs font-bold rounded-lg text-white flex items-center gap-1.5 transition cursor-pointer"
-          >
-            <HelpCircle className="h-4 w-4 text-[#00E599]" />
-            <span>Guide de Connexion Stripe</span>
-          </button>
-
           <div className="px-3 py-1.5 bg-brand-deep border border-brand-border text-xs font-bold rounded-lg text-brand-cream">
             Plan actuel : <span className="text-white uppercase font-black">{activePlan === "free" ? "Gratuit" : activePlan.toUpperCase()}</span>
           </div>
         </div>
       </div>
 
-      {/* STRIPE CONNECTION GUIDE MODAL / DRAWER */}
+      {/* PAYMENT CONNECTION GUIDE MODAL / DRAWER */}
       {showStripeGuide && (
         <div className="bg-[#0b101b] border-2 border-[#00E599]/40 rounded-2xl p-6 shadow-2xl space-y-5 animate-fade-in">
           <div className="flex items-center justify-between border-b border-[#1f2d45] pb-4">
@@ -276,7 +263,7 @@ export default function SubscriptionPlans({
                 <Zap className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-black text-white">Comment brancher Stripe sur The Box</h3>
+                <h3 className="text-base font-black text-white">Comment brancher la passerelle de paiement</h3>
                 <p className="text-xs text-slate-400">L&apos;infrastructure backend (`/api/stripe/*`) est 100% prête. Voici les 3 étapes pour l&apos;activer :</p>
               </div>
             </div>
@@ -293,10 +280,10 @@ export default function SubscriptionPlans({
             <div className="bg-[#101726] border border-[#1d2b44] rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-[#00E599] text-slate-950 font-black text-xs flex items-center justify-center">1</span>
-                <h4 className="text-xs font-black text-white uppercase">Créer le compte Stripe</h4>
+                <h4 className="text-xs font-black text-white uppercase">Créer le compte marchand</h4>
               </div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Rendez-vous sur <a href="https://stripe.com" target="_blank" rel="noreferrer" className="text-[#00E599] underline inline-flex items-center gap-0.5 font-bold">stripe.com <ExternalLink className="h-2.5 w-2.5" /></a> et créez ou connectez votre compte (gratuit).
+                Créez ou connectez votre compte marchand pour accepter les règlements en ligne.
               </p>
             </div>
 
@@ -307,17 +294,8 @@ export default function SubscriptionPlans({
                 <h4 className="text-xs font-black text-white uppercase">Définir les Clés API</h4>
               </div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Dans <strong>Stripe &gt; Développeurs &gt; Clés API</strong>, copiez la <em>Clé Secrète</em> et renseignez la variable d&apos;environnement :
+                Dans votre espace administrateur, copiez la <em>Clé Secrète</em> et renseignez la variable d&apos;environnement.
               </p>
-              <div className="bg-[#070b12] p-2 rounded border border-[#1c273c] text-[10px] font-mono text-emerald-400 flex items-center justify-between">
-                <span>STRIPE_SECRET_KEY=sk_test_...</span>
-                <button
-                  onClick={() => copyToClipboard("STRIPE_SECRET_KEY", "secret_key_label")}
-                  className="text-slate-400 hover:text-white p-1"
-                >
-                  {copiedKey === "secret_key_label" ? <CheckCheck className="h-3.5 w-3.5 text-[#00E599]" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
-              </div>
             </div>
 
             {/* Step 3 */}
@@ -327,7 +305,7 @@ export default function SubscriptionPlans({
                 <h4 className="text-xs font-black text-white uppercase">Configurer le Webhook</h4>
               </div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Dans <strong>Stripe &gt; Webhooks</strong>, ajoutez l&apos;URL de point de terminaison ci-dessous pour valider les paiements :
+                Ajoutez l&apos;URL de point de terminaison ci-dessous pour valider les paiements :
               </p>
               <div className="bg-[#070b12] p-2 rounded border border-[#1c273c] text-[10px] font-mono text-amber-400 flex items-center justify-between">
                 <span className="truncate">{webhookUrl}</span>
@@ -338,18 +316,6 @@ export default function SubscriptionPlans({
                   {copiedKey === "webhook_url" ? <CheckCheck className="h-3.5 w-3.5 text-[#00E599]" /> : <Copy className="h-3.5 w-3.5" />}
                 </button>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-[#121c2d] border border-[#233550] rounded-xl p-3.5 text-xs text-slate-300 flex items-start gap-2.5">
-            <Server className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-bold text-white">Événements Stripe recommandés pour le Webhook :</p>
-              <p className="text-[11px] text-slate-400">
-                <code className="bg-[#0b101b] px-1.5 py-0.5 rounded text-emerald-400">checkout.session.completed</code> (mise à jour immédiate de l&apos;abonnement),{" "}
-                <code className="bg-[#0b101b] px-1.5 py-0.5 rounded text-amber-400">customer.subscription.deleted</code> (retour en gratuit si résilié), et{" "}
-                <code className="bg-[#0b101b] px-1.5 py-0.5 rounded text-cyan-400">invoice.payment_succeeded</code> (renouvellement mensuel).
-              </p>
             </div>
           </div>
         </div>
@@ -423,7 +389,7 @@ export default function SubscriptionPlans({
                       className="w-full py-1.5 text-[11px] font-bold text-slate-300 hover:text-white bg-[#0e1524] hover:bg-[#162238] border border-[#1f2e48] rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer"
                     >
                       <Zap className="h-3 w-3 text-[#00E599]" />
-                      <span>Payer directement via Stripe</span>
+                      <span>Payer directement par Carte Bancaire</span>
                     </button>
                   )}
                 </div>
@@ -432,14 +398,14 @@ export default function SubscriptionPlans({
           })}
         </div>
       ) : (
-        /* HIGH-FIDELITY STRIPE CHECKOUT MODAL */
+        /* HIGH-FIDELITY CHECKOUT MODAL */
         <div className="max-w-xl mx-auto bg-brand-pine border border-brand-border rounded-xl overflow-hidden shadow-2xl animate-fade-in">
           
           {/* Header block */}
           <div className="bg-brand-deep p-4 border-b border-brand-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Lock className="h-4 w-4 text-brand-cream" />
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-sage">Passerelle Stripe Sécurisée</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-sage">Passerelle de Paiement Sécurisée</span>
             </div>
             
             <button 
@@ -451,7 +417,7 @@ export default function SubscriptionPlans({
             </button>
           </div>
 
-          {/* Mode Switch Tabs: Real Stripe vs Sandbox Simulator */}
+          {/* Mode Switch Tabs */}
           <div className="bg-[#0b101a] border-b border-brand-border px-4 py-2 flex items-center justify-between text-xs">
             <div className="flex gap-2">
               <button
@@ -464,7 +430,7 @@ export default function SubscriptionPlans({
                 }`}
               >
                 <Zap className="h-3.5 w-3.5" />
-                <span>Stripe Officiel (Checkout)</span>
+                <span>Paiement par Carte Bancaire</span>
               </button>
 
               <button
@@ -482,7 +448,7 @@ export default function SubscriptionPlans({
             </div>
 
             <span className="text-[10px] text-slate-500 font-mono">
-              {stripeStatus.configured ? "API Prête" : "Mode Test/Démo"}
+              Mode Sécurisé
             </span>
           </div>
 
@@ -490,14 +456,14 @@ export default function SubscriptionPlans({
             <div className="m-4 p-3 bg-rose-950/80 border border-rose-500/40 rounded-xl text-xs text-rose-200 flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-bold">Information Stripe</p>
+                <p className="font-bold">Information de paiement</p>
                 <p className="text-[11px] text-rose-300/90">{stripeError}</p>
               </div>
             </div>
           )}
 
           {checkoutMode === "stripe" ? (
-            /* OFFICIAL STRIPE CHECKOUT REDIRECT PANEL */
+            /* OFFICIAL CHECKOUT REDIRECT PANEL */
             <div className="p-6 space-y-5 text-center">
               <div className="bg-brand-deep p-4 rounded-xl border border-brand-border space-y-3 text-left">
                 <div className="flex items-center justify-between border-b border-brand-border pb-3">
@@ -522,7 +488,7 @@ export default function SubscriptionPlans({
                   </p>
                   <p className="flex items-center gap-2">
                     <CheckCircle className="h-3.5 w-3.5 text-[#00E599]" />
-                    <span>Reçu et facture avec TVA édités par Stripe</span>
+                    <span>Reçu et facture avec TVA édités automatiquement</span>
                   </p>
                   <p className="flex items-center gap-2">
                     <CheckCircle className="h-3.5 w-3.5 text-[#00E599]" />
@@ -540,33 +506,21 @@ export default function SubscriptionPlans({
                   {isStripeLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Connexion sécurisée avec Stripe...</span>
+                      <span>Connexion sécurisée en cours...</span>
                     </>
                   ) : (
                     <>
                       <Lock className="h-4 w-4" />
-                      <span>Continuer vers Stripe Checkout</span>
+                      <span>Continuer vers le paiement sécurisé</span>
                       <ExternalLink className="h-3.5 w-3.5" />
                     </>
                   )}
                 </button>
 
                 <p className="text-[11px] text-slate-400">
-                  Vous serez redirigé vers la page de paiement sécurisée hébergée par Stripe.
+                  Vous serez redirigé vers la page de paiement sécurisée.
                 </p>
               </div>
-
-              {!stripeStatus.configured && (
-                <div className="bg-[#111927] p-3 rounded-xl border border-amber-500/30 text-[11px] text-amber-300 flex items-center justify-between text-left">
-                  <span>Vous n&apos;avez pas encore saisi votre clé secrète Stripe ?</span>
-                  <button
-                    onClick={() => setShowStripeGuide(true)}
-                    className="underline font-bold text-[#00E599] ml-2 shrink-0 cursor-pointer"
-                  >
-                    Voir le guide
-                  </button>
-                </div>
-              )}
             </div>
           ) : paymentDone ? (
             /* Successful payment Receipt block */
@@ -604,7 +558,7 @@ export default function SubscriptionPlans({
                   </div>
                   <div className="flex justify-between text-brand-sage">
                     <span>Passerelle de paiement :</span>
-                    <span className="text-brand-sage/80 font-semibold flex items-center gap-1">Stripe Sandbox <Landmark className="h-3 w-3 text-brand-sage" /></span>
+                    <span className="text-brand-sage/80 font-semibold flex items-center gap-1">Paiement Sécurisé <Landmark className="h-3 w-3 text-brand-sage" /></span>
                   </div>
                 </div>
               </div>
@@ -641,7 +595,7 @@ export default function SubscriptionPlans({
                   }}
                   className="text-[11px] font-bold text-[#00E599] hover:underline flex items-center gap-1"
                 >
-                  ⚡ Remplir avec la carte de test Stripe (4242...)
+                  ⚡ Remplir avec la carte de test (4242...)
                 </button>
               </div>
 
@@ -649,7 +603,7 @@ export default function SubscriptionPlans({
               <div className="bg-gradient-to-br from-[#0c1523] to-[#04080e] rounded-xl p-5 border border-[#1f2e48] shadow-2xl space-y-6 text-brand-ivory select-none">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-widest text-[#00E599]">THE BOX SPORT</span>
-                  <span className="text-xs font-bold bg-[#142136] px-2 py-0.5 rounded text-slate-300">Stripe Test</span>
+                  <span className="text-xs font-bold bg-[#142136] px-2 py-0.5 rounded text-slate-300">Mode Test</span>
                 </div>
 
                 <div className="space-y-1">
