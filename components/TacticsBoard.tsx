@@ -5128,10 +5128,12 @@ export default function TacticsBoard({
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {/* Buts ⚽ */}
-            <div className="flex items-center gap-1.5 bg-[#102420] border border-[#00e599]/30 px-2.5 py-1 rounded-lg text-emerald-300 font-bold text-[10.5px]">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] ${
+              isModernSleek ? "bg-emerald-50 border border-emerald-300 text-emerald-800" : "bg-[#102420] border border-[#00e599]/30 text-emerald-300"
+            }`}>
               <span>⚽</span>
               <span className="text-[8.5px] uppercase font-black text-slate-400">Buts :</span>
-              <span className="font-black text-[#00E599] text-xs">{playerGoals}</span>
+              <span className={`font-black text-xs ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{playerGoals}</span>
             </div>
 
             {/* Passes D. 👟 */}
@@ -5156,7 +5158,9 @@ export default function TacticsBoard({
             </div>
 
             {/* État / Forme */}
-            <div className="flex items-center gap-1.5 bg-[#111827] border border-[#1f293d] px-2.5 py-1 rounded-lg text-[10.5px]">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] border ${
+              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#111827] border-[#1f293d]"
+            }`}>
               <span className="text-[8.5px] uppercase font-black text-slate-400">Forme :</span>
               {isInjured ? (
                 <span className="text-amber-400 font-black flex items-center gap-1">🏥 Blessé</span>
@@ -5165,26 +5169,30 @@ export default function TacticsBoard({
               ) : isTired ? (
                 <span className="text-yellow-400 font-black flex items-center gap-1">⚠️ Fatigué</span>
               ) : isExcellent ? (
-                <span className="text-emerald-400 font-black flex items-center gap-1">⭐ Excellente</span>
+                <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>⭐ Excellente</span>
               ) : (
-                <span className="text-[#00E599] font-black flex items-center gap-1">✅ En forme</span>
+                <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>✅ En forme</span>
               )}
             </div>
           </div>
         </div>
 
         {/* LIGNE 3 : REMPLACEMENT (MENU DÉROULANT) & ACTIONS MATCH */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#1f293d]/80">
+        <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/80"}`}>
           {/* Section Remplacement avec Menu Déroulant */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#102420] border border-[#00E599]/40 rounded-xl text-[#00E599] font-black text-xs shrink-0 shadow-sm">
-              <RefreshCw className="w-3.5 h-3.5 text-[#00E599]" />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs shrink-0 shadow-sm border ${
+              isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00E599]/40 text-[#00E599]"
+            }`}>
+              <RefreshCw className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
               <span className="text-[9.5px] uppercase tracking-wider">REMPLACEMENT :</span>
             </div>
 
             {/* Menu Déroulant Principal */}
             {availableSubs.length === 0 ? (
-              <span className="text-[10px] text-slate-500 italic bg-[#111827] px-2.5 py-1.5 rounded-xl border border-[#1a2130]">
+              <span className={`text-[10px] italic px-2.5 py-1.5 rounded-xl border ${
+                isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#111827] border-[#1a2130] text-slate-500"
+              }`}>
                 Aucun remplaçant disponible sur le banc
               </span>
             ) : (
@@ -5201,7 +5209,11 @@ export default function TacticsBoard({
                       e.target.value = "";
                     }
                   }}
-                  className="bg-[#111827] border-2 border-[#00E599]/60 hover:border-[#00E599] focus:border-[#00E599] text-white text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer shadow-lg transition-all pr-8 appearance-none"
+                  className={`border-2 text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer shadow-lg transition-all pr-8 appearance-none ${
+                    isModernSleek
+                      ? "bg-white border-emerald-600 text-slate-900 focus:border-emerald-700"
+                      : "bg-[#111827] border-[#00E599]/60 hover:border-[#00E599] focus:border-[#00E599] text-white"
+                  }`}
                   title="Sélectionner un remplaçant sur le banc pour effectuer le remplacement"
                 >
                   <option value="" disabled>
@@ -5410,7 +5422,7 @@ export default function TacticsBoard({
               <div className="flex items-center gap-2 text-[9px] text-slate-400">
                 <span>{currentLiveToken.role || "JOUEUR"}</span>
                 {currentGoals > 0 && (
-                  <span className="text-emerald-400 font-black flex items-center gap-0.5">
+                  <span className={`font-black flex items-center gap-0.5 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>
                     ⚽ x{currentGoals}
                   </span>
                 )}
@@ -5552,7 +5564,11 @@ export default function TacticsBoard({
           <div className={`flex items-center justify-between border-b pb-3 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
             <div className="flex items-center gap-2.5">
               <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${
-                isOpponent ? "bg-rose-950/60 border-rose-600/40 text-rose-400" : "bg-[#102420] border-[#00e599]/40 text-[#00E599]"
+                isOpponent 
+                  ? "bg-rose-950/60 border-rose-600/40 text-rose-400" 
+                  : isModernSleek 
+                  ? "bg-emerald-100 border-emerald-300 text-emerald-800" 
+                  : "bg-[#102420] border-[#00e599]/40 text-[#00E599]"
               }`}>
                 <RefreshCw className="w-4 h-4" />
               </div>
@@ -5560,7 +5576,11 @@ export default function TacticsBoard({
                 <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span>Effectuer un Remplacement</span>
                   <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${
-                    isOpponent ? "bg-rose-950/80 text-rose-300 border-rose-700/60" : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
+                    isOpponent 
+                      ? "bg-rose-950/80 text-rose-300 border-rose-700/60" 
+                      : isModernSleek 
+                      ? "bg-emerald-100 text-emerald-800 border-emerald-300" 
+                      : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
                   }`}>
                     {teamTitle}
                   </span>
@@ -5585,8 +5605,10 @@ export default function TacticsBoard({
           </div>
 
           {/* JOUEUR SORTANT (OUT) */}
-          <div className={`bg-[#121926] border rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5 ${
-            isOpponent ? "border-rose-800/60" : "border-rose-900/40"
+          <div className={`border rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5 ${
+            isModernSleek
+              ? "bg-slate-50 border-slate-200 text-slate-900"
+              : "bg-[#121926] border-rose-900/40"
           }`}>
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="relative shrink-0">
@@ -5610,14 +5632,16 @@ export default function TacticsBoard({
 
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-black text-white truncate max-w-[130px]">
+                  <span className={`text-xs font-black truncate max-w-[130px] ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                     {subPickerToken.name}
                   </span>
-                  <span className="text-[8px] bg-[#1a2333] text-slate-300 px-1.5 py-0.5 rounded font-black uppercase shrink-0">
+                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase shrink-0 ${
+                    isModernSleek ? "bg-slate-200 text-slate-700" : "bg-[#1a2333] text-slate-300"
+                  }`}>
                     {subPickerToken.role || "TITULAIRE"}
                   </span>
                 </div>
-                <div className="text-[10px] text-rose-400 font-bold mt-0.5 flex items-center gap-1">
+                <div className="text-[10px] text-rose-500 font-bold mt-0.5 flex items-center gap-1">
                   <span>🚪 Joueur sortant du terrain</span>
                 </div>
               </div>
@@ -5632,7 +5656,11 @@ export default function TacticsBoard({
                   handleRemovePlayerFromPitch(subPickerToken, "normal");
                   setSubPickerToken(null);
                 }}
-                className="px-2.5 py-1 bg-[#172233] hover:bg-[#22334d] border border-[#263750] text-slate-200 hover:text-white rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1"
+                className={`px-2.5 py-1 border rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 ${
+                  isModernSleek
+                    ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                    : "bg-[#172233] hover:bg-[#22334d] border-[#263750] text-slate-200 hover:text-white"
+                }`}
                 title="Faire sortir sans remplacement"
               >
                 <span>🚪 Sortie simple</span>
@@ -5655,18 +5683,20 @@ export default function TacticsBoard({
           {/* LISTE DES REMPLAÇANTS DU BANC (IN) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-[10.5px] font-black uppercase">
-              <span className={`flex items-center gap-1.5 ${isOpponent ? "text-rose-400" : "text-[#00E599]"}`}>
+              <span className={`flex items-center gap-1.5 ${isOpponent ? "text-rose-400" : isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>
                 <User className="w-3.5 h-3.5" />
                 <span>Remplaçants sur le banc ({activeBenchList.length})</span>
               </span>
-              <span className="text-[9px] text-slate-400 font-normal">
+              <span className={`text-[9px] font-normal ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                 Cliquez sur &quot;Faire entrer&quot; pour valider
               </span>
             </div>
 
             <div className="max-h-56 sm:max-h-64 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin">
               {activeBenchList.length === 0 ? (
-                <div className="p-4 rounded-xl bg-[#090d14] border border-[#1a2130] text-center text-xs text-slate-500 italic">
+                <div className={`p-4 rounded-xl border text-center text-xs italic ${
+                  isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#090d14] border-[#1a2130] text-slate-500"
+                }`}>
                   {isOpponent
                     ? "Aucun remplaçant présent sur le banc adverse."
                     : "Aucun remplaçant présent sur la feuille de match."}
@@ -5692,9 +5722,11 @@ export default function TacticsBoard({
                           : isInjured
                           ? "bg-amber-950/30 border-amber-900/50 opacity-60"
                           : alreadyActive
-                          ? "bg-[#090d14] border-[#1a2130] opacity-60"
+                          ? isModernSleek ? "bg-slate-100 border-slate-200 opacity-60" : "bg-[#090d14] border-[#1a2130] opacity-60"
                           : isOpponent
                           ? "bg-[#161118] border-[#381f2a] hover:border-rose-500/60 hover:bg-[#221622]"
+                          : isModernSleek
+                          ? "bg-slate-50 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50"
                           : "bg-[#101725] border-[#1f2c42] hover:border-[#00E599]/60 hover:bg-[#132034]"
                       }`}
                     >
@@ -5704,7 +5736,7 @@ export default function TacticsBoard({
                             src={sub.photo}
                             alt={sub.name}
                             className={`w-8 h-8 rounded-full object-cover border shrink-0 ${
-                              isOpponent ? "border-rose-500" : "border-[#00E599]"
+                              isOpponent ? "border-rose-500" : isModernSleek ? "border-emerald-600" : "border-[#00E599]"
                             }`}
                           />
                         ) : (
@@ -5714,6 +5746,8 @@ export default function TacticsBoard({
                                 ? "bg-slate-700 text-slate-300"
                                 : isOpponent
                                 ? "bg-rose-950 border border-rose-600/40 text-rose-300"
+                                : isModernSleek
+                                ? "bg-emerald-100 border border-emerald-300 text-emerald-800"
                                 : "bg-[#102420] border border-[#00e599]/40 text-[#00E599]"
                             }`}
                           >
@@ -5723,17 +5757,21 @@ export default function TacticsBoard({
 
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-black text-white truncate max-w-[120px] sm:max-w-[160px]">
+                            <span className={`text-xs font-black truncate max-w-[120px] sm:max-w-[160px] ${
+                              isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                               {sub.name}
                             </span>
-                            <span className="text-[8px] bg-[#1a2333] text-cyan-300 border border-cyan-800/40 px-1 py-0.2 rounded font-black uppercase shrink-0">
+                            <span className={`text-[8px] border px-1 py-0.2 rounded font-black uppercase shrink-0 ${
+                              isModernSleek ? "bg-slate-200 text-slate-700 border-slate-300" : "bg-[#1a2333] text-cyan-300 border-cyan-800/40"
+                            }`}>
                               {sub.role || "SUB"}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-2 text-[9px] mt-0.5">
                             {alreadyActive && (
-                              <span className={isOpponent ? "text-rose-400 font-bold" : "text-[#00E599] font-bold"}>
+                              <span className={isOpponent ? "text-rose-400 font-bold" : isModernSleek ? "text-emerald-800 font-bold" : "text-[#00E599] font-bold"}>
                                 Sur le terrain
                               </span>
                             )}
@@ -5746,13 +5784,13 @@ export default function TacticsBoard({
                             {!alreadyActive && !isInjured && !isRedCard && (
                               <>
                                 {isExcellent && (
-                                  <span className="text-emerald-400 font-bold">⭐ Excellente forme</span>
+                                  <span className={isModernSleek ? "text-emerald-800 font-bold" : "text-emerald-400 font-bold"}>⭐ Excellente forme</span>
                                 )}
                                 {isTired && (
                                   <span className="text-yellow-400 font-bold">⚠️ Fatigué</span>
                                 )}
                                 {!isExcellent && !isTired && (
-                                  <span className="text-emerald-400 font-medium">✅ Disponible</span>
+                                  <span className={isModernSleek ? "text-emerald-800 font-medium" : "text-emerald-400 font-medium"}>✅ Disponible</span>
                                 )}
                               </>
                             )}
@@ -5972,7 +6010,7 @@ export default function TacticsBoard({
                 } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs`}
                 title="Regrouper les joueurs dans leur camp"
               >
-                <RotateCcw className={`w-3 h-3 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"} shrink-0`} />
+                <RotateCcw className={`w-3 h-3 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} shrink-0`} />
                 <span>Dans leur camp</span>
               </button>
 
@@ -6003,7 +6041,7 @@ export default function TacticsBoard({
               >
                 <span className="text-xs">👥</span>
                 <span>Effectif</span>
-                <span className="text-[8.5px] font-mono text-emerald-300 font-bold ml-0.5">
+                <span className={`text-[8.5px] font-mono font-bold ml-0.5 ${isModernSleek ? "text-emerald-800" : "text-emerald-300"}`}>
                   ({currentTokens.filter((t) => t.type === "player_a").length + substitutes.length})
                 </span>
               </button>
@@ -6281,7 +6319,7 @@ export default function TacticsBoard({
       {sleekToastMessage && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="px-5 py-2.5 rounded-2xl bg-white/95 backdrop-blur-2xl border border-emerald-500 text-emerald-800 text-xs font-black shadow-2xl shadow-slate-900/15 flex items-center gap-2.5">
-            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+            <Sparkles className="w-4 h-4 text-emerald-800 shrink-0" />
             <span>{sleekToastMessage}</span>
           </div>
         </div>
@@ -6307,17 +6345,17 @@ export default function TacticsBoard({
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
             className={`${
               isModernSleek
-                ? "p-2 hover:bg-slate-100 border border-slate-200 bg-white rounded-xl text-slate-600 hover:text-emerald-600 shadow-xs"
+                ? "p-2 hover:bg-slate-100 border border-slate-200 bg-white rounded-xl text-slate-600 hover:text-emerald-800 shadow-xs"
                 : `${isCompactUI ? "p-1.5" : "p-2"} hover:bg-[#1f293d] border border-[#1f293d] rounded-xl text-[#62728f] hover:text-[#00E599]`
             } transition cursor-pointer flex items-center justify-center`}
             title={isLeftSidebarOpen ? "Masquer le menu gauche" : "Afficher le menu gauche"}
           >
-            {isLeftSidebarOpen ? <ChevronLeft className={`h-4 w-4 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} /> : <ChevronRight className="h-4 w-4" />}
+            {isLeftSidebarOpen ? <ChevronLeft className={`h-4 w-4 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} /> : <ChevronRight className="h-4 w-4" />}
           </button>
 
           {/* Logo badge SVG */}
           <div className="flex items-center gap-2.5">
-            <LogoIcon className={`${isCompactUI ? "w-7 h-7" : isModernSleek ? "w-8 h-8 text-emerald-600" : "w-9 h-9 text-white"} flex-shrink-0 transition-all`} />
+            <LogoIcon className={`${isCompactUI ? "w-7 h-7" : isModernSleek ? "w-8 h-8 text-emerald-800" : "w-9 h-9 text-white"} flex-shrink-0 transition-all`} />
             <div className="text-left flex flex-col justify-center select-none">
               <h1 className={`${isCompactUI ? "text-base" : "text-lg"} font-black ${isModernSleek ? "tracking-wider uppercase text-slate-900" : "tracking-wide lowercase text-white"} leading-none`}>
                 the box
@@ -6427,7 +6465,7 @@ export default function TacticsBoard({
               title="Ouvrir le guide interactif et tutoriel du coach"
             >
               <span className="text-xs group-hover:scale-110 transition-transform">🎓</span>
-              <span className={`font-semibold hidden sm:inline ${isModernSleek ? "text-slate-700 group-hover:text-emerald-700" : "text-slate-200 group-hover:text-[#00E599]"}`}>Tuto Coach</span>
+              <span className={`font-semibold hidden sm:inline ${isModernSleek ? "text-slate-700 group-hover:text-emerald-800" : "text-slate-200 group-hover:text-[#00E599]"}`}>Tuto Coach</span>
             </button>
           )}
 
@@ -6439,9 +6477,9 @@ export default function TacticsBoard({
               } border text-[10px] font-bold shadow-sm`}
               title="Persistance & synchronisation Cloud actives via Firebase Firestore"
             >
-              <Cloud className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
+              <Cloud className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
               <span className="font-semibold">Cloud Sync</span>
-              <span className={`w-1.5 h-1.5 rounded-full ${isModernSleek ? "bg-emerald-600" : "bg-[#00E599]"} animate-pulse`}></span>
+              <span className={`w-1.5 h-1.5 rounded-full ${isModernSleek ? "bg-emerald-800" : "bg-[#00E599]"} animate-pulse`}></span>
             </div>
           )}
           
@@ -6449,12 +6487,12 @@ export default function TacticsBoard({
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
             className={`p-1.5 sm:p-2 ${
               isModernSleek 
-                ? "hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 hover:text-emerald-600 shadow-xs" 
+                ? "hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 hover:text-emerald-800 shadow-xs" 
                 : "hover:bg-[#1f293d] border border-[#1f293d] text-[#62728f] hover:text-[#00E599]"
             } rounded-xl transition cursor-pointer flex items-center justify-center shrink-0`}
             title={isRightSidebarOpen ? "Masquer le menu droit" : "Afficher le menu droit"}
           >
-            {isRightSidebarOpen ? <ChevronRight className={`h-4 w-4 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} /> : <ChevronLeft className="h-4 w-4" />}
+            {isRightSidebarOpen ? <ChevronRight className={`h-4 w-4 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} /> : <ChevronLeft className="h-4 w-4" />}
           </button>
 
           {/* PWA In-App Install Button */}
@@ -6555,14 +6593,16 @@ export default function TacticsBoard({
                         setIsCheckoutOpen(true);
                       }}
                       className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                        isModernSleek ? "text-emerald-700 hover:bg-slate-50 border-slate-200" : "text-emerald-400 hover:bg-[#1a2333] border-[#1f293d]"
+                        isModernSleek ? "text-emerald-800 hover:bg-slate-50 border-slate-200" : "text-emerald-400 hover:bg-[#1a2333] border-[#1f293d]"
                       } transition flex items-center justify-between border-b pb-2 mb-1 cursor-pointer`}
                     >
                       <span className="flex items-center gap-1.5">
                         <span>✨</span>
                         <span>Formule {currentPlan === "pro_plus" || currentPlan === "annuel" || currentPlan === "club" ? "PRO+" : "PRO"}</span>
                       </span>
-                      <span className="text-[10px] font-mono text-emerald-400 font-black bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">ACTIF</span>
+                      <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded border ${
+                        isModernSleek ? "text-emerald-800 bg-emerald-100 border-emerald-300" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                      }`}>ACTIF</span>
                     </button>
                   ) : hasHadPaidSubscription ? (
                     <button
@@ -6605,7 +6645,7 @@ export default function TacticsBoard({
                       if (onOpenTutorial) onOpenTutorial();
                     }}
                     className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                      isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-700" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
+                      isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
                     } transition flex items-center gap-1.5 cursor-pointer`}
                   >
                     <span>🎓</span>
@@ -6619,7 +6659,7 @@ export default function TacticsBoard({
                       onOpenLegalModal("faq");
                     }}
                     className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                      isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-700" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
+                      isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
                     } transition flex items-center gap-1.5 cursor-pointer`}
                   >
                     <span>❓</span>
@@ -6637,7 +6677,7 @@ export default function TacticsBoard({
                     }
                   }}
                   className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                    isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-700" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
+                    isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
                   } transition flex items-center gap-1.5 cursor-pointer`}
                 >
                   <span>✉️</span>
@@ -6690,7 +6730,7 @@ export default function TacticsBoard({
                     handleOpenUserConfig();
                   }}
                   className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                    isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-700" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
+                    isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
                   } transition flex items-center gap-1.5 cursor-pointer`}
                 >
                   <span>⚙️</span>
@@ -6761,7 +6801,7 @@ export default function TacticsBoard({
                       ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
                       : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
                     : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 shadow-2xs"
+                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
                       : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
                 }`}
                 title="Sélecteur"
@@ -6778,7 +6818,7 @@ export default function TacticsBoard({
                       ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
                       : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
                     : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 shadow-2xs"
+                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
                       : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
                 }`}
                 title="Déplacer"
@@ -6796,7 +6836,7 @@ export default function TacticsBoard({
                       ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
                       : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
                     : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 shadow-2xs"
+                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
                       : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
                 }`}
                 title={
@@ -6829,7 +6869,7 @@ export default function TacticsBoard({
                   <span
                     className={`absolute -top-1 -right-1 text-[6.5px] font-black px-1 py-0.5 rounded-full leading-none border shadow-2xs ${
                       isModernSleek
-                        ? "bg-slate-900 text-emerald-300 border-white"
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
                         : "bg-[#05080e] text-[#00E599] border-[#00E599]"
                     }`}
                   >
@@ -6846,7 +6886,7 @@ export default function TacticsBoard({
                       ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
                       : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
                     : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 shadow-2xs"
+                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
                       : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
                 }`}
                 title="Flèche de Course"
@@ -6863,7 +6903,7 @@ export default function TacticsBoard({
                       ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
                       : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
                     : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 shadow-2xs"
+                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
                       : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
                 }`}
                 title="Dessin Libre"
@@ -7202,7 +7242,7 @@ export default function TacticsBoard({
                   onClick={() => setZoomScale(prev => Math.max(70, prev - 10))}
                   className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${
                     isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-700" 
+                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800" 
                       : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                   }`}
                   title="Réduire l'échelle du terrain"
@@ -7215,7 +7255,7 @@ export default function TacticsBoard({
                   onClick={() => setZoomScale(prev => Math.min(150, prev + 10))}
                   className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${
                     isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-700" 
+                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800" 
                       : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                   }`}
                   title="Agrandir l'échelle du terrain"
@@ -7234,7 +7274,7 @@ export default function TacticsBoard({
                   onClick={() => setPlayerScale(prev => Math.max(20, prev - 10))}
                   className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${
                     isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-700" 
+                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800" 
                       : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                   }`}
                   title="Réduire la taille des joueurs"
@@ -7247,7 +7287,7 @@ export default function TacticsBoard({
                   onClick={() => setPlayerScale(prev => Math.min(130, prev + 10))}
                   className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${
                     isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-700" 
+                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800" 
                       : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                   }`}
                   title="Agrandir la taille des joueurs"
@@ -7273,7 +7313,7 @@ export default function TacticsBoard({
                 title={isPitchFullscreen ? "Quitter le plein écran" : "Afficher le terrain en plein écran"}
               >
                 {isPitchFullscreen ? (
-                  <Minimize2 className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
+                  <Minimize2 className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
                 ) : (
                   <Maximize2 className="h-4 w-4 shrink-0" />
                 )}
@@ -8449,7 +8489,7 @@ export default function TacticsBoard({
                 <span className="w-5 h-5 rounded-md bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-500 text-[10px] shrink-0">
                   🛡️
                 </span>
-                <span className={`text-[11px] font-black ${isModernSleek ? "text-slate-900 group-hover:text-emerald-700" : "text-white group-hover:text-amber-200"} truncate transition`}>
+                <span className={`text-[11px] font-black ${isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-amber-200"} truncate transition`}>
                   {activeTeam?.name || "Séniors A (Fanion)"}
                 </span>
               </div>
@@ -8476,14 +8516,14 @@ export default function TacticsBoard({
                 <div className="flex items-center gap-1">
                   <button 
                     onClick={() => handleOpenShareSchema()}
-                    className={`p-1 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-emerald-700" : "hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer`}
+                    className={`p-1 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-emerald-800" : "hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer`}
                     title="Partager le schéma actuel (WhatsApp / Mail)"
                   >
                     <Share2 className="h-3 w-3" />
                   </button>
                   <button 
                     onClick={handleTriggerSaveModal}
-                    className={`p-1 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-emerald-700 hover:text-emerald-800" : "hover:bg-[#1a2333] border-[#1a2130] text-[#00E599] hover:text-brand-cream"} border rounded transition cursor-pointer`}
+                    className={`p-1 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-emerald-800 hover:text-emerald-900" : "hover:bg-[#1a2333] border-[#1a2130] text-[#00E599] hover:text-brand-cream"} border rounded transition cursor-pointer`}
                     title="Enregistrer sous (PRO)"
                   >
                     <Save className="h-3 w-3" />
@@ -8543,7 +8583,7 @@ export default function TacticsBoard({
                             <p className={`text-[9.5px] font-black ${
                               isAnim
                                 ? isModernSleek ? "text-purple-900 group-hover:text-purple-700" : "text-purple-200 group-hover:text-purple-300"
-                                : isModernSleek ? "text-slate-900 group-hover:text-emerald-700" : "text-white group-hover:text-[#00E599]"
+                                : isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-[#00E599]"
                             } truncate leading-tight transition flex items-center gap-1`}>
                               {isAnim && <span className="text-[10px]">🎬</span>}
                               <span>{sc.name}</span>
@@ -8594,7 +8634,7 @@ export default function TacticsBoard({
                                 e.preventDefault();
                                 handleOpenShareSchema(sc);
                               }}
-                              className={`p-1 ${isModernSleek ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-emerald-700" : "bg-[#131b29] hover:bg-[#1f2b40] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
+                              className={`p-1 ${isModernSleek ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#131b29] hover:bg-[#1f2b40] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
                               title="Partager ce schéma (WhatsApp & Mail)"
                             >
                               <Share2 className="h-3 w-3" />
@@ -8641,7 +8681,7 @@ export default function TacticsBoard({
                 <div className="flex items-center gap-0.5">
                   <button 
                     onClick={() => setIsMatchEditOpen(true)}
-                    className={`relative p-0.5 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-emerald-700" : "hover:bg-[#1a2333] border-[#1a2130] text-[#00E599]"} border rounded transition cursor-pointer`}
+                    className={`relative p-0.5 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-emerald-800" : "hover:bg-[#1a2333] border-[#1a2130] text-[#00E599]"} border rounded transition cursor-pointer`}
                     title="Gérer ou ajouter des matchs"
                   >
                     <Plus className="h-3 w-3" />
@@ -8713,7 +8753,11 @@ export default function TacticsBoard({
                           setTimeout(() => setSleekToastMessage(null), 3500);
                           setIsMatchFinishedModalOpen(true);
                         }}
-                        className="px-2 py-0.5 rounded-full text-[8px] font-black transition cursor-pointer flex items-center gap-1 border bg-slate-900/90 text-emerald-400 border-emerald-500/50 shadow-sm hover:bg-slate-800"
+                        className={`px-2 py-0.5 rounded-full text-[8px] font-black transition cursor-pointer flex items-center gap-1 border shadow-sm ${
+                          isModernSleek
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                            : "bg-slate-900/90 text-emerald-400 border-emerald-500/50 hover:bg-slate-800"
+                        }`}
                         title="Match terminé - Cliquez pour ouvrir le bilan du match"
                       >
                         <span>🏁 MATCH TERMINÉ</span>
@@ -8934,7 +8978,7 @@ export default function TacticsBoard({
                         Score : {activeMatch.score}
                       </p>
                     )}
-                    <p className={`text-[8.5px] font-bold ${isModernSleek ? "text-emerald-700" : "text-slate-400"} mt-0.5`}>
+                    <p className={`text-[8.5px] font-bold ${isModernSleek ? "text-emerald-800" : "text-slate-400"} mt-0.5`}>
                       {activeMatch.dateTime}
                     </p>
                   </div>
@@ -9070,10 +9114,10 @@ export default function TacticsBoard({
                 isModernSleek ? "bg-emerald-50/50" : "bg-[#0a1b16]"
               }`}>
                 <span className="text-[8px] font-black uppercase text-[#0d1117] bg-[#00E599] px-2 py-0.5 rounded-full absolute top-4 right-4">POPULAIRE</span>
-                <h4 className="text-sm font-black text-emerald-700 dark:text-[#00E599] uppercase">MENSUEL PRO</h4>
+                <h4 className={`text-sm font-black uppercase ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>MENSUEL PRO</h4>
                 <p className={`text-xl font-black mt-1 ${isModernSleek ? "text-slate-900" : "text-white"}`}>9.99 € <span className="text-xs text-slate-500 font-normal">/ mois</span></p>
                 <ul className={`text-[10px] space-y-2 mt-4 ${isModernSleek ? "text-slate-700" : "text-slate-200"}`}>
-                  <li className="flex items-center gap-1.5 text-emerald-700 font-bold">✓ Phases d&apos;animations illimitées</li>
+                  <li className={`flex items-center gap-1.5 font-bold ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>✓ Phases d&apos;animations illimitées</li>
                   <li className="flex items-center gap-1.5">✓ Exportations PDF & Images HD</li>
                   <li className="flex items-center gap-1.5">✓ Intelligence artificielle Coach IA</li>
                   <li className="flex items-center gap-1.5">✓ Sauvegardes de schémas illimitées</li>
@@ -9434,7 +9478,9 @@ export default function TacticsBoard({
 
                           {/* Status badge */}
                           {isFinished ? (
-                            <span className="text-[8px] bg-slate-800 text-emerald-400 font-black px-2 py-0.5 rounded-full border border-emerald-500/30 uppercase">
+                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border uppercase ${
+                              isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-slate-800 text-emerald-400 border-emerald-500/30"
+                            }`}>
                               🏁 TERMINÉ ({m.score || `${m.homeScore || 0} - ${m.awayScore || 0}`})
                             </span>
                           ) : (
@@ -9500,7 +9546,7 @@ export default function TacticsBoard({
                           {m.score && (
                             <div className="text-right shrink-0">
                               <span className={`text-xs font-mono font-black border px-2 py-1 rounded-lg ${
-                                isModernSleek ? "bg-slate-100 text-emerald-700 border-slate-200" : "text-[#00E599] bg-black/60 border-[#1f293d]"
+                                isModernSleek ? "bg-slate-100 text-emerald-800 border-slate-200" : "text-[#00E599] bg-black/60 border-[#1f293d]"
                               }`}>
                                 Score : {m.score}
                               </span>
@@ -9915,7 +9961,9 @@ export default function TacticsBoard({
                         <span>⚽</span>
                         <span>{activeMatch ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}` : "Match en cours"}</span>
                       </span>
-                      <span className="text-[10px] text-emerald-600 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-black">
+                      <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded border ${
+                        isModernSleek ? "text-emerald-800 bg-emerald-100 border-emerald-300" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                      }`}>
                         {activeMatch?.competition || "Match"}
                       </span>
                     </div>
@@ -12371,7 +12419,7 @@ export default function TacticsBoard({
             <div className={`flex items-center justify-between border-b pb-3 shrink-0 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-lg shrink-0 ${
-                  isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-[#00E599]/10 border-[#00E599]/30 text-[#00E599]"
+                  isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#00E599]/10 border-[#00E599]/30 text-[#00E599]"
                 }`}>
                   ⚙️
                 </div>

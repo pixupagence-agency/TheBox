@@ -205,7 +205,7 @@ export default function LegalAndFaqModal({
           <button
             onClick={() => setActiveTab("faq")}
             className={`flex items-center gap-2 px-4 py-2.5 font-bold text-xs rounded-t-xl transition cursor-pointer border-b-2 ${activeTab === "faq"
-              ? isModernSleek ? "bg-white text-emerald-700 border-emerald-500" : "bg-[#0d1117] text-[#00E599] border-[#00E599]"
+              ? isModernSleek ? "bg-white text-emerald-800 border-emerald-600" : "bg-[#0d1117] text-[#00E599] border-[#00E599]"
               : isModernSleek ? "text-slate-500 hover:text-slate-900 border-transparent" : "text-slate-400 hover:text-white border-transparent"
               }`}
           >
@@ -216,7 +216,7 @@ export default function LegalAndFaqModal({
           <button
             onClick={() => setActiveTab("cgu")}
             className={`flex items-center gap-2 px-4 py-2.5 font-bold text-xs rounded-t-xl transition cursor-pointer border-b-2 ${activeTab === "cgu"
-              ? isModernSleek ? "bg-white text-emerald-700 border-emerald-500" : "bg-[#0d1117] text-[#00E599] border-[#00E599]"
+              ? isModernSleek ? "bg-white text-emerald-800 border-emerald-600" : "bg-[#0d1117] text-[#00E599] border-[#00E599]"
               : isModernSleek ? "text-slate-500 hover:text-slate-900 border-transparent" : "text-slate-400 hover:text-white border-transparent"
               }`}
           >
@@ -227,7 +227,7 @@ export default function LegalAndFaqModal({
           <button
             onClick={() => setActiveTab("cgv")}
             className={`flex items-center gap-2 px-4 py-2.5 font-bold text-xs rounded-t-xl transition cursor-pointer border-b-2 ${activeTab === "cgv"
-              ? isModernSleek ? "bg-white text-emerald-700 border-emerald-500" : "bg-[#0d1117] text-[#00E599] border-[#00E599]"
+              ? isModernSleek ? "bg-white text-emerald-800 border-emerald-600" : "bg-[#0d1117] text-[#00E599] border-[#00E599]"
               : isModernSleek ? "text-slate-500 hover:text-slate-900 border-transparent" : "text-slate-400 hover:text-white border-transparent"
               }`}
           >
@@ -267,7 +267,7 @@ export default function LegalAndFaqModal({
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
                       className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition cursor-pointer ${selectedCategory === cat
-                        ? isModernSleek ? "bg-emerald-600 text-white" : "bg-[#00E599] text-[#0d1117]"
+                        ? isModernSleek ? "bg-emerald-700 text-white" : "bg-[#00E599] text-[#0d1117]"
                         : isModernSleek
                           ? "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-200 border border-slate-200"
                           : "bg-[#0d1117] text-slate-400 hover:text-white hover:bg-[#1f2d42]"
@@ -307,7 +307,7 @@ export default function LegalAndFaqModal({
                         >
                           <div className="flex items-center gap-3">
                             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border shrink-0 ${isModernSleek
-                                ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                                ? "text-emerald-800 bg-emerald-100 border-emerald-300"
                                 : "text-[#00E599] bg-[#00E599]/10 border-[#00E599]/20"
                               }`}>
                               {faq.category}
@@ -316,7 +316,7 @@ export default function LegalAndFaqModal({
                               }`}>{faq.question}</span>
                           </div>
                           {isOpenFaq ? (
-                            <ChevronUp className={`w-4 h-4 shrink-0 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
+                            <ChevronUp className={`w-4 h-4 shrink-0 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
                           ) : (
                             <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
                           )}
@@ -342,7 +342,7 @@ export default function LegalAndFaqModal({
                   : "bg-gradient-to-r from-[#00E599]/10 via-[#121824] to-[#121824] border-[#00E599]/30"
                 }`}>
                 <div className="flex items-center gap-3">
-                  <Mail className={`w-6 h-6 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
+                  <Mail className={`w-6 h-6 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
                   <div>
                     <h4 className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Vous ne trouvez pas votre réponse ?</h4>
                     <p className={`text-[11px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Notre équipe d&apos;assistance est disponible pour vous accompagner.</p>

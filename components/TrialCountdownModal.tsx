@@ -170,7 +170,11 @@ export default function TrialCountdownModal({
                   <span className="text-[9px] bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
                     <Award className="w-3 h-3" /> ACCÈS PRO & PRO+ OFFERT
                   </span>
-                  <span className="text-[9px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/40 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className={`text-[9px] border font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                    isModernSleek
+                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                      : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                  }`}>
                     {remaining.totalTrialDays} JOURS D&apos;ESSAI
                   </span>
                   {trialBonusDays > 0 && (
@@ -234,7 +238,9 @@ export default function TrialCountdownModal({
                 <div className={`text-[9px] font-bold uppercase mt-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Minutes</div>
               </div>
               <div className={`border rounded-xl p-2 shadow-inner ${isModernSleek ? "bg-white border-slate-200" : "bg-[#121926] border-[#222d41]"}`}>
-                <div className="text-xl sm:text-2xl font-black text-[#00E599] font-mono leading-none animate-pulse">
+                <div className={`text-xl sm:text-2xl font-black font-mono leading-none animate-pulse ${
+                  isModernSleek ? "text-emerald-800" : "text-[#00E599]"
+                }`}>
                   {String(remaining.seconds).padStart(2, '0')}
                 </div>
                 <div className={`text-[9px] font-bold uppercase mt-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Secondes</div>
@@ -267,8 +273,10 @@ export default function TrialCountdownModal({
                   <button
                     type="button"
                     onClick={onResetDemo}
-                    className={`px-2.5 py-1 text-emerald-600 hover:text-emerald-700 border border-emerald-500/40 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
-                      isModernSleek ? "bg-emerald-50 hover:bg-emerald-100" : "bg-[#1a253a] hover:bg-[#22334f]"
+                    className={`px-2.5 py-1 border rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
+                      isModernSleek 
+                        ? "text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100" 
+                        : "text-emerald-400 border-emerald-500/40 bg-[#1a253a] hover:bg-[#22334f]"
                     }`}
                     title="Remettre le compteur de démo à 14 jours complets"
                   >
@@ -291,7 +299,7 @@ export default function TrialCountdownModal({
         {/* INCLUDED PRO & PRO+ FEATURES LIST */}
         <div className="space-y-2 mb-5 relative z-10">
           <p className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
-            <Zap className="w-3 h-3 text-[#00E599]" />
+            <Zap className={`w-3 h-3 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
             <span>Fonctionnalités débloquées pendant vos 14 jours :</span>
           </p>
 
@@ -299,25 +307,25 @@ export default function TrialCountdownModal({
             <div className={`p-2.5 rounded-xl border flex items-center gap-2 font-medium ${
               isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#090d14] border-[#1f293d] text-slate-200"
             }`}>
-              <CheckCircle className="w-4 h-4 text-[#00E599] shrink-0" />
+              <CheckCircle className={`w-4 h-4 shrink-0 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
               <span>Analyste Tactique & Playbook Pro</span>
             </div>
             <div className={`p-2.5 rounded-xl border flex items-center gap-2 font-medium ${
               isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#090d14] border-[#1f293d] text-slate-200"
             }`}>
-              <CheckCircle className="w-4 h-4 text-[#00E599] shrink-0" />
+              <CheckCircle className={`w-4 h-4 shrink-0 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
               <span>Export HD Carte 3D Squad View</span>
             </div>
             <div className={`p-2.5 rounded-xl border flex items-center gap-2 font-medium ${
               isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#090d14] border-[#1f293d] text-slate-200"
             }`}>
-              <CheckCircle className="w-4 h-4 text-[#00E599] shrink-0" />
+              <CheckCircle className={`w-4 h-4 shrink-0 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
               <span>Mode Match Live & Remplacements</span>
             </div>
             <div className={`p-2.5 rounded-xl border flex items-center gap-2 font-medium ${
               isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#090d14] border-[#1f293d] text-slate-200"
             }`}>
-              <CheckCircle className="w-4 h-4 text-[#00E599] shrink-0" />
+              <CheckCircle className={`w-4 h-4 shrink-0 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
               <span>Dictée Vocale Notes Tactiques PRO</span>
             </div>
           </div>

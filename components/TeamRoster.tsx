@@ -90,7 +90,9 @@ export default function TeamRoster({ roster, setRoster, isModernSleek = false }:
         isModernSleek ? "bg-white border-slate-200" : "bg-slate-900 border-slate-800"
       }`}>
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-emerald-950/40 text-emerald-400 rounded-lg border border-emerald-900/40">
+          <div className={`p-3 rounded-lg border ${
+            isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-emerald-950/40 text-emerald-400 border-emerald-900/40"
+          }`}>
             <UserPlus className="h-6 w-6" />
           </div>
           <div>
@@ -256,16 +258,16 @@ export default function TeamRoster({ roster, setRoster, isModernSleek = false }:
           
           // Class colors according to physical fitness status
           let statusLabel = "Disponible";
-          let statusColor = "bg-emerald-500/15 text-emerald-400 border-emerald-500/25";
+          let statusColor = isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/25";
           if (p.status === "excellent") {
             statusLabel = "🔥 Forme Excellente";
-            statusColor = "bg-teal-500/15 text-teal-300 border-teal-500/20";
+            statusColor = isModernSleek ? "bg-teal-100 text-teal-900 border-teal-300 font-bold" : "bg-teal-500/15 text-teal-300 border-teal-500/20";
           } else if (p.status === "tired") {
             statusLabel = "💤 Fatigué";
-            statusColor = "bg-amber-500/15 text-amber-400 border-amber-500/20";
+            statusColor = isModernSleek ? "bg-amber-100 text-amber-900 border-amber-300 font-bold" : "bg-amber-500/15 text-amber-400 border-amber-500/20";
           } else if (p.status === "injured") {
             statusLabel = "🚨 Blessé";
-            statusColor = "bg-rose-500/15 text-rose-400 border-rose-500/25";
+            statusColor = isModernSleek ? "bg-rose-100 text-rose-900 border-rose-300 font-bold" : "bg-rose-500/15 text-rose-400 border-rose-500/25";
           }
 
           return (

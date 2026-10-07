@@ -389,12 +389,14 @@ export default function OnboardingTutorialModal({
         }`}>
           <div className="flex items-center gap-2.5">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
-              isModernSleek ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
+              isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
             }`}>
               {current.icon}
             </div>
             <div>
-              <span className="text-[10px] font-black uppercase text-[#00E599] tracking-wider block">
+              <span className={`text-[10px] font-black uppercase tracking-wider block ${
+                isModernSleek ? "text-emerald-800" : "text-[#00E599]"
+              }`}>
                 {current.badge}
               </span>
               <h3 className={`text-xs sm:text-sm font-black leading-tight ${isModernSleek ? "text-slate-900" : "text-white"}`}>

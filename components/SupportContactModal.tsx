@@ -159,7 +159,9 @@ export default function SupportContactModal({
         <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
           }`}>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border border-[#00E599]/40 text-[#00E599]">
+            <div className={`p-2.5 rounded-xl border ${
+              isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
+            }`}>
               <Mail className="w-5 h-5" />
             </div>
             <div>
@@ -167,7 +169,9 @@ export default function SupportContactModal({
                 <h3 className={`text-base font-black tracking-wide ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   Contacter le Support
                 </h3>
-                <span className="bg-[#00E599]/15 border border-[#00E599]/40 text-[#00E599] text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/40 text-[#00E599]"
+                }`}>
                   7j / 7
                 </span>
               </div>
@@ -194,22 +198,26 @@ export default function SupportContactModal({
           {submitSuccess ? (
             /* SUCCESS VIEW */
             <div className="text-center py-6 sm:py-8 space-y-4 animate-fade-in">
-              <div className="w-16 h-16 rounded-full bg-[#00E599]/15 border-2 border-[#00E599] text-[#00E599] mx-auto flex items-center justify-center shadow-lg shadow-[#00E599]/20 animate-scale-up">
+              <div className={`w-16 h-16 rounded-full border-2 mx-auto flex items-center justify-center shadow-lg animate-scale-up ${
+                isModernSleek ? "bg-emerald-100 border-emerald-400 text-emerald-800 shadow-emerald-500/10" : "bg-[#00E599]/15 border-[#00E599] text-[#00E599] shadow-[#00E599]/20"
+              }`}>
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <div>
-                <h4 className="text-lg font-black text-white">Message transmis avec succès !</h4>
-                <p className="text-xs text-slate-300 max-w-md mx-auto mt-2 leading-relaxed">
-                  Votre demande a bien été envoyée à l&apos;équipe support The Box{isAdmin ? <> (<span className="text-[#00E599] font-mono font-bold">{SUPPORT_EMAIL_TARGET}</span>)</> : null}.
+                <h4 className={`text-lg font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Message transmis avec succès !</h4>
+                <p className={`text-xs max-w-md mx-auto mt-2 leading-relaxed ${isModernSleek ? "text-slate-600" : "text-slate-300"}`}>
+                  Votre demande a bien été envoyée à l&apos;équipe support The Box{isAdmin ? <> (<span className={`font-mono font-bold ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{SUPPORT_EMAIL_TARGET}</span>)</> : null}.
                 </p>
-                <div className="bg-[#121824] border border-[#1f293d] rounded-xl p-3 max-w-md mx-auto mt-4 text-left">
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-1">
-                    <Clock className="w-3.5 h-3.5 text-[#00E599]" />
+                <div className={`border rounded-xl p-3 max-w-md mx-auto mt-4 text-left ${
+                  isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121824] border-[#1f293d]"
+                }`}>
+                  <div className={`flex items-center gap-2 text-[11px] mb-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                    <Clock className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
                     <span>Délai de réponse habituel : moins de 24 heures</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                    <Mail className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Une réponse vous sera envoyée à : <strong className="text-white font-mono">{email}</strong></span>
+                  <div className={`flex items-center gap-2 text-[11px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                    <Mail className="w-3.5 h-3.5 text-cyan-500" />
+                    <span>Une réponse vous sera envoyée à : <strong className={`font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{email}</strong></span>
                   </div>
                 </div>
               </div>
@@ -221,7 +229,9 @@ export default function SupportContactModal({
                     setSubmitSuccess(false);
                     setMessage("");
                   }}
-                  className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-slate-300 font-bold text-xs transition border border-[#233149] cursor-pointer"
+                  className={`px-4 py-2 rounded-xl font-bold text-xs transition border cursor-pointer ${
+                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-[#161c28] hover:bg-[#1e2738] text-slate-300 border-[#233149]"
+                  }`}
                 >
                   Envoyer un autre message
                 </button>
@@ -243,10 +253,10 @@ export default function SupportContactModal({
                 isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700" : "bg-[#121824] border-[#1f293d] text-slate-400"
               }`}>
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#00E599]" />
+                  <ShieldCheck className={`w-4 h-4 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
                   <span>{isAdmin ? "Destinataire officiel :" : "Assistance :"}</span>
                   {isAdmin ? (
-                    <strong className="text-[#00E599] font-mono">{SUPPORT_EMAIL_TARGET}</strong>
+                    <strong className={`font-mono ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{SUPPORT_EMAIL_TARGET}</strong>
                   ) : (
                     <strong className={isModernSleek ? "text-slate-900" : "text-white"}>Support Technique The Box</strong>
                   )}
