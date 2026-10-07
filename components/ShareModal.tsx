@@ -889,10 +889,12 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                     <span className={`text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
                       isModernSleek ? "text-slate-700" : "text-slate-300"
                     }`}>
-                      <Users className="w-3.5 h-3.5 text-[#00E599]" />
+                      <Users className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
                       <span>TITULAIRES ({activeStarters.length}) :</span>
                     </span>
-                    <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-500/30 text-[9.5px] font-bold">
+                    <span className={`px-2 py-0.5 rounded border text-[9.5px] font-bold ${
+                      isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "text-emerald-400 bg-emerald-950/60 border-emerald-500/30"
+                    }`}>
                       Sur le schéma
                     </span>
                   </div>
@@ -908,7 +910,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                         }`}
                       >
                         <span className={`font-mono text-[9px] ${isModernSleek ? "text-slate-400" : "text-slate-500"}`}>{i + 1}.</span>
-                        <strong className="text-emerald-600 dark:text-emerald-400">#{p.number}</strong>
+                        <strong className={isModernSleek ? "text-emerald-800 font-extrabold" : "text-emerald-400"}>#{p.number}</strong>
                         <span>{p.name || "Joueur"}</span>
                         {p.position && <span className={`text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>({p.position})</span>}
                       </span>

@@ -5859,11 +5859,11 @@ export default function TacticsBoard({
           >
             <div className={`flex items-center ${isFullscreenMode ? "flex-col" : "lg:flex-col"} gap-1.5`}>
               <span className="w-2.5 h-2.5 rounded-full bg-[#00E599] animate-pulse shrink-0" />
-              <span className={`text-[11px] font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-700" : "text-[#00E599]"} ${isFullscreenMode ? "inline" : "hidden lg:inline"} [writing-mode:vertical-rl] rotate-180 my-2`}>
+              <span className={`text-[11px] font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} ${isFullscreenMode ? "inline" : "hidden lg:inline"} [writing-mode:vertical-rl] rotate-180 my-2`}>
                 MON CLUB
               </span>
               {!isFullscreenMode && (
-                <span className={`text-xs font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-700" : "text-[#00E599]"} lg:hidden`}>
+                <span className={`text-xs font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} lg:hidden`}>
                   MON CLUB
                 </span>
               )}
@@ -5888,7 +5888,7 @@ export default function TacticsBoard({
             <div className={`flex items-center justify-between border-b ${isModernSleek ? "border-slate-200 pb-1.5" : "border-[#1f293d] pb-1.5"}`}>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#00E599] animate-pulse" />
-                <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-700" : "text-[#00E599]"}`}>
+                <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>
                   MON CLUB
                 </span>
               </div>

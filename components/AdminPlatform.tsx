@@ -354,7 +354,7 @@ export default function AdminPlatform({
               </div>
               <p className={`text-xs font-medium flex items-center gap-2 mt-0.5 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                 <span>Compte connecté :</span>
-                <strong className="text-[#00E599] font-mono">{activeCoach.email || "pixup.agence@gmail.com"}</strong>
+                <strong className={`font-mono ${isModernSleek ? "text-emerald-800 font-bold" : "text-[#00E599]"}`}>{activeCoach.email || "pixup.agence@gmail.com"}</strong>
               </p>
             </div>
           </div>
@@ -363,7 +363,7 @@ export default function AdminPlatform({
             <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs ${
               isModernSleek ? "bg-slate-200 border-slate-300 text-slate-700" : "bg-[#141b28] border-[#222d41] text-slate-300"
             }`}>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
               <span className="font-bold">Options Administrateur Activées (Accès Total)</span>
             </div>
             <button
@@ -388,7 +388,7 @@ export default function AdminPlatform({
             <div>
               <p className={`text-[10px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Utilisateurs Inscrits</p>
               <p className={`text-2xl font-black mt-1 font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{totalCoaches}</p>
-              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+              <p className={`text-[10px] font-bold mt-1 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>
                 {proCount + clubCount} abonnés payants
               </p>
             </div>
@@ -402,12 +402,14 @@ export default function AdminPlatform({
           }`}>
             <div>
               <p className={`text-[10px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Abonnements Pro & Club</p>
-              <p className="text-2xl font-black text-[#00E599] mt-1 font-mono">{proCount + clubCount}</p>
+              <p className={`text-2xl font-black mt-1 font-mono ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{proCount + clubCount}</p>
               <p className={`text-[10px] mt-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                 {proCount} Pro • {clubCount} Club Élite
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-[#00E599]">
+            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${
+              isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-emerald-500/10 border-emerald-500/30 text-[#00E599]"
+            }`}>
               <CreditCard className="h-5 w-5" />
             </div>
           </div>
