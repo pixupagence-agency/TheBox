@@ -20,9 +20,10 @@ export interface Player {
 interface TeamRosterProps {
   roster: Player[];
   setRoster: React.Dispatch<React.SetStateAction<Player[]>>;
+  isModernSleek?: boolean;
 }
 
-export default function TeamRoster({ roster, setRoster }: TeamRosterProps) {
+export default function TeamRoster({ roster, setRoster, isModernSleek = false }: TeamRosterProps) {
   // New player input state
   const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState("");
@@ -82,23 +83,25 @@ export default function TeamRoster({ roster, setRoster }: TeamRosterProps) {
   };
 
   return (
-    <div className="space-y-6 text-slate-100" id="team-roster">
+    <div className={`space-y-6 ${isModernSleek ? "text-slate-900" : "text-slate-100"}`} id="team-roster">
       
       {/* Title block */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+      <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border rounded-xl p-5 shadow-xl ${
+        isModernSleek ? "bg-white border-slate-200" : "bg-slate-900 border-slate-800"
+      }`}>
         <div className="flex items-center gap-3">
           <div className="p-3 bg-emerald-950/40 text-emerald-400 rounded-lg border border-emerald-900/40">
             <UserPlus className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight">Gestion d&apos;Effectif & Roster</h2>
-            <p className="text-xs text-slate-400">Suivi physique, performances et statistiques individuelles des joueurs</p>
+            <h2 className={`text-xl font-bold tracking-tight ${isModernSleek ? "text-slate-900" : "text-white"}`}>Gestion d&apos;Effectif & Roster</h2>
+            <p className={`text-xs ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Suivi physique, performances et statistiques individuelles des joueurs</p>
           </div>
         </div>
 
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className="px-4 py-2 bg-brand-cream hover:bg-slate-100 text-brand-deep font-black text-xs rounded-lg flex items-center gap-2 shadow-lg transition duration-150 cursor-pointer"
+          className="px-4 py-2 bg-[#00E599] hover:bg-[#05be80] text-slate-950 font-black text-xs rounded-lg flex items-center gap-2 shadow-lg transition duration-150 cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           <span>{isAdding ? "Fermer le formulaire" : "Ajouter un Joueur"}</span>
@@ -107,26 +110,32 @@ export default function TeamRoster({ roster, setRoster }: TeamRosterProps) {
 
       {/* Adding Form Expandable */}
       {isAdding && (
-        <form onSubmit={handleAddPlayer} className="bg-brand-pine border border-brand-border rounded-xl p-5 shadow-2xl animate-fade-in space-y-4">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-brand-border pb-2">
+        <form onSubmit={handleAddPlayer} className={`border rounded-xl p-5 shadow-2xl animate-fade-in space-y-4 ${
+          isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-brand-pine border-brand-border text-white"
+        }`}>
+          <h3 className={`text-sm font-bold uppercase tracking-wider border-b pb-2 ${
+            isModernSleek ? "text-slate-900 border-slate-200" : "text-white border-brand-border"
+          }`}>
             🆕 Fiche de Nouveau Joueur
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-brand-sage uppercase mb-1">Nom complet</label>
+              <label className={`block text-xs font-bold uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-brand-sage"}`}>Nom complet</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="ex: Kylian Mbappé"
-                className="w-full bg-brand-deep border border-brand-border rounded px-3 py-2 text-sm text-brand-ivory placeholder-brand-sage/60 focus:outline-none focus:border-brand-cream transition"
+                className={`w-full rounded px-3 py-2 text-sm focus:outline-none transition border ${
+                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-brand-deep border-brand-border text-brand-ivory focus:border-brand-cream"
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-brand-sage uppercase mb-1">Numéro de maillot</label>
+              <label className={`block text-xs font-bold uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-brand-sage"}`}>Numéro de maillot</label>
               <input
                 type="number"
                 required
@@ -134,16 +143,20 @@ export default function TeamRoster({ roster, setRoster }: TeamRosterProps) {
                 max={99}
                 value={number}
                 onChange={(e) => setNumber(Number(e.target.value))}
-                className="w-full bg-brand-deep border border-brand-border rounded px-3 py-2 text-sm text-brand-ivory focus:outline-none focus:border-brand-cream transition"
+                className={`w-full rounded px-3 py-2 text-sm focus:outline-none transition border ${
+                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-brand-deep border-brand-border text-brand-ivory focus:border-brand-cream"
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-brand-sage uppercase mb-1">Poste / Rôle</label>
+              <label className={`block text-xs font-bold uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-brand-sage"}`}>Poste / Rôle</label>
               <select
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
-                className="w-full bg-brand-deep border border-brand-border rounded px-3 py-2 text-sm text-brand-ivory focus:outline-none focus:border-brand-cream transition"
+                className={`w-full rounded px-3 py-2 text-sm focus:outline-none transition border ${
+                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-brand-deep border-brand-border text-brand-ivory focus:border-brand-cream"
+                }`}
               >
                 <option value="Gardien de but">Gardien de but (GK)</option>
                 <option value="Défenseur central">Défenseur central (CB)</option>

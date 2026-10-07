@@ -68,6 +68,23 @@ export default function Home() {
     return true;
   });
 
+  // Keep theme state synchronized with localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const checkTheme = () => {
+      const saved = localStorage.getItem("thebox_modern_sleek");
+      if (saved !== null) {
+        setIsModernSleek(saved === "true");
+      }
+    };
+    window.addEventListener("storage", checkTheme);
+    const interval = setInterval(checkTheme, 500);
+    return () => {
+      window.removeEventListener("storage", checkTheme);
+      clearInterval(interval);
+    };
+  }, []);
+
   const handleOpenLegalModal = (tab: LegalTab = "faq") => {
     setLegalModalTab(tab);
     setIsLegalModalOpen(true);
@@ -683,6 +700,7 @@ export default function Home() {
         onClose={() => setIsLegalModalOpen(false)}
         defaultTab={legalModalTab}
         onOpenSupport={() => setIsSupportModalOpen(true)}
+        isModernSleek={isModernSleek}
       />
 
       {/* ONBOARDING TUTORIAL MODAL */}
@@ -691,6 +709,7 @@ export default function Home() {
         onClose={() => setIsOnboardingTutorialOpen(false)}
         coachName={activeCoach?.firstName || "Coach"}
         sportName={activeSport}
+        isModernSleek={isModernSleek}
         onCompleteTutorial={() => {
           setIsOnboardingTutorialOpen(false);
           if (typeof window !== "undefined") {
@@ -709,6 +728,7 @@ export default function Home() {
         coachName={`${activeCoach?.firstName || "Coach"}`}
         isAdmin={isAdmin}
         coachEmail={activeCoach?.email}
+        isModernSleek={isModernSleek}
         onAddBonusDays={(days) => {
           if (activeCoach) {
             const updated = coaches.map((c) =>
@@ -758,6 +778,7 @@ export default function Home() {
         setSportsConfig={setSportsConfig}
         activePlan={activePlan}
         setActivePlan={setActivePlan}
+        isModernSleek={isModernSleek}
       />
 
       {/* SUPPORT CONTACT MODAL */}
@@ -770,24 +791,29 @@ export default function Home() {
         userSport={activeSport}
         userPlan={activePlan}
         isAdmin={isAdmin}
+        isModernSleek={isModernSleek}
       />
 
       {/* LOGIN MODAL */}
       {isLoginModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[#0d1117] border border-[#233149] max-w-lg w-full rounded-2xl p-5 sm:p-8 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto scrollbar-thin">
+          <div className={`max-w-lg w-full rounded-2xl p-5 sm:p-8 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto scrollbar-thin border ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#233149] text-white"
+          }`}>
             
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#1f293d]">
+            <div className={`flex items-center justify-between pb-4 mb-4 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <div className="flex items-center gap-3">
-                <LogoIcon className="w-8 h-8 text-white" />
+                <LogoIcon className={`w-8 h-8 ${isModernSleek ? "text-emerald-600" : "text-white"}`} />
                 <div>
-                  <h3 className="text-base font-black text-white">Connexion Espace Coach</h3>
+                  <h3 className={`text-base font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Connexion Espace Coach</h3>
                   <p className="text-[10px] text-[#00E599] font-bold uppercase tracking-wider">the box • zone de décision tactique</p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsLoginModalOpen(false)}
-                className="text-slate-400 hover:text-white text-xs font-bold px-2 py-1 bg-[#121926] rounded border border-[#1f293d]"
+                className={`text-xs font-bold px-2 py-1 rounded border transition ${
+                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-300" : "text-slate-400 hover:text-white bg-[#121926] border-[#1f293d]"
+                }`}
               >
                 ✕
               </button>
@@ -796,7 +822,7 @@ export default function Home() {
             {/* Quick Profile Selection */}
             {coaches.length > 0 && (
               <div className="mb-5">
-                <p className="text-[10px] font-black text-[#62728f] uppercase tracking-wider mb-2.5">
+                <p className={`text-[10px] font-black uppercase tracking-wider mb-2.5 ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
                   Profils Enregistrés sur cet appareil :
                 </p>
                 <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
@@ -804,18 +830,24 @@ export default function Home() {
                     <button
                       key={c.id}
                       onClick={() => handleLoginAsCoach(c.id, c.preferredSport)}
-                      className="w-full text-left p-2.5 rounded-xl bg-[#121926] hover:bg-[#1a253a] border border-[#1f293d] hover:border-white flex items-center justify-between transition cursor-pointer group"
+                      className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between transition cursor-pointer group ${
+                        isModernSleek 
+                          ? "bg-slate-50 hover:bg-slate-100 border-slate-200 hover:border-emerald-500" 
+                          : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] hover:border-white"
+                      }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-white text-[#0d1117] font-black text-xs flex items-center justify-center">
+                        <div className={`w-8 h-8 rounded-full font-black text-xs flex items-center justify-center ${
+                          isModernSleek ? "bg-emerald-600 text-white" : "bg-white text-[#0d1117]"
+                        }`}>
                           {c.firstName.charAt(0)}{c.lastName.charAt(0)}
                         </div>
                         <div>
-                          <p className="text-xs font-black text-white group-hover:text-white transition">
+                          <p className={`text-xs font-black transition ${isModernSleek ? "text-slate-900 group-hover:text-emerald-700" : "text-white"}`}>
                             {c.firstName} {c.lastName}
                           </p>
-                          <p className="text-[10px] text-slate-400">
-                            {c.club} • <span className="capitalize text-[#00E599]">{c.preferredSport}</span>
+                          <p className={`text-[10px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                            {c.club} • <span className="capitalize text-[#00E599] font-bold">{c.preferredSport}</span>
                           </p>
                         </div>
                       </div>
@@ -829,11 +861,15 @@ export default function Home() {
             )}
 
             {/* Google Fast Connect */}
-            <div className="mb-4 pt-3 border-t border-[#1f293d]">
+            <div className={`mb-4 pt-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <button
                 type="button"
                 onClick={handleGoogleSignUp}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#121926] hover:bg-[#1a253a] border border-[#233149] text-white font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow hover:border-slate-500"
+                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow border ${
+                  isModernSleek 
+                    ? "bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-800 hover:border-slate-400" 
+                    : "bg-[#121926] hover:bg-[#1a253a] border-[#233149] text-white hover:border-slate-500"
+                }`}
               >
                 <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
@@ -846,8 +882,8 @@ export default function Home() {
             </div>
 
             {/* Form login by email */}
-            <form onSubmit={handleEmailPasswordSubmit} className="space-y-3 pt-2 border-t border-[#1f293d]">
-              <p className="text-[10px] font-black text-[#62728f] uppercase tracking-wider">
+            <form onSubmit={handleEmailPasswordSubmit} className={`space-y-3 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+              <p className={`text-[10px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
                 Ou connexion par Email / Mot de passe :
               </p>
               <div>
@@ -856,7 +892,11 @@ export default function Home() {
                   placeholder="Adresse Email (ex: coach@club.com)"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#00E599] transition"
+                  className={`w-full rounded-lg px-3.5 py-2 text-xs focus:outline-none transition border ${
+                    isModernSleek 
+                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
+                  }`}
                 />
               </div>
               <div>
@@ -865,7 +905,11 @@ export default function Home() {
                   placeholder="Mot de passe"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#00E599] transition"
+                  className={`w-full rounded-lg px-3.5 py-2 text-xs focus:outline-none transition border ${
+                    isModernSleek 
+                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
+                  }`}
                 />
               </div>
 
@@ -882,7 +926,11 @@ export default function Home() {
                     setIsLoginModalOpen(false);
                     setIsRegisterModalOpen(true);
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-[#121926] hover:bg-[#1a253a] border border-[#233149] text-white font-bold text-xs transition cursor-pointer"
+                  className={`px-4 py-2.5 rounded-xl border font-bold text-xs transition cursor-pointer ${
+                    isModernSleek 
+                      ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800" 
+                      : "bg-[#121926] hover:bg-[#1a253a] border-[#233149] text-white"
+                  }`}
                 >
                   Créer un compte
                 </button>
@@ -896,12 +944,14 @@ export default function Home() {
       {/* COACH ONBOARDING / CREATION DE COMPTE MODAL */}
       {isRegisterModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[#0d1117] border border-[#1f293d] max-w-lg w-full rounded-2xl p-5 sm:p-8 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto scrollbar-thin">
+          <div className={`max-w-lg w-full rounded-2xl p-5 sm:p-8 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto scrollbar-thin border ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
+          }`}>
             
-            <h3 className="text-xl font-black text-white mb-1 flex items-center gap-2">
+            <h3 className={`text-xl font-black mb-1 flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
               <span>🏟️</span> Créer un Compte Coach The Box
             </h3>
-            <p className="text-[10px] text-[#62728f] mb-4 leading-relaxed font-bold uppercase">
+            <p className={`text-[10px] mb-4 leading-relaxed font-bold uppercase ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
               Configurez votre mot de passe ou utilisez directement votre adresse e-mail Google.
             </p>
 
@@ -910,7 +960,11 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleGoogleSignUp}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#121926] hover:bg-[#1a253a] border border-[#233149] text-white font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow hover:border-slate-500"
+                className={`w-full py-2.5 px-4 rounded-xl border font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow ${
+                  isModernSleek 
+                    ? "bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-800 hover:border-slate-400" 
+                    : "bg-[#121926] hover:bg-[#1a253a] border-[#233149] text-white hover:border-slate-500"
+                }`}
               >
                 <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
@@ -923,17 +977,17 @@ export default function Home() {
             </div>
 
             <div className="relative flex items-center my-4">
-              <div className="flex-grow border-t border-[#1f293d]"></div>
-              <span className="flex-shrink mx-3 text-[9px] font-black text-[#62728f] uppercase tracking-wider">
+              <div className={`flex-grow border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}></div>
+              <span className={`flex-shrink mx-3 text-[9px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
                 OU CRÉER AVEC UN MOT DE PASSE
               </span>
-              <div className="flex-grow border-t border-[#1f293d]"></div>
+              <div className={`flex-grow border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}></div>
             </div>
 
             <form onSubmit={handleRegisterCoach} className="space-y-3.5">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
                     Prénom *
                   </label>
                   <input
@@ -942,11 +996,15 @@ export default function Home() {
                     value={newFirstName}
                     onChange={(e) => setNewFirstName(e.target.value)}
                     placeholder="ex: Jean"
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#00E599] transition"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                        : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
                     Nom *
                   </label>
                   <input
@@ -955,13 +1013,17 @@ export default function Home() {
                     value={newLastName}
                     onChange={(e) => setNewLastName(e.target.value)}
                     placeholder="ex: Dupont"
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#00E599] transition"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                        : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
                   Club / Structure *
                 </label>
                 <input
@@ -970,19 +1032,27 @@ export default function Home() {
                   value={newClub}
                   onChange={(e) => setNewClub(e.target.value)}
                   placeholder="ex: Real Madrid, Club de Foot Local..."
-                  className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#00E599] transition"
+                  className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
+                    isModernSleek 
+                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
+                  }`}
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
                     Fonction au sein du club
                   </label>
                   <select
                     value={newRole}
                     onChange={(e) => setNewRole(e.target.value)}
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599] transition font-bold"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" 
+                        : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                    }`}
                   >
                     <option value="Coach Principal">Coach Principal</option>
                     <option value="Entraîneur Adjoint">Entraîneur Adjoint</option>
@@ -993,13 +1063,17 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
                     Sport Principal
                   </label>
                   <select
                     value="football"
                     disabled
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599] transition capitalize font-bold cursor-not-allowed opacity-95"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition capitalize font-bold cursor-not-allowed opacity-95 border ${
+                      isModernSleek 
+                        ? "bg-slate-100 border-slate-300 text-slate-900" 
+                        : "bg-[#090d14] border-[#1f293d] text-white"
+                    }`}
                     title="Seul le football est ouvert à l'inscription. Les autres sports sont bloqués."
                   >
                     <option value="football">⚽ Football (Ouvert à l&apos;essai)</option>
@@ -1007,7 +1081,7 @@ export default function Home() {
                     <option value="rugby" disabled>🏉 Rugby (🔒 Bloqué)</option>
                     <option value="handball" disabled>🤾 Handball (🔒 Bloqué)</option>
                   </select>
-                  <p className="text-[9px] text-amber-400 font-bold mt-1 flex items-center gap-1">
+                  <p className="text-[9px] text-amber-500 font-bold mt-1 flex items-center gap-1">
                     <span>🔒</span>
                     <span>Tous les autres sports sont temporairement bloqués.</span>
                   </p>
@@ -1015,7 +1089,7 @@ export default function Home() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
                   Adresse E-mail *
                 </label>
                 <input
@@ -1024,14 +1098,18 @@ export default function Home() {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="ex: coach@club.com"
-                  className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#00E599] transition"
+                  className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
+                    isModernSleek 
+                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
+                  }`}
                 />
               </div>
 
               {/* Password Configuration Section */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
                     Mot de passe *
                   </label>
                   <input
@@ -1041,11 +1119,15 @@ export default function Home() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Min. 6 caractères"
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#00E599] transition"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                        : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
                     Confirmer le mot de passe *
                   </label>
                   <input
@@ -1054,12 +1136,20 @@ export default function Home() {
                     value={newConfirmPassword}
                     onChange={(e) => setNewConfirmPassword(e.target.value)}
                     placeholder="Répétez le mot de passe"
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#00E599] transition"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                        : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 bg-[#090d14] p-3 rounded-xl border border-[#1f293d] text-[10px] text-[#62728f] leading-relaxed font-bold">
+              <div className={`flex items-center gap-2 p-3 rounded-xl border text-[10px] leading-relaxed font-bold ${
+                isModernSleek 
+                  ? "bg-slate-50 border-slate-200 text-slate-600" 
+                  : "bg-[#090d14] border-[#1f293d] text-[#62728f]"
+              }`}>
                 <CheckCircle className="h-4 w-4 text-[#00E599] flex-shrink-0" />
                 <p>
                   En validant votre inscription, votre tableau tactique s&apos;activera immédiatement sur le sport : <span className="font-bold text-[#00E599]">Football</span>.
@@ -1070,7 +1160,11 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setIsRegisterModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold rounded-lg transition cursor-pointer"
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                    isModernSleek 
+                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700" 
+                      : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                  }`}
                 >
                   Annuler
                 </button>

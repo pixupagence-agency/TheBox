@@ -239,22 +239,24 @@ export default function SupportContactModal({
             <form onSubmit={handleSubmit} className="space-y-4">
 
               {/* Recipient info badge */}
-              <div className="bg-[#121824] border border-[#1f293d] rounded-xl px-3.5 py-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
-                <div className="flex items-center gap-2 text-slate-400">
+              <div className={`rounded-xl px-3.5 py-2.5 flex items-center justify-between flex-wrap gap-2 text-xs border ${
+                isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700" : "bg-[#121824] border-[#1f293d] text-slate-400"
+              }`}>
+                <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-[#00E599]" />
                   <span>{isAdmin ? "Destinataire officiel :" : "Assistance :"}</span>
                   {isAdmin ? (
                     <strong className="text-[#00E599] font-mono">{SUPPORT_EMAIL_TARGET}</strong>
                   ) : (
-                    <strong className="text-white">Support Technique The Box</strong>
+                    <strong className={isModernSleek ? "text-slate-900" : "text-white"}>Support Technique The Box</strong>
                   )}
                 </div>
               </div>
 
               {/* Error Alert */}
               {errorMessage && (
-                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs rounded-xl p-3 flex items-start gap-2.5 animate-shake">
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs rounded-xl p-3 flex items-start gap-2.5 animate-shake">
+                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                   <span className="leading-relaxed">{errorMessage}</span>
                 </div>
               )}
@@ -262,7 +264,7 @@ export default function SupportContactModal({
               {/* Two columns: Name & Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                     <User className="w-3.5 h-3.5 text-slate-400" />
                     <span>Votre Nom</span>
                   </label>
@@ -271,12 +273,16 @@ export default function SupportContactModal({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Coach Martin"
-                    className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                     <Mail className="w-3.5 h-3.5 text-[#00E599]" />
                     <span>Votre Email <span className="text-[#00E599]">*</span></span>
                   </label>
@@ -286,14 +292,18 @@ export default function SupportContactModal({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="martin.coach@gmail.com"
-                    className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
               </div>
 
               {/* Category Pills */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                   <Tag className="w-3.5 h-3.5 text-slate-400" />
                   <span>Type de Demande</span>
                 </label>
@@ -310,10 +320,11 @@ export default function SupportContactModal({
                             setSubjectText(cat.label);
                           }
                         }}
-                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition text-left cursor-pointer truncate ${isSelected
-                            ? "bg-[#00E599]/15 border-[#00E599] text-[#00E599]"
-                            : "bg-[#121824] border-[#1f293d] text-slate-400 hover:text-white hover:border-[#2d3a52]"
-                          }`}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition text-left cursor-pointer truncate ${
+                          isSelected
+                            ? isModernSleek ? "bg-emerald-50 border-emerald-500 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599] text-[#00E599]"
+                            : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300" : "bg-[#121824] border-[#1f293d] text-slate-400 hover:text-white hover:border-[#2d3a52]"
+                        }`}
                       >
                         {cat.label}
                       </button>
@@ -324,7 +335,7 @@ export default function SupportContactModal({
 
               {/* Subject Input with visual [Support] prefix badge */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center justify-between ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                   <span className="flex items-center gap-1.5">
                     <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
                     <span>Objet du Message</span>
@@ -343,14 +354,18 @@ export default function SupportContactModal({
                       setSubjectText(val);
                     }}
                     placeholder="Ex: Problème d'export de schéma, Question licence..."
-                    className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl pl-22 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+                    className={`w-full rounded-xl pl-22 pr-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
               </div>
 
               {/* Message Textarea */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center justify-between ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                   <span>Votre Message <span className="text-[#00E599]">*</span></span>
                   <span className="text-[10px] text-slate-500">
                     {message.length} caractères
@@ -362,7 +377,11 @@ export default function SupportContactModal({
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Décrivez votre question, le problème rencontré ou vos besoins en détail..."
-                  className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none transition resize-none leading-relaxed"
+                  className={`w-full rounded-xl p-3 text-xs focus:outline-none transition resize-none leading-relaxed border ${
+                    isModernSleek 
+                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                      : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                  }`}
                 />
               </div>
 
@@ -370,14 +389,14 @@ export default function SupportContactModal({
               {(userClub || userSport || userPlan) && (
                 <div className="text-[10px] text-slate-500 flex items-center gap-3 flex-wrap pt-0.5">
                   <span className="text-slate-400 font-semibold">Infos de session :</span>
-                  {userClub && <span>Club : <strong className="text-slate-300">{userClub}</strong></span>}
-                  {userSport && <span>Sport : <strong className="text-slate-300">{userSport.toUpperCase()}</strong></span>}
-                  {userPlan && <span>Offre : <strong className="text-slate-300">{userPlan.toUpperCase()}</strong></span>}
+                  {userClub && <span>Club : <strong className={isModernSleek ? "text-slate-800" : "text-slate-300"}>{userClub}</strong></span>}
+                  {userSport && <span>Sport : <strong className={isModernSleek ? "text-slate-800" : "text-slate-300"}>{userSport.toUpperCase()}</strong></span>}
+                  {userPlan && <span>Offre : <strong className={isModernSleek ? "text-slate-800" : "text-slate-300"}>{userPlan.toUpperCase()}</strong></span>}
                 </div>
               )}
 
               {/* ACTIONS */}
-              <div className="pt-2 flex items-center justify-between gap-3 border-t border-[#1f293d]">
+              <div className={`pt-2 flex items-center justify-between gap-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
                 <button
                   type="button"
                   onClick={onClose}

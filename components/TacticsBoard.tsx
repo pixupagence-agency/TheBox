@@ -5543,11 +5543,13 @@ export default function TacticsBoard({
       >
         <div
           id="substitution-modal-card"
-          className="w-full max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto bg-[#0d1117] border border-[#1f293d] rounded-2xl shadow-2xl p-4 sm:p-5 flex flex-col gap-3.5 text-slate-200 select-auto scrollbar-thin"
+          className={`w-full max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-4 sm:p-5 flex flex-col gap-3.5 select-auto scrollbar-thin border ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-slate-200"
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* EN-TÊTE MODALE */}
-          <div className="flex items-center justify-between border-b border-[#1f293d] pb-3">
+          <div className={`flex items-center justify-between border-b pb-3 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
             <div className="flex items-center gap-2.5">
               <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${
                 isOpponent ? "bg-rose-950/60 border-rose-600/40 text-rose-400" : "bg-[#102420] border-[#00e599]/40 text-[#00E599]"
@@ -5555,7 +5557,7 @@ export default function TacticsBoard({
                 <RefreshCw className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span>Effectuer un Remplacement</span>
                   <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${
                     isOpponent ? "bg-rose-950/80 text-rose-300 border-rose-700/60" : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
@@ -5563,7 +5565,7 @@ export default function TacticsBoard({
                     {teamTitle}
                   </span>
                 </h3>
-                <p className="text-[10.5px] text-slate-400">
+                <p className={`text-[10.5px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                   {isOpponent
                     ? "Sélectionnez un remplaçant sur le banc adverse pour entrer à la place de ce joueur"
                     : "Sélectionnez un remplaçant sur le banc pour entrer à la place de ce joueur"}
@@ -5573,7 +5575,9 @@ export default function TacticsBoard({
             <button
               id="btn-close-sub-modal"
               onClick={() => setSubPickerToken(null)}
-              className="p-1.5 bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white rounded-lg transition cursor-pointer"
+              className={`p-1.5 rounded-lg transition cursor-pointer ${
+                isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-600" : "bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white"
+              }`}
               title="Fermer"
             >
               <X className="w-4 h-4" />
@@ -9018,21 +9022,28 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {/* 4. STRIPE PREMIUM SUBSCRIPTION PLANS POPUP MODAL */}
       {/* ========================================================= */}
+      {/* ========================================================= */}
+      {/* 4. STRIPE PREMIUM SUBSCRIPTION PLANS POPUP MODAL */}
+      {/* ========================================================= */}
       {isCheckoutOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
-          <div className="bg-[#0d1117] border border-[#1f293d] max-w-4xl w-full rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden text-center">
+          <div className={`max-w-4xl w-full rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden text-center border ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
+          }`}>
             
             <button 
               onClick={() => setIsCheckoutOpen(false)}
-              className="absolute top-4 right-4 text-[#62728f] hover:text-white text-sm font-bold p-1 bg-[#1a2333]/40 rounded-full"
+              className={`absolute top-4 right-4 text-sm font-bold p-1 rounded-full transition ${
+                isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-[#62728f] hover:text-white bg-[#1a2333]/40"
+              }`}
             >
               ✕
             </button>
 
-            <h3 className="text-xl font-black text-white flex items-center justify-center gap-2">
+            <h3 className={`text-xl font-black flex items-center justify-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
               <span className="text-xl">🏆</span> ACTIVER LA LICENCE PRO COACH
             </h3>
-            <p className="text-xs text-[#62728f] max-w-md mx-auto mt-2">
+            <p className={`text-xs max-w-md mx-auto mt-2 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
               Débloquez l&apos;accès complet à toutes les fonctionnalités premium pour concevoir, exporter et imprimer vos schémas tactiques.
             </p>
 
@@ -9040,11 +9051,13 @@ export default function TacticsBoard({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 text-left">
               
               {/* Free Plan */}
-              <div className="bg-[#090d14] border border-[#1f293d] rounded-xl p-5 relative">
-                <span className="text-[8px] font-black uppercase text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full absolute top-4 right-4">Actif</span>
-                <h4 className="text-sm font-black text-white uppercase">DÉMO GRATUIT</h4>
-                <p className="text-xl font-black text-white mt-1">0 € <span className="text-xs text-[#62728f] font-normal">/ mois</span></p>
-                <ul className="text-[10px] text-slate-300 space-y-2 mt-4">
+              <div className={`border rounded-xl p-5 relative ${
+                isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1f293d] text-white"
+              }`}>
+                <span className="text-[8px] font-black uppercase text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full absolute top-4 right-4">Actif</span>
+                <h4 className={`text-sm font-black uppercase ${isModernSleek ? "text-slate-900" : "text-white"}`}>DÉMO GRATUIT</h4>
+                <p className={`text-xl font-black mt-1 ${isModernSleek ? "text-slate-900" : "text-white"}`}>0 € <span className="text-xs text-slate-500 font-normal">/ mois</span></p>
+                <ul className={`text-[10px] space-y-2 mt-4 ${isModernSleek ? "text-slate-600" : "text-slate-300"}`}>
                   <li className="flex items-center gap-1.5">✓ 1 Phase Tactique active</li>
                   <li className="flex items-center gap-1.5">✓ Tableau blanc de base</li>
                   <li className="flex items-center gap-1.5">✗ Exportations PDF / Images</li>
@@ -9053,12 +9066,14 @@ export default function TacticsBoard({
               </div>
 
               {/* Monthly Premium Plan (Best option) */}
-              <div className="bg-[#0a1b16] border-2 border-[#00E599] rounded-xl p-5 relative shadow-lg shadow-[#00e599]/5">
+              <div className={`border-2 border-[#00E599] rounded-xl p-5 relative shadow-lg ${
+                isModernSleek ? "bg-emerald-50/50" : "bg-[#0a1b16]"
+              }`}>
                 <span className="text-[8px] font-black uppercase text-[#0d1117] bg-[#00E599] px-2 py-0.5 rounded-full absolute top-4 right-4">POPULAIRE</span>
-                <h4 className="text-sm font-black text-[#00E599] uppercase">MENSUEL PRO</h4>
-                <p className="text-xl font-black text-white mt-1">9.99 € <span className="text-xs text-[#62728f] font-normal">/ mois</span></p>
-                <ul className="text-[10px] text-slate-200 space-y-2 mt-4">
-                  <li className="flex items-center gap-1.5 text-[#00E599]">✓ Phases d&apos;animations illimitées</li>
+                <h4 className="text-sm font-black text-emerald-700 dark:text-[#00E599] uppercase">MENSUEL PRO</h4>
+                <p className={`text-xl font-black mt-1 ${isModernSleek ? "text-slate-900" : "text-white"}`}>9.99 € <span className="text-xs text-slate-500 font-normal">/ mois</span></p>
+                <ul className={`text-[10px] space-y-2 mt-4 ${isModernSleek ? "text-slate-700" : "text-slate-200"}`}>
+                  <li className="flex items-center gap-1.5 text-emerald-700 font-bold">✓ Phases d&apos;animations illimitées</li>
                   <li className="flex items-center gap-1.5">✓ Exportations PDF & Images HD</li>
                   <li className="flex items-center gap-1.5">✓ Intelligence artificielle Coach IA</li>
                   <li className="flex items-center gap-1.5">✓ Sauvegardes de schémas illimitées</li>
@@ -9072,11 +9087,13 @@ export default function TacticsBoard({
               </div>
 
               {/* Annual Plan */}
-              <div className="bg-[#090d14] border border-[#1f293d] rounded-xl p-5">
-                <h4 className="text-sm font-black text-white uppercase">ANNUEL PRO</h4>
-                <p className="text-xl font-black text-white mt-1">79.99 € <span className="text-xs text-[#62728f] font-normal">/ an</span></p>
+              <div className={`border rounded-xl p-5 ${
+                isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1f293d] text-white"
+              }`}>
+                <h4 className={`text-sm font-black uppercase ${isModernSleek ? "text-slate-900" : "text-white"}`}>ANNUEL PRO</h4>
+                <p className={`text-xl font-black mt-1 ${isModernSleek ? "text-slate-900" : "text-white"}`}>79.99 € <span className="text-xs text-slate-500 font-normal">/ an</span></p>
                 <p className="text-[8px] text-[#00E599] font-bold mt-1 uppercase">ÉCONOMISEZ 30%</p>
-                <ul className="text-[10px] text-slate-300 space-y-2 mt-4">
+                <ul className={`text-[10px] space-y-2 mt-4 ${isModernSleek ? "text-slate-600" : "text-slate-300"}`}>
                   <li className="flex items-center gap-1.5">✓ Tout l&apos;accès PRO mensuel</li>
                   <li className="flex items-center gap-1.5">✓ Facturation annuelle unique</li>
                   <li className="flex items-center gap-1.5">✓ Support prioritaire 24/7</li>
@@ -9092,7 +9109,7 @@ export default function TacticsBoard({
 
             </div>
 
-            <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-[#62728f]">
+            <div className={`mt-6 flex items-center justify-center gap-2 text-[10px] ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
               <span>🔒 Paiement sécurisé par carte bancaire. Annulation en 1 clic possible à tout moment.</span>
             </div>
 
@@ -9105,14 +9122,18 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {isNotesExpanded && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
-          <div className="bg-[#0d1117] border border-[#1f293d] max-w-3xl w-full rounded-2xl p-6 shadow-2xl relative flex flex-col h-[70vh]">
-            <div className="flex items-center justify-between border-b border-[#1f293d] pb-3 mb-3">
-              <h3 className="text-sm font-black text-white uppercase flex items-center gap-2">
+          <div className={`max-w-3xl w-full rounded-2xl p-6 shadow-2xl relative flex flex-col h-[70vh] border ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 mb-3 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+              <h3 className={`text-sm font-black uppercase flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                 <span>📝</span> NOTES TACTIQUES COMPLETES
               </h3>
               <button 
                 onClick={() => setIsNotesExpanded(false)}
-                className="text-slate-400 hover:text-white font-bold p-1 hover:bg-[#1a2333] rounded"
+                className={`font-bold p-1 rounded transition ${
+                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                }`}
               >
                 Fermer
               </button>
@@ -9121,7 +9142,11 @@ export default function TacticsBoard({
               value={tacticalNotes}
               onChange={(e) => setTacticalNotes(e.target.value)}
               placeholder="Saisissez ici l'intégralité de vos consignes tactiques et physiques de match..."
-              className="flex-1 w-full bg-[#090d14] border border-[#1f293d] rounded-xl p-4 text-xs text-white placeholder-[#62728f] focus:outline-none focus:border-[#354563] resize-none font-medium leading-relaxed scrollbar-thin"
+              className={`flex-1 w-full rounded-xl p-4 text-xs focus:outline-none transition resize-none font-medium leading-relaxed scrollbar-thin border ${
+                isModernSleek 
+                  ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                  : "bg-[#090d14] border-[#1f293d] text-white placeholder-[#62728f] focus:border-[#354563]"
+              }`}
             />
           </div>
         </div>
@@ -9132,12 +9157,14 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {pendingGoalToken && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md">
-          <div className="bg-[#0d1117] border border-[#00E599]/60 max-w-md w-full rounded-2xl p-5 shadow-[0_0_30px_rgba(0,229,153,0.15)] relative flex flex-col text-white">
-            <div className="flex items-center justify-between border-b border-[#1f293d] pb-3 mb-4">
+          <div className={`max-w-md w-full rounded-2xl p-5 shadow-2xl relative flex flex-col border ${
+            isModernSleek ? "bg-white border-emerald-500 text-slate-900" : "bg-[#0d1117] border-[#00E599]/60 text-white"
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 mb-4 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <div className="flex items-center gap-2">
                 <span className="text-xl">⚽</span>
                 <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                  <h3 className={`text-sm font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                     NOUVEAU BUT !
                   </h3>
                   <p className="text-[10.5px] text-[#00E599] font-bold mt-0.5">
@@ -9148,14 +9175,16 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => setPendingGoalToken(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                className={`p-1 rounded-lg transition cursor-pointer ${
+                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-slate-800"
+                }`}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-3 mb-5">
-              <label className="text-xs font-black text-amber-400 uppercase tracking-wider block flex items-center gap-1.5">
+              <label className="text-xs font-black text-amber-500 uppercase tracking-wider block flex items-center gap-1.5">
                 <span>👟</span>
                 <span>Passeur décisif (Optionnel) :</span>
               </label>
@@ -9167,7 +9196,7 @@ export default function TacticsBoard({
                 className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
                   selectedPasseurName === ""
                     ? "bg-[#00E599]/20 border-[#00E599] text-[#00E599]"
-                    : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#1f293d]"
+                    : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#1f293d]"
                 }`}
               >
                 <span>🚫 Aucun (Action individuelle / Solo)</span>
@@ -9175,7 +9204,7 @@ export default function TacticsBoard({
               </button>
 
               {/* List of teammates on pitch and bench for this team */}
-              <div className="text-[10px] text-slate-400 font-bold uppercase mt-2 mb-1">
+              <div className={`text-[10px] font-bold uppercase mt-2 mb-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                 Coéquipiers de l&apos;équipe :
               </div>
               <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
@@ -9194,16 +9223,18 @@ export default function TacticsBoard({
                         onClick={() => setSelectedPasseurName(teammate.name)}
                         className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
                           isSelected
-                            ? "bg-[#00E599]/20 border-[#00E599] text-white shadow-sm"
-                            : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#131d2b]"
+                            ? "bg-[#00E599]/20 border-[#00E599] text-[#00E599] font-black shadow-sm"
+                            : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#131d2b]"
                         }`}
                       >
                         <div className="flex items-center gap-2 truncate">
-                          <span className="w-5 h-5 rounded-full bg-[#1f293d] text-[#00E599] font-black text-[9px] flex items-center justify-center shrink-0">
+                          <span className={`w-5 h-5 rounded-full font-black text-[9px] flex items-center justify-center shrink-0 ${
+                            isModernSleek ? "bg-slate-200 text-slate-800" : "bg-[#1f293d] text-[#00E599]"
+                          }`}>
                             {teammate.number || "?"}
                           </span>
                           <span className="truncate">{teammate.name}</span>
-                          <span className="text-[9px] text-slate-500 font-normal shrink-0">({teammate.role || "Joueur"})</span>
+                          <span className={`text-[9px] font-normal shrink-0 ${isModernSleek ? "text-slate-500" : "text-slate-500"}`}>({teammate.role || "Joueur"})</span>
                         </div>
                         {isSelected && <CheckCircle className="w-4 h-4 text-[#00E599] shrink-0" />}
                       </button>
@@ -9213,11 +9244,13 @@ export default function TacticsBoard({
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center gap-2 pt-3 border-t border-[#1f293d]">
+            <div className={`flex items-center gap-2 pt-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <button
                 type="button"
                 onClick={() => setPendingGoalToken(null)}
-                className="flex-1 py-2.5 px-3 bg-[#111827] hover:bg-[#1f293d] border border-[#1f293d] text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+                className={`flex-1 py-2.5 px-3 border font-bold text-xs rounded-xl transition cursor-pointer ${
+                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700" : "bg-[#111827] hover:bg-[#1f293d] border-[#1f293d] text-slate-300"
+                }`}
               >
                 Annuler
               </button>
@@ -9238,18 +9271,26 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {isMatchEditOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-sm">
-          <div className="bg-[#0d1117] border border-[#1f293d] max-w-2xl w-full rounded-2xl p-4 sm:p-6 shadow-2xl relative max-h-[90vh] flex flex-col text-white">
+          <div className={`border max-w-2xl w-full rounded-2xl p-4 sm:p-6 shadow-2xl relative max-h-[90vh] flex flex-col ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
+          }`}>
             
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#1f293d] pb-3 mb-4 shrink-0">
+            <div className={`flex items-center justify-between border-b pb-3 mb-4 shrink-0 ${
+              isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+            }`}>
               <div>
-                <h3 className="text-xs sm:text-sm font-black text-white uppercase flex items-center gap-2">
+                <h3 className={`text-xs sm:text-sm font-black uppercase flex items-center gap-2 ${
+                  isModernSleek ? "text-slate-900" : "text-white"
+                }`}>
                   <span>📋 GESTION DES MATCHS DU CLUB</span>
                   <span className="text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
                     <Award className="w-2.5 h-2.5" /> PRO
                   </span>
                 </h3>
-                <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                <p className={`text-[10px] font-medium mt-0.5 ${
+                  isModernSleek ? "text-slate-500" : "text-slate-400"
+                }`}>
                   Consultez, modifiez, supprimez ou créez vos matchs enregistrés ({matchesList.length})
                 </p>
               </div>
@@ -9269,7 +9310,9 @@ export default function TacticsBoard({
                 </button>
                 <button
                   onClick={() => setIsMatchEditOpen(false)}
-                  className="p-1.5 rounded-lg bg-[#162235] hover:bg-[#233350] text-slate-300 hover:text-white transition cursor-pointer"
+                  className={`p-1.5 rounded-lg transition cursor-pointer ${
+                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#162235] hover:bg-[#233350] text-slate-300 hover:text-white"
+                  }`}
                   title="Fermer"
                 >
                   ✕
@@ -9280,20 +9323,28 @@ export default function TacticsBoard({
             {/* Filters Bar: Search & Team filter */}
             <div className="flex flex-col sm:flex-row items-center gap-2 mb-4 shrink-0">
               <div className="relative flex-1 w-full">
-                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                <Search className={`absolute left-3 top-2.5 h-3.5 w-3.5 ${isModernSleek ? "text-slate-400" : "text-slate-500"}`} />
                 <input
                   type="text"
                   placeholder="Rechercher un match, un adversaire ou une compétition..."
                   value={matchSearchQuery}
                   onChange={(e) => setMatchSearchQuery(e.target.value)}
-                  className="w-full bg-[#090d14] border border-[#1f293d] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00E599]"
+                  className={`w-full rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none transition border ${
+                    isModernSleek
+                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500"
+                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
+                  }`}
                 />
               </div>
 
               <select
                 value={matchTeamFilter}
                 onChange={(e) => setMatchTeamFilter(e.target.value)}
-                className="w-full sm:w-auto bg-[#090d14] border border-[#1f293d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                className={`w-full sm:w-auto rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                  isModernSleek
+                    ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500 font-bold"
+                    : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                }`}
               >
                 <option value="all">🛡️ Toutes les Équipes du Club</option>
                 {teams.map((t) => (
@@ -9322,7 +9373,9 @@ export default function TacticsBoard({
 
                 if (filtered.length === 0) {
                   return (
-                    <div className="border border-dashed border-[#1f293d] rounded-2xl p-8 text-center text-slate-400">
+                    <div className={`border border-dashed rounded-2xl p-8 text-center ${
+                      isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-slate-400"
+                    }`}>
                       <p className="text-xs font-bold uppercase tracking-wider mb-2">AUCUN MATCH TROUVÉ</p>
                       <button
                         type="button"
@@ -9350,12 +9403,18 @@ export default function TacticsBoard({
                       key={m.id}
                       className={`border rounded-2xl p-3.5 transition ${
                         isActive
-                          ? "border-[#00E599] bg-[#0c1a17] shadow-lg shadow-[#00e599]/10"
-                          : "border-[#1f293d] bg-[#090d14] hover:border-[#354563]"
+                          ? isModernSleek 
+                            ? "border-emerald-500 bg-emerald-50/70 text-slate-900 shadow-md"
+                            : "border-[#00E599] bg-[#0c1a17] shadow-lg shadow-[#00e599]/10"
+                          : isModernSleek
+                            ? "border-slate-200 bg-slate-50 hover:border-slate-300 text-slate-900"
+                            : "border-[#1f293d] bg-[#090d14] hover:border-[#354563] text-white"
                       }`}
                     >
                       {/* Match Card Row */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1f293d]/60 pb-2.5">
+                      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2.5 ${
+                        isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"
+                      }`}>
                         <div className="flex items-center gap-2 flex-wrap">
                           {/* Active badge */}
                           {isActive ? (
@@ -9365,7 +9424,9 @@ export default function TacticsBoard({
                           ) : (
                             <button
                               onClick={() => selectMatch(m.id)}
-                              className="text-[8px] bg-[#162235] hover:bg-[#233350] text-slate-300 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider transition cursor-pointer border border-[#2e3d5b]"
+                              className={`text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider transition cursor-pointer border ${
+                                isModernSleek ? "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300" : "bg-[#162235] hover:bg-[#233350] text-slate-300 border-[#2e3d5b]"
+                              }`}
                             >
                               ▶️ Activer sur le terrain
                             </button>
@@ -9383,7 +9444,9 @@ export default function TacticsBoard({
                           )}
 
                           {/* Team badge */}
-                          <span className="text-[8px] bg-[#131d2b] text-slate-300 font-bold px-2 py-0.5 rounded-full border border-[#1f293d] uppercase">
+                          <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full border uppercase ${
+                            isModernSleek ? "bg-slate-200 text-slate-700 border-slate-300" : "bg-[#131d2b] text-slate-300 border-[#1f293d]"
+                          }`}>
                             🛡️ {mTeam?.name || "Équipe"}
                           </span>
                         </div>
@@ -9394,8 +9457,10 @@ export default function TacticsBoard({
                             onClick={() => setEditingMatchId(isEditing ? null : m.id)}
                             className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer border ${
                               isEditing
-                                ? "bg-amber-400 text-slate-950 border-amber-400"
-                                : "bg-[#131d2b] hover:bg-[#1f2b40] text-slate-200 border-[#1f293d]"
+                                ? "bg-amber-400 text-slate-950 border-amber-400 font-black"
+                                : isModernSleek
+                                  ? "bg-slate-200 hover:bg-slate-300 text-slate-800 border-slate-300"
+                                  : "bg-[#131d2b] hover:bg-[#1f2b40] text-slate-200 border-[#1f293d]"
                             }`}
                             title={isEditing ? "Fermer l'édition" : "Modifier les détails"}
                           >
@@ -9418,19 +9483,25 @@ export default function TacticsBoard({
                       {!isEditing ? (
                         <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div>
-                            <h4 className="text-xs font-black text-white uppercase tracking-wide flex items-center gap-2">
+                            <h4 className={`text-xs font-black uppercase tracking-wide flex items-center gap-2 ${
+                              isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                               <span>⚽ {m.homeTeam}</span>
                               <span className="text-[#00E599] font-mono">VS</span>
                               <span>{m.awayTeam}</span>
                             </h4>
-                            <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                            <p className={`text-[10px] font-medium mt-0.5 ${
+                              isModernSleek ? "text-slate-500" : "text-slate-400"
+                            }`}>
                               🏆 {m.competition} • 📅 {m.dateTime}
                             </p>
                           </div>
 
                           {m.score && (
                             <div className="text-right shrink-0">
-                              <span className="text-xs font-mono font-black text-[#00E599] bg-black/60 px-2 py-1 rounded-lg border border-[#1f293d]">
+                              <span className={`text-xs font-mono font-black border px-2 py-1 rounded-lg ${
+                                isModernSleek ? "bg-slate-100 text-emerald-700 border-slate-200" : "text-[#00E599] bg-black/60 border-[#1f293d]"
+                              }`}>
                                 Score : {m.score}
                               </span>
                             </div>
@@ -9438,18 +9509,26 @@ export default function TacticsBoard({
                         </div>
                       ) : (
                         /* Inline Edit Form */
-                        <div className="mt-3 p-3 bg-[#05080e] rounded-xl border border-[#1f293d] space-y-3">
-                          <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider block border-b border-[#1f293d] pb-1">
+                        <div className={`mt-3 p-3 rounded-xl border space-y-3 ${
+                          isModernSleek ? "bg-slate-100 border-slate-300 text-slate-900" : "bg-[#05080e] border-[#1f293d] text-white"
+                        }`}>
+                          <span className={`text-[10px] font-black uppercase tracking-wider block border-b pb-1 ${
+                            isModernSleek ? "text-amber-700 border-slate-300" : "text-amber-400 border-[#1f293d]"
+                          }`}>
                             ✏️ MODIFIER LE MATCH : {m.homeTeam} VS {m.awayTeam}
                           </span>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
-                              <label className="block text-[9.5px] text-slate-400 font-black uppercase mb-1">Équipe Concernée</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
+                                isModernSleek ? "text-slate-700" : "text-slate-400"
+                              }`}>Équipe Concernée</label>
                               <select
                                 value={m.teamId || activeTeamId || "team_1"}
                                 onChange={(e) => updateMatchById(m.id, "teamId", e.target.value)}
-                                className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
+                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                }`}
                               >
                                 {teams.map((t) => (
                                   <option key={t.id} value={t.id}>
@@ -9461,7 +9540,9 @@ export default function TacticsBoard({
 
                             {/* Type de Compétition */}
                             <div>
-                              <label className="block text-[9.5px] text-slate-400 font-black uppercase mb-1">Type de Compétition</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
+                                isModernSleek ? "text-slate-700" : "text-slate-400"
+                              }`}>Type de Compétition</label>
                               <select
                                 value={
                                   ["CHAMPIONNAT", "COUPE", "AMICAL"].includes(m.competitionType || m.competition?.toUpperCase() || "")
@@ -9475,7 +9556,9 @@ export default function TacticsBoard({
                                     updateMatchById(m.id, "competition", val);
                                   }
                                 }}
-                                className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
+                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                }`}
                               >
                                 <option value="CHAMPIONNAT">🏆 CHAMPIONNAT</option>
                                 <option value="COUPE">🏆 COUPE</option>
@@ -9485,68 +9568,92 @@ export default function TacticsBoard({
 
                             {/* Équipe Domicile */}
                             <div>
-                              <label className="block text-[9.5px] text-slate-400 font-black uppercase mb-1">Équipe Domicile</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
+                                isModernSleek ? "text-slate-700" : "text-slate-400"
+                              }`}>Équipe Domicile</label>
                               <input
                                 type="text"
                                 value={m.homeTeam || ""}
                                 onChange={(e) => updateMatchById(m.id, "homeTeam", e.target.value)}
-                                className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
+                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                }`}
                               />
                             </div>
 
                             {/* Équipe Extérieure */}
                             <div>
-                              <label className="block text-[9.5px] text-slate-400 font-black uppercase mb-1">Équipe Extérieure</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
+                                isModernSleek ? "text-slate-700" : "text-slate-400"
+                              }`}>Équipe Extérieure</label>
                               <input
                                 type="text"
                                 value={m.awayTeam || ""}
                                 onChange={(e) => updateMatchById(m.id, "awayTeam", e.target.value)}
-                                className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
+                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                }`}
                               />
                             </div>
 
                             {/* Nom Précis / Poule de la Compétition */}
                             <div className="sm:col-span-2">
-                              <label className="block text-[9.5px] text-slate-400 font-black uppercase mb-1">Nom / Niveau de la Compétition (Optionnel)</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
+                                isModernSleek ? "text-slate-700" : "text-slate-400"
+                              }`}>Nom / Niveau de la Compétition (Optionnel)</label>
                               <input
                                 type="text"
                                 value={m.competition || ""}
                                 onChange={(e) => updateMatchById(m.id, "competition", e.target.value)}
-                                className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
+                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
+                                }`}
                                 placeholder="ex: Championnat Régional 1, Coupe de France, Match Amical..."
                               />
                             </div>
 
                             {/* Date du Match */}
                             <div>
-                              <label className="block text-[9.5px] text-slate-400 font-black uppercase mb-1">📅 Date du Match</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
+                                isModernSleek ? "text-slate-700" : "text-slate-400"
+                              }`}>📅 Date du Match</label>
                               <input
                                 type="date"
                                 value={m.date || ""}
                                 onChange={(e) => updateMatchById(m.id, "date", e.target.value)}
-                                className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
+                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                }`}
                               />
                             </div>
 
                             {/* Heure du Match */}
                             <div>
-                              <label className="block text-[9.5px] text-slate-400 font-black uppercase mb-1">⏰ Heure du Match</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
+                                isModernSleek ? "text-slate-700" : "text-slate-400"
+                              }`}>⏰ Heure du Match</label>
                               <input
                                 type="time"
                                 value={m.time || "15:00"}
                                 onChange={(e) => updateMatchById(m.id, "time", e.target.value)}
-                                className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
+                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                }`}
                               />
                             </div>
 
                             {/* Score (Facultatif) */}
                             <div className="sm:col-span-2">
-                              <label className="block text-[9.5px] text-slate-400 font-black uppercase mb-1">Score Final (si le match est déjà terminé)</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
+                                isModernSleek ? "text-slate-700" : "text-slate-400"
+                              }`}>Score Final (si le match est déjà terminé)</label>
                               <input
                                 type="text"
                                 value={m.score || ""}
                                 onChange={(e) => updateMatchById(m.id, "score", e.target.value)}
-                                className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
+                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
+                                }`}
                                 placeholder="ex: 2 - 1"
                               />
                             </div>
@@ -9569,10 +9676,14 @@ export default function TacticsBoard({
             </div>
 
             {/* Modal Footer */}
-            <div className="pt-3 border-t border-[#1f293d] mt-3 flex justify-end shrink-0">
+            <div className={`pt-3 border-t mt-3 flex justify-end shrink-0 ${
+              isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+            }`}>
               <button
                 onClick={() => setIsMatchEditOpen(false)}
-                className="px-5 py-2 bg-[#162235] hover:bg-[#233350] text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer"
+                className={`px-5 py-2 font-bold rounded-xl text-xs transition cursor-pointer ${
+                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-[#162235] hover:bg-[#233350] text-slate-300"
+                }`}
               >
                 Fermer
               </button>
@@ -9586,20 +9697,30 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {isMatchFinishedModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-md">
-          <div ref={matchFinishedModalRef} className="bg-[#0d1117] border-2 border-emerald-500/80 max-w-lg w-full rounded-3xl p-6 shadow-2xl relative overflow-hidden text-white">
+          <div ref={matchFinishedModalRef} className={`border-2 border-emerald-500 max-w-lg w-full rounded-3xl p-6 shadow-2xl relative overflow-hidden ${
+            isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"
+          }`}>
             {/* Header / Banner */}
-            <div className="bg-gradient-to-r from-emerald-950 via-[#0d1117] to-emerald-950 -mx-6 -mt-6 p-5 border-b border-emerald-500/30 text-center relative mb-5">
+            <div className={`-mx-6 -mt-6 p-5 border-b text-center relative mb-5 ${
+              isModernSleek 
+                ? "bg-gradient-to-r from-emerald-100 via-white to-emerald-100 border-emerald-200 text-slate-900" 
+                : "bg-gradient-to-r from-emerald-950 via-[#0d1117] to-emerald-950 border-emerald-500/30 text-white"
+            }`}>
               <span className="text-2xl mb-1 block">🏆</span>
               <h3 className="text-sm sm:text-base font-black uppercase text-[#00E599] tracking-wider">
                 MATCH TERMINÉ — SCORE FINAL
               </h3>
-              <p className="text-[11px] text-slate-300 font-medium mt-0.5">
+              <p className={`text-[11px] font-medium mt-0.5 ${
+                isModernSleek ? "text-slate-600" : "text-slate-300"
+              }`}>
                 {activeMatch.competition} • {activeMatch.dateTime}
               </p>
               {!isExportingModalScreen && (
                 <button
                   onClick={() => setIsMatchFinishedModalOpen(false)}
-                  className="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
+                  className={`absolute top-3 right-3 p-1 rounded-lg transition cursor-pointer ${
+                    isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-white/10"
+                  }`}
                 >
                   ✕
                 </button>
@@ -9607,11 +9728,17 @@ export default function TacticsBoard({
             </div>
 
             {/* Big Score Box */}
-            <div className="bg-gradient-to-b from-[#131d2b] to-[#0a0f18] border border-emerald-500/40 rounded-2xl p-4 text-center mb-5 shadow-lg relative">
+            <div className={`border rounded-2xl p-4 text-center mb-5 shadow-lg relative ${
+              isModernSleek
+                ? "bg-gradient-to-b from-emerald-50/60 to-slate-50 border-emerald-300 text-slate-900"
+                : "bg-gradient-to-b from-[#131d2b] to-[#0a0f18] border-emerald-500/40 text-white"
+            }`}>
               <div className="flex items-center justify-around gap-2">
                 <div className="flex flex-col items-center flex-1">
                   <span className="text-xl mb-1">🛡️</span>
-                  <span className="text-xs font-black uppercase text-white truncate max-w-[100px]">
+                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${
+                    isModernSleek ? "text-slate-900" : "text-white"
+                  }`}>
                     {activeMatch.homeTeam}
                   </span>
                   <span className="text-3xl font-black font-mono text-[#00E599] mt-1">
@@ -9623,17 +9750,19 @@ export default function TacticsBoard({
                   <span className="text-[10px] font-black uppercase bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full shadow-md">
                     TERMINÉ
                   </span>
-                  <span className="text-xs font-mono font-bold text-amber-400 mt-2 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30">
+                  <span className="text-xs font-mono font-bold text-amber-500 mt-2 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30">
                     ⏱️ {formatLiveTime(liveTimerSeconds)}
                   </span>
                 </div>
 
                 <div className="flex flex-col items-center flex-1">
                   <span className="text-xl mb-1">🛡️</span>
-                  <span className="text-xs font-black uppercase text-white truncate max-w-[100px]">
+                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${
+                    isModernSleek ? "text-slate-900" : "text-white"
+                  }`}>
                     {activeMatch.awayTeam}
                   </span>
-                  <span className="text-3xl font-black font-mono text-rose-400 mt-1">
+                  <span className="text-3xl font-black font-mono text-rose-500 mt-1">
                     {awayScore}
                   </span>
                 </div>
@@ -9646,14 +9775,20 @@ export default function TacticsBoard({
                 <span className="text-[10px] font-black text-[#00E599] uppercase tracking-wider block mb-1.5">
                   HISTORIQUE DES ÉVÉNEMENTS DU MATCH ({matchEvents.filter((evt) => evt.type !== "assist").length})
                 </span>
-                <div className="bg-[#080d14] p-2 rounded-xl border border-[#1f293d] max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin">
+                <div className={`p-2 rounded-xl border max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin ${
+                  isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#080d14] border-[#1f293d]"
+                }`}>
                   {matchEvents
                     .filter((evt) => evt.type !== "assist")
                     .map((evt) => (
-                      <div key={evt.id} className="text-xs font-bold flex items-center justify-between text-slate-200 bg-[#0f172a] px-2.5 py-1.5 rounded-lg border border-[#1f293d]">
+                      <div key={evt.id} className={`text-xs font-bold flex items-center justify-between px-2.5 py-1.5 rounded-lg border ${
+                        isModernSleek ? "text-slate-800 bg-white border-slate-200" : "text-slate-200 bg-[#0f172a] border-[#1f293d]"
+                      }`}>
                         <span className="flex items-center gap-2 truncate">
                           <span>{evt.type === "goal" ? "⚽" : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}</span>
-                          <span className="text-white font-extrabold flex items-center gap-1">
+                          <span className={`font-extrabold flex items-center gap-1 ${
+                            isModernSleek ? "text-slate-900" : "text-white"
+                          }`}>
                             {evt.player}
                             {evt.type === "goal" && evt.assister ? (
                               <span className="text-[#00E599] font-bold text-xs">
@@ -9661,9 +9796,9 @@ export default function TacticsBoard({
                               </span>
                             ) : null}
                           </span>
-                          {evt.type !== "goal" && <span className="text-slate-400 font-normal text-[10px]">({evt.note})</span>}
+                          {evt.type !== "goal" && <span className="text-slate-500 font-normal text-[10px]">({evt.note})</span>}
                         </span>
-                        <span className="text-amber-400 font-mono text-[10px] font-black shrink-0 ml-2">
+                        <span className="text-amber-500 font-mono text-[10px] font-black shrink-0 ml-2">
                           {evt.period ? `${evt.period} • ${evt.time}` : evt.time}
                         </span>
                       </div>
@@ -9674,7 +9809,9 @@ export default function TacticsBoard({
 
             {/* Buttons / Actions */}
             {!isExportingModalScreen && (
-              <div className="flex flex-col sm:flex-row items-center gap-2 pt-2 border-t border-[#1f293d]">
+              <div className={`flex flex-col sm:flex-row items-center gap-2 pt-2 border-t ${
+                isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+              }`}>
                 <button
                   onClick={handleShareMatchWhatsApp}
                   className="w-full sm:flex-1 py-2.5 px-3 bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 font-black text-xs rounded-xl transition cursor-pointer shadow-lg shadow-emerald-500/20 text-center flex items-center justify-center gap-1.5"
@@ -9686,7 +9823,11 @@ export default function TacticsBoard({
 
                 <button
                   onClick={handleExportModalWindowImage}
-                  className="w-full sm:flex-1 py-2.5 px-3 bg-[#131d2b] hover:bg-[#1c2c40] border border-[#00E599]/40 text-[#00E599] font-bold text-xs rounded-xl transition cursor-pointer text-center flex items-center justify-center gap-1.5"
+                  className={`w-full sm:flex-1 py-2.5 px-3 border font-bold text-xs rounded-xl transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                    isModernSleek
+                      ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
+                      : "bg-[#131d2b] hover:bg-[#1c2c40] border-[#00E599]/40 text-[#00E599]"
+                  }`}
                   title="Exporter une capture image PNG exacte de cette fenêtre"
                 >
                   <Camera className="w-3.5 h-3.5" />
@@ -9698,7 +9839,9 @@ export default function TacticsBoard({
                     setIsMatchFinishedModalOpen(false);
                     setIsLiveMatchMode(false);
                   }}
-                  className="w-full sm:w-auto py-2.5 px-4 bg-[#182338] hover:bg-[#233350] text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer text-center"
+                  className={`w-full sm:w-auto py-2.5 px-4 font-bold text-xs rounded-xl transition cursor-pointer text-center ${
+                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-[#182338] hover:bg-[#233350] text-slate-300"
+                  }`}
                 >
                   Fermer
                 </button>
@@ -9710,35 +9853,41 @@ export default function TacticsBoard({
       {isSaveModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
           <div className={`max-w-md w-full rounded-2xl p-6 shadow-2xl relative border ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"}`}>
-            <h3 className={`text-sm font-black ${isSaveAnimationMode ? "text-purple-300" : "text-white"} uppercase mb-2 flex items-center gap-2`}>
+            <h3 className={`text-sm font-black uppercase mb-2 flex items-center gap-2 ${
+              isSaveAnimationMode ? "text-purple-500" : isModernSleek ? "text-slate-900" : "text-white"
+            }`}>
               <span>{isSaveAnimationMode ? "🎬" : "📖"}</span>
               <span>{isSaveAnimationMode ? "ENREGISTRER CETTE ANIMATION" : "SAUVEGARDER CE SCHÉMA"}</span>
             </h3>
-            <p className="text-[10px] text-[#62728f] mb-4">
+            <p className={`text-[10px] mb-4 ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
               {isSaveAnimationMode
                 ? "Enregistrez les séquences de mouvements de vos joueurs dans la liste de schémas d'équipe."
                 : "Enregistrez l'emplacement des jetons et vos dessins dans votre bibliothèque de jeu de référence."}
             </p>
 
             {saveSuccess ? (
-              <div className="p-4 bg-[#102420] border border-[#00e599]/20 rounded-xl flex items-center gap-2 text-xs text-[#00E599]">
+              <div className={`p-4 border rounded-xl flex items-center gap-2 text-xs font-bold ${
+                isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00e599]/20 text-[#00E599]"
+              }`}>
                 <CheckCircle className="h-4 w-4" />
                 <span>{isSaveAnimationMode ? "Animation enregistrée avec succès !" : "Schéma tactique sauvegardé avec succès !"}</span>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] text-[#62728f] font-black uppercase mb-1">Nom du Schéma</label>
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>Nom du Schéma</label>
                   <input
                     type="text"
                     value={tacticName}
                     onChange={(e) => setTacticName(e.target.value)}
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[#62728f] font-black uppercase mb-1 flex items-center justify-between">
+                  <label className={`block text-[10px] font-black uppercase mb-1 flex items-center justify-between ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
                     <span>Match Associé au Schéma</span>
                     <span className="text-[9px] text-[#00E599] font-bold">
                       🎯 Rattaché au match
@@ -9748,7 +9897,9 @@ export default function TacticsBoard({
                     <select
                       value={saveTacticMatchId || activeMatchId}
                       onChange={(e) => setSaveTacticMatchId(e.target.value)}
-                      className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                      className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
+                        isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                      }`}
                     >
                       {matchesList.map((m) => (
                         <option key={m.id} value={m.id}>
@@ -9757,12 +9908,14 @@ export default function TacticsBoard({
                       ))}
                     </select>
                   ) : (
-                    <div className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2.5 text-xs text-white flex items-center justify-between">
+                    <div className={`w-full rounded-lg px-3 py-2.5 text-xs flex items-center justify-between border ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 font-bold" : "bg-[#090d14] border-[#1f293d] text-white"
+                    }`}>
                       <span className="font-bold flex items-center gap-2">
                         <span>⚽</span>
                         <span>{activeMatch ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}` : "Match en cours"}</span>
                       </span>
-                      <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-black">
+                      <span className="text-[10px] text-emerald-600 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded font-black">
                         {activeMatch?.competition || "Match"}
                       </span>
                     </div>
@@ -9770,19 +9923,23 @@ export default function TacticsBoard({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[#62728f] font-black uppercase mb-1">Description (Optionnelle)</label>
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>Description (Optionnelle)</label>
                   <textarea
                     value={tacticDesc}
                     onChange={(e) => setTacticDesc(e.target.value)}
                     placeholder="Consignes, objectifs, etc..."
-                    className="w-full h-24 bg-[#090d14] border border-[#1f293d] rounded-lg p-3 text-xs text-white focus:outline-none focus:border-[#00E599] resize-none"
+                    className={`w-full h-24 rounded-lg p-3 text-xs focus:outline-none resize-none transition border font-medium ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white placeholder-[#62728f] focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     onClick={() => setIsSaveModalOpen(false)}
-                    className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-700 transition"
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition border ${
+                      isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    }`}
                   >
                     Annuler
                   </button>
@@ -9803,21 +9960,23 @@ export default function TacticsBoard({
       {isMultiTeamModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
           <div className={`max-w-xl w-full rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto border ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"}`}>
-            <div className="flex items-center justify-between mb-4 border-b border-[#1f293d] pb-3">
+            <div className={`flex items-center justify-between mb-4 border-b pb-3 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <div>
-                <h3 className="text-sm font-black text-white uppercase flex items-center gap-2">
+                <h3 className={`text-sm font-black uppercase flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span>🛡️</span> GESTION MULTI-ÉQUIPES & SCHÉMAS TACTIQUES
                   <span className="text-[9px] bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase">
                     FONCTION PRO
                   </span>
                 </h3>
-                <p className="text-[10px] text-[#62728f] mt-0.5">
+                <p className={`text-[10px] mt-0.5 ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
                   Gérez les schémas tactiques de vos différentes équipes ({displayClubTitle}) et basculez en un clic.
                 </p>
               </div>
               <button
                 onClick={() => setIsMultiTeamModalOpen(false)}
-                className="p-1.5 bg-[#162032] hover:bg-[#22304a] text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
+                className={`p-1.5 rounded-lg transition cursor-pointer ${
+                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#162032] hover:bg-[#22304a] text-slate-400 hover:text-white"
+                }`}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -9825,7 +9984,7 @@ export default function TacticsBoard({
 
             {/* TEAM CARDS LIST */}
             <div className="space-y-3 mb-6">
-              <label className="block text-[10px] text-slate-400 font-black uppercase tracking-wider">
+              <label className={`block text-[10px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-700" : "text-slate-400"}`}>
                 Équipes Enregistrées ({teams.length}) :
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -9841,8 +10000,12 @@ export default function TacticsBoard({
                       onClick={() => handleSelectTeam(team.id)}
                       className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
                         isActive
-                          ? "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-white shadow-lg shadow-[#00E599]/10"
-                          : "bg-[#090d14] border-[#1f293d] hover:border-slate-600 text-slate-300"
+                          ? isModernSleek
+                            ? "bg-emerald-50 border-emerald-500 text-slate-900 shadow-md"
+                            : "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-white shadow-lg shadow-[#00E599]/10"
+                          : isModernSleek
+                            ? "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-800"
+                            : "bg-[#090d14] border-[#1f293d] hover:border-slate-600 text-slate-300"
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -9850,7 +10013,7 @@ export default function TacticsBoard({
                           <span className="text-base">🛡️</span>
                           <div>
                             <p className="text-xs font-black truncate max-w-[140px]">{team.name}</p>
-                            <p className="text-[9px] text-slate-400 font-bold mt-0.5 uppercase">{team.category}</p>
+                            <p className={`text-[9px] font-bold mt-0.5 uppercase ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>{team.category}</p>
                           </div>
                         </div>
                         {isActive ? (
@@ -9864,7 +10027,7 @@ export default function TacticsBoard({
                                 e.stopPropagation();
                                 handleDeleteTeam(team.id);
                               }}
-                              className="p-1 text-slate-500 hover:text-rose-400 transition"
+                              className="p-1 text-slate-400 hover:text-rose-500 transition cursor-pointer"
                               title="Supprimer cette équipe"
                             >
                               <Trash className="w-3.5 h-3.5" />
@@ -9873,9 +10036,11 @@ export default function TacticsBoard({
                         )}
                       </div>
 
-                      <div className="mt-3 pt-2 border-t border-[#1a2333] flex items-center justify-between text-[10px]">
-                        <span className="text-slate-400 font-bold">📖 {tacticCount} Schéma(s)</span>
-                        <span className={isActive ? "text-[#00E599] font-black" : "text-amber-400 font-bold"}>
+                      <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[10px] ${
+                        isModernSleek ? "border-slate-200" : "border-[#1a2333]"
+                      }`}>
+                        <span className={`font-bold ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>📖 {tacticCount} Schéma(s)</span>
+                        <span className={isActive ? "text-[#00E599] font-black" : "text-amber-500 font-bold"}>
                           {isActive ? "Sélectionnée" : "Basculez ➔"}
                         </span>
                       </div>
@@ -9886,8 +10051,10 @@ export default function TacticsBoard({
             </div>
 
             {/* CREATE NEW TEAM FORM */}
-            <form onSubmit={handleCreateNewTeam} className="bg-[#121926] border border-[#1f293d] rounded-xl p-4 space-y-3">
-              <label className="block text-[10px] text-amber-300 font-black uppercase tracking-wider flex items-center gap-1.5">
+            <form onSubmit={handleCreateNewTeam} className={`border rounded-xl p-4 space-y-3 ${
+              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#121926] border-[#1f293d] text-white"
+            }`}>
+              <label className="block text-[10px] text-amber-500 font-black uppercase tracking-wider flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5 text-[#00E599]" />
                 <span>Créer une nouvelle équipe (Séniors, U19, Féminines...)</span>
               </label>
@@ -9898,13 +10065,17 @@ export default function TacticsBoard({
                   placeholder="Ex: U17 National, Séniors C, Équipe 1..."
                   value={newTeamName}
                   onChange={(e) => setNewTeamName(e.target.value)}
-                  className="bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599]"
+                  className={`border rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold ${
+                    isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                  }`}
                 />
 
                 <select
                   value={newTeamCategory}
                   onChange={(e) => setNewTeamCategory(e.target.value)}
-                  className="bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-[#00E599]"
+                  className={`border rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold ${
+                    isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-slate-300 focus:border-[#00E599]"
+                  }`}
                 >
                   <option value="Séniors">Séniors</option>
                   <option value="Jeunes / U19">Jeunes / U19 / U17</option>
@@ -9928,30 +10099,34 @@ export default function TacticsBoard({
       {/* MULTI-TEAM PRO UPGRADE PROMPT MODAL */}
       {isMultiTeamUpgradeModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
-          <div className="bg-[#0d1117] border border-amber-500/50 max-w-lg w-full rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+          <div className={`border max-w-lg w-full rounded-2xl p-6 shadow-2xl relative overflow-hidden ${
+            isModernSleek ? "bg-white border-amber-500 text-slate-900" : "bg-[#0d1117] border-amber-500/50 text-white"
+          }`}>
             {/* Background ambient glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="flex items-start gap-4 mb-4 relative z-10">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500/30 to-amber-400/20 border border-amber-500/50 flex items-center justify-center text-2xl shrink-0 text-amber-300 shadow-lg">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500/30 to-amber-400/20 border border-amber-500/50 flex items-center justify-center text-2xl shrink-0 text-amber-500 shadow-lg">
                 🔒
               </div>
               <div>
                 <span className="text-[9px] bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1 w-fit mb-1">
                   <Award className="w-3 h-3" /> EXCLUSIVITÉ ABONNÉS PRO & CLUB ÉLITE
                 </span>
-                <h3 className="text-base font-black text-white uppercase leading-snug">
+                <h3 className={`text-base font-black uppercase leading-snug ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   Gestion Multi-Équipes des Schémas Tactiques
                 </h3>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  En formule <strong className="text-white">Gratuite</strong>, votre compte est limité à la gestion des schémas tactiques pour <strong className="text-amber-300">1 seule équipe</strong>.
+                <p className={`text-xs mt-1 leading-relaxed ${isModernSleek ? "text-slate-600" : "text-slate-300"}`}>
+                  En formule <strong className={isModernSleek ? "text-slate-900" : "text-white"}>Gratuite</strong>, votre compte est limité à la gestion des schémas tactiques pour <strong className="text-amber-500">1 seule équipe</strong>.
                 </p>
               </div>
             </div>
 
-            <div className="bg-[#121926] border border-[#1f293d] rounded-xl p-4 my-4 space-y-2.5 relative z-10 text-xs text-slate-300">
-              <p className="font-bold text-amber-300 uppercase text-[11px] tracking-wider border-b border-[#1f293d] pb-1.5 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <div className={`border rounded-xl p-4 my-4 space-y-2.5 relative z-10 text-xs ${
+              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
+            }`}>
+              <p className="font-bold text-amber-500 uppercase text-[11px] tracking-wider border-b pb-1.5 flex items-center gap-1.5 border-slate-200 dark:border-[#1f293d]">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span>Fonctionnalités Multi-Équipes Débloquées en PRO :</span>
               </p>
               <ul className="space-y-2 text-[11px]">
@@ -9987,7 +10162,9 @@ export default function TacticsBoard({
               </button>
               <button
                 onClick={() => setIsMultiTeamUpgradeModalOpen(false)}
-                className="w-full sm:w-auto px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+                className={`w-full sm:w-auto px-4 py-3 font-bold text-xs rounded-xl transition cursor-pointer border ${
+                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                }`}
               >
                 Fermer
               </button>
@@ -9999,30 +10176,34 @@ export default function TacticsBoard({
       {/* LIVE MATCH PRO+ UPGRADE PROMPT MODAL */}
       {isLiveMatchUpgradeModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
-          <div className="bg-[#0d1117] border border-amber-500/60 max-w-lg w-full rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+          <div className={`border max-w-lg w-full rounded-2xl p-6 shadow-2xl relative overflow-hidden ${
+            isModernSleek ? "bg-white border-amber-500 text-slate-900" : "bg-[#0d1117] border-amber-500/60 text-white"
+          }`}>
             {/* Background ambient glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="flex items-start gap-4 mb-4 relative z-10">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500/30 via-amber-500/20 to-amber-400/20 border border-amber-500/50 flex items-center justify-center text-2xl shrink-0 text-amber-300 shadow-lg">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500/30 via-amber-500/20 to-amber-400/20 border border-amber-500/50 flex items-center justify-center text-2xl shrink-0 text-amber-500 shadow-lg">
                 🔴
               </div>
               <div>
                 <span className="text-[9px] bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1 w-fit mb-1">
                   <Sparkles className="w-3 h-3" /> EXCLUSIVITÉ FORMULE PRO+ (14,90 €)
                 </span>
-                <h3 className="text-base font-black text-white uppercase leading-snug">
+                <h3 className={`text-base font-black uppercase leading-snug ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   Mode Live Match & Chronomètre Officiel
                 </h3>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  Le suivi de match en direct est réservé à la formule <strong className="text-amber-300">PRO+</strong>.
+                <p className={`text-xs mt-1 leading-relaxed ${isModernSleek ? "text-slate-600" : "text-slate-300"}`}>
+                  Le suivi de match en direct est réservé à la formule <strong className="text-amber-500">PRO+</strong>.
                 </p>
               </div>
             </div>
 
-            <div className="bg-[#121926] border border-[#1f293d] rounded-xl p-4 my-4 space-y-2.5 relative z-10 text-xs text-slate-300">
-              <p className="font-bold text-amber-300 uppercase text-[11px] tracking-wider border-b border-[#1f293d] pb-1.5 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <div className={`border rounded-xl p-4 my-4 space-y-2.5 relative z-10 text-xs ${
+              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
+            }`}>
+              <p className="font-bold text-amber-500 uppercase text-[11px] tracking-wider border-b pb-1.5 flex items-center gap-1.5 border-slate-200 dark:border-[#1f293d]">
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
                 <span>Fonctionnalités Live Match Débloquées en PRO+ :</span>
               </p>
               <ul className="space-y-2 text-[11px]">
@@ -10058,7 +10239,9 @@ export default function TacticsBoard({
               </button>
               <button
                 onClick={() => setIsLiveMatchUpgradeModalOpen(false)}
-                className="w-full sm:w-auto px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+                className={`w-full sm:w-auto px-4 py-3 font-bold text-xs rounded-xl transition cursor-pointer border ${
+                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                }`}
               >
                 Fermer
               </button>
@@ -10073,31 +10256,35 @@ export default function TacticsBoard({
       {isOpponentRosterModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
           <div className={`max-w-lg w-full rounded-2xl p-6 shadow-2xl relative max-h-[85vh] flex flex-col border ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"}`}>
-            <div className="flex items-center justify-between border-b border-[#1f293d] pb-3 mb-4">
+            <div className={`flex items-center justify-between border-b pb-3 mb-4 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <div className="flex items-center gap-2">
                 <span className="text-[9px] bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black px-2 py-0.5 rounded uppercase tracking-wider">
                   MODE PRO
                 </span>
-                <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Pencil className="h-4 w-4 text-rose-400" /> PERSONNALISER L&apos;ÉQUIPE ADVERSE
+                <h3 className={`text-xs font-black uppercase tracking-wider flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
+                  <Pencil className="h-4 w-4 text-rose-500" /> PERSONNALISER L&apos;ÉQUIPE ADVERSE
                 </h3>
               </div>
               <button
                 onClick={() => setIsOpponentRosterModalOpen(false)}
-                className="text-slate-400 hover:text-white font-bold p-1 hover:bg-[#1a2333] rounded"
+                className={`font-bold p-1 rounded transition cursor-pointer ${
+                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                }`}
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-[11px] text-[#62728f] mb-4">
+            <p className={`text-[11px] mb-4 ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
               Nommez et numérotez les joueurs adverses selon votre analyse tactique et votre préparation de match.
             </p>
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin mb-4">
               {currentTokens.filter((t) => t.type === "player_b").length === 0 ? (
-                <div className="text-center p-6 border border-dashed border-[#1f293d] rounded-xl">
-                  <p className="text-xs text-slate-400 mb-3 font-semibold">Aucun joueur adverse actuellement sur le terrain.</p>
+                <div className={`text-center p-6 border border-dashed rounded-xl ${
+                  isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-slate-400"
+                }`}>
+                  <p className="text-xs mb-3 font-semibold">Aucun joueur adverse actuellement sur le terrain.</p>
                   <button
                     onClick={handleAddOpponent}
                     className="px-3 py-2 bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-200 text-xs font-bold rounded-lg transition cursor-pointer"
@@ -10111,7 +10298,9 @@ export default function TacticsBoard({
                   .map((token, index) => (
                     <div
                       key={token.id}
-                      className="flex items-center gap-2 bg-[#090d14] border border-[#1f293d] p-2.5 rounded-xl"
+                      className={`flex items-center gap-2 p-2.5 rounded-xl border ${
+                        isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1f293d] text-white"
+                      }`}
                     >
                       <div className="w-7 h-7 rounded-full bg-rose-950 border border-rose-500 text-rose-200 text-xs font-black flex items-center justify-center shrink-0">
                         {token.number || index + 1}
@@ -10133,7 +10322,9 @@ export default function TacticsBoard({
                             });
                           }}
                           placeholder="Nom du joueur"
-                          className="col-span-2 bg-[#0d1117] border border-[#1f293d] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-rose-500 font-bold"
+                          className={`col-span-2 rounded px-2 py-1 text-xs focus:outline-none transition border font-bold ${
+                            isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-rose-500" : "bg-[#0d1117] border-[#1f293d] text-white focus:border-rose-500"
+                          }`}
                         />
 
                         <select
@@ -10149,11 +10340,13 @@ export default function TacticsBoard({
                               return copy;
                             });
                           }}
-                          className="bg-[#0d1117] border border-[#1f293d] rounded px-2 py-1 text-xs text-rose-300 focus:outline-none focus:border-rose-500 text-center font-bold cursor-pointer"
+                          className={`rounded px-2 py-1 text-xs text-rose-500 focus:outline-none transition border text-center font-bold cursor-pointer ${
+                            isModernSleek ? "bg-white border-slate-300 focus:border-rose-500" : "bg-[#0d1117] border-[#1f293d] focus:border-rose-500"
+                          }`}
                           title="Numéro unique (seuls les numéros disponibles sont proposés)"
                         >
                           {getAvailableNumbersForOpponent(token.id, token.number).map((n) => (
-                            <option key={n} value={n} className="bg-[#0d1117] text-white">
+                            <option key={n} value={n} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
                               N° {n}
                             </option>
                           ))}
@@ -10169,7 +10362,7 @@ export default function TacticsBoard({
                             return copy;
                           });
                         }}
-                        className="p-1 text-slate-500 hover:text-rose-400 transition cursor-pointer"
+                        className="p-1 text-slate-400 hover:text-rose-500 transition cursor-pointer"
                         title="Retirer ce joueur adverse"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -10179,10 +10372,12 @@ export default function TacticsBoard({
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t border-[#1f293d] pt-3">
+            <div className={`flex items-center justify-between border-t pt-3 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <button
                 onClick={handleAddOpponent}
-                className="px-3 py-1.5 bg-[#172233] hover:bg-[#1f2f47] text-slate-200 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5 border ${
+                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300" : "bg-[#172233] hover:bg-[#1f2f47] text-slate-200 border-slate-700"
+                }`}
               >
                 <Plus className="h-3.5 w-3.5" /> Ajouter un joueur
               </button>
@@ -12161,23 +12356,27 @@ export default function TacticsBoard({
           <div className={`w-full max-w-lg rounded-2xl p-4 sm:p-6 shadow-2xl relative my-auto max-h-[92vh] flex flex-col overflow-hidden border ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"}`}>
             
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#1f293d] pb-3 shrink-0">
+            <div className={`flex items-center justify-between border-b pb-3 shrink-0 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#00E599]/10 border border-[#00E599]/30 flex items-center justify-center text-[#00E599] text-lg shrink-0">
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-lg shrink-0 ${
+                  isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-[#00E599]/10 border-[#00E599]/30 text-[#00E599]"
+                }`}>
                   ⚙️
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-white uppercase tracking-wider">
+                  <h3 className={`text-base font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                     CONFIGURATION DE L&apos;UTILISATEUR
                   </h3>
-                  <p className="text-xs text-[#62728f] font-bold">
+                  <p className={`text-xs font-bold ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
                     Ajustez votre profil coach et sélectionnez votre discipline sportive principale.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsUserConfigModalOpen(false)}
-                className="text-slate-400 hover:text-white font-bold p-2 hover:bg-[#1a2333] rounded-xl transition cursor-pointer text-sm shrink-0"
+                className={`font-bold p-2 rounded-xl transition cursor-pointer text-sm shrink-0 ${
+                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                }`}
               >
                 ✕
               </button>
@@ -12187,7 +12386,7 @@ export default function TacticsBoard({
             <form onSubmit={handleSaveUserConfig} className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin my-2">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
                     Prénom *
                   </label>
                   <input
@@ -12195,11 +12394,13 @@ export default function TacticsBoard({
                     required
                     value={editFirstName}
                     onChange={(e) => setEditFirstName(e.target.value)}
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599] font-bold"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
                     Nom *
                   </label>
                   <input
@@ -12207,14 +12408,16 @@ export default function TacticsBoard({
                     required
                     value={editLastName}
                     onChange={(e) => setEditLastName(e.target.value)}
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599] font-bold"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
               </div>
 
               {/* EMAIL DE CONNEXION */}
               <div>
-                <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1 flex items-center justify-between">
+                <label className={`block text-[10px] font-black uppercase mb-1 flex items-center justify-between ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
                   <span>Adresse Email de Connexion *</span>
                   <span className="text-[#00E599] text-[9.5px] font-bold">📧 Compte Principal</span>
                 </label>
@@ -12224,13 +12427,15 @@ export default function TacticsBoard({
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
                   placeholder="ex: coach@monclub.fr"
-                  className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599] font-bold"
+                  className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
+                    isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                  }`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
                     Club / Équipe
                   </label>
                   <input
@@ -12238,18 +12443,22 @@ export default function TacticsBoard({
                     value={editClub}
                     onChange={(e) => setEditClub(e.target.value)}
                     placeholder="ex: Olympique Lyonnais"
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599] font-bold"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-[#62728f] uppercase mb-1">
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
                     Fonction au sein du club
                   </label>
                   <select
                     value={editRole}
                     onChange={(e) => setEditRole(e.target.value)}
-                    className="w-full bg-[#090d14] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E599] font-bold cursor-pointer"
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold cursor-pointer ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                    }`}
                   >
                     <option value="Coach Principal">Coach Principal</option>
                     <option value="Entraîneur Adjoint">Entraîneur Adjoint</option>
@@ -12261,19 +12470,21 @@ export default function TacticsBoard({
               </div>
 
               {/* THÈME D'AFFICHAGE & DESIGN (OPTIONS UTILISATEUR) */}
-              <div className="bg-[#090d14] border border-[#1f293d] p-3.5 rounded-xl space-y-2">
+              <div className={`border p-3.5 rounded-xl space-y-2 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
                 <label className="block text-[10px] font-black text-[#00E599] uppercase tracking-wider flex items-center justify-between">
                   <span>Thème & Apparence de l&apos;Interface</span>
-                  <span className="text-slate-400 font-normal text-[9px]">(Mode Sombre ou Clair & Épuré)</span>
+                  <span className={`font-normal text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>(Mode Sombre ou Clair & Épuré)</span>
                 </label>
-                <div className="flex items-center justify-between bg-[#0d1117] border border-[#1f293d] p-2.5 rounded-lg flex-wrap gap-2">
+                <div className={`flex items-center justify-between border p-2.5 rounded-lg flex-wrap gap-2 ${
+                  isModernSleek ? "bg-white border-slate-200" : "bg-[#0d1117] border-[#1f293d]"
+                }`}>
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{isModernSleek ? "☀️" : "🌙"}</span>
                     <div>
-                      <p className="text-xs font-black text-white uppercase">
+                      <p className={`text-xs font-black uppercase ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                         {isModernSleek ? "Mode Clair & Épuré (Actif)" : "Mode Sombre Classique (Actif)"}
                       </p>
-                      <p className="text-[9.5px] text-[#62728f]">
+                      <p className={`text-[9.5px] ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
                         {isModernSleek ? "Interface lumineuse et aérée avec fort contraste" : "Contraste historique sombre d'origine"}
                       </p>
                     </div>
@@ -12296,17 +12507,19 @@ export default function TacticsBoard({
               </div>
 
               {/* SPORT SELECTOR */}
-              <div className="bg-[#090d14] border border-[#1f293d] p-3.5 rounded-xl space-y-2">
+              <div className={`border p-3.5 rounded-xl space-y-2 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
                 <label className="block text-[10px] font-black text-[#00E599] uppercase tracking-wider flex items-center justify-between">
                   <span>Discipline Sportive</span>
-                  <span className="text-slate-400 font-normal text-[9px]">
+                  <span className={`font-normal text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                     {isUserAdmin ? "(Vue Administrateur - Tous les sports)" : "(Disciplines Sportives Autorisées)"}
                   </span>
                 </label>
                 <select
                   value={editSport}
                   onChange={(e) => setEditSport(e.target.value)}
-                  className="w-full bg-[#0d1117] border border-[#1f293d] rounded-lg px-3 py-2.5 text-xs text-white font-black uppercase focus:outline-none focus:border-[#00E599] cursor-pointer"
+                  className={`w-full rounded-lg px-3 py-2.5 text-xs font-black uppercase focus:outline-none cursor-pointer border ${
+                    isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#0d1117] border-[#1f293d] text-white focus:border-[#00E599]"
+                  }`}
                 >
                   {[
                     { id: "football", label: "⚽ FOOTBALL" },
@@ -12327,7 +12540,7 @@ export default function TacticsBoard({
                         <option
                           key={sport.id}
                           value={sport.id}
-                          className="text-white bg-[#0d1117] font-bold"
+                          className={isModernSleek ? "text-slate-900 bg-white font-bold" : "text-white bg-[#0d1117] font-bold"}
                         >
                           {sport.label} {isBlocked ? "🔒 (BLOQUÉ POUR USAGERS)" : ""}
                         </option>
@@ -12337,11 +12550,11 @@ export default function TacticsBoard({
               </div>
 
               {/* SUBSCRIPTION & STRIPE MANAGEMENT */}
-              <div className="bg-[#090d14] border border-[#1f293d] p-3.5 rounded-xl space-y-3">
-                <div className="flex items-center justify-between border-b border-[#1f293d] pb-2">
+              <div className={`border p-3.5 rounded-xl space-y-3 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
+                <div className={`flex items-center justify-between border-b pb-2 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
                   <div className="flex items-center gap-2">
-                    <span className="text-amber-400 text-sm">💳</span>
-                    <label className="text-[10px] font-black text-amber-300 uppercase tracking-wider">
+                    <span className="text-amber-500 text-sm">💳</span>
+                    <label className="text-[10px] font-black text-amber-500 uppercase tracking-wider">
                       Gestion de l&apos;Abonnement & Facturation
                     </label>
                   </div>
@@ -12350,15 +12563,17 @@ export default function TacticsBoard({
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between bg-[#0d1117] border border-[#1f293d] p-3 rounded-lg flex-wrap gap-2">
+                <div className={`flex items-center justify-between border p-3 rounded-lg flex-wrap gap-2 ${
+                  isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
+                }`}>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-white">Formule actuelle :</span>
+                      <span className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Formule actuelle :</span>
                       <span className="text-xs font-black text-[#00E599] uppercase bg-[#00E599]/10 px-2 py-0.5 rounded border border-[#00E599]/30">
                         {isUserAdmin ? "👑 Licence Admin Illimitée" : `Plan ${activePlan.toUpperCase()}`}
                       </span>
                     </div>
-                    <p className="text-[9.5px] text-[#62728f] mt-1 font-medium">
+                    <p className={`text-[9.5px] mt-1 font-medium ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
                       Portail sécurisé • Modification et facturation en ligne sans engagement.
                     </p>
                   </div>
@@ -12385,12 +12600,12 @@ export default function TacticsBoard({
                     }}
                     className={`p-2 rounded-lg border text-left transition cursor-pointer ${
                       activePlan === "gratuit"
-                        ? "bg-[#121926] border-amber-500/50 ring-1 ring-amber-500/30"
-                        : "bg-[#0d1117] border-[#1f293d] hover:border-slate-700"
+                        ? "bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/30"
+                        : isModernSleek ? "bg-white border-slate-200 hover:border-slate-300" : "bg-[#0d1117] border-[#1f293d] hover:border-slate-700"
                     }`}
                   >
-                    <div className="text-[9px] font-black text-slate-400 uppercase">Démo Gratuit</div>
-                    <div className="text-xs font-black text-white mt-0.5">0 €</div>
+                    <div className={`text-[9px] font-black uppercase ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Démo Gratuit</div>
+                    <div className={`text-xs font-black mt-0.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>0 €</div>
                   </button>
 
                   <button
@@ -12401,12 +12616,12 @@ export default function TacticsBoard({
                     }}
                     className={`p-2 rounded-lg border text-left transition cursor-pointer ${
                       activePlan === "pro" || activePlan === "mensuel"
-                        ? "bg-[#102420] border-[#00E599] ring-1 ring-[#00E599]/30"
-                        : "bg-[#0d1117] border-[#1f293d] hover:border-[#00E599]/50"
+                        ? "bg-[#00E599]/10 border-[#00E599] ring-1 ring-[#00E599]/30"
+                        : isModernSleek ? "bg-white border-slate-200 hover:border-emerald-500/50" : "bg-[#0d1117] border-[#1f293d] hover:border-[#00E599]/50"
                     }`}
                   >
                     <div className="text-[9px] font-black text-[#00E599] uppercase">Formule PRO</div>
-                    <div className="text-xs font-black text-white mt-0.5">9,90 €/mo</div>
+                    <div className={`text-xs font-black mt-0.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>9,90 €/mo</div>
                   </button>
 
                   <button
@@ -12417,22 +12632,26 @@ export default function TacticsBoard({
                     }}
                     className={`p-2 rounded-lg border text-left transition cursor-pointer ${
                       activePlan === "pro_plus" || activePlan === "annuel" || activePlan === "club"
-                        ? "bg-amber-950/40 border-amber-500 ring-1 ring-amber-500/30"
-                        : "bg-[#0d1117] border-[#1f293d] hover:border-amber-500/50"
+                        ? "bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/30"
+                        : isModernSleek ? "bg-white border-slate-200 hover:border-amber-500/50" : "bg-[#0d1117] border-[#1f293d] hover:border-amber-500/50"
                     }`}
                   >
-                    <div className="text-[9px] font-black text-amber-300 uppercase">Formule PRO+</div>
-                    <div className="text-xs font-black text-white mt-0.5">14,90 €/mo</div>
+                    <div className="text-[9px] font-black text-amber-500 uppercase">Formule PRO+</div>
+                    <div className={`text-xs font-black mt-0.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>14,90 €/mo</div>
                   </button>
                 </div>
               </div>
 
               {/* Actions - Sticky at bottom */}
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1f293d] shrink-0 sticky bottom-0 bg-[#0d1117] mt-2">
+              <div className={`flex items-center justify-end gap-2 pt-3 border-t shrink-0 sticky bottom-0 mt-2 ${
+                isModernSleek ? "bg-white border-slate-200" : "bg-[#0d1117] border-[#1f293d]"
+              }`}>
                 <button
                   type="button"
                   onClick={() => setIsUserConfigModalOpen(false)}
-                  className="px-4 py-2 bg-[#121926] hover:bg-[#1a253a] border border-[#1f293d] text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+                  className={`px-4 py-2 font-bold text-xs rounded-xl transition cursor-pointer border ${
+                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-300"
+                  }`}
                 >
                   Annuler
                 </button>

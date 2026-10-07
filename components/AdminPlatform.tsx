@@ -943,15 +943,17 @@ export default function AdminPlatform({
       {/* MODAL ADD USER BY ADMIN */}
       {isAddUserOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-[#0f1522] border border-[#1c273c] max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1c273c] pb-3">
-              <h3 className="font-black text-white text-sm flex items-center gap-2">
+          <div className={`max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4 border ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0f1522] border-[#1c273c] text-white"
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${isModernSleek ? "border-slate-200" : "border-[#1c273c]"}`}>
+              <h3 className={`font-black text-sm flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                 <UserPlus className="h-4 w-4 text-[#00E599]" />
                 <span>Nouveau Compte Coach (Admin)</span>
               </h3>
               <button
                 onClick={() => setIsAddUserOpen(false)}
-                className="text-slate-400 hover:text-white text-xs font-bold"
+                className={`text-xs font-bold ${isModernSleek ? "text-slate-400 hover:text-slate-900" : "text-slate-400 hover:text-white"}`}
               >
                 ✕
               </button>
@@ -960,59 +962,69 @@ export default function AdminPlatform({
             <form onSubmit={handleCreateUserByAdmin} className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Prénom *</label>
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Prénom *</label>
                   <input
                     type="text"
                     required
                     value={newFirstName}
                     onChange={(e) => setNewFirstName(e.target.value)}
                     placeholder="Prénom"
-                    className="w-full bg-[#080b10] border border-[#1e293b] rounded-lg px-3 py-1.5 text-xs text-white"
+                    className={`w-full rounded-lg px-3 py-1.5 text-xs border ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#080b10] border-[#1e293b] text-white"
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Nom *</label>
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Nom *</label>
                   <input
                     type="text"
                     required
                     value={newLastName}
                     onChange={(e) => setNewLastName(e.target.value)}
                     placeholder="Nom"
-                    className="w-full bg-[#080b10] border border-[#1e293b] rounded-lg px-3 py-1.5 text-xs text-white"
+                    className={`w-full rounded-lg px-3 py-1.5 text-xs border ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#080b10] border-[#1e293b] text-white"
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Adresse Email *</label>
+                <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Adresse Email *</label>
                 <input
                   type="email"
                   required
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="coach@club.com"
-                  className="w-full bg-[#080b10] border border-[#1e293b] rounded-lg px-3 py-1.5 text-xs text-white"
+                  className={`w-full rounded-lg px-3 py-1.5 text-xs border ${
+                    isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#080b10] border-[#1e293b] text-white"
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Club / Structure</label>
+                <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Club / Structure</label>
                 <input
                   type="text"
                   value={newClub}
                   onChange={(e) => setNewClub(e.target.value)}
                   placeholder="Nom du club"
-                  className="w-full bg-[#080b10] border border-[#1e293b] rounded-lg px-3 py-1.5 text-xs text-white"
+                  className={`w-full rounded-lg px-3 py-1.5 text-xs border ${
+                    isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#080b10] border-[#1e293b] text-white"
+                  }`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Offre d&apos;Abonnement</label>
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Offre d&apos;Abonnement</label>
                   <select
                     value={newPlan}
                     onChange={(e) => setNewPlan(e.target.value)}
-                    className="w-full bg-[#080b10] border border-[#1e2e47] rounded-lg px-2.5 py-1.5 text-xs text-emerald-400 font-bold"
+                    className={`w-full rounded-lg px-2.5 py-1.5 text-xs text-emerald-600 font-bold border ${
+                      isModernSleek ? "bg-slate-50 border-slate-300" : "bg-[#080b10] border-[#1e2e47]"
+                    }`}
                   >
                     <option value="free">Gratuit (0 €)</option>
                     <option value="pro">Formule PRO (9.90 €)</option>
@@ -1021,11 +1033,13 @@ export default function AdminPlatform({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Sport Favori</label>
+                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Sport Favori</label>
                   <select
                     value={newSport}
                     onChange={(e) => setNewSport(e.target.value)}
-                    className="w-full bg-[#080b10] border border-[#1e2e47] rounded-lg px-2.5 py-1.5 text-xs text-white font-bold capitalize"
+                    className={`w-full rounded-lg px-2.5 py-1.5 text-xs font-bold capitalize border ${
+                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900" : "bg-[#080b10] border-[#1e2e47] text-white"
+                    }`}
                   >
                     <option value="football">Football</option>
                     <option value="basketball">Basketball</option>
@@ -1035,17 +1049,19 @@ export default function AdminPlatform({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-[#1c273c]">
+              <div className={`flex justify-end gap-2 pt-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1c273c]"}`}>
                 <button
                   type="button"
                   onClick={() => setIsAddUserOpen(false)}
-                  className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs font-bold rounded-lg"
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg ${
+                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-slate-800 text-slate-300"
+                  }`}
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-[#00E599] text-[#0d1117] text-xs font-black rounded-lg"
+                  className="px-4 py-1.5 bg-[#00E599] text-[#0d1117] text-xs font-black rounded-lg hover:bg-[#06b87d]"
                 >
                   Créer le compte
                 </button>
@@ -1058,41 +1074,49 @@ export default function AdminPlatform({
       {/* MODAL EXTEND DEMO TIME BY ADMIN */}
       {selectedCoachForExtend && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#0f1522] border border-[#1c273c] max-w-lg w-full rounded-3xl p-6 shadow-2xl space-y-5 relative overflow-hidden text-slate-200">
+          <div className={`max-w-lg w-full rounded-3xl p-6 shadow-2xl space-y-5 relative overflow-hidden border ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0f1522] border-[#1c273c] text-slate-200"
+          }`}>
             
             {/* Header */}
-            <div className="flex items-start justify-between border-b border-[#1c273c] pb-4">
+            <div className={`flex items-start justify-between border-b pb-4 ${isModernSleek ? "border-slate-200" : "border-[#1c273c]"}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400">
+                <div className="p-2.5 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-500">
                   <Gift className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="font-black text-white text-base tracking-wide flex items-center gap-2">
+                  <h3 className={`font-black text-base tracking-wide flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                     <span>Prolonger le Temps de Démo</span>
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className={`text-xs ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                     Offrir des jours supplémentaires d&apos;essai Pro & Pro+
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedCoachForExtend(null)}
-                className="text-slate-400 hover:text-white p-1.5 hover:bg-[#1a2333] rounded-xl transition cursor-pointer"
+                className={`p-1.5 rounded-xl transition cursor-pointer ${
+                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                }`}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Target Coach Card */}
-            <div className="bg-[#080b10] p-4 rounded-2xl border border-[#1e293b] space-y-2">
+            <div className={`p-4 rounded-2xl border space-y-2 ${
+              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#080b10] border-[#1e293b]"
+            }`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-black text-white text-sm">
+                  <p className={`font-black text-sm ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                     {selectedCoachForExtend.firstName} {selectedCoachForExtend.lastName}
                   </p>
-                  <p className="text-xs text-[#00E599] font-mono">{selectedCoachForExtend.email}</p>
+                  <p className="text-xs text-[#00E599] font-mono font-bold">{selectedCoachForExtend.email}</p>
                 </div>
-                <span className="bg-[#131b2c] border border-[#1f293d] text-slate-300 text-[10px] font-bold px-2.5 py-1 rounded-lg">
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${
+                  isModernSleek ? "bg-white border-slate-300 text-slate-700" : "bg-[#131b2c] border-[#1f293d] text-slate-300"
+                }`}>
                   {selectedCoachForExtend.club}
                 </span>
               </div>
@@ -1101,9 +1125,9 @@ export default function AdminPlatform({
               {(() => {
                 const info = calculateTrialRemaining(selectedCoachForExtend.createdAt, selectedCoachForExtend.trialBonusDays || 0);
                 return (
-                  <div className="pt-2 border-t border-[#182236] flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Statut d&apos;essai actuel :</span>
-                    <span className={`font-black ${info.isExpired ? 'text-rose-400' : 'text-amber-300'}`}>
+                  <div className={`pt-2 border-t flex items-center justify-between text-xs ${isModernSleek ? "border-slate-200" : "border-[#182236]"}`}>
+                    <span className={isModernSleek ? "text-slate-600" : "text-slate-400"}>Statut d&apos;essai actuel :</span>
+                    <span className={`font-black ${info.isExpired ? 'text-rose-500' : 'text-amber-600 dark:text-amber-300'}`}>
                       {info.isExpired ? 'Expiré (0j)' : `${info.days} jours restants`}
                       {selectedCoachForExtend.trialBonusDays ? ` (+${selectedCoachForExtend.trialBonusDays}j offerts)` : ''}
                     </span>
@@ -1114,7 +1138,7 @@ export default function AdminPlatform({
 
             {/* Quick Add Presets */}
             <div className="space-y-2">
-              <label className="block text-xs font-black text-slate-300 uppercase tracking-wider">
+              <label className={`block text-xs font-black uppercase tracking-wider ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                 Choix Rapides d&apos;Extension de Démo :
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1128,18 +1152,22 @@ export default function AdminPlatform({
                     key={preset.days}
                     type="button"
                     onClick={() => handleApplyExtendDemo(selectedCoachForExtend.id, preset.days)}
-                    className="p-3 rounded-2xl bg-[#131b2c] hover:bg-amber-500/20 border border-[#1f293d] hover:border-amber-500/50 text-left transition cursor-pointer group"
+                    className={`p-3 rounded-2xl border text-left transition cursor-pointer group ${
+                      isModernSleek 
+                        ? "bg-slate-50 hover:bg-amber-50 border-slate-200 hover:border-amber-400" 
+                        : "bg-[#131b2c] hover:bg-amber-500/20 border-[#1f293d] hover:border-amber-500/50"
+                    }`}
                   >
-                    <p className="font-black text-white group-hover:text-amber-300 text-xs">{preset.label}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{preset.desc}</p>
+                    <p className={`font-black text-xs transition ${isModernSleek ? "text-slate-900 group-hover:text-amber-600" : "text-white group-hover:text-amber-300"}`}>{preset.label}</p>
+                    <p className={`text-[10px] mt-0.5 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>{preset.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Custom Days Input */}
-            <div className="space-y-2 pt-2 border-t border-[#1c273c]">
-              <label className="block text-xs font-black text-slate-300 uppercase tracking-wider">
+            <div className={`space-y-2 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1c273c]"}`}>
+              <label className={`block text-xs font-black uppercase tracking-wider ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                 Saisir un nombre de jours sur-mesure :
               </label>
               <div className="flex items-center gap-2">
@@ -1149,7 +1177,9 @@ export default function AdminPlatform({
                   max={365}
                   value={customDaysToAdd}
                   onChange={(e) => setCustomDaysToAdd(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="flex-1 bg-[#080b10] border border-[#1e293b] rounded-xl px-3 py-2 text-xs text-white font-bold font-mono focus:outline-none focus:border-[#00E599]"
+                  className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold font-mono focus:outline-none transition border ${
+                    isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#080b10] border-[#1e293b] text-white focus:border-[#00E599]"
+                  }`}
                   placeholder="Nombre de jours"
                 />
                 <button
@@ -1163,11 +1193,13 @@ export default function AdminPlatform({
             </div>
 
             {/* Reset Button Option */}
-            <div className="pt-2 border-t border-[#1c273c] flex items-center justify-between">
+            <div className={`pt-2 border-t flex items-center justify-between ${isModernSleek ? "border-slate-200" : "border-[#1c273c]"}`}>
               <button
                 type="button"
                 onClick={() => handleResetTrial(selectedCoachForExtend.id)}
-                className="text-xs text-slate-400 hover:text-amber-300 font-bold flex items-center gap-1.5 transition cursor-pointer"
+                className={`text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                  isModernSleek ? "text-slate-500 hover:text-amber-600" : "text-slate-400 hover:text-amber-300"
+                }`}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Réinitialiser à 14 jours complets dès aujourd&apos;hui</span>
@@ -1176,7 +1208,9 @@ export default function AdminPlatform({
               <button
                 type="button"
                 onClick={() => setSelectedCoachForExtend(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                }`}
               >
                 Annuler
               </button>

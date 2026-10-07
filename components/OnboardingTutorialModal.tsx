@@ -24,6 +24,7 @@ interface OnboardingTutorialModalProps {
   coachName?: string;
   sportName?: string;
   onCompleteTutorial?: () => void;
+  isModernSleek?: boolean;
 }
 
 export interface InAppTourStep {
@@ -45,6 +46,7 @@ export default function OnboardingTutorialModal({
   coachName = "Coach",
   sportName = "Football",
   onCompleteTutorial,
+  isModernSleek = false,
 }: OnboardingTutorialModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -377,19 +379,25 @@ export default function OnboardingTutorialModal({
       <div
         ref={cardRef}
         style={getTooltipStyle()}
-        className="bg-[#0b101a] border-2 border-[#00E599]/60 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-50 animate-fade-in text-white"
+        className={`border-2 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-50 animate-fade-in ${
+          isModernSleek ? "bg-white border-emerald-500 text-slate-900" : "bg-[#0b101a] border-[#00E599]/60 text-white"
+        }`}
       >
         {/* Card Header */}
-        <div className="bg-[#101726] px-4 py-3 border-b border-[#1b273d] flex items-center justify-between">
+        <div className={`px-4 py-3 border-b flex items-center justify-between ${
+          isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#101726] border-[#1b273d]"
+        }`}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#00E599]/15 border border-[#00E599]/30 flex items-center justify-center shrink-0">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+              isModernSleek ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
+            }`}>
               {current.icon}
             </div>
             <div>
               <span className="text-[10px] font-black uppercase text-[#00E599] tracking-wider block">
                 {current.badge}
               </span>
-              <h3 className="text-xs sm:text-sm font-black text-white leading-tight">
+              <h3 className={`text-xs sm:text-sm font-black leading-tight ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                 {current.title}
               </h3>
             </div>
@@ -397,7 +405,9 @@ export default function OnboardingTutorialModal({
 
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-[#182338] transition cursor-pointer text-xs font-bold"
+            className={`p-1 rounded-lg transition cursor-pointer text-xs font-bold ${
+              isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#182338]"
+            }`}
             title="Quitter le guide"
           >
             <X className="h-4 w-4" />
@@ -406,14 +416,16 @@ export default function OnboardingTutorialModal({
 
         {/* Card Body */}
         <div className="p-4 space-y-3 text-xs overflow-y-auto max-h-[60vh] sm:max-h-none">
-          <p className="text-slate-300 leading-relaxed font-medium">
+          <p className={`leading-relaxed font-medium ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
             {current.description}
           </p>
 
           {/* Key Points list */}
-          <div className="space-y-1.5 bg-[#0e1524] p-3 rounded-xl border border-[#1c293e]">
+          <div className={`space-y-1.5 p-3 rounded-xl border ${
+            isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#0e1524] border-[#1c293e]"
+          }`}>
             {current.keyPoints.map((pt, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+              <div key={idx} className={`flex items-start gap-2 text-[11px] ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                 <CheckCircle2 className="h-3.5 w-3.5 text-[#00E599] shrink-0 mt-0.5" />
                 <span className="leading-snug">{pt}</span>
               </div>
@@ -421,16 +433,20 @@ export default function OnboardingTutorialModal({
           </div>
 
           {/* Pro tip */}
-          <div className="bg-gradient-to-r from-emerald-950/40 to-slate-900 border-l-2 border-[#00E599] px-3 py-2 rounded-r-lg flex items-start gap-2">
-            <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-[10.5px] text-slate-300 leading-tight">
+          <div className={`border-l-2 border-[#00E599] px-3 py-2 rounded-r-lg flex items-start gap-2 ${
+            isModernSleek ? "bg-emerald-50/60" : "bg-gradient-to-r from-emerald-950/40 to-slate-900"
+          }`}>
+            <Zap className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+            <p className={`text-[10.5px] leading-tight ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
               {current.proTip}
             </p>
           </div>
         </div>
 
         {/* Card Footer */}
-        <div className="bg-[#101726] px-4 py-3 border-t border-[#1b273d] flex flex-col sm:flex-row items-center justify-between gap-2.5">
+        <div className={`px-4 py-3 border-t flex flex-col sm:flex-row items-center justify-between gap-2.5 ${
+          isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#101726] border-[#1b273d]"
+        }`}>
           
           {/* Step dots & dont show again */}
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
@@ -444,19 +460,19 @@ export default function OnboardingTutorialModal({
                       ? "w-5 bg-[#00E599]"
                       : idx < currentStep
                         ? "w-2 bg-[#00E599]/60"
-                        : "w-2 bg-slate-700"
+                        : isModernSleek ? "w-2 bg-slate-300" : "w-2 bg-slate-700"
                   }`}
                   title={`Aller à l'étape ${idx + 1}`}
                 />
               ))}
             </div>
 
-            <label className="flex items-center gap-1.5 text-[10px] text-slate-400 cursor-pointer select-none">
+            <label className={`flex items-center gap-1.5 text-[10px] cursor-pointer select-none ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
               <input
                 type="checkbox"
                 checked={dontShowAgain}
                 onChange={(e) => setDontShowAgain(e.target.checked)}
-                className="rounded bg-[#080d14] border-[#22314b] text-[#00E599] focus:ring-[#00E599]"
+                className="rounded text-[#00E599] focus:ring-[#00E599]"
               />
               <span>Ne plus afficher</span>
             </label>
@@ -468,7 +484,9 @@ export default function OnboardingTutorialModal({
               <button
                 type="button"
                 onClick={handlePrev}
-                className="px-3 py-1.5 bg-[#172236] hover:bg-[#202f4a] text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1 transition cursor-pointer"
+                className={`px-3 py-1.5 border font-bold text-xs rounded-xl flex items-center gap-1 transition cursor-pointer ${
+                  isModernSleek ? "bg-white hover:bg-slate-200 border-slate-300 text-slate-700" : "bg-[#172236] hover:bg-[#202f4a] border-transparent text-slate-200"
+                }`}
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <span>Précédent</span>
