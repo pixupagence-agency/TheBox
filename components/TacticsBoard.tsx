@@ -6357,7 +6357,7 @@ export default function TacticsBoard({
           <div className="flex items-center gap-2.5">
             <LogoIcon className={`${isCompactUI ? "w-7 h-7" : isModernSleek ? "w-8 h-8 text-emerald-800" : "w-9 h-9 text-white"} flex-shrink-0 transition-all`} />
             <div className="text-left flex flex-col justify-center select-none">
-              <h1 className={`${isCompactUI ? "text-base" : "text-lg"} font-black ${isModernSleek ? "tracking-wider uppercase text-slate-900" : "tracking-wide lowercase text-white"} leading-none`}>
+              <h1 className={`${isCompactUI ? "text-base" : "text-lg"} font-black ${isModernSleek ? "tracking-wider lowercase text-slate-900" : "tracking-wide lowercase text-white"} leading-none`}>
                 the box
               </h1>
               {!isCompactUI && (
