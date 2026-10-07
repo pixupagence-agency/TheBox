@@ -737,13 +737,17 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
           {/* MULTI-SCHEMA SELECTOR (if match has multiple schemas) */}
           {includeSchemas && hasMultipleSchemas && (
-            <div className="bg-[#090d14] border border-[#1f293d] rounded-xl p-3">
+            <div className={`border rounded-xl p-3 ${
+              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
+            }`}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase font-black tracking-wider text-amber-300 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                <span className={`text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
+                  isModernSleek ? "text-amber-700" : "text-amber-300"
+                }`}>
+                  <Layers className="w-3.5 h-3.5 text-amber-500" />
                   <span>Sélectionnez les schémas à envoyer :</span>
                 </span>
-                <span className="text-[9px] text-slate-400 font-bold">Cochez pour inclure / Cliquez pour prévisualiser</span>
+                <span className={`text-[9px] font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Cochez pour inclure / Cliquez pour prévisualiser</span>
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
                 {/* Option to view the current pitch / main briefing if data.imageUrl exists */}
@@ -752,7 +756,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                     className={`px-3 py-2 rounded-lg border shrink-0 transition flex items-center gap-2 cursor-pointer ${
                       userPreviewSchema === null
                         ? "bg-[#102420] border-[#00E599] text-[#00E599] shadow-sm shadow-[#00e599]/20"
-                        : "bg-[#121926] border-[#1f293d] text-slate-300 hover:border-slate-500"
+                        : isModernSleek ? "bg-white border-slate-300 text-slate-800 hover:border-slate-400" : "bg-[#121926] border-[#1f293d] text-slate-300 hover:border-slate-500"
                     }`}
                     onClick={() => setUserPreviewSchema(null)}
                   >
@@ -764,7 +768,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                     />
                     <div>
                       <span className="text-[10px] font-black block truncate max-w-[120px]">Terrain actuel</span>
-                      <span className="text-[8px] text-slate-400 block">Vue principale</span>
+                      <span className={`text-[8px] block ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Vue principale</span>
                     </div>
                   </div>
                 )}
@@ -777,7 +781,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                       className={`px-3 py-2 rounded-lg border shrink-0 transition flex items-center gap-2 ${
                         isPreviewing 
                           ? "bg-[#102420] border-[#00E599] text-[#00E599] shadow-sm shadow-[#00e599]/20" 
-                          : "bg-[#121926] border-[#1f293d] text-slate-300 hover:border-slate-500"
+                          : isModernSleek ? "bg-white border-slate-300 text-slate-800 hover:border-slate-400" : "bg-[#121926] border-[#1f293d] text-slate-300 hover:border-slate-500"
                       }`}
                     >
                       <input
@@ -803,7 +807,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                         )}
                         <div>
                           <span className="text-[10px] font-black block truncate max-w-[120px]">{sc.name}</span>
-                          {sc.formation && <span className="text-[8px] text-slate-400 block">{sc.formation}</span>}
+                          {sc.formation && <span className={`text-[8px] block ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>{sc.formation}</span>}
                         </div>
                       </button>
                     </div>
@@ -816,21 +820,27 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
           {/* VISUAL PITCH & PLAYERS SCHEMA IMAGE PREVIEW */}
           {includeSchemas && (
             activeImageUrl ? (
-              <div className="bg-[#070b13] border-2 border-[#1f293d] hover:border-[#00E599]/50 transition rounded-xl overflow-hidden shadow-2xl relative group">
-                <div className="bg-[#111827] px-3 py-1.5 border-b border-[#1f293d] flex items-center justify-between text-[11px] font-black">
+              <div className={`border-2 transition rounded-xl overflow-hidden shadow-2xl relative group ${
+                isModernSleek ? "bg-slate-100 border-slate-200 hover:border-emerald-500/50" : "bg-[#070b13] border-[#1f293d] hover:border-[#00E599]/50"
+              }`}>
+                <div className={`px-3 py-1.5 border-b flex items-center justify-between text-[11px] font-black ${
+                  isModernSleek ? "bg-slate-200/80 border-slate-300 text-slate-800" : "bg-[#111827] border-[#1f293d]"
+                }`}>
                   <span className="text-[#00E599] uppercase tracking-wider flex items-center gap-1.5">
                     <ImageIcon className="w-3.5 h-3.5" />
                     <span>Aperçu HD du terrain & joueurs ({activeSchemaTitle})</span>
                   </span>
-                  <span className="text-slate-400 text-[9.5px]">Format Haute Définition HD</span>
+                  <span className={`text-[9.5px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Format Haute Définition HD</span>
                 </div>
                 
-                <div className="relative bg-[#090d14] p-2 flex items-center justify-center">
+                <div className={`relative p-2 flex items-center justify-center ${
+                  isModernSleek ? "bg-slate-50" : "bg-[#090d14]"
+                }`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={activeImageUrl} 
                     alt={activeSchemaTitle}
-                    className="w-auto max-w-full h-auto max-h-[360px] object-contain rounded-lg border border-black/40 shadow-xl"
+                    className="w-auto max-w-full h-auto max-h-[360px] object-contain rounded-lg border border-black/20 shadow-xl"
                   />
 
                   {/* Floating Action Overlay on Top of Image */}
@@ -856,8 +866,10 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                 </div>
               </div>
             ) : (
-              <div className="bg-[#090d14] border border-dashed border-[#1f293d] rounded-xl p-6 text-center text-slate-400 text-xs">
-                <ImageIcon className="w-8 h-8 mx-auto mb-2 text-slate-500 animate-pulse" />
+              <div className={`border border-dashed rounded-xl p-6 text-center text-xs ${
+                isModernSleek ? "bg-slate-50 border-slate-300 text-slate-500" : "bg-[#090d14] border-[#1f293d] text-slate-400"
+              }`}>
+                <ImageIcon className="w-8 h-8 mx-auto mb-2 text-slate-400 animate-pulse" />
                 <p className="font-bold">Génération du visuel du terrain...</p>
               </div>
             )
@@ -865,16 +877,22 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
           {/* PLAYERS CONVOCATION DETAIL (TITULAIRES & REMPLAÇANTS) */}
           {includePlayers && allGroupPlayers.length > 0 && (
-            <div className="bg-[#090d14] border border-[#1f293d] rounded-xl p-3.5 space-y-3">
+            <div className={`border rounded-xl p-3.5 space-y-3 ${
+              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
+            }`}>
               {/* Starters Section */}
               {activeStarters.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between border-b border-[#1f293d] pb-1.5 mb-2">
-                    <span className="text-[10px] uppercase font-black tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <div className={`flex items-center justify-between border-b pb-1.5 mb-2 ${
+                    isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+                  }`}>
+                    <span className={`text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
+                      isModernSleek ? "text-slate-700" : "text-slate-300"
+                    }`}>
                       <Users className="w-3.5 h-3.5 text-[#00E599]" />
                       <span>TITULAIRES ({activeStarters.length}) :</span>
                     </span>
-                    <span className="text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30 text-[9.5px] font-bold">
+                    <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-500/30 text-[9.5px] font-bold">
                       Sur le schéma
                     </span>
                   </div>
@@ -883,12 +901,16 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                     {activeStarters.map((p, i) => (
                       <span
                         key={i}
-                        className="text-[10px] font-bold bg-[#121926] border border-emerald-500/30 px-2 py-1 rounded-lg text-slate-200 flex items-center gap-1"
+                        className={`text-[10px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 ${
+                          isModernSleek 
+                            ? "bg-white border-emerald-300 text-slate-800 shadow-sm" 
+                            : "bg-[#121926] border-emerald-500/30 text-slate-200"
+                        }`}
                       >
-                        <span className="text-slate-500 font-mono text-[9px]">{i + 1}.</span>
-                        <strong className="text-emerald-400">#{p.number}</strong>
+                        <span className={`font-mono text-[9px] ${isModernSleek ? "text-slate-400" : "text-slate-500"}`}>{i + 1}.</span>
+                        <strong className="text-emerald-600 dark:text-emerald-400">#{p.number}</strong>
                         <span>{p.name || "Joueur"}</span>
-                        {p.position && <span className="text-slate-400 text-[9px]">({p.position})</span>}
+                        {p.position && <span className={`text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>({p.position})</span>}
                       </span>
                     ))}
                   </div>
@@ -898,12 +920,16 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               {/* Substitutes Section */}
               {activeSubstitutes.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between border-b border-[#1f293d] pb-1.5 mb-2">
-                    <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <div className={`flex items-center justify-between border-b pb-1.5 mb-2 ${
+                    isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+                  }`}>
+                    <span className={`text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
+                      isModernSleek ? "text-slate-700" : "text-slate-400"
+                    }`}>
+                      <UserCheck className="w-3.5 h-3.5 text-amber-500" />
                       <span>REMPLAÇANTS ({activeSubstitutes.length}) :</span>
                     </span>
-                    <span className="text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30 text-[9.5px] font-bold">
+                    <span className="text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/30 text-[9.5px] font-bold">
                       Banc
                     </span>
                   </div>
@@ -912,12 +938,16 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                     {activeSubstitutes.map((p, i) => (
                       <span
                         key={i}
-                        className="text-[10px] font-bold bg-[#121926] border border-amber-500/20 px-2 py-1 rounded-lg text-slate-300 flex items-center gap-1"
+                        className={`text-[10px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 ${
+                          isModernSleek 
+                            ? "bg-white border-amber-300 text-slate-800 shadow-sm" 
+                            : "bg-[#121926] border-amber-500/20 text-slate-300"
+                        }`}
                       >
-                        <span className="text-slate-500 font-mono text-[9px]">{i + 1}.</span>
-                        <strong className="text-amber-400">#{p.number}</strong>
+                        <span className={`font-mono text-[9px] ${isModernSleek ? "text-slate-400" : "text-slate-500"}`}>{i + 1}.</span>
+                        <strong className="text-amber-600 dark:text-amber-400">#{p.number}</strong>
                         <span>{p.name || "Remplaçant"}</span>
-                        {p.position && <span className="text-slate-400 text-[9px]">({p.position})</span>}
+                        {p.position && <span className={`text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>({p.position})</span>}
                       </span>
                     ))}
                   </div>
@@ -928,9 +958,13 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
           {/* EDITABLE COACH NOTES (if enabled) */}
           {includeNotes && (
-            <div className="bg-[#090d14] border border-[#1f293d] rounded-xl p-3.5 space-y-1.5">
-              <label className="text-[10px] uppercase font-black tracking-wider text-sky-300 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-sky-400" />
+            <div className={`border rounded-xl p-3.5 space-y-1.5 ${
+              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
+            }`}>
+              <label className={`text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
+                isModernSleek ? "text-sky-700" : "text-sky-300"
+              }`}>
+                <FileText className="w-3.5 h-3.5 text-sky-500" />
                 <span>Consignes ou mot personnalisé du coach :</span>
               </label>
               <textarea
@@ -938,7 +972,11 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                 onChange={(e) => setCustomCoachNote(e.target.value)}
                 placeholder="Ex: Rendez-vous au vestiaire à 13h30. Focus sur l'intensité dès l'entame et le pressing haut..."
                 rows={2}
-                className="w-full bg-[#0d1117] border border-[#1f293d] rounded-lg p-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-[#00E599] transition resize-none"
+                className={`w-full rounded-lg p-2 text-xs focus:outline-none transition resize-none border ${
+                  isModernSleek 
+                    ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
+                    : "bg-[#0d1117] border-[#1f293d] text-slate-200 placeholder-slate-600 focus:border-[#00E599]"
+                }`}
               />
             </div>
           )}
@@ -967,7 +1005,9 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
           {/* Action Buttons Grid */}
           <div className="space-y-2.5 pt-1">
-            <span className="text-[11px] uppercase font-black tracking-wider text-slate-400 block">
+            <span className={`text-[11px] uppercase font-black tracking-wider block ${
+              isModernSleek ? "text-slate-600" : "text-slate-400"
+            }`}>
               Envoyer le message groupé :
             </span>
 
@@ -1013,7 +1053,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                 className={`flex-1 w-full py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                   copiedText 
                     ? "bg-emerald-950/80 border-[#00E599] text-[#00E599]" 
-                    : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-300"
+                    : isModernSleek ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-300"
                 }`}
               >
                 {copiedText ? <Check className="w-4 h-4 text-[#00E599]" /> : <Copy className="w-4 h-4" />}
@@ -1023,7 +1063,9 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               {includeSchemas && (
                 <button
                   onClick={handleDownloadImage}
-                  className="flex-1 w-full py-2.5 px-3 rounded-xl bg-[#121926] hover:bg-[#1a253a] border border-[#1f293d] text-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+                  className={`flex-1 w-full py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-200"
+                  }`}
                 >
                   <Download className="w-4 h-4 text-[#00E599]" />
                   <span>{downloadedImage ? "Image téléchargée !" : "Télécharger l'image PNG HD"}</span>
@@ -1034,14 +1076,18 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-[#1f293d] bg-[#090d14] text-[10px] text-slate-500 font-bold">
+        <div className={`flex items-center justify-between px-5 py-3 border-t text-[10px] font-bold ${
+          isModernSleek ? "bg-slate-100 border-slate-200 text-slate-600" : "bg-[#090d14] border-[#1f293d] text-slate-500"
+        }`}>
           <span className="flex items-center gap-1.5 text-[#00E599]">
             <Shield className="w-3.5 h-3.5" />
             <span>Staff Technique • {clubLabel}</span>
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-[#121926] hover:bg-[#1a2333] border border-[#1f293d] text-slate-300 rounded-lg transition cursor-pointer font-black uppercase text-[10px]"
+            className={`px-4 py-1.5 font-black uppercase text-[10px] rounded-lg border transition cursor-pointer ${
+              isModernSleek ? "bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] text-slate-300"
+            }`}
           >
             Fermer
           </button>

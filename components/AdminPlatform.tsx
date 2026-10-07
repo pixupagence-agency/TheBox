@@ -499,28 +499,34 @@ export default function AdminPlatform({
             <div className="space-y-4">
               
               {/* Stripe Gateway Status Card */}
-              <div className="bg-gradient-to-r from-[#0d1424] to-[#070b13] border border-[#1f2d45] rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+              <div className={`border rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg transition ${
+                isModernSleek 
+                  ? "bg-white border-slate-200 text-slate-900" 
+                  : "bg-gradient-to-r from-[#0d1424] to-[#070b13] border-[#1f2d45] text-white"
+              }`}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#00E599]/10 border border-[#00E599]/30 flex items-center justify-center text-[#00E599]">
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-[#00E599] ${
+                    isModernSleek ? "bg-emerald-50 border-emerald-300" : "bg-[#00E599]/10 border-[#00E599]/30"
+                  }`}>
                     <CreditCard className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-black text-white uppercase tracking-wider">Passerelle de Paiement</h4>
+                      <h4 className={`text-xs font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-white"}`}>Passerelle de Paiement</h4>
                       <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-[#00E599] border border-emerald-500/30">
                         Connecteur API v2025 Prêt
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Routes actives : <code className="text-slate-300">/api/stripe/checkout</code> &bull; <code className="text-slate-300">/api/stripe/webhook</code> &bull; <code className="text-slate-300">/api/stripe/portal</code>
+                    <p className={`text-[11px] mt-0.5 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                      Routes actives : <code className={isModernSleek ? "text-slate-800 bg-slate-100 px-1 py-0.5 rounded" : "text-slate-300"}>/api/stripe/checkout</code> &bull; <code className={isModernSleek ? "text-slate-800 bg-slate-100 px-1 py-0.5 rounded" : "text-slate-300"}>/api/stripe/webhook</code> &bull; <code className={isModernSleek ? "text-slate-800 bg-slate-100 px-1 py-0.5 rounded" : "text-slate-300"}>/api/stripe/portal</code>
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <div className="text-right hidden sm:block mr-2">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Tarifs en vigueur</span>
-                    <span className="text-xs text-white font-bold">PRO : 9.90€ &bull; PRO+ : 14.90€</span>
+                    <span className={`text-[10px] uppercase font-bold block ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Tarifs en vigueur</span>
+                    <span className={`text-xs font-bold ${isModernSleek ? "text-slate-900" : "text-white"}`}>PRO : 9.90€ &bull; PRO+ : 14.90€</span>
                   </div>
 
                   <button
@@ -556,7 +562,11 @@ export default function AdminPlatform({
                     href="https://dashboard.stripe.com/test"
                     target="_blank"
                     rel="noreferrer"
-                    className="px-3 py-1.5 bg-[#162133] hover:bg-[#1e2d45] border border-[#273854] text-slate-200 hover:text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                    className={`px-3 py-1.5 font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${
+                      isModernSleek
+                        ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700 hover:text-slate-900"
+                        : "bg-[#162133] hover:bg-[#1e2d45] border-[#273854] text-slate-200 hover:text-white"
+                    }`}
                   >
                     <span>Tableau de Bord Paiements ↗</span>
                   </a>
@@ -783,11 +793,13 @@ export default function AdminPlatform({
           {/* TAB 2: SPORTS & ACCESS MANAGEMENT */}
           {activeTab === "sports" && (
             <div className="space-y-4">
-              <div className="bg-[#0f1522] border border-[#1c273c] p-4 rounded-2xl flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className={`p-4 rounded-2xl border flex items-start gap-3 ${
+                isModernSleek ? "bg-amber-50/80 border-amber-200 text-amber-900" : "bg-[#0f1522] border-[#1c273c] text-white"
+              }`}>
+                <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div className="text-xs space-y-1">
-                  <p className="font-bold text-white">Gestion du Blocage des Sports pour les Utilisateurs Standard</p>
-                  <p className="text-slate-400 leading-relaxed">
+                  <p className={`font-bold ${isModernSleek ? "text-slate-900" : "text-white"}`}>Gestion du Blocage des Sports pour les Utilisateurs Standard</p>
+                  <p className={`leading-relaxed ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
                     Bloquez temporairement l&apos;accès à certains sports tant qu&apos;ils ne sont pas totalement opérationnels.
                     <br />
                     <strong className="text-[#00E599]">Privilège Administrateur The Box :</strong> En tant qu&apos;administrateur, vous avez un accès permanent et illimité à TOUS les sports, même lorsqu&apos;ils sont verrouillés pour le grand public.
@@ -805,23 +817,27 @@ export default function AdminPlatform({
                       key={sport.id}
                       className={`p-4 rounded-2xl border transition relative overflow-hidden ${
                         isBlocked
-                          ? "bg-rose-950/20 border-rose-800/60 shadow-lg shadow-rose-950/20"
-                          : "bg-[#0f1522] border-[#1c273c] hover:border-[#273752]"
+                          ? isModernSleek ? "bg-rose-50 border-rose-200 shadow-sm" : "bg-rose-950/20 border-rose-800/60 shadow-lg shadow-rose-950/20"
+                          : isModernSleek ? "bg-white border-slate-200 hover:border-slate-300" : "bg-[#0f1522] border-[#1c273c] hover:border-[#273752]"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl p-2 rounded-xl bg-[#131b2c] border border-[#1f293d]">
+                          <span className={`text-2xl p-2 rounded-xl border ${
+                            isModernSleek ? "bg-slate-100 border-slate-200 text-slate-800" : "bg-[#131b2c] border-[#1f293d]"
+                          }`}>
                             {sport.icon}
                           </span>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h4 className="font-black text-white text-sm">{sport.name}</h4>
-                              <span className="text-[9px] bg-[#131b2c] text-slate-400 px-1.5 py-0.5 rounded uppercase font-bold">
+                              <h4 className={`font-black text-sm ${isModernSleek ? "text-slate-900" : "text-white"}`}>{sport.name}</h4>
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold ${
+                                isModernSleek ? "bg-slate-100 text-slate-600 border border-slate-200" : "bg-[#131b2c] text-slate-400"
+                              }`}>
                                 {sport.category}
                               </span>
                             </div>
-                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {sport.id}</p>
+                            <p className={`text-[10px] font-mono mt-0.5 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>ID: {sport.id}</p>
                           </div>
                         </div>
 
@@ -849,19 +865,21 @@ export default function AdminPlatform({
                       </div>
 
                       {/* Note and status input */}
-                      <div className="space-y-1.5 pt-2 border-t border-[#1a2333]">
-                        <label className="block text-[10px] font-black text-slate-400 uppercase">
+                      <div className={`space-y-1.5 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1a2333]"}`}>
+                        <label className={`block text-[10px] font-black uppercase ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
                           Message de statut opérationnel (affiché aux coachs) :
                         </label>
                         <input
                           type="text"
                           value={sport.statusNote}
                           onChange={(e) => handleUpdateSportNote(sport.id, e.target.value)}
-                          className="w-full bg-[#080b10] border border-[#1e293b] rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#00E599]"
+                          className={`w-full rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-[#00E599] border ${
+                            isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900" : "bg-[#080b10] border-[#1e293b] text-slate-200"
+                          }`}
                         />
                       </div>
 
-                      <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 font-bold">
+                      <div className={`mt-2.5 flex items-center justify-between text-[10px] font-bold ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
                         <span>Accès Grand Public : {isBlocked ? "🔴 Verrouillé" : "🟢 Autorisé"}</span>
                         <span className="text-[#00E599]">Accès Admin : 🔓 Inconditionnel</span>
                       </div>
@@ -875,49 +893,61 @@ export default function AdminPlatform({
           {/* TAB 3: ADMIN PRIVILEGES */}
           {activeTab === "privileges" && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-amber-950/40 via-[#0f1522] to-emerald-950/40 border border-amber-500/30 p-6 rounded-2xl shadow-xl">
+              <div className={`border p-6 rounded-2xl shadow-xl ${
+                isModernSleek 
+                  ? "bg-gradient-to-r from-amber-50 via-white to-emerald-50 border-amber-300/70" 
+                  : "bg-gradient-to-r from-amber-950/40 via-[#0f1522] to-emerald-950/40 border-amber-500/30"
+              }`}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-3 bg-amber-500/20 rounded-2xl border border-amber-500/40 text-amber-400">
                     <Award className="h-7 w-7" />
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-white">Privilèges Administrateur de la Plateforme</h3>
-                    <p className="text-xs text-amber-300 font-bold">
+                    <h3 className={`text-base font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Privilèges Administrateur de la Plateforme</h3>
+                    <p className={`text-xs font-bold ${isModernSleek ? "text-amber-700" : "text-amber-300"}`}>
                       Compte Administrateur Principal The Box
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                  <div className="bg-[#080b10]/80 p-3.5 rounded-xl border border-[#1f293d] flex items-center gap-3">
+                  <div className={`p-3.5 rounded-xl border flex items-center gap-3 ${
+                    isModernSleek ? "bg-white border-slate-200" : "bg-[#080b10]/80 border-[#1f293d]"
+                  }`}>
                     <CheckCircle2 className="h-5 w-5 text-[#00E599] flex-shrink-0" />
                     <div className="text-xs">
-                      <p className="font-black text-white">Déblocage Inconditionnel de Tous les Sports</p>
-                      <p className="text-slate-400 text-[11px]">Accès à Football, Basketball, Rugby et Handball en illimité.</p>
+                      <p className={`font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Déblocage Inconditionnel de Tous les Sports</p>
+                      <p className={`text-[11px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Accès à Football, Basketball, Rugby et Handball en illimité.</p>
                     </div>
                   </div>
 
-                  <div className="bg-[#080b10]/80 p-3.5 rounded-xl border border-[#1f293d] flex items-center gap-3">
+                  <div className={`p-3.5 rounded-xl border flex items-center gap-3 ${
+                    isModernSleek ? "bg-white border-slate-200" : "bg-[#080b10]/80 border-[#1f293d]"
+                  }`}>
                     <CheckCircle2 className="h-5 w-5 text-[#00E599] flex-shrink-0" />
                     <div className="text-xs">
-                      <p className="font-black text-white">Formule Club Élite Active Gratuitement</p>
-                      <p className="text-slate-400 text-[11px]">Toutes les fonctionnalités avancées (Export HD, multi-terrains, Playbook) sont débloquées.</p>
+                      <p className={`font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Formule Club Élite Active Gratuitement</p>
+                      <p className={`text-[11px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Toutes les fonctionnalités avancées (Export HD, multi-terrains, Playbook) sont débloquées.</p>
                     </div>
                   </div>
 
-                  <div className="bg-[#080b10]/80 p-3.5 rounded-xl border border-[#1f293d] flex items-center gap-3">
+                  <div className={`p-3.5 rounded-xl border flex items-center gap-3 ${
+                    isModernSleek ? "bg-white border-slate-200" : "bg-[#080b10]/80 border-[#1f293d]"
+                  }`}>
                     <CheckCircle2 className="h-5 w-5 text-[#00E599] flex-shrink-0" />
                     <div className="text-xs">
-                      <p className="font-black text-white">Module de Causerie & Tactiques Illimités</p>
-                      <p className="text-slate-400 text-[11px]">Aucune restriction sur le nombre de schémas par jour.</p>
+                      <p className={`font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Module de Causerie & Tactiques Illimités</p>
+                      <p className={`text-[11px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Aucune restriction sur le nombre de schémas par jour.</p>
                     </div>
                   </div>
 
-                  <div className="bg-[#080b10]/80 p-3.5 rounded-xl border border-[#1f293d] flex items-center gap-3">
+                  <div className={`p-3.5 rounded-xl border flex items-center gap-3 ${
+                    isModernSleek ? "bg-white border-slate-200" : "bg-[#080b10]/80 border-[#1f293d]"
+                  }`}>
                     <CheckCircle2 className="h-5 w-5 text-[#00E599] flex-shrink-0" />
                     <div className="text-xs">
-                      <p className="font-black text-white">Gestionnaire Centralisé des Abonnements</p>
-                      <p className="text-slate-400 text-[11px]">Modification directe des offres des utilisateurs et contrôle du statut des sports.</p>
+                      <p className={`font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Gestionnaire Centralisé des Abonnements</p>
+                      <p className={`text-[11px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Modification directe des offres des utilisateurs et contrôle du statut des sports.</p>
                     </div>
                   </div>
                 </div>
@@ -928,11 +958,15 @@ export default function AdminPlatform({
         </div>
 
         {/* FOOTER */}
-        <div className="bg-[#0f141d] px-6 py-3 border-t border-[#1f293d] flex items-center justify-between text-xs text-slate-400">
+        <div className={`px-6 py-3 border-t flex items-center justify-between text-xs ${
+          isModernSleek ? "bg-slate-100 border-slate-200 text-slate-600" : "bg-[#0f141d] border-[#1f293d] text-slate-400"
+        }`}>
           <span>The Box Platform Admin</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-[#1a2333] hover:bg-[#253249] text-white font-black rounded-xl border border-[#222d41] transition cursor-pointer"
+            className={`px-4 py-1.5 font-black rounded-xl border transition cursor-pointer ${
+              isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800 border-slate-300" : "bg-[#1a2333] hover:bg-[#253249] text-white border-[#222d41]"
+            }`}
           >
             Fermer la Console Admin
           </button>

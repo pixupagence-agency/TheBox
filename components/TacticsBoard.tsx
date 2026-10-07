@@ -11998,19 +11998,19 @@ export default function TacticsBoard({
           <div className={`w-full max-w-6xl rounded-2xl p-4 sm:p-6 shadow-2xl relative my-auto space-y-4 max-h-[95vh] overflow-y-auto border ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"}`}>
             
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#1f293d] pb-3">
+            <div className={`flex items-center justify-between border-b pb-3 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 via-amber-500/20 to-yellow-600/30 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xl shadow-inner">
                   🏆
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <h3 className={`text-base font-black uppercase tracking-wider flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                     <span>VUE EXPORT 3D CARTE (SQUAD)</span>
-                    <span className="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-black border border-amber-500/30">
+                    <span className="text-[9px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded font-black border border-amber-500/30">
                       STYLE CARTE 3D
                     </span>
                   </h3>
-                  <p className="text-xs text-[#62728f] font-bold">
+                  <p className={`text-xs font-bold ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
                     Générez et téléchargez une image HD de votre composition en perspective 3D avec cartes de joueurs.
                   </p>
                 </div>
@@ -12018,18 +12018,22 @@ export default function TacticsBoard({
               
               <button
                 onClick={() => setShowSquad3DModal(false)}
-                className="text-slate-400 hover:text-white font-bold p-2 hover:bg-[#1a2333] rounded-xl cursor-pointer transition text-lg"
+                className={`font-bold p-2 rounded-xl cursor-pointer transition text-lg ${
+                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                }`}
               >
                 ✕
               </button>
             </div>
 
             {/* Toolbar Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-[#090d14] p-3 rounded-xl border border-[#1f293d]">
+            <div className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border ${
+              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900 shadow-sm" : "bg-[#090d14] border-[#1f293d] text-white"
+            }`}>
               
               {/* Card Theme Selector */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-300 font-black uppercase">Style Cartes:</span>
+                <span className={`text-xs font-black uppercase ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>Style Cartes:</span>
                 <div className="flex items-center gap-1">
                   {[
                     { id: "gold", label: "Or Gold", color: "bg-amber-500 text-slate-950" },
@@ -12051,15 +12055,17 @@ export default function TacticsBoard({
               </div>
 
               {/* Orientation Format Selector */}
-              <div className="flex items-center gap-1.5 bg-[#121926] p-1 rounded-xl border border-[#1f293d]">
-                <span className="text-[11px] text-slate-400 font-black uppercase px-1.5">Format:</span>
+              <div className={`flex items-center gap-1.5 p-1 rounded-xl border ${
+                isModernSleek ? "bg-white border-slate-300" : "bg-[#121926] border-[#1f293d]"
+              }`}>
+                <span className={`text-[11px] font-black uppercase px-1.5 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Format:</span>
                 <button
                   type="button"
                   onClick={() => setSquad3DOrientation("landscape")}
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 transition cursor-pointer ${
                     squad3DOrientation === "landscape"
                       ? "bg-[#00E599] text-[#0d1117] shadow"
-                      : "text-slate-400 hover:text-white bg-[#090d14]"
+                      : isModernSleek ? "text-slate-600 hover:text-slate-900 bg-slate-100" : "text-slate-400 hover:text-white bg-[#090d14]"
                   }`}
                 >
                   <Laptop className="w-3.5 h-3.5" />
@@ -12071,7 +12077,7 @@ export default function TacticsBoard({
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 transition cursor-pointer ${
                     squad3DOrientation === "portrait"
                       ? "bg-[#00E599] text-[#0d1117] shadow"
-                      : "text-slate-400 hover:text-white bg-[#090d14]"
+                      : isModernSleek ? "text-slate-600 hover:text-slate-900 bg-slate-100" : "text-slate-400 hover:text-white bg-[#090d14]"
                   }`}
                 >
                   <Smartphone className="w-3.5 h-3.5" />
@@ -12080,8 +12086,10 @@ export default function TacticsBoard({
               </div>
 
               {/* Pitch Scale Zoom Control */}
-              <div className="flex items-center gap-2 bg-[#121926] px-2.5 py-1.5 rounded-xl border border-[#1f293d]">
-                <span className="text-[11px] text-slate-300 font-black uppercase flex items-center gap-1">
+              <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${
+                isModernSleek ? "bg-white border-slate-300" : "bg-[#121926] border-[#1f293d]"
+              }`}>
+                <span className={`text-[11px] font-black uppercase flex items-center gap-1 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                   <Maximize2 className="w-3.5 h-3.5 text-[#00E599]" />
                   <span>Agrandir Terrain:</span>
                 </span>
@@ -12098,7 +12106,9 @@ export default function TacticsBoard({
                 {squad3DPitchScale !== 100 && (
                   <button
                     onClick={() => setSquad3DPitchScale(100)}
-                    className="text-[9px] bg-[#1a2333] hover:bg-[#253247] text-slate-300 px-1.5 py-0.5 rounded font-bold transition cursor-pointer"
+                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition cursor-pointer ${
+                      isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800" : "bg-[#1a2333] hover:bg-[#253247] text-slate-300"
+                    }`}
                     title="Réinitialiser à 100%"
                   >
                     100%
@@ -12108,7 +12118,9 @@ export default function TacticsBoard({
 
               {/* Read-Only Club Title Display & Export Button */}
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#121926] border border-[#1f293d] rounded-xl text-xs font-black text-amber-300 shadow-inner" title="Nom de l'équipe active (non modifiable ici)">
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-black shadow-inner ${
+                  isModernSleek ? "bg-white border-slate-300 text-amber-700" : "bg-[#121926] border-[#1f293d] text-amber-300"
+                }`} title="Nom de l'équipe active (non modifiable ici)">
                   <span>🛡️</span>
                   <span className="truncate max-w-[140px] uppercase">{displayClubTitle}</span>
                 </div>
