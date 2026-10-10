@@ -370,19 +370,25 @@ export default function TacticsBoard({
     }
   }, [isPaidSubscriber, coachId]);
 
+  const isFreePlan = Boolean(
+    !currentPlan ||
+    currentPlan.toLowerCase() === "free" ||
+    currentPlan.toLowerCase() === "gratuit"
+  );
+
   const isProPlusOrAdmin = Boolean(
     isUserAdmin ||
     currentPlan === "pro_plus" ||
     currentPlan === "club" ||
     currentPlan === "annuel" ||
-    (!isPaidSubscriber && liveTrialStatus && !liveTrialStatus.isExpired)
+    (!isFreePlan && !isPaidSubscriber && liveTrialStatus && !liveTrialStatus.isExpired)
   );
 
   const isProOrAdmin = Boolean(
     isProPlusOrAdmin ||
     currentPlan === "pro" ||
     currentPlan === "mensuel" ||
-    (!isPaidSubscriber && liveTrialStatus && !liveTrialStatus.isExpired)
+    (!isFreePlan && !isPaidSubscriber && liveTrialStatus && !liveTrialStatus.isExpired)
   );
 
   // Team configurations
@@ -1476,6 +1482,11 @@ export default function TacticsBoard({
   };
 
   const handleAddNewMatch = (assignedTeamId?: any) => {
+    if (!isProOrAdmin) {
+      setSleekToastMessage("🔒 La création de matchs est réservée aux abonnés PRO & PRO+.");
+      setIsCheckoutOpen(true);
+      return;
+    }
     const targetTeamId = typeof assignedTeamId === "string" ? assignedTeamId : activeTeamId;
     const targetTeam = teams.find((t) => t.id === targetTeamId) || activeTeam;
     const newId = `match_${Date.now()}`;
@@ -3747,6 +3758,11 @@ export default function TacticsBoard({
 
   // Saved tactical strategies handlers
   const handleTriggerSaveModal = () => {
+    if (!isProOrAdmin) {
+      setSleekToastMessage("🔒 L'enregistrement des schémas tactiques est réservé aux formules PRO & PRO+.");
+      setIsCheckoutOpen(true);
+      return;
+    }
     setIsSaveAnimationMode(false);
     setTacticName(`Schéma ${activeSport.toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}`);
     setSaveTacticMatchId(activeMatchId);
@@ -3754,6 +3770,11 @@ export default function TacticsBoard({
   };
 
   const handleSaveTacticState = () => {
+    if (!isProOrAdmin) {
+      setSleekToastMessage("🔒 L'enregistrement des schémas tactiques est réservé aux formules PRO & PRO+.");
+      setIsCheckoutOpen(true);
+      return;
+    }
     if (!tacticName.trim()) return;
 
     const targetMatchId = saveTacticMatchId || activeMatchId;
@@ -4731,13 +4752,9 @@ export default function TacticsBoard({
     }
   };
 
-  // Directly download image or open checkout if free user
+  // Execute PNG Image Download Directly (Included in Free plan)
   const handleOpenExportModal = () => {
-    if (isProOrAdmin) {
-      handleDoExportImage();
-    } else {
-      setIsCheckoutOpen(true);
-    }
+    handleDoExportImage();
   };
 
   // Export Screenshot Image of the active Modal Window DOM Element
@@ -4849,6 +4866,11 @@ export default function TacticsBoard({
 
   // Mic dictation implementation using browser Web Speech API
   const handleToggleMicRecording = () => {
+    if (!isProOrAdmin) {
+      setSleekToastMessage("🔒 L'enregistrement des notes vocales est réservé aux formules PRO & PRO+.");
+      setIsCheckoutOpen(true);
+      return;
+    }
     const SpeechRecognitionAPI =
       typeof window !== "undefined" &&
       ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
@@ -6351,6 +6373,11 @@ export default function TacticsBoard({
               {/* Button 1: Effectif Adverse */}
               <button
                 onClick={() => {
+                  if (!isProOrAdmin) {
+                    setSleekToastMessage("🔒 La gestion de l'effectif adverse est réservée aux formules PRO & PRO+.");
+                    setIsCheckoutOpen(true);
+                    return;
+                  }
                   setRolesTargetTeam("away");
                   setTeamRolesModalTab("players");
                   setIsSetPiecesOpen(true);
@@ -6364,6 +6391,11 @@ export default function TacticsBoard({
               >
                 <span className="text-xs">👥</span>
                 <span>Effectif</span>
+                {!isProOrAdmin && (
+                  <span className="text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm">
+                    PRO
+                  </span>
+                )}
                 <span className="text-[8.5px] font-mono text-rose-300 font-bold ml-0.5">
                   ({currentTokens.filter((t) => t.type === "player_b").length + opponentSubstitutes.length})
                 </span>
@@ -6372,6 +6404,11 @@ export default function TacticsBoard({
               {/* Button 2: Rôles Adverses */}
               <button
                 onClick={() => {
+                  if (!isProOrAdmin) {
+                    setSleekToastMessage("🔒 La configuration des rôles adverses est réservée aux formules PRO & PRO+.");
+                    setIsCheckoutOpen(true);
+                    return;
+                  }
                   setRolesTargetTeam("away");
                   setTeamRolesModalTab("setpieces");
                   setIsSetPiecesOpen(true);
@@ -6385,6 +6422,11 @@ export default function TacticsBoard({
               >
                 <span className="text-xs">🎯</span>
                 <span>Rôles Tactiques</span>
+                {!isProOrAdmin && (
+                  <span className="text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm">
+                    PRO
+                  </span>
+                )}
                 {Object.values(opponentSetPieceRoles).filter(Boolean).length > 0 && (
                   <span className="bg-rose-500 text-white font-black text-[8px] px-1.5 py-0.2 rounded-full ml-0.5">
                     {Object.values(opponentSetPieceRoles).filter(Boolean).length}
@@ -8786,7 +8828,14 @@ export default function TacticsBoard({
                 </div>
                 <div className="flex items-center gap-0.5">
                   <button 
-                    onClick={() => setIsMatchEditOpen(true)}
+                    onClick={() => {
+                      if (!isProOrAdmin) {
+                        setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
+                        setIsCheckoutOpen(true);
+                        return;
+                      }
+                      setIsMatchEditOpen(true);
+                    }}
                     className={`relative p-0.5 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-emerald-800" : "hover:bg-[#1a2333] border-[#1a2130] text-[#00E599]"} border rounded transition cursor-pointer`}
                     title="Gérer ou ajouter des matchs"
                   >
@@ -9066,7 +9115,14 @@ export default function TacticsBoard({
                   </div>
                 ) : (
                   <div 
-                    onClick={() => setIsMatchEditOpen(true)}
+                    onClick={() => {
+                      if (!isProOrAdmin) {
+                        setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
+                        setIsCheckoutOpen(true);
+                        return;
+                      }
+                      setIsMatchEditOpen(true);
+                    }}
                     className={`mt-1.5 pt-1 border-t ${isModernSleek ? "border-slate-100" : "border-[#1f293d]/60"} cursor-pointer text-center`}
                   >
                     <div className="flex items-center justify-center gap-1 mb-0.5">
@@ -9400,6 +9456,11 @@ export default function TacticsBoard({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    if (!isProOrAdmin) {
+                      setSleekToastMessage("🔒 La création de nouveaux matchs est réservée aux formules PRO & PRO+.");
+                      setIsCheckoutOpen(true);
+                      return;
+                    }
                     handleAddNewMatch();
                   }}
                   className="px-3 py-1.5 bg-[#00E599] hover:bg-[#05be80] text-slate-950 font-black text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#00e599]/20"
