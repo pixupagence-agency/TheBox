@@ -544,13 +544,17 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200">
       <div 
-        className={`w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border-2 ${
-          isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
+        className={`w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border relative ${
+          isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Glow visual accents */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+
         {/* Header */}
-        <div className={`flex items-center justify-between px-5 py-3.5 border-b ${
+        <div className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b relative z-10 ${
           isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1f293d] text-white"
         }`}>
           <div className="flex items-center gap-2.5">
@@ -1103,36 +1107,52 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
       {/* ========================================================= */}
       {isEmailPreviewOpen && (
         <div 
-          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md p-3 sm:p-5 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-5 animate-in fade-in duration-200"
           onClick={() => setIsEmailPreviewOpen(false)}
         >
           <div 
-            className="bg-[#0d1117] border-2 border-[#1f293d] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className={`w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border relative ${
+              isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Glow visual accents */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+
             {/* Email Modal Header */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#1f293d] bg-[#090d14]">
+            <div className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b relative z-10 ${
+              isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1f293d] text-white"
+            }`}>
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/40">
+                <div className={`p-2 rounded-xl border ${
+                  isModernSleek ? "bg-blue-50 text-blue-600 border-blue-200" : "bg-blue-500/20 text-blue-400 border-blue-500/40"
+                }`}>
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider">
+                    <h3 className={`text-sm sm:text-base font-black uppercase tracking-wider ${
+                      isModernSleek ? "text-slate-900" : "text-white"
+                    }`}>
                       Aperçu de l&apos;E-mail avant envoi
                     </h3>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-400">
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                      isModernSleek ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-blue-950/80 text-blue-400 border-blue-500/30"
+                    }`}>
                       Format identique WhatsApp
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className={`text-xs font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                     Visualisez le message et copiez son contenu complet en un clic
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsEmailPreviewOpen(false)}
-                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-[#1f293d] transition cursor-pointer"
+                className={`p-1.5 rounded-xl transition cursor-pointer ${
+                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1f293d]"
+                }`}
                 title="Fermer l'aperçu"
               >
                 <X className="w-5 h-5" />
@@ -1143,103 +1163,141 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 scrollbar-thin">
               
               {/* Header fields: Expéditeur / Destinataire / Objet */}
-              <div className="bg-[#090d14] border border-[#1f293d] rounded-xl p-3 space-y-2 text-xs">
-                <div className="flex items-center justify-between border-b border-[#1f293d]/60 pb-2">
+              <div className={`border rounded-xl p-3 space-y-2 text-xs ${
+                isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#090d14] border-[#1f293d] text-white"
+              }`}>
+                <div className={`flex items-center justify-between border-b pb-2 ${
+                  isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"
+                }`}>
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 font-bold uppercase text-[10px]">Expéditeur :</span>
-                    <span className="text-slate-200 font-bold">Staff Technique • {clubLabel}</span>
+                    <span className={`font-bold uppercase text-[10px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Expéditeur :</span>
+                    <span className={`font-bold ${isModernSleek ? "text-slate-900" : "text-slate-200"}`}>Staff Technique • {clubLabel}</span>
                   </div>
                   <span className={`text-[10px] font-bold flex items-center gap-1 ${
-                    isModernSleek ? "text-emerald-800" : "text-emerald-400"
+                    isModernSleek ? "text-emerald-700" : "text-emerald-400"
                   }`}>
                     <CheckCircle2 className="w-3.5 h-3.5" /> Prêt à envoyer
                   </span>
                 </div>
 
                 {/* Destinataire (Adresse de l'utilisateur pour transfert) */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1f293d]/60 pb-2">
+                <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2 ${
+                  isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"
+                }`}>
                   <div className="flex items-center gap-2 flex-1">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] shrink-0">Votre E-mail (Destinataire) :</span>
+                    <span className={`font-bold uppercase text-[10px] shrink-0 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Votre E-mail (Destinataire) :</span>
                     <input
                       type="email"
                       value={recipientEmail}
                       onChange={(e) => setRecipientEmail(e.target.value)}
                       placeholder="votre.email@exemple.com"
-                      className="bg-[#05080e] border border-[#1f293d] focus:border-[#00E599] rounded-lg px-2.5 py-1 text-xs text-white font-medium outline-none transition w-full sm:w-72"
+                      className={`border rounded-lg px-2.5 py-1 text-xs font-medium outline-none transition w-full sm:w-72 ${
+                        isModernSleek
+                          ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-blue-500"
+                          : "bg-[#05080e] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
+                      }`}
                     />
                   </div>
-                  <span className="text-[10px] text-blue-300 bg-blue-950/80 border border-blue-500/30 px-2 py-0.5 rounded-full font-bold self-start sm:self-auto shrink-0">
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold self-start sm:self-auto shrink-0 border ${
+                    isModernSleek ? "text-blue-700 bg-blue-50 border-blue-200" : "text-blue-300 bg-blue-950/80 border-blue-500/30"
+                  }`}>
                     Pour transfert à vos contacts
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] shrink-0">Objet :</span>
-                    <span className="text-blue-300 font-black truncate">{generateEmailData().subject}</span>
+                    <span className={`font-bold uppercase text-[10px] shrink-0 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Objet :</span>
+                    <span className={`font-black truncate ${isModernSleek ? "text-blue-700" : "text-blue-300"}`}>{generateEmailData().subject}</span>
                   </div>
                   <button
                     onClick={handleCopyEmailSubject}
-                    className="shrink-0 px-2 py-1 bg-[#121926] hover:bg-[#1a253a] border border-[#1f293d] rounded-lg text-[10px] font-bold text-slate-300 hover:text-white flex items-center gap-1 transition cursor-pointer"
+                    className={`shrink-0 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition cursor-pointer border ${
+                      isModernSleek
+                        ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700 shadow-xs"
+                        : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-300 hover:text-white"
+                    }`}
                     title="Copier uniquement l'objet du mail"
                   >
-                    {copiedEmailSubject ? <Check className="w-3 h-3 text-[#00E599]" /> : <Copy className="w-3 h-3 text-blue-400" />}
+                    {copiedEmailSubject ? <Check className="w-3 h-3 text-[#00E599]" /> : <Copy className={`w-3 h-3 ${isModernSleek ? "text-blue-600" : "text-blue-400"}`} />}
                     <span>{copiedEmailSubject ? "Objet copié !" : "Copier objet"}</span>
                   </button>
                 </div>
               </div>
 
               {/* Notice explicative : Envoi vers l'adresse du coach pour transfert */}
-              <div className="bg-[#091a2e] border border-[#1e3a5f] rounded-xl p-3 text-xs text-blue-200 flex items-start gap-2.5">
+              <div className={`border rounded-xl p-3 text-xs flex items-start gap-2.5 ${
+                isModernSleek ? "bg-blue-50/80 border-blue-200 text-blue-950" : "bg-[#091a2e] border-[#1e3a5f] text-blue-200"
+              }`}>
                 <span className="text-base shrink-0">✉️</span>
                 <div className="leading-relaxed">
-                  <span className="font-bold text-white block">Comment ça marche ?</span>
+                  <span className={`font-bold block ${isModernSleek ? "text-blue-950" : "text-white"}`}>Comment ça marche ?</span>
                   Le schéma et le briefing complet sont envoyés directement à votre boîte mail. Dès réception, cliquez sur <strong>« Transférer »</strong> dans votre messagerie pour l&apos;adresser à vos joueurs, votre staff ou vos dirigeants.
                 </div>
               </div>
 
               {/* Feedback messages d'envoi d'e-mail */}
               {emailSendSuccess && (
-                <div className="bg-[#102420] border-2 border-[#00E599] p-3 rounded-xl text-xs font-bold text-[#00E599] flex items-center gap-2.5 animate-in fade-in">
-                  <CheckCircle2 className="w-5 h-5 shrink-0 text-[#00E599]" />
+                <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2.5 animate-in fade-in border-2 ${
+                  isModernSleek ? "bg-emerald-50 border-emerald-500 text-emerald-800" : "bg-[#102420] border-2 border-[#00E599] text-[#00E599]"
+                }`}>
+                  <CheckCircle2 className={`w-5 h-5 shrink-0 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
                   <span>{emailSendSuccess}</span>
                 </div>
               )}
               {emailSendError && (
-                <div className="bg-red-950/80 border border-red-500 p-3 rounded-xl text-xs font-bold text-red-200 flex items-center gap-2.5 animate-in fade-in">
-                  <X className="w-5 h-5 shrink-0 text-red-400" />
+                <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2.5 animate-in fade-in border ${
+                  isModernSleek ? "bg-rose-50 border-rose-300 text-rose-800" : "bg-red-950/80 border border-red-500 text-red-200"
+                }`}>
+                  <X className="w-5 h-5 shrink-0 text-rose-500" />
                   <span>{emailSendError}</span>
                 </div>
               )}
 
               {/* Email Content Box */}
-              <div className="bg-[#070b13] border-2 border-[#1f293d] rounded-xl p-4 relative group">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1f293d] text-[10px] uppercase font-black tracking-wider text-slate-400">
-                  <span className="flex items-center gap-1.5 text-slate-300">
-                    <FileText className="w-3.5 h-3.5 text-blue-400" />
+              <div className={`border rounded-xl p-4 relative group ${
+                isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#070b13] border-2 border-[#1f293d]"
+              }`}>
+                <div className={`flex items-center justify-between pb-2 mb-2 border-b text-[10px] uppercase font-black tracking-wider ${
+                  isModernSleek ? "border-slate-200 text-slate-500" : "border-[#1f293d] text-slate-400"
+                }`}>
+                  <span className={`flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                    <FileText className={`w-3.5 h-3.5 ${isModernSleek ? "text-blue-600" : "text-blue-400"}`} />
                     <span>Corps de l&apos;e-mail prêt à être envoyé :</span>
                   </span>
-                  <span className="text-slate-500 font-mono text-[9px] lowercase">texte brut formaté</span>
+                  <span className={`${isModernSleek ? "text-slate-400" : "text-slate-500"} font-mono text-[9px] lowercase`}>texte brut formaté</span>
                 </div>
 
-                <pre className="text-xs font-mono text-slate-200 whitespace-pre-wrap bg-[#05080e] p-3 rounded-lg border border-[#1a2333] max-h-64 overflow-y-auto leading-relaxed scrollbar-thin select-all">
+                <pre className={`text-xs font-mono whitespace-pre-wrap p-3 rounded-lg border max-h-64 overflow-y-auto leading-relaxed scrollbar-thin select-all ${
+                  isModernSleek
+                    ? "bg-white border-slate-300 text-slate-800 shadow-inner"
+                    : "bg-[#05080e] border-[#1a2333] text-slate-200"
+                }`}>
                   {generateEmailData().body}
                 </pre>
               </div>
 
               {/* Schema Image Attachment Notice */}
               {includeSchemas && activeImageUrl && (
-                <div className="bg-[#102420] border border-[#00E599]/40 rounded-xl p-3 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2.5 text-[#00E599]">
+                <div className={`border rounded-xl p-3 flex items-center justify-between text-xs ${
+                  isModernSleek ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-[#102420] border border-[#00E599]/40 text-[#00E599]"
+                }`}>
+                  <div className={`flex items-center gap-2.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>
                     <ImageIcon className="w-4 h-4 shrink-0" />
                     <div>
                       <span className="font-black block">Schéma visuel HD inclus</span>
-                      <span className="text-[10px] text-slate-300 font-medium">L&apos;image du schéma tactique sera directement intégrée dans l&apos;e-mail envoyé.</span>
+                      <span className={`text-[10px] font-medium ${isModernSleek ? "text-emerald-700" : "text-slate-300"}`}>
+                        L&apos;image du schéma tactique sera directement intégrée dans l&apos;e-mail envoyé.
+                      </span>
                     </div>
                   </div>
                   <button
                     onClick={handleDownloadImage}
-                    className="px-2.5 py-1.5 bg-[#00E599] hover:bg-[#00c583] text-[#07130a] font-black text-[10px] uppercase rounded-lg transition cursor-pointer flex items-center gap-1 shrink-0"
+                    className={`px-2.5 py-1.5 font-black text-[10px] uppercase rounded-lg transition cursor-pointer flex items-center gap-1 shrink-0 ${
+                      isModernSleek
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                        : "bg-[#00E599] hover:bg-[#00c583] text-[#07130a]"
+                    }`}
                   >
                     <Download className="w-3 h-3" />
                     <span>{downloadedImage ? "Téléchargée !" : "Télécharger PNG"}</span>
@@ -1249,7 +1307,9 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
               {/* Status Alert if copied */}
               {copiedEmailBody && (
-                <div className="bg-[#102420] border border-[#00E599] p-3 rounded-xl text-xs font-black text-[#00E599] flex items-center gap-2 animate-in fade-in">
+                <div className={`border p-3 rounded-xl text-xs font-black flex items-center gap-2 animate-in fade-in ${
+                  isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#102420] border border-[#00E599] text-[#00E599]"
+                }`}>
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>Tout le corps du message est copié dans votre presse-papier !</span>
                 </div>
@@ -1257,7 +1317,9 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             </div>
 
             {/* Email Modal Footer Actions */}
-            <div className="p-4 border-t border-[#1f293d] bg-[#090d14] flex flex-col sm:flex-row items-center gap-2.5">
+            <div className={`p-4 border-t flex flex-col sm:flex-row items-center gap-2.5 ${
+              isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
+            }`}>
               {/* PRIMARY CTA: SEND DIRECTLY TO COACH'S EMAIL */}
               <button
                 onClick={handleSendEmailToUser}
@@ -1280,7 +1342,11 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               {/* SECONDARY CTA: COPY ALL EMAIL BODY */}
               <button
                 onClick={handleCopyEmailBody}
-                className="w-full sm:w-auto py-3 px-4 bg-[#121926] hover:bg-[#1a253a] border border-[#1f293d] hover:border-slate-500 text-slate-200 hover:text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 transition cursor-pointer"
+                className={`w-full sm:w-auto py-3 px-4 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 transition cursor-pointer border ${
+                  isModernSleek
+                    ? "bg-white hover:bg-slate-50 border-slate-300 hover:border-slate-400 text-slate-700 shadow-xs"
+                    : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] hover:border-slate-500 text-slate-200 hover:text-white"
+                }`}
                 title="Copier le texte complet"
               >
                 {copiedEmailBody ? (
@@ -1299,7 +1365,11 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               {/* TERTIARY CTA: OPEN MAILTO */}
               <button
                 onClick={handleLaunchNativeMailto}
-                className="w-full sm:w-auto py-3 px-3 bg-transparent hover:bg-[#1a2333] border border-transparent hover:border-[#1f293d] text-slate-400 hover:text-slate-200 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className={`w-full sm:w-auto py-3 px-3 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-1.5 transition cursor-pointer border border-transparent ${
+                  isModernSleek
+                    ? "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#1a2333] hover:border-[#1f293d]"
+                }`}
                 title="Ouvrir votre logiciel e-mail par défaut"
               >
                 <Mail className="w-3.5 h-3.5" />
@@ -1309,7 +1379,11 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               {/* Close/Back button */}
               <button
                 onClick={() => setIsEmailPreviewOpen(false)}
-                className="w-full sm:w-auto py-3 px-4 bg-transparent hover:bg-[#1a2333] text-slate-400 hover:text-slate-200 rounded-xl font-bold text-xs uppercase transition cursor-pointer"
+                className={`w-full sm:w-auto py-3 px-4 rounded-xl font-bold text-xs uppercase transition cursor-pointer ${
+                  isModernSleek
+                    ? "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#1a2333]"
+                }`}
               >
                 Fermer
               </button>

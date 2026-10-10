@@ -28,6 +28,7 @@ interface SubscriptionPlansProps {
   coachId?: string;
   coachEmail?: string;
   coachName?: string;
+  isModernSleek?: boolean;
 }
 
 export default function SubscriptionPlans({ 
@@ -35,7 +36,8 @@ export default function SubscriptionPlans({
   setActivePlan,
   coachId,
   coachEmail,
-  coachName 
+  coachName,
+  isModernSleek = false
 }: SubscriptionPlansProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [showStripeGuide, setShowStripeGuide] = useState(false);
@@ -329,27 +331,37 @@ export default function SubscriptionPlans({
             return (
               <div 
                 key={p.id}
-                className={`bg-brand-pine border-brand-border border rounded-xl p-5 flex flex-col justify-between relative shadow-lg hover:shadow-xl transition-all ${p.color}`}
+                className={`border rounded-2xl p-5 flex flex-col justify-between relative shadow-lg hover:shadow-xl transition-all ${
+                  isModernSleek
+                    ? p.popular
+                      ? "bg-emerald-50/60 border-2 border-emerald-500 text-slate-900 shadow-emerald-500/10"
+                      : "bg-slate-50 border-slate-200 text-slate-900 shadow-slate-200/50"
+                    : `bg-brand-pine border-brand-border ${p.color}`
+                }`}
               >
                 {p.popular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-cream border border-white text-brand-deep text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+                  <span className={`absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md ${
+                    isModernSleek
+                      ? "bg-emerald-500 text-slate-950 border border-emerald-400"
+                      : "bg-brand-cream border border-white text-brand-deep"
+                  }`}>
                     ⭐ RECOMMANDÉ
                   </span>
                 )}
 
                 <div>
-                  <h3 className="text-base font-bold text-white mb-1.5">{p.name}</h3>
-                  <p className="text-xs text-brand-sage mb-4 h-8 line-clamp-2 leading-relaxed">{p.description}</p>
+                  <h3 className={`text-base font-bold mb-1.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>{p.name}</h3>
+                  <p className={`text-xs mb-4 h-8 line-clamp-2 leading-relaxed ${isModernSleek ? "text-slate-600" : "text-brand-sage"}`}>{p.description}</p>
                   
                   <div className="flex items-baseline gap-1.5 mb-5">
-                    <span className="text-3xl font-black text-white">{p.price}€</span>
-                    <span className="text-xs text-brand-sage">/ mois</span>
+                    <span className={`text-3xl font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>{p.price}€</span>
+                    <span className={`text-xs ${isModernSleek ? "text-slate-500" : "text-brand-sage"}`}>/ mois</span>
                   </div>
 
-                  <ul className="space-y-2.5 border-t border-brand-border pt-4 mb-6">
+                  <ul className={`space-y-2.5 border-t pt-4 mb-6 ${isModernSleek ? "border-slate-200" : "border-brand-border"}`}>
                     {p.features.map((f, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-xs text-brand-sage leading-normal">
-                        <Check className="h-4 w-4 text-brand-cream flex-shrink-0 mt-0.5" />
+                      <li key={idx} className={`flex items-start gap-2 text-xs leading-normal ${isModernSleek ? "text-slate-700" : "text-brand-sage"}`}>
+                        <Check className={`h-4 w-4 flex-shrink-0 mt-0.5 ${isModernSleek ? "text-emerald-800" : "text-brand-cream"}`} />
                         <span>{f}</span>
                       </li>
                     ))}
@@ -369,14 +381,18 @@ export default function SubscriptionPlans({
                         setCheckoutMode(stripeStatus.configured ? "stripe" : "simulator");
                       }
                     }}
-                    className={`w-full py-2.5 px-4 font-bold text-xs rounded-lg transition-all shadow cursor-pointer ${
+                    className={`w-full py-2.5 px-4 font-bold text-xs rounded-xl transition-all shadow cursor-pointer ${
                       isCurrent 
-                        ? "bg-brand-deep text-brand-sage/60 cursor-not-allowed border border-brand-border" 
+                        ? isModernSleek
+                          ? "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300"
+                          : "bg-brand-deep text-brand-sage/60 cursor-not-allowed border border-brand-border" 
                         : p.id === "free"
                           ? "bg-slate-700 hover:bg-slate-600 text-white font-bold"
                           : p.popular
-                            ? "bg-brand-cream hover:bg-slate-100 text-brand-deep font-black"
-                            : "bg-brand-moss hover:bg-brand-moss/80 text-brand-cream"
+                            ? "bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-slate-950 font-black shadow-lg shadow-[#00E599]/20"
+                            : isModernSleek
+                              ? "bg-slate-900 hover:bg-slate-800 text-white font-bold"
+                              : "bg-brand-moss hover:bg-brand-moss/80 text-brand-cream"
                     }`}
                   >
                     {isCurrent ? "Votre Plan Actuel" : p.id === "free" ? "Repasser en Version Gratuite" : p.cta}
@@ -386,7 +402,11 @@ export default function SubscriptionPlans({
                     <button
                       onClick={() => handleLaunchStripeCheckout(p.id)}
                       disabled={isStripeLoading}
-                      className="w-full py-1.5 text-[11px] font-bold text-slate-300 hover:text-white bg-[#0e1524] hover:bg-[#162238] border border-[#1f2e48] rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      className={`w-full py-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer border ${
+                        isModernSleek
+                          ? "text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 border-slate-300"
+                          : "text-slate-300 hover:text-white bg-[#0e1524] hover:bg-[#162238] border-[#1f2e48]"
+                      }`}
                     >
                       <Zap className="h-3 w-3 text-[#00E599]" />
                       <span>Payer directement par Carte Bancaire</span>

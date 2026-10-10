@@ -133,74 +133,55 @@ export default function TrialCountdownModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-      <div className={`max-w-xl w-full rounded-2xl p-6 sm:p-7 shadow-2xl relative my-auto overflow-hidden border ${
-        isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
+    <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
+      <div className={`max-w-xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto overflow-hidden border ${
+        isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
       }`}>
         
-        {/* Background glow visual accent */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Glow visual accents */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className={`absolute top-4 right-4 font-bold p-1.5 rounded-xl transition cursor-pointer z-10 ${
-            isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-          }`}
-          title="Fermer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Header Icon & Title */}
-        <div className="flex items-start gap-4 mb-5 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-amber-400/30 to-emerald-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 text-2xl shrink-0 shadow-lg">
-            {isCreatorAdmin ? "👑" : isNewAccountWelcome ? "🎉" : "⏰"}
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              {isCreatorAdmin ? (
-                <span className="text-[9px] bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
-                  <Award className="w-3 h-3" /> COMPTE CRÉATEUR & ADMIN PLATFORME
-                </span>
-              ) : (
-                <>
-                  <span className="text-[9px] bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
-                    <Award className="w-3 h-3" /> ACCÈS PRO & PRO+ OFFERT
-                  </span>
-                  <span className={`text-[9px] border font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                    isModernSleek
-                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                      : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                  }`}>
-                    {remaining.totalTrialDays} JOURS D&apos;ESSAI
-                  </span>
-                  {trialBonusDays > 0 && (
-                    <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                      🎁 +{trialBonusDays}J EXTENSION ADMIN
-                    </span>
-                  )}
-                </>
-              )}
+        {/* HEADER */}
+        <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${
+          isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl border ${
+              isModernSleek ? "bg-amber-100 border-amber-300 text-amber-800" : "bg-gradient-to-br from-amber-500/20 to-emerald-500/20 border-amber-500/40 text-amber-400"
+            }`}>
+              <Award className="w-5 h-5" />
             </div>
-
-            <h3 className={`text-lg font-black uppercase tracking-wide leading-tight ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-              {isCreatorAdmin
-                ? `Bienvenue ${coachName} ! Accès Administrateur Illimité`
-                : isNewAccountWelcome
-                ? `Bienvenue ${coachName} ! Votre Essai Pro ${remaining.totalTrialDays} Jours est Activé`
-                : `Offre d'Essai Pro & Pro+ • Jour ${remaining.daysPassed} / ${remaining.totalTrialDays}`}
-            </h3>
-
-            <p className={`text-xs font-medium mt-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
-              {isCreatorAdmin
-                ? "En tant que créateur et administrateur de THE BOX, vous bénéficiez d'un accès total sans aucune restriction de temps ni de fonctionnalités."
-                : "Profitez d'un accès illimité à toutes les fonctionnalités avancées de THE BOX avant de passer à la formule gratuite."}
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className={`text-base font-black tracking-wide ${isModernSleek ? "text-slate-900" : "text-white"}`}>
+                  {isCreatorAdmin ? "Compte Créateur & Admin" : "Période d'Essai Pro"}
+                </h3>
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                  isModernSleek ? "bg-amber-100 border-amber-300 text-amber-800" : "bg-amber-500/15 border-amber-500/40 text-amber-400"
+                }`}>
+                  {isCreatorAdmin ? "ADMIN" : `${remaining.totalTrialDays} JOURS`}
+                </span>
+              </div>
+              <p className={`text-xs font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                {isCreatorAdmin ? "Accès total et illimité à toute la plateforme The Box." : "Profitez de l'accès Pro et Pro+ offert."}
+              </p>
+            </div>
           </div>
+
+          <button
+            onClick={onClose}
+            className={`p-1.5 rounded-xl transition cursor-pointer ${
+              isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+            }`}
+            title="Fermer"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
+
+        {/* BODY */}
+        <div className="p-5 sm:p-6 relative z-10 space-y-4">
 
         {/* COUNTDOWN TIMER / CREATOR UNLIMITED BOX */}
         <div className={`border rounded-2xl p-4 mb-5 shadow-inner relative z-10 ${
@@ -342,14 +323,12 @@ export default function TrialCountdownModal({
         </div>
 
         {/* ACTION BUTTONS */}
-        <div className="flex flex-wrap items-center justify-end gap-2.5 relative z-10">
+        <div className={`pt-3 flex flex-wrap items-center justify-end gap-2.5 relative z-10 border-t ${
+          isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+        }`}>
           <button
             onClick={onClose}
-            className={`px-4 py-2.5 border font-bold text-xs rounded-xl transition cursor-pointer ${
-              isModernSleek 
-                ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800" 
-                : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-300"
-            }`}
+            className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
           >
             {isNewAccountWelcome ? "Commencer à utiliser THE BOX" : "Continuer mon entraînement"}
           </button>
@@ -360,7 +339,7 @@ export default function TrialCountdownModal({
                 onClose();
                 onOpenCheckout();
               }}
-              className="px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/10 flex items-center gap-1.5 transition cursor-pointer"
+              className="px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition cursor-pointer"
             >
               <span>Découvrir les Offres Pro</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -368,6 +347,7 @@ export default function TrialCountdownModal({
           )}
         </div>
 
+        </div>
       </div>
     </div>
   );

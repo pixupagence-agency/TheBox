@@ -1,7 +1,23 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Trash2, ShieldAlert, Sparkles, UserPlus, Heart, Zap, Award, Edit, Check } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  UserPlus,
+  Zap,
+  Brain,
+  Battery,
+  User,
+  Check,
+  X,
+  FileText,
+  AlertCircle,
+  Activity,
+  Flame,
+  Moon,
+  Shield,
+} from "lucide-react";
 
 export interface Player {
   id: string;
@@ -50,7 +66,7 @@ export default function TeamRoster({ roster, setRoster, isModernSleek = false }:
         tactics: Number(tactics),
         stamina: Number(stamina)
       },
-      notes: notes || "Aucune note particulière"
+      notes: notes || "Aucune note"
     };
 
     setRoster([...roster, newPlayer]);
@@ -68,7 +84,7 @@ export default function TeamRoster({ roster, setRoster, isModernSleek = false }:
   };
 
   const handleDeletePlayer = (id: string) => {
-    if (confirm("Voulez-vous supprimer ce joueur de votre effectif ?")) {
+    if (confirm("Supprimer ce joueur de l'effectif ?")) {
       setRoster(roster.filter((p) => p.id !== id));
     }
   };
@@ -83,61 +99,75 @@ export default function TeamRoster({ roster, setRoster, isModernSleek = false }:
   };
 
   return (
-    <div className={`space-y-6 ${isModernSleek ? "text-slate-900" : "text-slate-100"}`} id="team-roster">
+    <div className={`space-y-5 ${isModernSleek ? "text-slate-900" : "text-slate-100"}`} id="team-roster">
       
-      {/* Title block */}
-      <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border rounded-xl p-5 shadow-xl ${
-        isModernSleek ? "bg-white border-slate-200" : "bg-slate-900 border-slate-800"
+      {/* Title Header */}
+      <div className={`flex items-center justify-between gap-4 border rounded-2xl p-4 shadow-lg ${
+        isModernSleek ? "bg-white border-slate-200" : "bg-[#0d1117] border-[#1f293d]"
       }`}>
         <div className="flex items-center gap-3">
-          <div className={`p-3 rounded-lg border ${
-            isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-emerald-950/40 text-emerald-400 border-emerald-900/40"
+          <div className={`p-2.5 rounded-xl border ${
+            isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
           }`}>
-            <UserPlus className="h-6 w-6" />
+            <UserPlus className="h-5 w-5" />
           </div>
           <div>
-            <h2 className={`text-xl font-bold tracking-tight ${isModernSleek ? "text-slate-900" : "text-white"}`}>Gestion d&apos;Effectif & Roster</h2>
-            <p className={`text-xs ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Suivi physique, performances et statistiques individuelles des joueurs</p>
+            <h2 className={`text-lg font-black tracking-tight flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
+              <span>Effectif & Joueurs</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                isModernSleek ? "bg-slate-100 text-slate-700 border-slate-300" : "bg-[#161f30] text-slate-300 border-[#233149]"
+              }`}>
+                {roster.length} Joueurs
+              </span>
+            </h2>
+            <p className={`text-xs ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Suivi physique et tactique</p>
           </div>
         </div>
 
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className="px-4 py-2 bg-[#00E599] hover:bg-[#05be80] text-slate-950 font-black text-xs rounded-lg flex items-center gap-2 shadow-lg transition duration-150 cursor-pointer"
+          className="px-3.5 py-2 bg-[#00E599] hover:bg-[#05be80] text-slate-950 font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md transition duration-150 cursor-pointer shrink-0"
         >
-          <Plus className="h-4 w-4" />
-          <span>{isAdding ? "Fermer le formulaire" : "Ajouter un Joueur"}</span>
+          {isAdding ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          <span>{isAdding ? "Fermer" : "Ajouter Joueur"}</span>
         </button>
       </div>
 
       {/* Adding Form Expandable */}
       {isAdding && (
-        <form onSubmit={handleAddPlayer} className={`border rounded-xl p-5 shadow-2xl animate-fade-in space-y-4 ${
-          isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-brand-pine border-brand-border text-white"
+        <form onSubmit={handleAddPlayer} className={`border rounded-2xl p-4 sm:p-5 shadow-2xl animate-fade-in space-y-4 ${
+          isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
         }`}>
-          <h3 className={`text-sm font-bold uppercase tracking-wider border-b pb-2 ${
-            isModernSleek ? "text-slate-900 border-slate-200" : "text-white border-brand-border"
-          }`}>
-            🆕 Fiche de Nouveau Joueur
-          </h3>
+          <div className="flex items-center justify-between border-b border-[#1f293d]/60 pb-2">
+            <h3 className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
+              isModernSleek ? "text-slate-900" : "text-white"
+            }`}>
+              <UserPlus className="w-4 h-4 text-[#00E599]" />
+              <span>Nouveau Joueur</span>
+            </h3>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className={`block text-xs font-bold uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-brand-sage"}`}>Nom complet</label>
+              <label className={`block text-[11px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                <User className="w-3.5 h-3.5 text-blue-400" /> Nom
+              </label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="ex: Kylian Mbappé"
-                className={`w-full rounded px-3 py-2 text-sm focus:outline-none transition border ${
-                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-brand-deep border-brand-border text-brand-ivory focus:border-brand-cream"
+                className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition border ${
+                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#131b29] border-[#1f293d] text-white focus:border-[#00E599]"
                 }`}
               />
             </div>
 
             <div>
-              <label className={`block text-xs font-bold uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-brand-sage"}`}>Numéro de maillot</label>
+              <label className={`block text-[11px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                <span>🔢</span> Maillot
+              </label>
               <input
                 type="number"
                 required
@@ -145,229 +175,323 @@ export default function TeamRoster({ roster, setRoster, isModernSleek = false }:
                 max={99}
                 value={number}
                 onChange={(e) => setNumber(Number(e.target.value))}
-                className={`w-full rounded px-3 py-2 text-sm focus:outline-none transition border ${
-                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-brand-deep border-brand-border text-brand-ivory focus:border-brand-cream"
+                className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition border ${
+                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#131b29] border-[#1f293d] text-white focus:border-[#00E599]"
                 }`}
               />
             </div>
 
             <div>
-              <label className={`block text-xs font-bold uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-brand-sage"}`}>Poste / Rôle</label>
+              <label className={`block text-[11px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                <Shield className="w-3.5 h-3.5 text-amber-400" /> Poste
+              </label>
               <select
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
-                className={`w-full rounded px-3 py-2 text-sm focus:outline-none transition border ${
-                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-brand-deep border-brand-border text-brand-ivory focus:border-brand-cream"
+                className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition border ${
+                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#131b29] border-[#1f293d] text-white focus:border-[#00E599]"
                 }`}
               >
-                <option value="Gardien de but">Gardien de but (GK)</option>
+                <option value="Gardien de but">Gardien (GK)</option>
                 <option value="Défenseur central">Défenseur central (CB)</option>
                 <option value="Défenseur latéral">Défenseur latéral (LB/RB)</option>
                 <option value="Milieu défensif">Milieu défensif (CDM)</option>
                 <option value="Milieu relayeur">Milieu relayeur (CM)</option>
                 <option value="Milieu offensif">Milieu offensif (CAM)</option>
                 <option value="Ailier / Piston">Ailier / Piston (LW/RW)</option>
-                <option value="Avant-centre">Avant-centre / Buteur (ST)</option>
+                <option value="Avant-centre">Buteur (ST)</option>
               </select>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-bold text-brand-sage uppercase mb-1">État de forme physique</label>
+              <label className={`block text-[11px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                <Activity className="w-3.5 h-3.5 text-emerald-400" /> Forme
+              </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as Player["status"])}
-                className="w-full bg-brand-deep border border-brand-border rounded px-3 py-2 text-sm text-brand-ivory focus:outline-none focus:border-brand-cream transition"
+                className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition border ${
+                  isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900" : "bg-[#131b29] border-[#1f293d] text-white"
+                }`}
               >
-                <option value="normal">Normal / Disponible</option>
-                <option value="excellent">🔥 Forme Excellente</option>
-                <option value="tired">💤 Fatigué (Ménagement)</option>
-                <option value="injured">🚨 Blessé / Indisponible</option>
+                <option value="normal">✅ Dispo</option>
+                <option value="excellent">🔥 Top Forme</option>
+                <option value="tired">💤 Fatigué</option>
+                <option value="injured">🚨 Blessé</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-brand-sage uppercase mb-1">Vitesse ({speed}/100)</label>
+              <label className={`block text-[11px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                <Zap className="w-3.5 h-3.5 text-amber-400" /> Vitesse ({speed}%)
+              </label>
               <input
                 type="range"
                 min={1}
                 max={100}
                 value={speed}
                 onChange={(e) => setSpeed(Number(e.target.value))}
-                className="w-full accent-brand-cream py-1.5 cursor-pointer"
+                className="w-full accent-[#00E599] py-1 cursor-pointer"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-brand-sage uppercase mb-1">Intelligence Tactique ({tactics}/100)</label>
+              <label className={`block text-[11px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                <Brain className="w-3.5 h-3.5 text-purple-400" /> Tactique ({tactics}%)
+              </label>
               <input
                 type="range"
                 min={1}
                 max={100}
                 value={tactics}
                 onChange={(e) => setTactics(Number(e.target.value))}
-                className="w-full accent-brand-cream py-1.5 cursor-pointer"
+                className="w-full accent-purple-400 py-1 cursor-pointer"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-brand-sage uppercase mb-1">Endurance ({stamina}/100)</label>
+              <label className={`block text-[11px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                <Battery className="w-3.5 h-3.5 text-emerald-400" /> Endurance ({stamina}%)
+              </label>
               <input
                 type="range"
                 min={1}
                 max={100}
                 value={stamina}
                 onChange={(e) => setStamina(Number(e.target.value))}
-                className="w-full accent-brand-cream py-1.5 cursor-pointer"
+                className="w-full accent-emerald-400 py-1 cursor-pointer"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-brand-sage uppercase mb-1">Notes de préparation athlétique / blessures</label>
+            <label className={`block text-[11px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+              <FileText className="w-3.5 h-3.5 text-blue-400" /> Notes
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Douleur légère à la cheville droite. Repos préconisé pendant les 2 prochains entraînements."
-              className="w-full bg-brand-deep border border-brand-border rounded px-3 py-2 text-sm text-brand-ivory placeholder-brand-sage/60 focus:outline-none focus:border-brand-cream transition h-16 resize-none"
+              placeholder="Consignes, blessures, repos..."
+              className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border h-14 resize-none ${
+                isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400" : "bg-[#131b29] border-[#1f293d] text-white placeholder-slate-500"
+              }`}
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={() => setIsAdding(false)}
-              className="px-4 py-2 bg-brand-deep hover:bg-brand-moss border border-brand-border text-xs font-semibold rounded text-brand-sage cursor-pointer"
+              className="px-3 py-1.5 bg-[#131b29] hover:bg-[#1f293d] border border-[#1f293d] text-xs font-bold rounded-xl text-slate-300 cursor-pointer flex items-center gap-1"
             >
-              Annuler
+              <X className="w-3.5 h-3.5" /> Annuler
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-brand-cream hover:bg-slate-100 text-brand-deep text-xs font-black rounded shadow-md cursor-pointer"
+              className="px-4 py-1.5 bg-[#00E599] hover:bg-[#05be80] text-slate-950 text-xs font-black rounded-xl shadow-md cursor-pointer flex items-center gap-1"
             >
-              Ajouter au Roster
+              <Check className="w-3.5 h-3.5 stroke-[3]" /> Valider
             </button>
           </div>
         </form>
       )}
 
       {/* Roster Cards List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {roster.map((p) => {
-          
-          // Class colors according to physical fitness status
-          let statusLabel = "Disponible";
-          let statusColor = isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/25";
+          // Fitness status badge styling & label
+          let statusBadge = (
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border flex items-center gap-1 ${
+              isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+            }`}>
+              <Check className="w-3 h-3 text-emerald-400" /> Dispo
+            </span>
+          );
+
           if (p.status === "excellent") {
-            statusLabel = "🔥 Forme Excellente";
-            statusColor = isModernSleek ? "bg-teal-100 text-teal-900 border-teal-300 font-bold" : "bg-teal-500/15 text-teal-300 border-teal-500/20";
+            statusBadge = (
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border flex items-center gap-1 ${
+                isModernSleek ? "bg-amber-100 text-amber-900 border-amber-300" : "bg-amber-500/15 text-amber-300 border-amber-500/30"
+              }`}>
+                <Flame className="w-3 h-3 text-amber-400" /> Top
+              </span>
+            );
           } else if (p.status === "tired") {
-            statusLabel = "💤 Fatigué";
-            statusColor = isModernSleek ? "bg-amber-100 text-amber-900 border-amber-300 font-bold" : "bg-amber-500/15 text-amber-400 border-amber-500/20";
+            statusBadge = (
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border flex items-center gap-1 ${
+                isModernSleek ? "bg-blue-100 text-blue-900 border-blue-300" : "bg-blue-500/15 text-blue-300 border-blue-500/30"
+              }`}>
+                <Moon className="w-3 h-3 text-blue-400" /> Fatigué
+              </span>
+            );
           } else if (p.status === "injured") {
-            statusLabel = "🚨 Blessé";
-            statusColor = isModernSleek ? "bg-rose-100 text-rose-900 border-rose-300 font-bold" : "bg-rose-500/15 text-rose-400 border-rose-500/25";
+            statusBadge = (
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border flex items-center gap-1 ${
+                isModernSleek ? "bg-rose-100 text-rose-900 border-rose-300" : "bg-rose-500/15 text-rose-400 border-rose-500/30"
+              }`}>
+                <AlertCircle className="w-3 h-3 text-rose-400" /> Blessé
+              </span>
+            );
           }
 
           return (
             <div 
               key={p.id}
-              className="bg-brand-pine border border-brand-border rounded-xl p-4 shadow-lg hover:border-brand-cream transition flex flex-col justify-between"
+              className={`border rounded-2xl p-3.5 shadow-md hover:shadow-xl transition-all duration-200 flex flex-col justify-between ${
+                isModernSleek 
+                  ? "bg-white border-slate-200 hover:border-emerald-400" 
+                  : "bg-[#0d1117] border-[#1f293d] hover:border-[#00E599]/40"
+              }`}
             >
-              {/* Profile card title */}
+              {/* Profile Card Header */}
               <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-full bg-brand-deep border border-brand-border flex items-center justify-center font-black text-brand-cream text-sm">
-                      {p.number}
+                <div className="flex items-start justify-between gap-2 mb-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-9 h-9 rounded-xl border flex items-center justify-center font-black text-sm shrink-0 shadow-xs ${
+                      isModernSleek
+                        ? "bg-slate-100 border-slate-300 text-slate-900"
+                        : "bg-[#131b29] border-[#233149] text-[#00E599]"
+                    }`}>
+                      #{p.number}
                     </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white leading-none">{p.name}</h3>
-                      <span className="text-[10px] text-brand-sage font-semibold">{p.position}</span>
-                    </div>
-                  </div>
-
-                  <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded border ${statusColor}`}>
-                    {statusLabel}
-                  </span>
-                </div>
-
-                {/* Performance stats progress */}
-                <div className="py-2.5 space-y-1.5 border-t border-b border-brand-border my-3">
-                  <div className="space-y-0.5">
-                    <div className="flex justify-between text-[10px] text-brand-sage">
-                      <span className="flex items-center gap-1">💨 Vitesse</span>
-                      <span className="font-bold">{p.stats.speed}%</span>
-                    </div>
-                    <div className="w-full bg-brand-deep h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-amber-500 h-full rounded-full" style={{ width: `${p.stats.speed}%` }} />
+                    <div className="min-w-0">
+                      <h3 className={`text-xs font-black truncate leading-tight ${isModernSleek ? "text-slate-900" : "text-white"}`}>{p.name}</h3>
+                      <span className={`text-[10px] font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"} block truncate`}>{p.position}</span>
                     </div>
                   </div>
 
-                  <div className="space-y-0.5">
-                    <div className="flex justify-between text-[10px] text-brand-sage">
-                      <span className="flex items-center gap-1">🧠 Intelligence Tactique</span>
-                      <span className="font-bold">{p.stats.tactics}%</span>
-                    </div>
-                    <div className="w-full bg-brand-deep h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-brand-cream h-full rounded-full" style={{ width: `${p.stats.tactics}%` }} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-0.5">
-                    <div className="flex justify-between text-[10px] text-brand-sage">
-                      <span className="flex items-center gap-1">🔋 Endurance</span>
-                      <span className="font-bold">{p.stats.stamina}%</span>
-                    </div>
-                    <div className="w-full bg-brand-deep h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${p.stats.stamina}%` }} />
-                    </div>
+                  <div className="shrink-0">
+                    {statusBadge}
                   </div>
                 </div>
 
-                {/* Notes */}
-                <p className="text-[10px] text-brand-sage leading-relaxed italic bg-brand-deep/50 p-2 rounded border border-brand-border">
-                  {p.notes || "Aucune note consignée."}
-                </p>
+                {/* Performance Stats Bars with Clean Icons */}
+                <div className={`py-2 space-y-1.5 border-t border-b my-2.5 ${
+                  isModernSleek ? "border-slate-100" : "border-[#1f293d]"
+                }`}>
+                  {/* Speed */}
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className={`font-bold flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                        <Zap className="w-3 h-3 text-amber-400" /> Vitesse
+                      </span>
+                      <span className="font-mono font-black text-amber-400">{p.stats.speed}%</span>
+                    </div>
+                    <div className={`w-full h-1.5 rounded-full overflow-hidden ${isModernSleek ? "bg-slate-100" : "bg-[#131b29]"}`}>
+                      <div className="bg-amber-400 h-full rounded-full transition-all duration-300" style={{ width: `${p.stats.speed}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Tactics */}
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className={`font-bold flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                        <Brain className="w-3 h-3 text-purple-400" /> Tactique
+                      </span>
+                      <span className="font-mono font-black text-purple-400">{p.stats.tactics}%</span>
+                    </div>
+                    <div className={`w-full h-1.5 rounded-full overflow-hidden ${isModernSleek ? "bg-slate-100" : "bg-[#131b29]"}`}>
+                      <div className="bg-purple-400 h-full rounded-full transition-all duration-300" style={{ width: `${p.stats.tactics}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Stamina */}
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className={`font-bold flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                        <Battery className="w-3 h-3 text-emerald-400" /> Endurance
+                      </span>
+                      <span className="font-mono font-black text-emerald-400">{p.stats.stamina}%</span>
+                    </div>
+                    <div className={`w-full h-1.5 rounded-full overflow-hidden ${isModernSleek ? "bg-slate-100" : "bg-[#131b29]"}`}>
+                      <div className="bg-emerald-400 h-full rounded-full transition-all duration-300" style={{ width: `${p.stats.stamina}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes Pill */}
+                {p.notes && p.notes !== "Aucune note" && (
+                  <p className={`text-[10px] leading-relaxed italic p-2 rounded-xl border flex items-start gap-1.5 ${
+                    isModernSleek ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-[#131b29]/80 border-[#1f293d] text-slate-400"
+                  }`}>
+                    <FileText className="w-3 h-3 text-blue-400 shrink-0 mt-0.5" />
+                    <span className="truncate">{p.notes}</span>
+                  </p>
+                )}
               </div>
 
-              {/* Action buttons */}
-              <div className="mt-4 pt-3 border-t border-slate-850/60 flex items-center justify-between">
+              {/* Action Buttons Toolbar with Icon Toggles & Tooltips */}
+              <div className={`mt-3 pt-2 border-t flex items-center justify-between ${
+                isModernSleek ? "border-slate-100" : "border-[#1f293d]"
+              }`}>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => updatePlayerStatus(p.id, "excellent")}
-                    className={`w-6 h-6 rounded flex items-center justify-center text-xs transition border ${
-                      p.status === "excellent" ? "bg-teal-500 text-white border-teal-600" : "bg-slate-950 text-slate-400 hover:text-brand-cream border-slate-800"
+                    onClick={() => updatePlayerStatus(p.id, "normal")}
+                    className={`h-7 px-2 rounded-lg text-xs font-bold transition flex items-center gap-1 border cursor-pointer ${
+                      p.status === "normal"
+                        ? "bg-emerald-600 text-white border-emerald-500 shadow-xs"
+                        : isModernSleek
+                          ? "bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-200"
+                          : "bg-[#131b29] text-slate-400 hover:text-white border-[#1f293d]"
                     }`}
-                    title="Mettre en forme excellente"
+                    title="Statut : Disponible"
                   >
-                    🔥
+                    <Check className="w-3 h-3" />
                   </button>
+
+                  <button
+                    onClick={() => updatePlayerStatus(p.id, "excellent")}
+                    className={`h-7 px-2 rounded-lg text-xs font-bold transition flex items-center gap-1 border cursor-pointer ${
+                      p.status === "excellent"
+                        ? "bg-amber-500 text-slate-950 border-amber-400 shadow-xs font-black"
+                        : isModernSleek
+                          ? "bg-slate-100 text-slate-600 hover:text-amber-600 border-slate-200"
+                          : "bg-[#131b29] text-slate-400 hover:text-amber-400 border-[#1f293d]"
+                    }`}
+                    title="Statut : Top Forme"
+                  >
+                    <Flame className="w-3 h-3 text-amber-400" />
+                  </button>
+
                   <button
                     onClick={() => updatePlayerStatus(p.id, "tired")}
-                    className={`w-6 h-6 rounded flex items-center justify-center text-xs transition border ${
-                      p.status === "tired" ? "bg-amber-500 text-slate-900 border-amber-600" : "bg-slate-950 text-slate-400 hover:text-brand-cream border-slate-800"
+                    className={`h-7 px-2 rounded-lg text-xs font-bold transition flex items-center gap-1 border cursor-pointer ${
+                      p.status === "tired"
+                        ? "bg-blue-600 text-white border-blue-500 shadow-xs"
+                        : isModernSleek
+                          ? "bg-slate-100 text-slate-600 hover:text-blue-600 border-slate-200"
+                          : "bg-[#131b29] text-slate-400 hover:text-blue-400 border-[#1f293d]"
                     }`}
-                    title="Marquer fatigué"
+                    title="Statut : Fatigué"
                   >
-                    💤
+                    <Moon className="w-3 h-3 text-blue-400" />
                   </button>
+
                   <button
                     onClick={() => updatePlayerStatus(p.id, "injured")}
-                    className={`w-6 h-6 rounded flex items-center justify-center text-xs transition border ${
-                      p.status === "injured" ? "bg-rose-600 text-white border-rose-700" : "bg-slate-950 text-slate-400 hover:text-brand-cream border-slate-800"
+                    className={`h-7 px-2 rounded-lg text-xs font-bold transition flex items-center gap-1 border cursor-pointer ${
+                      p.status === "injured"
+                        ? "bg-rose-600 text-white border-rose-500 shadow-xs"
+                        : isModernSleek
+                          ? "bg-slate-100 text-slate-600 hover:text-rose-600 border-slate-200"
+                          : "bg-[#131b29] text-slate-400 hover:text-rose-400 border-[#1f293d]"
                     }`}
-                    title="Marquer blessé"
+                    title="Statut : Blessé / Indisponible"
                   >
-                    🚨
+                    <AlertCircle className="w-3 h-3 text-rose-400" />
                   </button>
                 </div>
 
                 <button
                   onClick={() => handleDeletePlayer(p.id)}
-                  className="p-1.5 rounded bg-slate-950 hover:bg-rose-950/30 text-slate-500 hover:text-rose-400 border border-slate-800 hover:border-rose-900/40 transition"
-                  title="Supprimer de l'équipe"
+                  className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                    isModernSleek
+                      ? "bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200"
+                      : "bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border-rose-800/50"
+                  }`}
+                  title="Supprimer ce joueur de l'effectif"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

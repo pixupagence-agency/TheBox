@@ -139,24 +139,26 @@ export default function LandingPage({
             {onOpenLegalModal && (
               <button
                 onClick={() => onOpenLegalModal("faq")}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#232f45] bg-[#0d1117]/80 hover:bg-[#121926] text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
+                className="hidden sm:flex items-center justify-center h-10 w-10 rounded-xl border border-[#232f45] bg-[#0d1117]/80 hover:bg-[#121926] text-slate-300 hover:text-white transition cursor-pointer shrink-0"
+                title="FAQ & Aide"
+                aria-label="FAQ & Aide"
               >
-                <HelpCircle className="h-3.5 w-3.5 text-[#00E599]" />
-                <span>FAQ & Aide</span>
+                <HelpCircle className="h-4 w-4 text-[#00E599]" />
               </button>
             )}
 
             <a
               href="#contact"
-              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#232f45] bg-[#0d1117]/80 hover:bg-[#121926] text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
+              className="hidden md:flex items-center justify-center h-10 w-10 rounded-xl border border-[#232f45] bg-[#0d1117]/80 hover:bg-[#121926] text-slate-300 hover:text-white transition cursor-pointer shrink-0"
+              title="Contact"
+              aria-label="Contact"
             >
-              <Mail className="h-3.5 w-3.5 text-[#00E599]" />
-              <span>Contact</span>
+              <Mail className="h-4 w-4 text-[#00E599]" />
             </a>
 
             <button
               onClick={onOpenLoginModal}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#232f45] bg-[#121926] hover:bg-[#1a253b] text-xs font-extrabold text-white transition cursor-pointer"
+              className="flex items-center gap-2 h-10 px-4 rounded-xl border border-[#232f45] bg-[#121926] hover:bg-[#1a253b] text-xs font-extrabold text-white transition cursor-pointer"
             >
               <LogIn className="h-3.5 w-3.5 text-[#00E599]" />
               <span>Se Connecter</span>
@@ -164,7 +166,7 @@ export default function LandingPage({
 
             <button
               onClick={onOpenRegisterModal}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-[#0d1117] text-xs font-black transition cursor-pointer shadow-lg shadow-white/10 hover:shadow-white/20"
+              className="flex items-center gap-2 h-10 px-5 rounded-xl bg-white hover:bg-slate-100 text-[#0d1117] text-xs font-black transition cursor-pointer shadow-lg shadow-white/10 hover:shadow-white/20"
             >
               <UserPlus className="h-3.5 w-3.5" />
               <span>Créer un Compte</span>

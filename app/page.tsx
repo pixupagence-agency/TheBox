@@ -9,7 +9,7 @@ import OnboardingTutorialModal from "@/components/OnboardingTutorialModal";
 import LegalAndFaqModal, { LegalTab } from "@/components/LegalAndFaqModal";
 import SupportContactModal from "@/components/SupportContactModal";
 import LogoIcon from "@/components/LogoIcon";
-import { CheckCircle, Cloud } from "lucide-react";
+import { CheckCircle, Cloud, X, UserPlus, LogIn, User, Mail, Lock } from "lucide-react";
 import { 
   auth, 
   loginWithGoogle, 
@@ -796,386 +796,466 @@ export default function Home() {
 
       {/* LOGIN MODAL */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-sm overflow-y-auto">
-          <div className={`max-w-lg w-full rounded-2xl p-5 sm:p-8 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto scrollbar-thin border ${
-            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#233149] text-white"
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
+          <div className={`max-w-lg w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto overflow-hidden border ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
           }`}>
+            {/* Glow visual accents */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
             
-            <div className={`flex items-center justify-between pb-4 mb-4 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+            {/* HEADER */}
+            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${
+              isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+            }`}>
               <div className="flex items-center gap-3">
-                <LogoIcon className={`w-8 h-8 ${isModernSleek ? "text-emerald-600" : "text-white"}`} />
+                <div className={`p-2.5 rounded-xl border ${
+                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
+                }`}>
+                  <LogoIcon className="w-5 h-5" />
+                </div>
                 <div>
-                  <h3 className={`text-base font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Connexion Espace Coach</h3>
-                  <p className="text-[10px] text-[#00E599] font-bold uppercase tracking-wider">the box • zone de décision tactique</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className={`text-base font-black tracking-wide ${isModernSleek ? "text-slate-900" : "text-white"}`}>
+                      Connexion Espace Coach
+                    </h3>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                      isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/40 text-[#00E599]"
+                    }`}>
+                      THE BOX
+                    </span>
+                  </div>
+                  <p className={`text-xs font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                    Zone de décision tactique et gestion d&apos;équipe.
+                  </p>
                 </div>
               </div>
+
               <button 
-                onClick={() => setIsLoginModalOpen(false)}
-                className={`text-xs font-bold px-2 py-1 rounded border transition ${
-                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-300" : "text-slate-400 hover:text-white bg-[#121926] border-[#1f293d]"
-                }`}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Quick Profile Selection */}
-            {coaches.length > 0 && (
-              <div className="mb-5">
-                <p className={`text-[10px] font-black uppercase tracking-wider mb-2.5 ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                  Profils Enregistrés sur cet appareil :
-                </p>
-                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                  {coaches.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleLoginAsCoach(c.id, c.preferredSport)}
-                      className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between transition cursor-pointer group ${
-                        isModernSleek 
-                          ? "bg-slate-50 hover:bg-slate-100 border-slate-200 hover:border-emerald-500" 
-                          : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] hover:border-white"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full font-black text-xs flex items-center justify-center ${
-                          isModernSleek ? "bg-emerald-600 text-white" : "bg-white text-[#0d1117]"
-                        }`}>
-                          {c.firstName.charAt(0)}{c.lastName.charAt(0)}
-                        </div>
-                        <div>
-                          <p className={`text-xs font-black transition ${isModernSleek ? "text-slate-900 group-hover:text-emerald-700" : "text-white"}`}>
-                            {c.firstName} {c.lastName}
-                          </p>
-                          <p className={`text-[10px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                            {c.club} • <span className="capitalize text-[#00E599] font-bold">{c.preferredSport}</span>
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] bg-[#00E599] text-[#0d1117] font-black px-2 py-1 rounded-lg">
-                        Se connecter
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Google Fast Connect */}
-            <div className={`mb-4 pt-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
-              <button
                 type="button"
-                onClick={handleGoogleSignUp}
-                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow border ${
-                  isModernSleek 
-                    ? "bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-800 hover:border-slate-400" 
-                    : "bg-[#121926] hover:bg-[#1a253a] border-[#233149] text-white hover:border-slate-500"
+                onClick={() => setIsLoginModalOpen(false)}
+                className={`p-1.5 rounded-xl transition cursor-pointer ${
+                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                 }`}
+                title="Fermer"
               >
-                <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.15C3.26 21.3 7.31 24 12 24z" />
-                  <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.39l3.99-3.15z" />
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.61l3.99 3.15c.95-2.85 3.6-4.96 6.72-4.96z" />
-                </svg>
-                <span>Se connecter avec son adresse Google</span>
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Form login by email */}
-            <form onSubmit={handleEmailPasswordSubmit} className={`space-y-3 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
-              <p className={`text-[10px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                Ou connexion par Email / Mot de passe :
-              </p>
-              <div>
-                <input
-                  type="email"
-                  placeholder="Adresse Email (ex: coach@club.com)"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className={`w-full rounded-lg px-3.5 py-2 text-xs focus:outline-none transition border ${
-                    isModernSleek 
-                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
-                  }`}
-                />
-              </div>
-              <div>
-                <input
-                  type="password"
-                  placeholder="Mot de passe"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className={`w-full rounded-lg px-3.5 py-2 text-xs focus:outline-none transition border ${
-                    isModernSleek 
-                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
-                  }`}
-                />
-              </div>
+            {/* BODY */}
+            <div className="p-5 sm:p-6 relative z-10 space-y-4">
+              {/* Quick Profile Selection */}
+              {coaches.length > 0 && (
+                <div>
+                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                    <User className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Profils Enregistrés sur cet appareil :</span>
+                  </label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1 scrollbar-thin">
+                    {coaches.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => handleLoginAsCoach(c.id, c.preferredSport)}
+                        className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between transition cursor-pointer group ${
+                          isModernSleek 
+                            ? "bg-slate-50 hover:bg-slate-100 border-slate-200 hover:border-emerald-500" 
+                            : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] hover:border-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full font-black text-xs flex items-center justify-center ${
+                            isModernSleek ? "bg-emerald-600 text-white" : "bg-white text-[#0d1117]"
+                          }`}>
+                            {c.firstName.charAt(0)}{c.lastName.charAt(0)}
+                          </div>
+                          <div>
+                            <p className={`text-xs font-black transition ${isModernSleek ? "text-slate-900 group-hover:text-emerald-700" : "text-white"}`}>
+                              {c.firstName} {c.lastName}
+                            </p>
+                            <p className={`text-[10px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                              {c.club} • <span className="capitalize text-[#00E599] font-bold">{c.preferredSport}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] bg-[#00E599] text-[#0d1117] font-black px-2.5 py-1 rounded-lg">
+                          Se connecter
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-[#00E599] hover:bg-[#06b87d] text-[#0d1117] font-black text-xs transition cursor-pointer shadow"
-                >
-                  Connexion au Tableau
-                </button>
+              {/* Google Fast Connect */}
+              <div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsLoginModalOpen(false);
-                    setIsRegisterModalOpen(true);
-                  }}
-                  className={`px-4 py-2.5 rounded-xl border font-bold text-xs transition cursor-pointer ${
+                  onClick={handleGoogleSignUp}
+                  className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow-xs border ${
                     isModernSleek 
-                      ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800" 
-                      : "bg-[#121926] hover:bg-[#1a253a] border-[#233149] text-white"
+                      ? "bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-800 hover:border-slate-400" 
+                      : "bg-[#121926] hover:bg-[#1a253a] border-[#233149] text-white hover:border-slate-500"
                   }`}
                 >
-                  Créer un compte
+                  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.15C3.26 21.3 7.31 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.39l3.99-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.61l3.99 3.15c.95-2.85 3.6-4.96 6.72-4.96z" />
+                  </svg>
+                  <span>Se connecter avec son adresse Google</span>
                 </button>
               </div>
-            </form>
 
+              {/* Form login by email */}
+              <form onSubmit={handleEmailPasswordSubmit} className="space-y-3 pt-2">
+                <div className="relative flex items-center my-1">
+                  <div className={`flex-grow border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}></div>
+                  <span className={`flex-shrink mx-3 text-[9px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
+                    OU AVEC IDENTIFIANTS
+                  </span>
+                  <div className={`flex-grow border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}></div>
+                </div>
+
+                <div>
+                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Adresse Email</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="coach@club.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
+                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Mot de passe</span>
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
+                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                    }`}
+                  />
+                </div>
+
+                {/* ACTIONS */}
+                <div className={`pt-3 flex items-center justify-between gap-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLoginModalOpen(false);
+                      setIsRegisterModalOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
+                  >
+                    Créer un compte
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-lg shadow-[#00E599]/20"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Connexion</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* COACH ONBOARDING / CREATION DE COMPTE MODAL */}
       {isRegisterModalOpen && (
-        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-sm overflow-y-auto">
-          <div className={`max-w-lg w-full rounded-2xl p-5 sm:p-8 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto scrollbar-thin border ${
-            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
+          <div className={`max-w-lg w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto overflow-hidden border ${
+            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
           }`}>
-            
-            <h3 className={`text-xl font-black mb-1 flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-              <span>🏟️</span> Créer un Compte Coach The Box
-            </h3>
-            <p className={`text-[10px] mb-4 leading-relaxed font-bold uppercase ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-              Configurez votre mot de passe ou utilisez directement votre adresse e-mail Google.
-            </p>
+            {/* Glow visual accents */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Google Fast Registration Option */}
-            <div className="mb-4">
-              <button
-                type="button"
-                onClick={handleGoogleSignUp}
-                className={`w-full py-2.5 px-4 rounded-xl border font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow ${
-                  isModernSleek 
-                    ? "bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-800 hover:border-slate-400" 
-                    : "bg-[#121926] hover:bg-[#1a253a] border-[#233149] text-white hover:border-slate-500"
-                }`}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.15C3.26 21.3 7.31 24 12 24z" />
-                  <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.39l3.99-3.15z" />
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.61l3.99 3.15c.95-2.85 3.6-4.96 6.72-4.96z" />
-                </svg>
-                <span>S&apos;inscrire avec son adresse email Google</span>
-              </button>
-            </div>
-
-            <div className="relative flex items-center my-4">
-              <div className={`flex-grow border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}></div>
-              <span className={`flex-shrink mx-3 text-[9px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                OU CRÉER AVEC UN MOT DE PASSE
-              </span>
-              <div className={`flex-grow border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}></div>
-            </div>
-
-            <form onSubmit={handleRegisterCoach} className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
-                    Prénom *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newFirstName}
-                    onChange={(e) => setNewFirstName(e.target.value)}
-                    placeholder="ex: Jean"
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
-                      isModernSleek 
-                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                        : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
-                    }`}
-                  />
+            {/* HEADER */}
+            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${
+              isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl border ${
+                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
+                }`}>
+                  <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
-                    Nom *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newLastName}
-                    onChange={(e) => setNewLastName(e.target.value)}
-                    placeholder="ex: Dupont"
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
-                      isModernSleek 
-                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                        : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
-                  Club / Structure *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newClub}
-                  onChange={(e) => setNewClub(e.target.value)}
-                  placeholder="ex: Real Madrid, Club de Foot Local..."
-                  className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
-                    isModernSleek 
-                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
-                  }`}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
-                    Fonction au sein du club
-                  </label>
-                  <select
-                    value={newRole}
-                    onChange={(e) => setNewRole(e.target.value)}
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold border ${
-                      isModernSleek 
-                        ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" 
-                        : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                    }`}
-                  >
-                    <option value="Coach Principal">Coach Principal</option>
-                    <option value="Entraîneur Adjoint">Entraîneur Adjoint</option>
-                    <option value="Analyste Vidéo / Tactique">Analyste Vidéo / Tactique</option>
-                    <option value="Préparateur Physique">Préparateur Physique</option>
-                    <option value="Responsable Technique">Responsable Technique</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
-                    Sport Principal
-                  </label>
-                  <select
-                    value="football"
-                    disabled
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition capitalize font-bold cursor-not-allowed opacity-95 border ${
-                      isModernSleek 
-                        ? "bg-slate-100 border-slate-300 text-slate-900" 
-                        : "bg-[#090d14] border-[#1f293d] text-white"
-                    }`}
-                    title="Seul le football est ouvert à l'inscription. Les autres sports sont bloqués."
-                  >
-                    <option value="football">⚽ Football (Ouvert à l&apos;essai)</option>
-                    <option value="basketball" disabled>🏀 Basketball (🔒 Bloqué)</option>
-                    <option value="rugby" disabled>🏉 Rugby (🔒 Bloqué)</option>
-                    <option value="handball" disabled>🤾 Handball (🔒 Bloqué)</option>
-                  </select>
-                  <p className="text-[9px] text-amber-500 font-bold mt-1 flex items-center gap-1">
-                    <span>🔒</span>
-                    <span>Tous les autres sports sont temporairement bloqués.</span>
+                  <div className="flex items-center gap-2">
+                    <h3 className={`text-base font-black tracking-wide ${isModernSleek ? "text-slate-900" : "text-white"}`}>
+                      Créer un Compte Coach
+                    </h3>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                      isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/40 text-[#00E599]"
+                    }`}>
+                      14J OFFERTS
+                    </span>
+                  </div>
+                  <p className={`text-xs font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                    Accès immédiat au tableau tactique The Box.
                   </p>
                 </div>
               </div>
 
+              <button 
+                type="button"
+                onClick={() => setIsRegisterModalOpen(false)}
+                className={`p-1.5 rounded-xl transition cursor-pointer ${
+                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                }`}
+                title="Fermer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* BODY */}
+            <div className="p-5 sm:p-6 relative z-10 space-y-4">
+              {/* Google Fast Registration Option */}
               <div>
-                <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
-                  Adresse E-mail *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="ex: coach@club.com"
-                  className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
-                    isModernSleek 
-                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
-                  }`}
-                />
-              </div>
-
-              {/* Password Configuration Section */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
-                    Mot de passe *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Min. 6 caractères"
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
-                      isModernSleek 
-                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                        : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-600" : "text-[#62728f]"}`}>
-                    Confirmer le mot de passe *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={newConfirmPassword}
-                    onChange={(e) => setNewConfirmPassword(e.target.value)}
-                    placeholder="Répétez le mot de passe"
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border ${
-                      isModernSleek 
-                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                        : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-600 focus:border-[#00E599]"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div className={`flex items-center gap-2 p-3 rounded-xl border text-[10px] leading-relaxed font-bold ${
-                isModernSleek 
-                  ? "bg-slate-50 border-slate-200 text-slate-600" 
-                  : "bg-[#090d14] border-[#1f293d] text-[#62728f]"
-              }`}>
-                <CheckCircle className="h-4 w-4 text-[#00E599] flex-shrink-0" />
-                <p>
-                  En validant votre inscription, votre tableau tactique s&apos;activera immédiatement sur le sport : <span className="font-bold text-[#00E599]">Football</span>.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsRegisterModalOpen(false)}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                  onClick={handleGoogleSignUp}
+                  className={`w-full py-2.5 px-4 rounded-xl border font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow-xs ${
                     isModernSleek 
-                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700" 
-                      : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                      ? "bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-800 hover:border-slate-400" 
+                      : "bg-[#121926] hover:bg-[#1a253a] border-[#233149] text-white hover:border-slate-500"
                   }`}
                 >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#00E599] text-[#0d1117] text-xs font-black rounded-lg transition shadow-lg cursor-pointer hover:bg-[#06b87d]"
-                >
-                  Créer mon Compte
+                  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.15C3.26 21.3 7.31 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.39l3.99-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.61l3.99 3.15c.95-2.85 3.6-4.96 6.72-4.96z" />
+                  </svg>
+                  <span>S&apos;inscrire avec son adresse email Google</span>
                 </button>
               </div>
-            </form>
+
+              <div className="relative flex items-center my-2">
+                <div className={`flex-grow border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}></div>
+                <span className={`flex-shrink mx-3 text-[9px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
+                  OU CRÉER AVEC UN MOT DE PASSE
+                </span>
+                <div className={`flex-grow border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}></div>
+              </div>
+
+              <form onSubmit={handleRegisterCoach} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                      <User className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Prénom <span className="text-[#00E599]">*</span></span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newFirstName}
+                      onChange={(e) => setNewFirstName(e.target.value)}
+                      placeholder="Jean"
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                        isModernSleek 
+                          ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
+                          : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                      <User className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Nom <span className="text-[#00E599]">*</span></span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newLastName}
+                      onChange={(e) => setNewLastName(e.target.value)}
+                      placeholder="Dupont"
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                        isModernSleek 
+                          ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
+                          : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                    Club / Structure <span className="text-[#00E599]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newClub}
+                    onChange={(e) => setNewClub(e.target.value)}
+                    placeholder="The Box FC, Club Sportif..."
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
+                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                    }`}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                      Fonction au club
+                    </label>
+                    <select
+                      value={newRole}
+                      onChange={(e) => setNewRole(e.target.value)}
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition font-bold border ${
+                        isModernSleek 
+                          ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" 
+                          : "bg-[#121824] border-[#233149] text-white focus:border-[#00E599]"
+                      }`}
+                    >
+                      <option value="Coach Principal">Coach Principal</option>
+                      <option value="Entraîneur Adjoint">Entraîneur Adjoint</option>
+                      <option value="Analyste Vidéo / Tactique">Analyste Vidéo / Tactique</option>
+                      <option value="Préparateur Physique">Préparateur Physique</option>
+                      <option value="Responsable Technique">Responsable Technique</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                      Sport Principal
+                    </label>
+                    <select
+                      value="football"
+                      disabled
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition capitalize font-bold cursor-not-allowed opacity-95 border ${
+                        isModernSleek 
+                          ? "bg-slate-100 border-slate-300 text-slate-900" 
+                          : "bg-[#121824] border-[#233149] text-white"
+                      }`}
+                      title="Seul le football est ouvert à l'inscription. Les autres sports sont bloqués."
+                    >
+                      <option value="football">⚽ Football (Ouvert à l&apos;essai)</option>
+                      <option value="basketball" disabled>🏀 Basketball (🔒 Bloqué)</option>
+                      <option value="rugby" disabled>🏉 Rugby (🔒 Bloqué)</option>
+                      <option value="handball" disabled>🤾 Handball (🔒 Bloqué)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                    <Mail className="w-3.5 h-3.5 text-[#00E599]" />
+                    <span>Adresse E-mail <span className="text-[#00E599]">*</span></span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="coach@monclub.com"
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                      isModernSleek 
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
+                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                    }`}
+                  />
+                </div>
+
+                {/* Password Configuration Section */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                      <Lock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Mot de passe <span className="text-[#00E599]">*</span></span>
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Min. 6 caractères"
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                        isModernSleek 
+                          ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
+                          : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+                      <Lock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Confirmation <span className="text-[#00E599]">*</span></span>
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={newConfirmPassword}
+                      onChange={(e) => setNewConfirmPassword(e.target.value)}
+                      placeholder="Répétez le mot de passe"
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
+                        isModernSleek 
+                          ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
+                          : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className={`rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-xs border ${
+                  isModernSleek 
+                    ? "bg-slate-50 border-slate-200 text-slate-700" 
+                    : "bg-[#121824] border-[#1f293d] text-slate-400"
+                }`}>
+                  <CheckCircle className="h-4 w-4 text-[#00E599] flex-shrink-0" />
+                  <p>
+                    En validant votre inscription, votre tableau tactique s&apos;activera immédiatement sur le sport : <strong className={isModernSleek ? "text-slate-900" : "text-white"}>Football</strong>.
+                  </p>
+                </div>
+
+                {/* ACTIONS */}
+                <div className={`pt-3 flex items-center justify-between gap-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+                  <button
+                    type="button"
+                    onClick={() => setIsRegisterModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-lg shadow-[#00E599]/20"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Créer mon Compte</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

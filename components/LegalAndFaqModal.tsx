@@ -156,7 +156,13 @@ export default function LegalAndFaqModal({
 
   if (!isOpen) return null;
 
-  const categories = ["Toutes", "Général", "Abonnements & Tarifs", "Utilisation & Fonctionnalités", "Sécurité & Données"];
+  const filterCategories = [
+    { id: "Toutes", label: "Toutes", count: FAQ_DATA.length },
+    { id: "Général", label: "Général", count: FAQ_DATA.filter(f => f.category === "Général").length },
+    { id: "Abonnements & Tarifs", label: "Abonnements & Tarifs", count: FAQ_DATA.filter(f => f.category === "Abonnements & Tarifs").length },
+    { id: "Utilisation & Fonctionnalités", label: "Fonctionnalités", count: FAQ_DATA.filter(f => f.category === "Utilisation & Fonctionnalités").length },
+    { id: "Sécurité & Données", label: "Sécurité & Données", count: FAQ_DATA.filter(f => f.category === "Sécurité & Données").length },
+  ];
 
   const filteredFaqs = FAQ_DATA.filter((item) => {
     const matchesCat = selectedCategory === "Toutes" || item.category === selectedCategory;
@@ -173,25 +179,35 @@ export default function LegalAndFaqModal({
 
   return (
     <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-      <div className={`rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto border ${isModernSleek ? "bg-white border-slate-200 text-slate-800" : "bg-[#0d1117] border-[#1b2436] text-slate-200"
+      <div className={`rounded-2xl sm:rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto border relative ${isModernSleek ? "bg-white border-slate-200 text-slate-800" : "bg-[#0d1117] border-[#1b2436] text-slate-200"
         }`}>
 
+        {/* Glow visual accents */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+
         {/* HEADER */}
-        <div className={`p-5 sm:p-6 border-b flex items-center justify-between gap-4 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1b2436] text-white"
+        <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between gap-4 shrink-0 relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1b2436] text-white"
           }`}>
           <div className="flex items-center gap-3">
-            <LogoIcon className="w-8 h-8 text-[#00E599]" />
+            <div className={`p-2.5 rounded-xl border ${
+              isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
+            }`}>
+              <LogoIcon className="w-5 h-5" />
+            </div>
             <div>
-              <h2 className={`text-lg font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-                The Box <span className="text-[#00E599] text-xs font-bold uppercase tracking-widest bg-[#00E599]/10 px-2 py-0.5 rounded border border-[#00E599]/30">Informations & Légal</span>
+              <h2 className={`text-base font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
+                The Box <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/40 text-[#00E599]"
+                }`}>Informations & Légal</span>
               </h2>
-              <p className={`text-xs ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>CGU, CGV & Foire Aux Questions des utilisateurs</p>
+              <p className={`text-xs font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>CGU, CGV & Foire Aux Questions des utilisateurs</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className={`p-2 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1b2436]"
+            className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1b2436]"
               }`}
             title="Fermer"
           >
@@ -199,40 +215,70 @@ export default function LegalAndFaqModal({
           </button>
         </div>
 
-        {/* TABS NAVIGATION */}
-        <div className={`border-b px-5 pt-3 flex gap-2 overflow-x-auto ${isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#121824] border-[#1b2436]"
+        {/* TABS NAVIGATION AS MODERN PASTILLES */}
+        <div className={`border-b px-5 py-3 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 ${isModernSleek ? "bg-slate-100/90 border-slate-200" : "bg-[#101622] border-[#1b2436]"
           }`}>
           <button
             onClick={() => setActiveTab("faq")}
-            className={`flex items-center gap-2 px-4 py-2.5 font-bold text-xs rounded-t-xl transition cursor-pointer border-b-2 ${activeTab === "faq"
-              ? isModernSleek ? "bg-white text-emerald-800 border-emerald-600" : "bg-[#0d1117] text-[#00E599] border-[#00E599]"
-              : isModernSleek ? "text-slate-500 hover:text-slate-900 border-transparent" : "text-slate-400 hover:text-white border-transparent"
+            className={`flex items-center gap-2 px-4 py-2 font-bold text-xs rounded-xl transition cursor-pointer shadow-xs shrink-0 ${activeTab === "faq"
+              ? isModernSleek
+                ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600"
+                : "bg-[#00E599] text-[#090d14] font-black shadow-md shadow-[#00e599]/15"
+              : isModernSleek
+                ? "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200"
+                : "bg-[#090d14] text-slate-300 hover:text-white hover:bg-[#162133] border border-[#1f293d]"
               }`}
           >
-            <HelpCircle className="w-4 h-4" />
-            <span>Foire Aux Questions (FAQ)</span>
+            <HelpCircle className="w-4 h-4 shrink-0" />
+            <span>Foire Aux Questions</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${activeTab === "faq"
+              ? isModernSleek ? "bg-emerald-700 text-white" : "bg-[#090d14]/25 text-[#090d14]"
+              : isModernSleek ? "bg-slate-100 text-slate-500" : "bg-slate-800 text-slate-400"
+              }`}>
+              FAQ
+            </span>
           </button>
 
           <button
             onClick={() => setActiveTab("cgu")}
-            className={`flex items-center gap-2 px-4 py-2.5 font-bold text-xs rounded-t-xl transition cursor-pointer border-b-2 ${activeTab === "cgu"
-              ? isModernSleek ? "bg-white text-emerald-800 border-emerald-600" : "bg-[#0d1117] text-[#00E599] border-[#00E599]"
-              : isModernSleek ? "text-slate-500 hover:text-slate-900 border-transparent" : "text-slate-400 hover:text-white border-transparent"
+            className={`flex items-center gap-2 px-4 py-2 font-bold text-xs rounded-xl transition cursor-pointer shadow-xs shrink-0 ${activeTab === "cgu"
+              ? isModernSleek
+                ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600"
+                : "bg-[#00E599] text-[#090d14] font-black shadow-md shadow-[#00e599]/15"
+              : isModernSleek
+                ? "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200"
+                : "bg-[#090d14] text-slate-300 hover:text-white hover:bg-[#162133] border border-[#1f293d]"
               }`}
           >
-            <FileText className="w-4 h-4" />
-            <span>CGU (Conditions Générales d&apos;Utilisation)</span>
+            <FileText className="w-4 h-4 shrink-0" />
+            <span>Conditions d&apos;Utilisation</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${activeTab === "cgu"
+              ? isModernSleek ? "bg-emerald-700 text-white" : "bg-[#090d14]/25 text-[#090d14]"
+              : isModernSleek ? "bg-slate-100 text-slate-500" : "bg-slate-800 text-slate-400"
+              }`}>
+              CGU
+            </span>
           </button>
 
           <button
             onClick={() => setActiveTab("cgv")}
-            className={`flex items-center gap-2 px-4 py-2.5 font-bold text-xs rounded-t-xl transition cursor-pointer border-b-2 ${activeTab === "cgv"
-              ? isModernSleek ? "bg-white text-emerald-800 border-emerald-600" : "bg-[#0d1117] text-[#00E599] border-[#00E599]"
-              : isModernSleek ? "text-slate-500 hover:text-slate-900 border-transparent" : "text-slate-400 hover:text-white border-transparent"
+            className={`flex items-center gap-2 px-4 py-2 font-bold text-xs rounded-xl transition cursor-pointer shadow-xs shrink-0 ${activeTab === "cgv"
+              ? isModernSleek
+                ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600"
+                : "bg-[#00E599] text-[#090d14] font-black shadow-md shadow-[#00e599]/15"
+              : isModernSleek
+                ? "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200"
+                : "bg-[#090d14] text-slate-300 hover:text-white hover:bg-[#162133] border border-[#1f293d]"
               }`}
           >
-            <Scale className="w-4 h-4" />
-            <span>CGV (Conditions Générales de Vente)</span>
+            <Scale className="w-4 h-4 shrink-0" />
+            <span>Conditions de Vente</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${activeTab === "cgv"
+              ? isModernSleek ? "bg-emerald-700 text-white" : "bg-[#090d14]/25 text-[#090d14]"
+              : isModernSleek ? "bg-slate-100 text-slate-500" : "bg-slate-800 text-slate-400"
+              }`}>
+              CGV
+            </span>
           </button>
         </div>
 
@@ -245,37 +291,59 @@ export default function LegalAndFaqModal({
             <div className="space-y-6">
 
               {/* Search & Filter bar */}
-              <div className={`flex flex-col sm:flex-row gap-3 items-center justify-between p-3.5 rounded-xl border ${isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#141c2b] border-[#1b2436]"
+              <div className={`p-4 rounded-2xl border space-y-3 ${isModernSleek ? "bg-slate-100/80 border-slate-200" : "bg-[#101725] border-[#1b2436]"
                 }`}>
-                <div className="relative w-full sm:w-72">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                {/* Search input */}
+                <div className="relative w-full">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     type="text"
                     value={faqSearch}
                     onChange={(e) => setFaqSearch(e.target.value)}
-                    placeholder="Rechercher une question..."
-                    className={`w-full rounded-lg pl-9 pr-3 py-1.5 text-xs focus:outline-none border ${isModernSleek
+                    placeholder="Rechercher une question ou un mot-clé (ex: abonnement, schéma 3D, export, match, rôles...)..."
+                    className={`w-full rounded-xl pl-10 pr-9 py-2 text-xs font-medium focus:outline-none transition border shadow-inner ${isModernSleek
                         ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-600 placeholder-slate-400"
-                        : "bg-[#0d1117] border-[#233149] text-white focus:border-[#00E599] placeholder-slate-500"
+                        : "bg-[#090d14] border-[#223048] text-white focus:border-[#00E599] placeholder-slate-500"
                       }`}
                   />
+                  {faqSearch && (
+                    <button
+                      onClick={() => setFaqSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1 cursor-pointer transition"
+                      title="Effacer la recherche"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition cursor-pointer ${selectedCategory === cat
-                        ? isModernSleek ? "bg-emerald-700 text-white" : "bg-[#00E599] text-[#0d1117]"
-                        : isModernSleek
-                          ? "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-200 border border-slate-200"
-                          : "bg-[#0d1117] text-slate-400 hover:text-white hover:bg-[#1f2d42]"
-                        }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+                {/* Category Filter Pills (Sur une seule ligne, nette et fluide) */}
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-nowrap pt-0.5">
+                  {filterCategories.map((cat) => {
+                    const isSelected = selectedCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap shadow-xs ${isSelected
+                          ? isModernSleek
+                            ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600"
+                            : "bg-[#00E599] text-[#090d14] font-black shadow-md shadow-[#00e599]/15"
+                          : isModernSleek
+                            ? "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200"
+                            : "bg-[#090d14] text-slate-300 hover:text-white hover:bg-[#162133] border border-[#1f293d]"
+                          }`}
+                      >
+                        <span>{cat.label}</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isSelected
+                          ? isModernSleek ? "bg-emerald-700 text-white" : "bg-[#090d14]/25 text-[#090d14]"
+                          : isModernSleek ? "bg-slate-100 text-slate-500" : "bg-slate-800 text-slate-400"
+                          }`}>
+                          {cat.count}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -371,14 +439,16 @@ export default function LegalAndFaqModal({
 
           {/* TAB 2: CGU */}
           {activeTab === "cgu" && (
-            <div className="space-y-6 text-xs text-slate-300">
-              <div className="bg-[#121824] p-4 rounded-xl border border-[#1b2436] mb-4">
-                <p className="text-slate-400 italic">Dernière mise à jour : {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</p>
-                <p className="mt-1 font-semibold text-white">Les présentes Conditions Générales d&apos;Utilisation (CGU) régissent l&apos;accès et l&apos;utilisation de la plateforme web « The Box - Zone de décision tactique ».</p>
+            <div className={`space-y-6 text-xs ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+              <div className={`p-4 rounded-xl border mb-4 ${
+                isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121824] border-[#1b2436]"
+              }`}>
+                <p className={`${isModernSleek ? "text-slate-500" : "text-slate-400"} italic`}>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</p>
+                <p className={`mt-1 font-semibold ${isModernSleek ? "text-slate-900" : "text-white"}`}>Les présentes Conditions Générales d&apos;Utilisation (CGU) régissent l&apos;accès et l&apos;utilisation de la plateforme web « The Box - Zone de décision tactique ».</p>
               </div>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   1. Objet et Présentation du Service
                 </h3>
@@ -388,7 +458,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   2. Accès au Service et Création de Compte
                 </h3>
@@ -398,7 +468,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   3. Propriété Intellectuelle
                 </h3>
@@ -408,7 +478,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   4. Protection des Données Personnelles (RGPD)
                 </h3>
@@ -418,7 +488,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   5. Disponibilité et Responsabilité
                 </h3>
@@ -428,7 +498,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   6. Modification des CGU
                 </h3>
@@ -441,19 +511,21 @@ export default function LegalAndFaqModal({
 
           {/* TAB 3: CGV */}
           {activeTab === "cgv" && (
-            <div className="space-y-6 text-xs text-slate-300">
-              <div className="bg-[#121824] p-4 rounded-xl border border-[#1b2436] mb-4">
-                <p className="text-slate-400 italic">Dernière mise à jour : {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</p>
-                <p className="mt-1 font-semibold text-white">Les présentes Conditions Générales de Vente (CGV) s&apos;appliquent à toutes les souscriptions d&apos;abonnements payants sur la plateforme The Box.</p>
+            <div className={`space-y-6 text-xs ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
+              <div className={`p-4 rounded-xl border mb-4 ${
+                isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121824] border-[#1b2436]"
+              }`}>
+                <p className={`${isModernSleek ? "text-slate-500" : "text-slate-400"} italic`}>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</p>
+                <p className={`mt-1 font-semibold ${isModernSleek ? "text-slate-900" : "text-white"}`}>Les présentes Conditions Générales de Vente (CGV) s&apos;appliquent à toutes les souscriptions d&apos;abonnements payants sur la plateforme The Box.</p>
               </div>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   1. Offres et Tarifications
                 </h3>
                 <p>The Box propose trois formules d&apos;accès :</p>
-                <ul className="list-disc list-inside space-y-1 pl-2 text-slate-300">
+                <ul className={`list-disc list-inside space-y-1 pl-2 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                   <li><strong>Formule Gratuite :</strong> Accès de base au tableau tactique 2D, gestion d&apos;effectif et exports PNG (0.00 €/mois).</li>
                   <li><strong>Formule PRO :</strong> Accès multi-équipes, sauvegarde illimitée des schémas, préparation de l&apos;équipe adverse et causeries vocales (9.90 €/mois TTC).</li>
                   <li><strong>Formule PRO+ :</strong> Toutes les fonctionnalités PRO + activation du mode Live Match en direct avec chronomètre et statistiques (14.90 €/mois TTC).</li>
@@ -461,7 +533,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   2. Période d&apos;Essai Gratuite
                 </h3>
@@ -471,7 +543,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   3. Modalités de Paiement
                 </h3>
@@ -481,7 +553,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   4. Sans Engagement & Résiliation
                 </h3>
@@ -491,7 +563,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   5. Droit de Rétractation
                 </h3>
@@ -501,7 +573,7 @@ export default function LegalAndFaqModal({
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span className="w-2 h-2 rounded-full bg-[#00E599]"></span>
                   6. Support Client et Facturation
                 </h3>
@@ -515,11 +587,13 @@ export default function LegalAndFaqModal({
         </div>
 
         {/* FOOTER */}
-        <div className="p-4 bg-[#090d14] border-t border-[#1b2436] flex items-center justify-between text-xs text-slate-400">
+        <div className={`p-4 border-t flex items-center justify-between text-xs ${
+          isModernSleek ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-[#090d14] border-[#1b2436] text-slate-400"
+        }`}>
           <span>The Box - Zone de décision tactique</span>
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-[#1f2d42] hover:bg-[#2b3d59] text-white font-bold rounded-xl transition cursor-pointer"
+            className="px-4 py-2 bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs rounded-xl transition cursor-pointer border border-[#233149]"
           >
             Fermer
           </button>
