@@ -6726,23 +6726,41 @@ export default function TacticsBoard({
 
                 {!isUserAdmin && (
                   isPaidSubscriber ? (
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        setIsCheckoutOpen(true);
-                      }}
-                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                        isModernSleek ? "text-emerald-800 hover:bg-slate-50 border-slate-200" : "text-emerald-400 hover:bg-[#1a2333] border-[#1f293d]"
-                      } transition flex items-center justify-between border-b pb-2 mb-1 cursor-pointer`}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <span>✨</span>
-                        <span>Formule {currentPlan === "pro_plus" || currentPlan === "annuel" || currentPlan === "club" ? "PRO+" : "PRO"}</span>
-                      </span>
-                      <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded border ${
-                        isModernSleek ? "text-emerald-800 bg-emerald-100 border-emerald-300" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                      }`}>ACTIF</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          setIsCheckoutOpen(true);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
+                          isModernSleek ? "text-emerald-800 hover:bg-slate-50 border-slate-200" : "text-emerald-400 hover:bg-[#1a2333] border-[#1f293d]"
+                        } transition flex items-center justify-between border-b pb-2 mb-1 cursor-pointer`}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <span>✨</span>
+                          <span>Formule {currentPlan === "pro_plus" || currentPlan === "annuel" || currentPlan === "club" ? "PRO+" : "PRO"}</span>
+                        </span>
+                        <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded border ${
+                          isModernSleek ? "text-emerald-800 bg-emerald-100 border-emerald-300" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                        }`}>ACTIF</span>
+                      </button>
+
+                      {/* Bouton de désabonnement direct dans le menu profil */}
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          setIsCheckoutOpen(true);
+                        }}
+                        className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between cursor-pointer mb-1 border-b border-rose-500/20 pb-2"
+                        title="Se désabonner de l'application et repasser en version gratuite"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <span>🛑</span>
+                          <span>Se désabonner</span>
+                        </span>
+                        <span className="text-[9px] uppercase font-black text-rose-500 px-1.5 py-0.2 rounded bg-rose-500/10">Résilier</span>
+                      </button>
+                    </>
                   ) : hasHadPaidSubscription ? (
                     <button
                       onClick={() => {
@@ -7129,12 +7147,8 @@ export default function TacticsBoard({
           <div className={`p-2 border-t ${isModernSleek ? "border-slate-200 bg-slate-50" : "border-[#1f293d] bg-[#090c12]"} flex justify-center`}>
             <button
               onClick={() => {
-                if (isProOrAdmin) {
-                  if (isUserAdmin && onOpenAdminPlatform) {
-                    onOpenAdminPlatform();
-                  } else {
-                    alert(`Votre abonnement ${activePlan.toUpperCase()} est ACTIF !`);
-                  }
+                if (isUserAdmin && onOpenAdminPlatform) {
+                  onOpenAdminPlatform();
                 } else {
                   setIsCheckoutOpen(true);
                 }

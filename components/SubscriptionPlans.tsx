@@ -19,7 +19,8 @@ import {
   AlertCircle,
   Zap,
   Terminal,
-  Server
+  Server,
+  X
 } from "lucide-react";
 
 interface SubscriptionPlansProps {
@@ -64,6 +65,70 @@ export default function SubscriptionPlans({
   const [paymentDone, setPaymentDone] = useState(false);
   const [transactionId, setTransactionId] = useState("");
   const [checkoutMode, setCheckoutMode] = useState<"stripe" | "simulator">("stripe");
+  
+  // Unsubscription states
+  const [showUnsubscribeModal, setShowUnsubscribeModal] = useState(false);
+  const [isUnsubscribing, setIsUnsubscribing] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
+
+  const isPaidPlan = Boolean(
+    activePlan &&
+    activePlan.toLowerCase() !== "free" &&
+    activePlan.toLowerCase() !== "gratuit"
+  );
+
+  const handleLaunchStripePortal = async () => {
+    setPortalLoading(true);
+    setPortalError(null);
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          coachEmail,
+          returnUrl: typeof window !== "undefined" ? window.location.href : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      if (data?.error) {
+        setPortalError(data.error);
+        alert(data.error);
+      }
+    } catch (err: any) {
+      console.error("Portal error", err);
+      setPortalError("Impossible de joindre le portail client Stripe.");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const handleConfirmUnsubscribe = () => {
+    setIsUnsubscribing(true);
+    try {
+      setActivePlan("free");
+      if (typeof window !== "undefined") {
+        if (coachId) {
+          const savedPlans = localStorage.getItem("thebox_admin_user_plans");
+          const parsed = savedPlans ? JSON.parse(savedPlans) : {};
+          parsed[coachId] = "free";
+          localStorage.setItem("thebox_admin_user_plans", JSON.stringify(parsed));
+          localStorage.setItem(`thebox_has_had_subscription_${coachId}`, "true");
+        }
+        localStorage.setItem("thebox_active_plan", "free");
+      }
+      setShowUnsubscribeModal(false);
+      alert("✅ Votre désabonnement a été pris en compte.\n\nVotre compte est désormais repassé en Version Gratuite.");
+    } catch (e) {
+      console.error("Unsubscribe error", e);
+    } finally {
+      setIsUnsubscribing(false);
+    }
+  };
   
   const plans = [
     {
@@ -249,10 +314,22 @@ export default function SubscriptionPlans({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="px-3 py-1.5 bg-brand-deep border border-brand-border text-xs font-bold rounded-lg text-brand-cream">
-            Plan actuel : <span className="text-white uppercase font-black">{activePlan === "free" ? "Gratuit" : activePlan.toUpperCase()}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className={`px-3 py-1.5 ${isModernSleek ? "bg-white border-slate-300 text-slate-800" : "bg-brand-deep border-brand-border text-brand-cream"} border text-xs font-bold rounded-lg`}>
+            Plan actuel : <span className={`uppercase font-black ${isPaidPlan ? "text-amber-400" : "text-white"}`}>{activePlan === "free" ? "Gratuit" : activePlan.toUpperCase()}</span>
           </div>
+
+          {isPaidPlan && (
+            <button
+              type="button"
+              onClick={() => setShowUnsubscribeModal(true)}
+              className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+              title="Se désabonner de l'application et repasser en version gratuite"
+            >
+              <span>🛑</span>
+              <span>Se désabonner</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -325,7 +402,8 @@ export default function SubscriptionPlans({
 
       {/* Plan Grid */}
       {!selectedPlan ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((p) => {
             const isCurrent = activePlan === p.id;
             return (
@@ -373,9 +451,7 @@ export default function SubscriptionPlans({
                     disabled={isCurrent}
                     onClick={() => {
                       if (p.id === "free") {
-                        if (typeof window !== "undefined" && window.confirm("Voulez-vous repasser sur la version gratuite ?")) {
-                          setActivePlan("free");
-                        }
+                        setShowUnsubscribeModal(true);
                       } else {
                         setSelectedPlan(p.id);
                         setCheckoutMode(stripeStatus.configured ? "stripe" : "simulator");
@@ -398,6 +474,19 @@ export default function SubscriptionPlans({
                     {isCurrent ? "Votre Plan Actuel" : p.id === "free" ? "Repasser en Version Gratuite" : p.cta}
                   </button>
 
+                  {/* Bouton Se désabonner sur le plan actif payant */}
+                  {isCurrent && p.id !== "free" && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUnsubscribeModal(true)}
+                      className="w-full py-2 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                      title="Résilier cet abonnement et revenir à la formule gratuite"
+                    >
+                      <span>🛑</span>
+                      <span>Se désabonner de cette formule</span>
+                    </button>
+                  )}
+
                   {!isCurrent && p.id !== "free" && (
                     <button
                       onClick={() => handleLaunchStripeCheckout(p.id)}
@@ -417,6 +506,61 @@ export default function SubscriptionPlans({
             );
           })}
         </div>
+
+        {/* Section récapitulative de résiliation & portail Stripe pour abonnés */}
+        {isPaidPlan && (
+          <div className={`mt-6 p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
+            isModernSleek 
+              ? "bg-slate-50 border-slate-200 text-slate-800 shadow-sm" 
+              : "bg-[#0d131f] border-[#1e2a3f] text-slate-200 shadow-md"
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-lg shrink-0">
+                🛡️
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                  <span>Abonnement Actif Sans Engagement</span>
+                  <span className="text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.2 rounded font-mono uppercase">
+                    {activePlan}
+                  </span>
+                </p>
+                <p className={`text-xs ${isModernSleek ? "text-slate-500" : "text-slate-400"} mt-0.5`}>
+                  Vous pouvez vous désabonner à tout moment d&apos;un simple clic. Aucun frais de résiliation.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+              {coachEmail && (
+                <button
+                  type="button"
+                  onClick={handleLaunchStripePortal}
+                  disabled={portalLoading}
+                  className={`flex-1 sm:flex-initial px-3 py-2 text-xs font-bold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    isModernSleek
+                      ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
+                      : "bg-[#141b29] hover:bg-[#1a2336] border-[#222f46] text-slate-300"
+                  }`}
+                  title="Gérer vos factures et coordonnées bancaires sur le portail sécurisé Stripe"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>{portalLoading ? "Chargement..." : "Portail Stripe"}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowUnsubscribeModal(true)}
+                className="flex-1 sm:flex-initial px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl transition cursor-pointer shadow-md shadow-rose-900/20 flex items-center justify-center gap-1.5"
+              >
+                <span>🛑</span>
+                <span>Se désabonner de l&apos;application</span>
+              </button>
+            </div>
+          </div>
+        )}
+        </>
       ) : (
         /* HIGH-FIDELITY CHECKOUT MODAL */
         <div className="max-w-xl mx-auto bg-brand-pine border border-brand-border rounded-xl overflow-hidden shadow-2xl animate-fade-in">
@@ -726,6 +870,105 @@ export default function SubscriptionPlans({
             </form>
           )}
 
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMATION DE DÉSABONNEMENT */}
+      {showUnsubscribeModal && (
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
+          <div className={`max-w-md w-full rounded-2xl sm:rounded-3xl p-6 shadow-2xl relative overflow-hidden border ${
+            isModernSleek ? "bg-white border-rose-300 text-slate-900" : "bg-[#0b0e14] border-rose-500/40 text-white"
+          }`}>
+            {/* Visual glow */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex items-start gap-3.5 mb-4 relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-2xl shrink-0 text-rose-500 shadow-md">
+                🛑
+              </div>
+              <div>
+                <span className="text-[9px] bg-rose-500/20 text-rose-500 font-black px-2 py-0.5 rounded-full uppercase tracking-wider border border-rose-500/30">
+                  RÉSILIATION D&apos;ABONNEMENT
+                </span>
+                <h3 className={`text-base font-black uppercase mt-1 leading-snug ${isModernSleek ? "text-slate-900" : "text-white"}`}>
+                  Se désabonner de The Box
+                </h3>
+                <p className={`text-xs mt-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                  Êtes-vous sûr de vouloir résilier votre abonnement actuel (<strong className="uppercase text-amber-500">{activePlan}</strong>) ?
+                </p>
+              </div>
+            </div>
+
+            <div className={`border rounded-xl p-3.5 my-4 space-y-2 text-xs relative z-10 ${
+              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700" : "bg-[#121926] border-[#1f293d] text-slate-300"
+            }`}>
+              <p className="font-bold text-rose-500 uppercase text-[10px] tracking-wider border-b pb-1">
+                Ce que vous perdez en repassant en Version Gratuite :
+              </p>
+              <ul className="space-y-1.5 text-[11px]">
+                <li className="flex items-center gap-1.5 text-rose-400">
+                  <span>✕</span>
+                  <span>Gestion multi-équipes illimitée</span>
+                </li>
+                <li className="flex items-center gap-1.5 text-rose-400">
+                  <span>✕</span>
+                  <span>Sauvegarde des schémas tactiques dans vos matchs</span>
+                </li>
+                <li className="flex items-center gap-1.5 text-rose-400">
+                  <span>✕</span>
+                  <span>Enregistrements vocaux & dictée de notes audio</span>
+                </li>
+                <li className="flex items-center gap-1.5 text-rose-400">
+                  <span>✕</span>
+                  <span>Gestion de l&apos;effectif et des rôles adverses</span>
+                </li>
+                <li className="flex items-center gap-1.5 text-rose-400">
+                  <span>✕</span>
+                  <span>Mode Live Match interactif (chronos & stats)</span>
+                </li>
+              </ul>
+              <div className="pt-1.5 border-t border-slate-200 dark:border-slate-800 text-[10.5px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                <span>✓</span>
+                <span>Vous conservez l&apos;accès au tableau 2D, à votre effectif et à l&apos;export PNG.</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2 relative z-10">
+              <button
+                type="button"
+                onClick={handleConfirmUnsubscribe}
+                disabled={isUnsubscribing}
+                className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase rounded-xl transition cursor-pointer shadow-lg shadow-rose-900/30 flex items-center justify-center gap-2"
+              >
+                <span>🛑</span>
+                <span>{isUnsubscribing ? "Désabonnement en cours..." : "Confirmer mon désabonnement (Passer en Gratuit)"}</span>
+              </button>
+
+              {coachEmail && (
+                <button
+                  type="button"
+                  onClick={handleLaunchStripePortal}
+                  disabled={portalLoading}
+                  className={`w-full py-2.5 font-bold text-xs rounded-xl transition cursor-pointer border flex items-center justify-center gap-1.5 ${
+                    isModernSleek
+                      ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                      : "bg-[#141b29] hover:bg-[#1a2336] text-slate-200 border-[#222f46]"
+                  }`}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>{portalLoading ? "Chargement..." : "Gérer / Résilier directement sur Stripe"}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowUnsubscribeModal(false)}
+                className="w-full py-2.5 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold text-xs transition cursor-pointer text-center"
+              >
+                Annuler et garder mon abonnement
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
