@@ -25,9 +25,21 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: 'any',
       },
       {
+        src: '/pwa-maskable-512x512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable',
+      },
+      {
         src: '/apple-touch-icon.png',
         sizes: '180x180',
         type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/logo.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
         purpose: 'any',
       },
     ],

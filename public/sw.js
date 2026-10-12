@@ -7,6 +7,7 @@ const PRECACHE_ASSETS = [
   '/logo.svg',
   '/pwa-192x192.png',
   '/pwa-512x512.png',
+  '/pwa-maskable-512x512.png',
   '/apple-touch-icon.png'
 ];
 
