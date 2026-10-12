@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { getMailTransporter, DEFAULT_FROM_EMAIL } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -205,32 +205,10 @@ export async function POST(req: NextRequest) {
     `;
 
     // Configure SMTP transport
-    let transporter;
-    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || "587"),
-        secure: process.env.SMTP_SECURE === "true",
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    } else {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-    }
+    const transporter = getMailTransporter();
 
     const mailOptions = {
-      from: process.env.SMTP_FROM || '"The Box" <no-reply@theboxlarena.com>',
+      from: DEFAULT_FROM_EMAIL,
       to: email,
       subject: mailSubject,
       text: `${mailSubject}\n\n${body}\n\n(Ce message vous a été envoyé pour transfert à vos contacts)\n© 2026 The Box`,

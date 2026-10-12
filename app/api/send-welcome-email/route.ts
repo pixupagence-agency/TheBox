@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { getMailTransporter, DEFAULT_FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -201,32 +201,8 @@ export async function POST(req: NextRequest) {
       </html>
     `;
 
-    // Configure SMTP transport with environment secrets, falling back to an automatic Ethereal test account
-    let transporter;
-    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || "587"),
-        secure: process.env.SMTP_SECURE === "true",
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    } else {
-      // Create test Ethereal credentials on-the-fly so it works out-of-the-box seamlessly
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-      console.log("No SMTP settings in environment. Used test Ethereal account:", testAccount.user);
-    }
+    // Configure SMTP transport using resilient mailer
+    const transporter = getMailTransporter();
 
     const textContent = `THE BOX - ZONE DE DÉCISION TACTIQUE
 THE BOX - ZONE DE DÉCISION TACTIQUE
@@ -262,10 +238,10 @@ Accéder à ma Planche Tactique : https://theboxlarena.com/
 Vous recevez cet e-mail suite à votre inscription sur l'application The Box.`;
 
     const mailOptions = {
-      from: process.env.SMTP_FROM || '"The Box" <no-reply@theboxlarena.com>',
+      from: DEFAULT_FROM_EMAIL,
       to: email,
-      bcc: process.env.ADMIN_NOTIFICATION_EMAIL || undefined,
-      subject: "⚡ Bienvenue sur The Box - Vos 14 jours d'essai PRO+ activés !",
+      bcc: ADMIN_NOTIFICATION_EMAIL || undefined,
+      subject: "Bienvenue sur The Box - Activation de votre compte Coach",
       text: textContent,
       html: htmlContent,
     };
@@ -273,14 +249,7 @@ Vous recevez cet e-mail suite à votre inscription sur l'application The Box.`;
     const info = await transporter.sendMail(mailOptions);
     console.log("Welcome email sent successfully! MessageId:", info.messageId);
 
-    // If using Ethereal, log the test inbox preview URL for easy testing
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    if (previewUrl) {
-      console.log("Ethereal test email preview URL:", previewUrl);
-      return NextResponse.json({ success: true, message: "Welcome email sent (Ethereal test mode)", previewUrl });
-    }
-
-    return NextResponse.json({ success: true, message: "Welcome email sent successfully" });
+    return NextResponse.json({ success: true, message: "Welcome email sent successfully", messageId: info.messageId });
   } catch (err: any) {
     console.error("Error in welcome email API:", err);
     return NextResponse.json({ error: "Failed to send email", details: err?.message }, { status: 500 });

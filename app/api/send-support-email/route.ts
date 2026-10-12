@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { getMailTransporter } from "@/lib/mailer";
 
 const SUPPORT_EMAIL = "pixup.agence@gmail.com";
 
@@ -233,29 +233,7 @@ Pour répondre: ${email}
     `.trim();
 
     // Configure SMTP transport
-    let transporter;
-    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || "587"),
-        secure: process.env.SMTP_SECURE === "true",
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    } else {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-    }
+    const transporter = getMailTransporter();
 
     const mailOptions = {
       from: process.env.SMTP_FROM || `"The Box Support" <${SUPPORT_EMAIL}>`,

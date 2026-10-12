@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: '/',
     name: 'The Box - Zone de Décision Tactique',
     short_name: 'The Box',
-    description: 'Application professionnelle de coaching, tableau blanc tactique multi-sports et assistant analytique.',
+    description: 'Application professionnelle de coaching et tableau blanc tactique.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

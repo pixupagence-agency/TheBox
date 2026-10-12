@@ -11,7 +11,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "The Box - Zone de décision tactique",
-  description: "Application professionnelle de coaching, tableau blanc tactique multi-sports et assistant analytique.",
+  description: "Application professionnelle de coaching et tableau blanc tactique.",
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -27,17 +27,17 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "The Box - Zone de décision tactique",
-    description: "Application professionnelle de coaching, tableau blanc tactique multi-sports et assistant analytique.",
+    description: "Application professionnelle de coaching et tableau blanc tactique.",
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: "The Box - Zone de décision tactique",
-    description: "Application professionnelle de coaching, tableau blanc tactique multi-sports et assistant analytique.",
+    description: "Application professionnelle de coaching et tableau blanc tactique.",
   },
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" suppressHydrationWarning>
       <body suppressHydrationWarning>
