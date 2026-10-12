@@ -436,6 +436,10 @@ export default function LandingPage({
                   </div>
                   <div className="flex items-start gap-2.5 text-xs text-white font-medium">
                     <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
+                    <span>Partage des schémas tactiques (WhatsApp & Mail)</span>
+                  </div>
+                  <div className="flex items-start gap-2.5 text-xs text-white font-medium">
+                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
                     <span>Enregistrements vocales et saisies de notes activés</span>
                   </div>
                   <div className="flex items-start gap-2.5 text-xs text-white font-medium">

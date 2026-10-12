@@ -10,9 +10,9 @@ import TrialCountdownModal, { calculateTrialRemaining, TrialTimeRemaining } from
 import ShareModal, { ShareData } from "./ShareModal";
 import SubscriptionPlans from "./SubscriptionPlans";
 import { PWAInstallButton } from "./PWAInstallButton";
-import { 
-  Play, Pause, Plus, Trash2, ChevronLeft, ChevronRight, 
-  RotateCcw, Pencil, Sparkles, Save, UserPlus, UserMinus, RefreshCw, Shield, CheckCircle, Check, 
+import {
+  Play, Pause, Plus, Trash2, ChevronLeft, ChevronRight,
+  RotateCcw, Pencil, Sparkles, Save, UserPlus, UserMinus, RefreshCw, Shield, CheckCircle, Check,
   Download, Share2, Maximize2, Minimize2, Laptop, Smartphone,
   MousePointer, Move, ArrowUpRight, Settings, Info, FileText, Camera,
   Mic, Trash, Eye, Globe, LogOut, ChevronDown, Award, Eraser, Lock, X, User, Users,
@@ -183,7 +183,7 @@ export const defaultManagedTeamRosters: Record<string, TeamRosterPlayer[]> = {
 export const generateDefaultRosterForCustomTeam = (teamId: string, teamName: string, category: string): TeamRosterPlayer[] => {
   const isFemale = category.toLowerCase().includes("féminin") || teamName.toLowerCase().includes("féminin");
   const isYouth = category.toLowerCase().includes("jeune") || category.toLowerCase().includes("u19") || category.toLowerCase().includes("u17") || category.toLowerCase().includes("formation");
-  
+
   const prefix = isYouth ? "U-" : isFemale ? "F-" : "J-";
   const defaultRoles = [
     { num: 1, role: "GB", starter: true },
@@ -297,7 +297,7 @@ const compressImage = (file: File, maxWidth = 160, maxHeight = 160, quality = 0.
   });
 };
 
-export default function TacticsBoard({ 
+export default function TacticsBoard({
   coaches,
   setCoaches,
   activeCoachId,
@@ -321,7 +321,7 @@ export default function TacticsBoard({
   onCompleteFirstLogin,
   onOpenSupportModal
 }: TacticsBoardProps) {
-  
+
   // Active coach helper & live trial calculation
   const activeCoach = coaches.find(c => c.id === activeCoachId) || coaches[0];
   const [liveTrialStatus, setLiveTrialStatus] = useState<TrialTimeRemaining>(() =>
@@ -611,7 +611,7 @@ export default function TacticsBoard({
   const captureSquad3DDataUrl = async (): Promise<string | null> => {
     if (!squad3DRef.current) return null;
     const node = squad3DRef.current;
-    
+
     // Explicit dimensions matching the exact rendered card bounding box to ensure perfect centering
     const isPortrait = squad3DOrientation === "portrait";
     const rect = node.getBoundingClientRect();
@@ -716,7 +716,7 @@ export default function TacticsBoard({
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-        } catch (e) {}
+        } catch (e) { }
       }
     };
   }, []);
@@ -727,7 +727,7 @@ export default function TacticsBoard({
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
       const saved = localStorage.getItem(`thebox_setpiece_roles_${initialMatchId}`);
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
+        try { return JSON.parse(saved); } catch (e) { }
       }
     }
     return defaultSetPieceRoles;
@@ -738,7 +738,7 @@ export default function TacticsBoard({
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
       const saved = localStorage.getItem(`thebox_opp_setpiece_roles_${initialMatchId}`);
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
+        try { return JSON.parse(saved); } catch (e) { }
       }
     }
     return defaultSetPieceRoles;
@@ -767,7 +767,7 @@ export default function TacticsBoard({
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch (e) {}
+        } catch (e) { }
       }
     }
     return defaultTeams;
@@ -797,7 +797,7 @@ export default function TacticsBoard({
         try {
           const parsed = JSON.parse(saved);
           if (parsed && typeof parsed === "object") return parsed;
-        } catch (e) {}
+        } catch (e) { }
       }
     }
     return defaultManagedTeamRosters;
@@ -1034,7 +1034,7 @@ export default function TacticsBoard({
         setRightSidebarWidth(260);
       }
       setSleekToastMessage(
-        next 
+        next
           ? "✨ Mode Design Épuré (Clair) activé : couleurs lumineuses, interface aérée et contrastes optimisés."
           : "🌙 Mode Design Sombre Classique réactivé."
       );
@@ -1090,14 +1090,14 @@ export default function TacticsBoard({
       prev.map((c) =>
         c.id === activeCoachId
           ? {
-              ...c,
-              firstName: editFirstName.trim(),
-              lastName: editLastName.trim(),
-              email: editEmail.trim(),
-              club: editClub.trim(),
-              role: editRole,
-              preferredSport: editSport,
-            }
+            ...c,
+            firstName: editFirstName.trim(),
+            lastName: editLastName.trim(),
+            email: editEmail.trim(),
+            club: editClub.trim(),
+            role: editRole,
+            preferredSport: editSport,
+          }
           : c
       )
     );
@@ -1139,7 +1139,7 @@ export default function TacticsBoard({
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch (e) {}
+        } catch (e) { }
       }
     }
     return [
@@ -1227,7 +1227,7 @@ export default function TacticsBoard({
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
       const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
       if (saved) {
-        try { return JSON.parse(saved).currentPeriod || "1MT"; } catch (e) {}
+        try { return JSON.parse(saved).currentPeriod || "1MT"; } catch (e) { }
       }
     }
     return "1MT";
@@ -1238,7 +1238,7 @@ export default function TacticsBoard({
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
       const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
       if (saved) {
-        try { return JSON.parse(saved).liveTimerSeconds || 0; } catch (e) {}
+        try { return JSON.parse(saved).liveTimerSeconds || 0; } catch (e) { }
       }
     }
     return 0;
@@ -1249,7 +1249,7 @@ export default function TacticsBoard({
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
       const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
       if (saved) {
-        try { return JSON.parse(saved).homeScore || 0; } catch (e) {}
+        try { return JSON.parse(saved).homeScore || 0; } catch (e) { }
       }
     }
     return 0;
@@ -1260,7 +1260,7 @@ export default function TacticsBoard({
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
       const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
       if (saved) {
-        try { return JSON.parse(saved).awayScore || 0; } catch (e) {}
+        try { return JSON.parse(saved).awayScore || 0; } catch (e) { }
       }
     }
     return 0;
@@ -1281,7 +1281,7 @@ export default function TacticsBoard({
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
       const saved = localStorage.getItem(`thebox_match_events_${initialMatchId}`);
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
+        try { return JSON.parse(saved); } catch (e) { }
       }
     }
     return [];
@@ -1375,7 +1375,7 @@ export default function TacticsBoard({
       interval = setInterval(() => {
         setLiveTimerSeconds((prev) => {
           const next = prev + 1;
-          
+
           // Auto Pause at 45:00 for 1MT -> MI-TEMPS
           if (next === 2700 && currentPeriod === "1MT") {
             setIsLiveTimerRunning(false);
@@ -1383,7 +1383,7 @@ export default function TacticsBoard({
             setSleekToastMessage("⏸️ Fin de la 1ère Mi-Temps (45:00) ! Passage en pause mi-temps.");
             setTimeout(() => setSleekToastMessage(null), 4000);
           }
-          
+
           // Auto Match Finish at 90:00 for 2MT -> FIN
           if (next === 5400 && currentPeriod === "2MT") {
             setTimeout(() => {
@@ -1606,7 +1606,7 @@ export default function TacticsBoard({
             setCurrentFrameIdx(0);
             return;
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
@@ -1791,11 +1791,11 @@ export default function TacticsBoard({
     try {
       if (nextState) {
         if (pitchWrapperRef.current && !document.fullscreenElement && pitchWrapperRef.current.requestFullscreen) {
-          await pitchWrapperRef.current.requestFullscreen().catch(() => {});
+          await pitchWrapperRef.current.requestFullscreen().catch(() => { });
         }
       } else {
         if (document.fullscreenElement && document.exitFullscreen) {
-          await document.exitFullscreen().catch(() => {});
+          await document.exitFullscreen().catch(() => { });
         }
       }
     } catch {
@@ -1931,7 +1931,7 @@ export default function TacticsBoard({
       } else if (action.tool === "arrow-direct" || action.tool === "arrow-deep" || action.tool === "arrow-run") {
         ctx.beginPath();
         ctx.moveTo(startX, startY);
-        
+
         if (action.tool === "arrow-deep") {
           ctx.setLineDash([8, 6]);
         } else if (action.tool === "arrow-run") {
@@ -1940,7 +1940,7 @@ export default function TacticsBoard({
 
         ctx.lineTo(endX, endY);
         ctx.stroke();
-        
+
         ctx.setLineDash([]);
         drawArrowhead(ctx, startX, startY, endX, endY);
       } else if (action.tool === "shape-circle") {
@@ -2195,7 +2195,7 @@ export default function TacticsBoard({
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
     const coords = getRelativeMouseCoords(e);
-    
+
     if (drawingTool === "brush") {
       setCurrentActionPoints((prev) => [...prev, coords]);
     } else {
@@ -2226,7 +2226,7 @@ export default function TacticsBoard({
   const getFormationCoordinates = (sport: string, formationName: string, isOpponent: boolean): { x: number; y: number }[] => {
     const flipX = (val: number) => isOpponent ? 100 - val : val;
     let coords: { x: number; y: number }[] = [];
-    
+
     if (sport === "basketball") {
       switch (formationName) {
         case "2-3":
@@ -2424,13 +2424,13 @@ export default function TacticsBoard({
       const copy = [...prev];
       const activeFrame = copy[currentFrameIdx] || [];
       const nonTeamAPlayers = activeFrame.filter(t => t.type !== "player_a" && t.type !== "ball");
-      const ballToken = activeFrame.find(t => t.type === "ball") || { 
-        id: "ball", 
-        type: "ball" as const, 
-        name: "Ballon", 
-        role: "Equipement", 
-        x: 50, 
-        y: 50 
+      const ballToken = activeFrame.find(t => t.type === "ball") || {
+        id: "ball",
+        type: "ball" as const,
+        name: "Ballon",
+        role: "Equipement",
+        x: 50,
+        y: 50
       };
 
       const existingTeamA = activeFrame.filter(t => t.type === "player_a");
@@ -3322,13 +3322,13 @@ export default function TacticsBoard({
           prev.map((s) =>
             s.id === swapSourcePlayer.id
               ? {
-                  ...s,
-                  name: targetPlayer.name,
-                  number: targetPlayer.number,
-                  role: targetPlayer.role,
-                  status: targetPlayer.status || "normal",
-                  photo: targetPlayer.photo,
-                }
+                ...s,
+                name: targetPlayer.name,
+                number: targetPlayer.number,
+                role: targetPlayer.role,
+                status: targetPlayer.status || "normal",
+                photo: targetPlayer.photo,
+              }
               : s
           )
         );
@@ -3337,13 +3337,13 @@ export default function TacticsBoard({
           prev.map((s) =>
             s.id === swapSourcePlayer.id
               ? {
-                  ...s,
-                  name: targetPlayer.name,
-                  number: targetPlayer.number,
-                  role: targetPlayer.role,
-                  status: targetPlayer.status || "normal",
-                  photo: targetPlayer.photo,
-                }
+                ...s,
+                name: targetPlayer.name,
+                number: targetPlayer.number,
+                role: targetPlayer.role,
+                status: targetPlayer.status || "normal",
+                photo: targetPlayer.photo,
+              }
               : s
           )
         );
@@ -3869,7 +3869,7 @@ export default function TacticsBoard({
     if (schema.id && activeMatchId && schema.matchId !== activeMatchId) {
       handleLinkSchemaToMatch(schema.id, activeMatchId);
     }
-    
+
     const isAnim = Boolean(schema.isAnimation || (schema.keyframes && schema.keyframes.length > 1));
     if (isAnim && !isLiveMatchMode) {
       setIsAnimationCreatorOpen(true);
@@ -3938,10 +3938,15 @@ export default function TacticsBoard({
   };
 
   const handleOpenShareSchema = (schema?: any) => {
+    if (!isProOrAdmin) {
+      setSleekToastMessage("🔒 Le partage de schémas tactiques est réservé aux formules PRO & PRO+.");
+      setIsCheckoutOpen(true);
+      return;
+    }
     const targetKeyframes = schema?.keyframes || keyframes;
     const firstFrame = targetKeyframes?.[0] || keyframes[0];
-    const targetTokens = Array.isArray(firstFrame) 
-      ? firstFrame 
+    const targetTokens = Array.isArray(firstFrame)
+      ? firstFrame
       : (firstFrame?.players || currentTokens);
 
     const targetPlayers = targetTokens
@@ -4477,7 +4482,7 @@ export default function TacticsBoard({
         ctx.lineTo(endX, endY);
         ctx.stroke();
         ctx.setLineDash([]);
-        
+
         // Arrowhead
         const angle = Math.atan2(endY - startY, endX - startX);
         const headLen = 16;
@@ -4879,7 +4884,7 @@ export default function TacticsBoard({
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-        } catch (e) {}
+        } catch (e) { }
         recognitionRef.current = null;
       }
       setIsRecordingVoice(false);
@@ -4995,7 +5000,7 @@ export default function TacticsBoard({
       }
       const pitchPlayers = currentTokens.filter((t) => t.type.startsWith("player"));
       return (
-        <div 
+        <div
           ref={editPanelRef}
           className="w-full bg-[#0d1117] border border-[#1f293d] hover:border-[#00E599]/30 rounded-2xl shadow-xl p-2.5 transition-all duration-200"
         >
@@ -5020,17 +5025,15 @@ export default function TacticsBoard({
                     setEditingToken(token);
                     setQuickActionToken(token);
                   }}
-                  className={`px-2 py-1 rounded-lg border text-left flex items-center gap-1.5 transition cursor-pointer shrink-0 text-xs ${
-                    token.type === "player_a"
-                      ? "bg-[#090d14] border-[#00e599]/30 hover:border-[#00E599] text-slate-200 hover:bg-[#102420]"
-                      : "bg-[#090d14] border-rose-900/40 hover:border-rose-500 text-rose-200 hover:bg-[#251016]"
-                  }`}
+                  className={`px-2 py-1 rounded-lg border text-left flex items-center gap-1.5 transition cursor-pointer shrink-0 text-xs ${token.type === "player_a"
+                    ? "bg-[#090d14] border-[#00e599]/30 hover:border-[#00E599] text-slate-200 hover:bg-[#102420]"
+                    : "bg-[#090d14] border-rose-900/40 hover:border-rose-500 text-rose-200 hover:bg-[#251016]"
+                    }`}
                   title={`Éditer ${token.name}`}
                 >
                   <span
-                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[8.5px] font-black shrink-0 ${
-                      token.type === "player_a" ? "bg-[#00E599] text-[#0d1117]" : "bg-rose-600 text-white"
-                    }`}
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[8.5px] font-black shrink-0 ${token.type === "player_a" ? "bg-[#00E599] text-[#0d1117]" : "bg-rose-600 text-white"
+                      }`}
                   >
                     {token.number || "J"}
                   </span>
@@ -5054,7 +5057,7 @@ export default function TacticsBoard({
     ).length;
     const playerAssists = matchEvents.filter(
       (e) => (e.type === "assist" && e.player.toLowerCase() === activeToken.name.toLowerCase()) ||
-             (e.type === "goal" && e.assister && e.assister.toLowerCase() === activeToken.name.toLowerCase())
+        (e.type === "goal" && e.assister && e.assister.toLowerCase() === activeToken.name.toLowerCase())
     ).length;
     const playerYellows =
       (activeToken.yellowCards || 0) +
@@ -5071,11 +5074,10 @@ export default function TacticsBoard({
     const isExcellent = activeToken.status === "excellent";
 
     return (
-      <div 
+      <div
         ref={editPanelRef}
-        className={`w-full bg-[#0d1117] border ${
-          isHome ? "border-[#00E599]/50 shadow-[#00e599]/5" : "border-rose-500/50 shadow-rose-500/5"
-        } rounded-2xl shadow-xl p-2.5 transition-all duration-200 flex flex-col gap-2.5`}
+        className={`w-full bg-[#0d1117] border ${isHome ? "border-[#00E599]/50 shadow-[#00e599]/5" : "border-rose-500/50 shadow-rose-500/5"
+          } rounded-2xl shadow-xl p-2.5 transition-all duration-200 flex flex-col gap-2.5`}
       >
         {/* LIGNE 1 : INFORMATIONS JOUEUR À L'HORIZONTALE */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1f293d] pb-2">
@@ -5090,11 +5092,10 @@ export default function TacticsBoard({
                 />
               ) : (
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border-2 ${
-                    isHome
-                      ? "bg-[#00E599] text-[#0d1117] border-[#00e599]"
-                      : "bg-rose-600 text-white border-rose-400"
-                  }`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border-2 ${isHome
+                    ? "bg-[#00E599] text-[#0d1117] border-[#00e599]"
+                    : "bg-rose-600 text-white border-rose-400"
+                    }`}
                 >
                   {activeToken.number || "?"}
                 </div>
@@ -5167,11 +5168,10 @@ export default function TacticsBoard({
 
             {/* Badge Équipe */}
             <span
-              className={`text-[8px] px-2 py-1 rounded font-black uppercase border shrink-0 ${
-                isHome
-                  ? "bg-[#102420] text-[#00E599] border-[#00e599]/30"
-                  : "bg-rose-950 text-rose-300 border-rose-800"
-              }`}
+              className={`text-[8px] px-2 py-1 rounded font-black uppercase border shrink-0 ${isHome
+                ? "bg-[#102420] text-[#00E599] border-[#00e599]/30"
+                : "bg-rose-950 text-rose-300 border-rose-800"
+                }`}
             >
               {isHome ? "MON CLUB" : "MON ADVERSAIRE"}
             </span>
@@ -5201,9 +5201,8 @@ export default function TacticsBoard({
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {/* Buts ⚽ */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] ${
-              isModernSleek ? "bg-emerald-50 border border-emerald-300 text-emerald-800" : "bg-[#102420] border border-[#00e599]/30 text-emerald-300"
-            }`}>
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] ${isModernSleek ? "bg-emerald-50 border border-emerald-300 text-emerald-800" : "bg-[#102420] border border-[#00e599]/30 text-emerald-300"
+              }`}>
               <span>⚽</span>
               <span className="text-[8.5px] uppercase font-black text-slate-400">Buts :</span>
               <span className={`font-black text-xs ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{playerGoals}</span>
@@ -5231,9 +5230,8 @@ export default function TacticsBoard({
             </div>
 
             {/* État / Forme */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] border ${
-              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#111827] border-[#1f293d]"
-            }`}>
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#111827] border-[#1f293d]"
+              }`}>
               <span className="text-[8.5px] uppercase font-black text-slate-400">Forme :</span>
               {isInjured ? (
                 <span className="text-amber-400 font-black flex items-center gap-1">🏥 Blessé</span>
@@ -5254,18 +5252,16 @@ export default function TacticsBoard({
         <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/80"}`}>
           {/* Section Remplacement avec Menu Déroulant */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs shrink-0 shadow-sm border ${
-              isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00E599]/40 text-[#00E599]"
-            }`}>
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs shrink-0 shadow-sm border ${isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00E599]/40 text-[#00E599]"
+              }`}>
               <RefreshCw className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
               <span className="text-[9.5px] uppercase tracking-wider">REMPLACEMENT :</span>
             </div>
 
             {/* Menu Déroulant Principal */}
             {availableSubs.length === 0 ? (
-              <span className={`text-[10px] italic px-2.5 py-1.5 rounded-xl border ${
-                isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#111827] border-[#1a2130] text-slate-500"
-              }`}>
+              <span className={`text-[10px] italic px-2.5 py-1.5 rounded-xl border ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#111827] border-[#1a2130] text-slate-500"
+                }`}>
                 Aucun remplaçant disponible sur le banc
               </span>
             ) : (
@@ -5282,11 +5278,10 @@ export default function TacticsBoard({
                       e.target.value = "";
                     }
                   }}
-                  className={`border-2 text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer shadow-lg transition-all pr-8 appearance-none ${
-                    isModernSleek
-                      ? "bg-white border-emerald-600 text-slate-900 focus:border-emerald-700"
-                      : "bg-[#111827] border-[#00E599]/60 hover:border-[#00E599] focus:border-[#00E599] text-white"
-                  }`}
+                  className={`border-2 text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer shadow-lg transition-all pr-8 appearance-none ${isModernSleek
+                    ? "bg-white border-emerald-600 text-slate-900 focus:border-emerald-700"
+                    : "bg-[#111827] border-[#00E599]/60 hover:border-[#00E599] focus:border-[#00E599] text-white"
+                    }`}
                   title="Sélectionner un remplaçant sur le banc pour effectuer le remplacement"
                 >
                   <option value="" disabled>
@@ -5411,8 +5406,8 @@ export default function TacticsBoard({
   // - Quand la boîte à outils est masquée, le terrain s'agrandit pour occuper harmonieusement tout l'espace disponible.
   const isToolboxVisible = Boolean(isLiveMatchMode && liveActionToken);
 
-  const currentPitchRatio = aspectRatioMode === "mobile" 
-    ? (terrainComplet ? 1 / getSportRatioNum(activeSport) : 2 / getSportRatioNum(activeSport)) 
+  const currentPitchRatio = aspectRatioMode === "mobile"
+    ? (terrainComplet ? 1 / getSportRatioNum(activeSport) : 2 / getSportRatioNum(activeSport))
     : (terrainComplet ? getSportRatioNum(activeSport) : getSportRatioNum(activeSport) / 2);
 
   const pitchTargetVh = isBoardFullscreen
@@ -5420,31 +5415,31 @@ export default function TacticsBoard({
     : (!isLiveMatchMode && isAnimationCreatorOpen ? 48 : (isToolboxVisible ? 54 : 68));
 
   // Dynamic calculation for Fullscreen mode: subtract exact top & bottom bars height from 100vh
-  const fullscreenHeightExpr = !isLiveMatchMode && isAnimationCreatorOpen 
-    ? "calc(100vh - 135px)" 
-    : isToolboxVisible 
-    ? "calc(100vh - 125px)" 
-    : "calc(100vh - 75px)";
+  const fullscreenHeightExpr = !isLiveMatchMode && isAnimationCreatorOpen
+    ? "calc(100vh - 135px)"
+    : isToolboxVisible
+      ? "calc(100vh - 125px)"
+      : "calc(100vh - 75px)";
 
-  const normalPitchHeightExpr = !isLiveMatchMode && isAnimationCreatorOpen 
-    ? "min(48vh, calc(100vh - 230px))" 
-    : isToolboxVisible 
-    ? "min(54vh, calc(100vh - 200px))" 
-    : "min(65vh, calc(100vh - 150px))";
+  const normalPitchHeightExpr = !isLiveMatchMode && isAnimationCreatorOpen
+    ? "min(48vh, calc(100vh - 230px))"
+    : isToolboxVisible
+      ? "min(54vh, calc(100vh - 200px))"
+      : "min(65vh, calc(100vh - 150px))";
 
-  const pitchMaxHeight = isPitchFullscreen 
-    ? fullscreenHeightExpr 
+  const pitchMaxHeight = isPitchFullscreen
+    ? fullscreenHeightExpr
     : normalPitchHeightExpr;
 
   const fullscreenSidePanelsWidth = (isTeamAPanelCollapsed ? 42 : 180) + (showOpponents ? (isTeamBPanelCollapsed ? 42 : 180) : 0);
 
   const pitchMaxWidth = isPitchFullscreen
-    ? (aspectRatioMode === "mobile" 
-        ? `min(calc(96vw - ${fullscreenSidePanelsWidth}px), calc(${fullscreenHeightExpr} * ${currentPitchRatio}))` 
-        : `min(calc(98vw - ${fullscreenSidePanelsWidth}px), calc(${fullscreenHeightExpr} * ${currentPitchRatio}))`)
-    : (aspectRatioMode === "mobile" 
-        ? `min(88vw, calc(${normalPitchHeightExpr} * ${currentPitchRatio}))` 
-        : `min(100%, calc(${normalPitchHeightExpr} * ${currentPitchRatio}))`);
+    ? (aspectRatioMode === "mobile"
+      ? `min(calc(96vw - ${fullscreenSidePanelsWidth}px), calc(${fullscreenHeightExpr} * ${currentPitchRatio}))`
+      : `min(calc(98vw - ${fullscreenSidePanelsWidth}px), calc(${fullscreenHeightExpr} * ${currentPitchRatio}))`)
+    : (aspectRatioMode === "mobile"
+      ? `min(88vw, calc(${normalPitchHeightExpr} * ${currentPitchRatio}))`
+      : `min(100%, calc(${normalPitchHeightExpr} * ${currentPitchRatio}))`);
 
   // Petite boîte à outils Live Match (options de match : buteur, passeur, carton jaune, carton rouge, blessure)
   const renderLiveMatchToolbox = () => {
@@ -5454,8 +5449,8 @@ export default function TacticsBoard({
     const isHome = currentLiveToken.type === "player_a";
     const currentGoals = matchEvents.filter((e) => e.type === "goal" && e.player === currentLiveToken.name).length;
     const currentAssists = matchEvents.filter((e) => (e.type === "assist" && e.player === currentLiveToken.name) || (e.type === "goal" && e.assister === currentLiveToken.name)).length;
-    const currentYellows = (currentLiveToken.yellowCards && currentLiveToken.yellowCards > 0) 
-      ? currentLiveToken.yellowCards 
+    const currentYellows = (currentLiveToken.yellowCards && currentLiveToken.yellowCards > 0)
+      ? currentLiveToken.yellowCards
       : matchEvents.filter((e) => e.type === "yellow" && e.player === currentLiveToken.name).length;
 
     return (
@@ -5468,11 +5463,10 @@ export default function TacticsBoard({
           {/* Identité joueur */}
           <div className="flex items-center gap-2 shrink-0">
             <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs border shrink-0 ${
-                isHome
-                  ? "bg-[#00E599] text-[#0d1117] border-[#00e599]"
-                  : "bg-rose-600 text-white border-rose-400"
-              }`}
+              className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs border shrink-0 ${isHome
+                ? "bg-[#00E599] text-[#0d1117] border-[#00e599]"
+                : "bg-rose-600 text-white border-rose-400"
+                }`}
             >
               {currentLiveToken.number || "?"}
             </div>
@@ -5483,11 +5477,10 @@ export default function TacticsBoard({
                   {currentLiveToken.name}
                 </span>
                 <span
-                  className={`text-[8px] font-black px-1.5 py-0.2 rounded border shrink-0 ${
-                    isHome
-                      ? "bg-[#102420] text-[#00E599] border-[#00e599]/30"
-                      : "bg-rose-950 text-rose-300 border-rose-800"
-                  }`}
+                  className={`text-[8px] font-black px-1.5 py-0.2 rounded border shrink-0 ${isHome
+                    ? "bg-[#102420] text-[#00E599] border-[#00e599]/30"
+                    : "bg-rose-950 text-rose-300 border-rose-800"
+                    }`}
                 >
                   {isHome ? "MON CLUB" : "MON ADVERSAIRE"}
                 </span>
@@ -5628,9 +5621,8 @@ export default function TacticsBoard({
       >
         <div
           id="substitution-modal-card"
-          className={`w-full max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-5 flex flex-col gap-3.5 select-auto scrollbar-thin border relative overflow-hidden ${
-            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-slate-200"
-          }`}
+          className={`w-full max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-5 flex flex-col gap-3.5 select-auto scrollbar-thin border relative overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-slate-200"
+            }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Ambient background glow accents */}
@@ -5640,29 +5632,27 @@ export default function TacticsBoard({
           {/* EN-TÊTE MODALE */}
           <div className={`flex items-center justify-between border-b pb-3 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
             <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${
-                isOpponent 
-                  ? isModernSleek
-                    ? "bg-rose-100 border-rose-300 text-rose-800"
-                    : "bg-rose-950/60 border-rose-600/40 text-rose-400" 
-                  : isModernSleek 
-                  ? "bg-emerald-100 border-emerald-300 text-emerald-800" 
+              <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${isOpponent
+                ? isModernSleek
+                  ? "bg-rose-100 border-rose-300 text-rose-800"
+                  : "bg-rose-950/60 border-rose-600/40 text-rose-400"
+                : isModernSleek
+                  ? "bg-emerald-100 border-emerald-300 text-emerald-800"
                   : "bg-[#102420] border-[#00e599]/40 text-[#00E599]"
-              }`}>
+                }`}>
                 <RefreshCw className="w-4 h-4" />
               </div>
               <div>
                 <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span>Effectuer un Remplacement</span>
-                  <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${
-                    isOpponent 
-                      ? isModernSleek
-                        ? "bg-rose-100 text-rose-800 border-rose-300"
-                        : "bg-rose-950/80 text-rose-300 border-rose-700/60" 
-                      : isModernSleek 
-                      ? "bg-emerald-100 text-emerald-800 border-emerald-300" 
+                  <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${isOpponent
+                    ? isModernSleek
+                      ? "bg-rose-100 text-rose-800 border-rose-300"
+                      : "bg-rose-950/80 text-rose-300 border-rose-700/60"
+                    : isModernSleek
+                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
                       : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
-                  }`}>
+                    }`}>
                     {teamTitle}
                   </span>
                 </h3>
@@ -5676,9 +5666,8 @@ export default function TacticsBoard({
             <button
               id="btn-close-sub-modal"
               onClick={() => setSubPickerToken(null)}
-              className={`p-1.5 rounded-xl transition cursor-pointer ${
-                isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-              }`}
+              className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                }`}
               title="Fermer"
             >
               <X className="w-4 h-4" />
@@ -5686,15 +5675,14 @@ export default function TacticsBoard({
           </div>
 
           {/* JOUEUR SORTANT (OUT) */}
-          <div className={`border rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5 ${
-            isModernSleek
-              ? isOpponent
-                ? "bg-rose-50/60 border-rose-200 text-slate-900"
-                : "bg-slate-50 border-slate-200 text-slate-900"
-              : isOpponent
+          <div className={`border rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5 ${isModernSleek
+            ? isOpponent
+              ? "bg-rose-50/60 border-rose-200 text-slate-900"
+              : "bg-slate-50 border-slate-200 text-slate-900"
+            : isOpponent
               ? "bg-[#161118] border-rose-900/40 text-white"
               : "bg-[#121926] border-emerald-900/40 text-white"
-          }`}>
+            }`}>
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="relative shrink-0">
                 {subPickerToken.photo ? (
@@ -5705,11 +5693,10 @@ export default function TacticsBoard({
                   />
                 ) : (
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs border-2 shadow-md ${
-                      isModernSleek
-                        ? "bg-rose-100 text-rose-800 border-rose-400"
-                        : "bg-rose-950 text-rose-300 border-rose-500"
-                    }`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs border-2 shadow-md ${isModernSleek
+                      ? "bg-rose-100 text-rose-800 border-rose-400"
+                      : "bg-rose-950 text-rose-300 border-rose-500"
+                      }`}
                   >
                     {subPickerToken.number || "?"}
                   </div>
@@ -5724,15 +5711,13 @@ export default function TacticsBoard({
                   <span className={`text-xs font-black truncate max-w-[130px] ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                     {subPickerToken.name}
                   </span>
-                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase shrink-0 ${
-                    isModernSleek ? "bg-slate-200 text-slate-700" : "bg-[#1a2333] text-slate-300"
-                  }`}>
+                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase shrink-0 ${isModernSleek ? "bg-slate-200 text-slate-700" : "bg-[#1a2333] text-slate-300"
+                    }`}>
                     {subPickerToken.role || "TITULAIRE"}
                   </span>
                 </div>
-                <div className={`text-[10px] font-bold mt-0.5 flex items-center gap-1 ${
-                  isModernSleek ? "text-rose-700" : "text-rose-500"
-                }`}>
+                <div className={`text-[10px] font-bold mt-0.5 flex items-center gap-1 ${isModernSleek ? "text-rose-700" : "text-rose-500"
+                  }`}>
                   <span>🚪 Joueur sortant du terrain</span>
                 </div>
               </div>
@@ -5747,11 +5732,10 @@ export default function TacticsBoard({
                   handleRemovePlayerFromPitch(subPickerToken, "normal");
                   setSubPickerToken(null);
                 }}
-                className={`px-2.5 py-1 border rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 ${
-                  isModernSleek
-                    ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
-                    : "bg-[#172233] hover:bg-[#22334d] border-[#263750] text-slate-200 hover:text-white"
-                }`}
+                className={`px-2.5 py-1 border rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                  : "bg-[#172233] hover:bg-[#22334d] border-[#263750] text-slate-200 hover:text-white"
+                  }`}
                 title="Faire sortir sans remplacement"
               >
                 <span>🚪 Sortie simple</span>
@@ -5763,11 +5747,10 @@ export default function TacticsBoard({
                   handleRemovePlayerFromPitch(subPickerToken, "injured");
                   setSubPickerToken(null);
                 }}
-                className={`px-2.5 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 border ${
-                  isModernSleek
-                    ? "bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800"
-                    : "bg-amber-950/80 hover:bg-amber-800 border-amber-600/80 text-amber-200 hover:text-white"
-                }`}
+                className={`px-2.5 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 border ${isModernSleek
+                  ? "bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800"
+                  : "bg-amber-950/80 hover:bg-amber-800 border-amber-600/80 text-amber-200 hover:text-white"
+                  }`}
                 title="Sortie sur blessure"
               >
                 <span>🏥 Blessure</span>
@@ -5778,11 +5761,10 @@ export default function TacticsBoard({
           {/* LISTE DES REMPLAÇANTS DU BANC (IN) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-[10.5px] font-black uppercase">
-              <span className={`flex items-center gap-1.5 ${
-                isOpponent 
-                  ? isModernSleek ? "text-rose-800 font-black" : "text-rose-400" 
-                  : isModernSleek ? "text-emerald-800 font-black" : "text-[#00E599]"
-              }`}>
+              <span className={`flex items-center gap-1.5 ${isOpponent
+                ? isModernSleek ? "text-rose-800 font-black" : "text-rose-400"
+                : isModernSleek ? "text-emerald-800 font-black" : "text-[#00E599]"
+                }`}>
                 <User className="w-3.5 h-3.5" />
                 <span>Remplaçants sur le banc ({activeBenchList.length})</span>
               </span>
@@ -5793,9 +5775,8 @@ export default function TacticsBoard({
 
             <div className="max-h-56 sm:max-h-64 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin">
               {activeBenchList.length === 0 ? (
-                <div className={`p-4 rounded-xl border text-center text-xs italic ${
-                  isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#090d14] border-[#1a2130] text-slate-500"
-                }`}>
+                <div className={`p-4 rounded-xl border text-center text-xs italic ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#090d14] border-[#1a2130] text-slate-500"
+                  }`}>
                   {isOpponent
                     ? "Aucun remplaçant présent sur le banc adverse."
                     : "Aucun remplaçant présent sur la feuille de match."}
@@ -5804,7 +5785,7 @@ export default function TacticsBoard({
                 activeBenchList.map((sub) => {
                   const alreadyActive = currentTokens.some(
                     (t) => (isOpponent ? t.type === "player_b" : t.type === "player_a") &&
-                           t.name.toLowerCase() === sub.name.toLowerCase()
+                      t.name.toLowerCase() === sub.name.toLowerCase()
                   );
                   const isInjured = sub.status === "injured" || sub.removalReason === "injured";
                   const isRedCard = sub.status === "red_card" || sub.removalReason === "red_card";
@@ -5815,48 +5796,45 @@ export default function TacticsBoard({
                     <div
                       key={sub.id}
                       id={`sub-row-${sub.id}`}
-                      className={`flex items-center justify-between p-2 sm:p-2.5 rounded-xl border transition ${
-                        isRedCard
-                          ? "bg-rose-950/30 border-rose-900/50 opacity-60"
-                          : isInjured
+                      className={`flex items-center justify-between p-2 sm:p-2.5 rounded-xl border transition ${isRedCard
+                        ? "bg-rose-950/30 border-rose-900/50 opacity-60"
+                        : isInjured
                           ? "bg-amber-950/30 border-amber-900/50 opacity-60"
                           : alreadyActive
-                          ? isModernSleek ? "bg-slate-100 border-slate-200 opacity-60" : "bg-[#090d14] border-[#1a2130] opacity-60"
-                          : isOpponent
-                          ? isModernSleek
-                            ? "bg-slate-50 border-slate-200 hover:border-rose-400 hover:bg-rose-50/50"
-                            : "bg-[#161118] border-[#381f2a] hover:border-rose-500/60 hover:bg-[#221622]"
-                          : isModernSleek
-                          ? "bg-slate-50 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50"
-                          : "bg-[#101725] border-[#1f2c42] hover:border-[#00E599]/60 hover:bg-[#132034]"
-                      }`}
+                            ? isModernSleek ? "bg-slate-100 border-slate-200 opacity-60" : "bg-[#090d14] border-[#1a2130] opacity-60"
+                            : isOpponent
+                              ? isModernSleek
+                                ? "bg-slate-50 border-slate-200 hover:border-rose-400 hover:bg-rose-50/50"
+                                : "bg-[#161118] border-[#381f2a] hover:border-rose-500/60 hover:bg-[#221622]"
+                              : isModernSleek
+                                ? "bg-slate-50 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50"
+                                : "bg-[#101725] border-[#1f2c42] hover:border-[#00E599]/60 hover:bg-[#132034]"
+                        }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         {sub.photo ? (
                           <img
                             src={sub.photo}
                             alt={sub.name}
-                            className={`w-8 h-8 rounded-full object-cover border shrink-0 ${
-                              isOpponent 
-                                ? "border-rose-500" 
-                                : isModernSleek 
-                                ? "border-emerald-600" 
+                            className={`w-8 h-8 rounded-full object-cover border shrink-0 ${isOpponent
+                              ? "border-rose-500"
+                              : isModernSleek
+                                ? "border-emerald-600"
                                 : "border-[#00E599]"
-                            }`}
+                              }`}
                           />
                         ) : (
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
-                              alreadyActive
-                                ? "bg-slate-700 text-slate-300"
-                                : isOpponent
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${alreadyActive
+                              ? "bg-slate-700 text-slate-300"
+                              : isOpponent
                                 ? isModernSleek
                                   ? "bg-rose-100 border border-rose-300 text-rose-800"
                                   : "bg-rose-950 border border-rose-600/40 text-rose-300"
                                 : isModernSleek
-                                ? "bg-emerald-100 border border-emerald-300 text-emerald-800"
-                                : "bg-[#102420] border border-[#00e599]/40 text-[#00E599]"
-                            }`}
+                                  ? "bg-emerald-100 border border-emerald-300 text-emerald-800"
+                                  : "bg-[#102420] border border-[#00e599]/40 text-[#00E599]"
+                              }`}
                           >
                             {sub.number || "R"}
                           </div>
@@ -5864,18 +5842,16 @@ export default function TacticsBoard({
 
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-xs font-black truncate max-w-[120px] sm:max-w-[160px] ${
-                              isModernSleek ? "text-slate-900" : "text-white"
-                            }`}>
+                            <span className={`text-xs font-black truncate max-w-[120px] sm:max-w-[160px] ${isModernSleek ? "text-slate-900" : "text-white"
+                              }`}>
                               {sub.name}
                             </span>
-                            <span className={`text-[8px] border px-1 py-0.2 rounded font-black uppercase shrink-0 ${
-                              isModernSleek 
-                                ? isOpponent
-                                  ? "bg-rose-50 text-rose-800 border-rose-200"
-                                  : "bg-slate-200 text-slate-700 border-slate-300" 
-                                : "bg-[#1a2333] text-cyan-300 border-cyan-800/40"
-                            }`}>
+                            <span className={`text-[8px] border px-1 py-0.2 rounded font-black uppercase shrink-0 ${isModernSleek
+                              ? isOpponent
+                                ? "bg-rose-50 text-rose-800 border-rose-200"
+                                : "bg-slate-200 text-slate-700 border-slate-300"
+                              : "bg-[#1a2333] text-cyan-300 border-cyan-800/40"
+                              }`}>
                               {sub.role || "SUB"}
                             </span>
                           </div>
@@ -5927,11 +5903,10 @@ export default function TacticsBoard({
                               handleSwapPlayerOnPitch(subPickerToken, sub);
                               setSubPickerToken(null);
                             }}
-                            className={`px-3 py-1.5 font-black text-[10px] rounded-lg shadow-md transition cursor-pointer flex items-center gap-1 ${
-                              isOpponent
-                                ? "bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white"
-                                : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950"
-                            }`}
+                            className={`px-3 py-1.5 font-black text-[10px] rounded-lg shadow-md transition cursor-pointer flex items-center gap-1 ${isOpponent
+                              ? "bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white"
+                              : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950"
+                              }`}
                           >
                             <RefreshCw className="w-3 h-3" />
                             <span>Faire entrer</span>
@@ -5946,9 +5921,8 @@ export default function TacticsBoard({
           </div>
 
           {/* PIED DE MODALE */}
-          <div className={`flex items-center justify-between pt-2 border-t ${
-            isModernSleek ? "border-slate-200" : "border-[#1f293d]"
-          }`}>
+          <div className={`flex items-center justify-between pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+            }`}>
             <button
               type="button"
               onClick={() => {
@@ -5956,9 +5930,8 @@ export default function TacticsBoard({
                 setQuickActionToken(subPickerToken);
                 setSubPickerToken(null);
               }}
-              className={`text-[10px] font-bold underline cursor-pointer ${
-                isModernSleek ? "text-blue-600 hover:text-blue-800" : "text-cyan-400 hover:text-cyan-300"
-              }`}
+              className={`text-[10px] font-bold underline cursor-pointer ${isModernSleek ? "text-blue-600 hover:text-blue-800" : "text-cyan-400 hover:text-cyan-300"
+                }`}
             >
               Ouvrir la fiche complète du joueur
             </button>
@@ -5967,11 +5940,10 @@ export default function TacticsBoard({
               type="button"
               id="btn-cancel-sub-modal"
               onClick={() => setSubPickerToken(null)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                isModernSleek
-                  ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
-                  : "bg-[#172233] hover:bg-[#202f4a] text-slate-300 hover:text-white"
-              }`}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${isModernSleek
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                : "bg-[#172233] hover:bg-[#202f4a] text-slate-300 hover:text-white"
+                }`}
             >
               Annuler
             </button>
@@ -5981,35 +5953,30 @@ export default function TacticsBoard({
     );
   };
 
-  {/* RENDER FUNCTION: MON CLUB (PANEL A) */}
+  {/* RENDER FUNCTION: MON CLUB (PANEL A) */ }
   const renderTeamAPanel = (isFullscreenMode: boolean = false) => {
     return (
       <div
-        className={`${
-          isFullscreenMode
-            ? `shrink-0 flex flex-col justify-start z-30 transition-all duration-200 ${
-                isTeamAPanelCollapsed
-                  ? "w-9 xl:w-10 p-1.5"
-                  : "w-36 xl:w-44 p-2.5 gap-2"
-              } max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-thin ${
-                isModernSleek
-                  ? "bg-white/95 border-2 border-emerald-500/40 rounded-2xl shadow-2xl text-slate-800 backdrop-blur-md"
-                  : "bg-[#0d1117]/95 border border-[#00E599]/40 hover:border-[#00E599]/60 rounded-2xl shadow-2xl backdrop-blur-md text-white"
-              }`
-            : `w-full ${
-                isTeamAPanelCollapsed
-                  ? "lg:w-9 xl:w-10 p-1.5"
-                  : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-36 xl:w-40 p-2 lg:p-2.5 gap-1.5 lg:gap-2")
-              } shrink-0 flex flex-col justify-start ${isCompactUI ? "p-1.5 gap-1 text-[85%]" : ""} ${
-                isModernSleek 
-                  ? "bg-white border-2 border-emerald-500/30 rounded-2xl shadow-md text-slate-800" 
-                  : "bg-[#0d1117] border border-[#00E599]/30 hover:border-[#00E599]/50 rounded-2xl shadow-xl"
-              } transition-all duration-200`
-        }`}
+        className={`${isFullscreenMode
+          ? `shrink-0 flex flex-col justify-start z-30 transition-all duration-200 ${isTeamAPanelCollapsed
+            ? "w-9 xl:w-10 p-1.5"
+            : "w-36 xl:w-44 p-2.5 gap-2"
+          } max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-thin ${isModernSleek
+            ? "bg-white/95 border-2 border-emerald-500/40 rounded-2xl shadow-2xl text-slate-800 backdrop-blur-md"
+            : "bg-[#0d1117]/95 border border-[#00E599]/40 hover:border-[#00E599]/60 rounded-2xl shadow-2xl backdrop-blur-md text-white"
+          }`
+          : `w-full ${isTeamAPanelCollapsed
+            ? "lg:w-9 xl:w-10 p-1.5"
+            : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-36 xl:w-40 p-2 lg:p-2.5 gap-1.5 lg:gap-2")
+          } shrink-0 flex flex-col justify-start ${isCompactUI ? "p-1.5 gap-1 text-[85%]" : ""} ${isModernSleek
+            ? "bg-white border-2 border-emerald-500/30 rounded-2xl shadow-md text-slate-800"
+            : "bg-[#0d1117] border border-[#00E599]/30 hover:border-[#00E599]/50 rounded-2xl shadow-xl"
+          } transition-all duration-200`
+          }`}
       >
         {isTeamAPanelCollapsed ? (
           /* Collapsed View (Vertical tab on desktop/landscape, minimal strip on tablet/mobile) */
-          <div 
+          <div
             onClick={() => setIsTeamAPanelCollapsed(false)}
             className={`w-full flex ${isFullscreenMode ? "flex-col" : "lg:flex-col"} items-center justify-between py-1 px-2 ${isFullscreenMode ? "py-2.5 px-1" : "lg:py-2.5 lg:px-1"} cursor-pointer group select-none gap-2`}
             title="Agrandir le panneau Mon Club"
@@ -6028,11 +5995,10 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setIsTeamAPanelCollapsed(false); }}
-              className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${
-                isModernSleek 
-                  ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200" 
-                  : "bg-[#162234] text-[#00E599] hover:bg-[#00E599] hover:text-slate-950 border border-[#233149]"
-              }`}
+              className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${isModernSleek
+                ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
+                : "bg-[#162234] text-[#00E599] hover:bg-[#00E599] hover:text-slate-950 border border-[#233149]"
+                }`}
               title="Déplier Mon Club"
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
@@ -6053,11 +6019,10 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => setIsTeamAPanelCollapsed(true)}
-                  className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${
-                    isModernSleek 
-                      ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200" 
-                      : "bg-[#162234] text-[#00E599] hover:bg-[#00E599] hover:text-slate-950 border border-[#233149]"
-                  }`}
+                  className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${isModernSleek
+                    ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
+                    : "bg-[#162234] text-[#00E599] hover:bg-[#00E599] hover:text-slate-950 border border-[#233149]"
+                    }`}
                   title="Réduire le panneau Mon Club"
                   aria-label="Réduire le panneau Mon Club"
                 >
@@ -6077,11 +6042,10 @@ export default function TacticsBoard({
                   <select
                     value={selectedFormationA}
                     onChange={(e) => applyTeamAFormation(e.target.value)}
-                    className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black cursor-pointer border ${
-                      isModernSleek
-                        ? "bg-slate-50 border-slate-200 text-slate-800"
-                        : "bg-[#090d14] border-[#1a2130] text-[#00E599]"
-                    }`}
+                    className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black cursor-pointer border ${isModernSleek
+                      ? "bg-slate-50 border-slate-200 text-slate-800"
+                      : "bg-[#090d14] border-[#1a2130] text-[#00E599]"
+                      }`}
                   >
                     {getAvailableFormationsForSport(activeSport).map((form) => (
                       <option key={form} value={form} className="bg-[#090d14] text-white">
@@ -6101,15 +6065,14 @@ export default function TacticsBoard({
                     <button
                       key={form}
                       onClick={() => applyTeamAFormation(form)}
-                      className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-black transition cursor-pointer text-center ${
-                        selectedFormationA === form
-                          ? isModernSleek
-                            ? "bg-emerald-600 text-white font-black shadow-md shadow-emerald-600/30"
-                            : "bg-[#00E599] text-[#0d1117] font-black shadow-md shadow-[#00e599]/20"
-                          : isModernSleek
-                            ? "bg-slate-50 hover:bg-emerald-50 border border-slate-200 text-slate-700 font-bold"
-                            : "bg-[#090d14] hover:bg-[#151f30] border border-[#1a2130] hover:border-[#00e599]/30 text-slate-300 hover:text-brand-cream"
-                      }`}
+                      className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-black transition cursor-pointer text-center ${selectedFormationA === form
+                        ? isModernSleek
+                          ? "bg-emerald-600 text-white font-black shadow-md shadow-emerald-600/30"
+                          : "bg-[#00E599] text-[#0d1117] font-black shadow-md shadow-[#00e599]/20"
+                        : isModernSleek
+                          ? "bg-slate-50 hover:bg-emerald-50 border border-slate-200 text-slate-700 font-bold"
+                          : "bg-[#090d14] hover:bg-[#151f30] border border-[#1a2130] hover:border-[#00e599]/30 text-slate-300 hover:text-brand-cream"
+                        }`}
                     >
                       {form}
                     </button>
@@ -6122,11 +6085,10 @@ export default function TacticsBoard({
             <div className={`${isFullscreenMode ? "flex flex-col" : "grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-col"} gap-1 pt-1.5 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/50"}`}>
               <button
                 onClick={regroupTeamAInCamp}
-                className={`w-full py-1.5 px-2 ${
-                  isModernSleek
-                    ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
-                    : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
-                } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs`}
+                className={`w-full py-1.5 px-2 ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
+                  : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs`}
                 title="Regrouper les joueurs dans leur camp"
               >
                 <RotateCcw className={`w-3 h-3 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} shrink-0`} />
@@ -6135,11 +6097,10 @@ export default function TacticsBoard({
 
               <button
                 onClick={clearTeamAPlayers}
-                className={`w-full py-1.5 px-2 ${
-                  isModernSleek
-                    ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800"
-                    : "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-800/80 text-emerald-200 hover:text-white"
-                } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
+                className={`w-full py-1.5 px-2 ${isModernSleek
+                  ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800"
+                  : "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-800/80 text-emerald-200 hover:text-white"
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
               >
                 Effacer
               </button>
@@ -6151,11 +6112,10 @@ export default function TacticsBoard({
                   setTeamRolesModalTab("players");
                   setIsSetPiecesOpen(true);
                 }}
-                className={`w-full py-1.5 px-2 ${
-                  isModernSleek
-                    ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
-                    : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
-                } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
+                className={`w-full py-1.5 px-2 ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
+                  : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
                 title="Gérer l'effectif, les noms, numéros de maillot et postes de Mon Club"
               >
                 <span className="text-xs">👥</span>
@@ -6172,11 +6132,10 @@ export default function TacticsBoard({
                   setTeamRolesModalTab("setpieces");
                   setIsSetPiecesOpen(true);
                 }}
-                className={`w-full py-1.5 px-2 ${
-                  isModernSleek
-                    ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
-                    : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
-                } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
+                className={`w-full py-1.5 px-2 ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
+                  : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
                 title="Désigner le Capitaine, Penaltys, Corners et Coups Francs de Mon Club"
               >
                 <span className="text-xs">🎯</span>
@@ -6194,35 +6153,30 @@ export default function TacticsBoard({
     );
   };
 
-  {/* RENDER FUNCTION: MON ADVERSAIRE (PANEL B) */}
+  {/* RENDER FUNCTION: MON ADVERSAIRE (PANEL B) */ }
   const renderTeamBPanel = (isFullscreenMode: boolean = false) => {
     return (
       <div
-        className={`${
-          isFullscreenMode
-            ? `shrink-0 flex flex-col justify-start z-30 transition-all duration-200 ${
-                isTeamBPanelCollapsed
-                  ? "w-9 xl:w-10 p-1.5"
-                  : "w-36 xl:w-44 p-2.5 gap-2"
-              } max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-thin ${
-                isModernSleek
-                  ? "bg-white/95 border-2 border-rose-500/40 rounded-2xl shadow-2xl text-slate-800 backdrop-blur-md"
-                  : "bg-[#0d1117]/95 border border-rose-900/50 hover:border-rose-700/70 rounded-2xl shadow-2xl backdrop-blur-md text-white"
-              }`
-            : `w-full ${
-                isTeamBPanelCollapsed
-                  ? "lg:w-9 xl:w-10 p-1.5"
-                  : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-36 xl:w-40 p-2 lg:p-2.5 gap-1.5 lg:gap-2")
-              } shrink-0 flex flex-col justify-start ${isCompactUI ? "p-1.5 gap-1 text-[85%]" : ""} ${
-                isModernSleek 
-                  ? "bg-white border-2 border-rose-500/30 rounded-2xl shadow-md text-slate-800" 
-                  : "bg-[#0d1117] border border-rose-900/40 hover:border-rose-700/60 rounded-2xl shadow-xl"
-              } transition-all duration-200`
-        }`}
+        className={`${isFullscreenMode
+          ? `shrink-0 flex flex-col justify-start z-30 transition-all duration-200 ${isTeamBPanelCollapsed
+            ? "w-9 xl:w-10 p-1.5"
+            : "w-36 xl:w-44 p-2.5 gap-2"
+          } max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-thin ${isModernSleek
+            ? "bg-white/95 border-2 border-rose-500/40 rounded-2xl shadow-2xl text-slate-800 backdrop-blur-md"
+            : "bg-[#0d1117]/95 border border-rose-900/50 hover:border-rose-700/70 rounded-2xl shadow-2xl backdrop-blur-md text-white"
+          }`
+          : `w-full ${isTeamBPanelCollapsed
+            ? "lg:w-9 xl:w-10 p-1.5"
+            : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-36 xl:w-40 p-2 lg:p-2.5 gap-1.5 lg:gap-2")
+          } shrink-0 flex flex-col justify-start ${isCompactUI ? "p-1.5 gap-1 text-[85%]" : ""} ${isModernSleek
+            ? "bg-white border-2 border-rose-500/30 rounded-2xl shadow-md text-slate-800"
+            : "bg-[#0d1117] border border-rose-900/40 hover:border-rose-700/60 rounded-2xl shadow-xl"
+          } transition-all duration-200`
+          }`}
       >
         {isTeamBPanelCollapsed ? (
           /* Collapsed View (Vertical tab on desktop/landscape, minimal strip on tablet/mobile) */
-          <div 
+          <div
             onClick={() => setIsTeamBPanelCollapsed(false)}
             className={`w-full flex ${isFullscreenMode ? "flex-col" : "lg:flex-col"} items-center justify-between py-1 px-2 ${isFullscreenMode ? "py-2.5 px-1" : "lg:py-2.5 lg:px-1"} cursor-pointer group select-none gap-2`}
             title="Agrandir le panneau Mon Adversaire"
@@ -6241,11 +6195,10 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setIsTeamBPanelCollapsed(false); }}
-              className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${
-                isModernSleek 
-                  ? "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200" 
-                  : "bg-[#251217] text-rose-300 hover:bg-rose-500 hover:text-slate-950 border border-[#492331]"
-              }`}
+              className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${isModernSleek
+                ? "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
+                : "bg-[#251217] text-rose-300 hover:bg-rose-500 hover:text-slate-950 border border-[#492331]"
+                }`}
               title="Déplier Mon Adversaire"
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
@@ -6266,11 +6219,10 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => setIsTeamBPanelCollapsed(true)}
-                  className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${
-                    isModernSleek 
-                      ? "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200" 
-                      : "bg-[#251217] text-rose-300 hover:bg-rose-500 hover:text-slate-950 border border-[#492331]"
-                  }`}
+                  className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${isModernSleek
+                    ? "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
+                    : "bg-[#251217] text-rose-300 hover:bg-rose-500 hover:text-slate-950 border border-[#492331]"
+                    }`}
                   title="Réduire le panneau Mon Adversaire"
                   aria-label="Réduire le panneau Mon Adversaire"
                 >
@@ -6290,11 +6242,10 @@ export default function TacticsBoard({
                   <select
                     value={selectedFormationB}
                     onChange={(e) => applyTeamBFormation(e.target.value)}
-                    className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black cursor-pointer border ${
-                      isModernSleek
-                        ? "bg-slate-50 border-slate-200 text-slate-800"
-                        : "bg-[#090d14] border-[#1a2130] text-rose-300"
-                    }`}
+                    className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black cursor-pointer border ${isModernSleek
+                      ? "bg-slate-50 border-slate-200 text-slate-800"
+                      : "bg-[#090d14] border-[#1a2130] text-rose-300"
+                      }`}
                   >
                     {getAvailableFormationsForSport(activeSport).map((form) => (
                       <option key={form} value={form} className="bg-[#090d14] text-white">
@@ -6314,15 +6265,14 @@ export default function TacticsBoard({
                     <button
                       key={form}
                       onClick={() => applyTeamBFormation(form)}
-                      className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-black transition cursor-pointer text-center ${
-                        selectedFormationB === form
-                          ? isModernSleek
-                            ? "bg-rose-600 text-white font-black shadow-md shadow-rose-600/30"
-                            : "bg-rose-500 text-slate-950 font-black shadow-md shadow-rose-500/20"
-                          : isModernSleek
-                            ? "bg-slate-50 hover:bg-rose-50 border border-slate-200 text-slate-700 font-bold"
-                            : "bg-[#090d14] hover:bg-[#2c1a1e] border border-[#1a2130] hover:border-rose-500/30 text-rose-300 hover:text-brand-cream"
-                      }`}
+                      className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-black transition cursor-pointer text-center ${selectedFormationB === form
+                        ? isModernSleek
+                          ? "bg-rose-600 text-white font-black shadow-md shadow-rose-600/30"
+                          : "bg-rose-500 text-slate-950 font-black shadow-md shadow-rose-500/20"
+                        : isModernSleek
+                          ? "bg-slate-50 hover:bg-rose-50 border border-slate-200 text-slate-700 font-bold"
+                          : "bg-[#090d14] hover:bg-[#2c1a1e] border border-[#1a2130] hover:border-rose-500/30 text-rose-300 hover:text-brand-cream"
+                        }`}
                     >
                       {form}
                     </button>
@@ -6335,11 +6285,10 @@ export default function TacticsBoard({
             <div className={`${isFullscreenMode ? "flex flex-col" : "grid grid-cols-2 sm:grid-cols-5 lg:flex lg:flex-col"} gap-1 pt-1.5 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/50"}`}>
               <button
                 onClick={handleAddOpponent}
-                className={`w-full py-1.5 px-2 ${
-                  isModernSleek 
-                    ? "bg-rose-600 hover:bg-rose-700 border-rose-600 text-white shadow-2xs"
-                    : "bg-rose-950/90 hover:bg-rose-900 border-rose-700/80 text-rose-200 hover:text-white"
-                } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 shadow-sm`}
+                className={`w-full py-1.5 px-2 ${isModernSleek
+                  ? "bg-rose-600 hover:bg-rose-700 border-rose-600 text-white shadow-2xs"
+                  : "bg-rose-950/90 hover:bg-rose-900 border-rose-700/80 text-rose-200 hover:text-white"
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 shadow-sm`}
                 title="Ajouter un joueur dans l'équipe adverse"
               >
                 <Plus className={`w-3 h-3 ${isModernSleek ? "text-white" : "text-rose-400"} shrink-0`} />
@@ -6348,11 +6297,10 @@ export default function TacticsBoard({
 
               <button
                 onClick={regroupTeamBInCamp}
-                className={`w-full py-1.5 px-2 ${
-                  isModernSleek
-                    ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
-                    : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
-                } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 shadow-sm`}
+                className={`w-full py-1.5 px-2 ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
+                  : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 shadow-sm`}
                 title="Regrouper les joueurs adverses dans leur camp"
               >
                 <RotateCcw className={`w-3 h-3 ${isModernSleek ? "text-rose-600" : "text-rose-400"} shrink-0`} />
@@ -6361,11 +6309,10 @@ export default function TacticsBoard({
 
               <button
                 onClick={clearTeamBPlayers}
-                className={`w-full py-1.5 px-2 ${
-                  isModernSleek
-                    ? "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-800 shadow-2xs"
-                    : "bg-rose-950/80 hover:bg-rose-900 border-rose-800/80 text-rose-200 hover:text-white"
-                } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
+                className={`w-full py-1.5 px-2 ${isModernSleek
+                  ? "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-800 shadow-2xs"
+                  : "bg-rose-950/80 hover:bg-rose-900 border-rose-800/80 text-rose-200 hover:text-white"
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
               >
                 Effacer
               </button>
@@ -6382,11 +6329,10 @@ export default function TacticsBoard({
                   setTeamRolesModalTab("players");
                   setIsSetPiecesOpen(true);
                 }}
-                className={`w-full py-1.5 px-2 ${
-                  isModernSleek
-                    ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
-                    : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
-                } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
+                className={`w-full py-1.5 px-2 ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
+                  : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
                 title="Gérer l'effectif, les noms, numéros de maillot et postes de l'équipe adverse"
               >
                 <span className="text-xs">👥</span>
@@ -6413,11 +6359,10 @@ export default function TacticsBoard({
                   setTeamRolesModalTab("setpieces");
                   setIsSetPiecesOpen(true);
                 }}
-                className={`w-full py-1.5 px-2 ${
-                  isModernSleek
-                    ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
-                    : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
-                } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
+                className={`w-full py-1.5 px-2 ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
+                  : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
                 title="Désigner Capitaine, Penaltys, Corners et Coups Francs de l'équipe adverse"
               >
                 <span className="text-xs">🎯</span>
@@ -6441,12 +6386,11 @@ export default function TacticsBoard({
   };
 
   return (
-    <div 
-      className={`flex flex-col h-screen overflow-hidden relative font-sans select-none transition-colors duration-300 ${
-        isModernSleek 
-          ? "bg-[#f1f5f9] text-slate-800 modern-sleek-mode" 
-          : "bg-[#07090e] text-white"
-      } ${isCompactUI ? "compact-mode text-[92%]" : ""}`} 
+    <div
+      className={`flex flex-col h-screen overflow-hidden relative font-sans select-none transition-colors duration-300 ${isModernSleek
+        ? "bg-[#f1f5f9] text-slate-800 modern-sleek-mode"
+        : "bg-[#07090e] text-white"
+        } ${isCompactUI ? "compact-mode text-[92%]" : ""}`}
       id="tactical-command-center"
     >
       {/* Subtle modern ambient spotlight */}
@@ -6463,30 +6407,28 @@ export default function TacticsBoard({
           </div>
         </div>
       )}
-      
+
       {/* 1. TOP HEADER NAVBAR */}
-      <header 
-        id="tour-top-header" 
-        className={`${
-          isModernSleek
-            ? isCompactUI 
-              ? "h-14 px-4 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 shadow-xs text-slate-900" 
-              : "h-16 px-6 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 shadow-sm text-slate-900"
-            : isCompactUI 
-              ? "h-12 px-3.5 border-b border-[#1f293d] bg-[#0d1117]" 
-              : "h-16 px-6 border-b border-[#1f293d] bg-[#0d1117]"
-        } flex items-center justify-between relative z-40 flex-shrink-0 transition-all duration-300`}
+      <header
+        id="tour-top-header"
+        className={`${isModernSleek
+          ? isCompactUI
+            ? "h-14 px-4 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 shadow-xs text-slate-900"
+            : "h-16 px-6 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 shadow-sm text-slate-900"
+          : isCompactUI
+            ? "h-12 px-3.5 border-b border-[#1f293d] bg-[#0d1117]"
+            : "h-16 px-6 border-b border-[#1f293d] bg-[#0d1117]"
+          } flex items-center justify-between relative z-40 flex-shrink-0 transition-all duration-300`}
       >
-        
+
         {/* Left Brand info */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-            className={`${
-              isModernSleek
-                ? "p-2 hover:bg-slate-100 border border-slate-200 bg-white rounded-xl text-slate-600 hover:text-emerald-800 shadow-xs"
-                : `${isCompactUI ? "p-1.5" : "p-2"} hover:bg-[#1f293d] border border-[#1f293d] rounded-xl text-[#62728f] hover:text-[#00E599]`
-            } transition cursor-pointer flex items-center justify-center`}
+            className={`${isModernSleek
+              ? "p-2 hover:bg-slate-100 border border-slate-200 bg-white rounded-xl text-slate-600 hover:text-emerald-800 shadow-xs"
+              : `${isCompactUI ? "p-1.5" : "p-2"} hover:bg-[#1f293d] border border-[#1f293d] rounded-xl text-[#62728f] hover:text-[#00E599]`
+              } transition cursor-pointer flex items-center justify-center`}
             title={isLeftSidebarOpen ? "Masquer le menu gauche" : "Afficher le menu gauche"}
           >
             {isLeftSidebarOpen ? <ChevronLeft className={`h-4 w-4 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} /> : <ChevronRight className="h-4 w-4" />}
@@ -6516,11 +6458,10 @@ export default function TacticsBoard({
               onClick={() => {
                 if (onOpenAdminPlatform) onOpenAdminPlatform();
               }}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${
-                isModernSleek
-                  ? "bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
-                  : "bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 text-amber-300 border-amber-500/50 hover:border-amber-300 hover:brightness-110"
-              }`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${isModernSleek
+                ? "bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
+                : "bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 text-amber-300 border-amber-500/50 hover:border-amber-300 hover:brightness-110"
+                }`}
               title="Compte Administrateur The Box : Accès total sans restriction de temps ni de fonction (Espace Admin)"
             >
               <span>👑</span>
@@ -6530,11 +6471,10 @@ export default function TacticsBoard({
           ) : isPaidSubscriber ? (
             <button
               onClick={() => setIsCheckoutOpen(true)}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${
-                isModernSleek
-                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
-                  : "bg-gradient-to-r from-emerald-500/20 via-emerald-500/30 to-teal-500/20 text-emerald-300 border-emerald-500/50 hover:border-emerald-300 hover:brightness-110"
-              }`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${isModernSleek
+                ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                : "bg-gradient-to-r from-emerald-500/20 via-emerald-500/30 to-teal-500/20 text-emerald-300 border-emerald-500/50 hover:border-emerald-300 hover:brightness-110"
+                }`}
               title={`Formule ${currentPlan.toUpperCase()} active. Cliquez pour gérer vos offres et formules.`}
             >
               <span>✨</span>
@@ -6548,11 +6488,10 @@ export default function TacticsBoard({
           ) : hasHadPaidSubscription ? (
             <button
               onClick={() => setIsCheckoutOpen(true)}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${
-                isModernSleek
-                  ? "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
-                  : "bg-[#121926] text-slate-300 border-[#1f293d] hover:border-slate-500"
-              }`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${isModernSleek
+                ? "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                : "bg-[#121926] text-slate-300 border-[#1f293d] hover:border-slate-500"
+                }`}
               title="Formule Gratuite active. Cliquez pour passer à la formule PRO."
             >
               <span>⚪</span>
@@ -6564,13 +6503,12 @@ export default function TacticsBoard({
               onClick={() => {
                 if (onOpenTrialModal) onOpenTrialModal();
               }}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${
-                liveTrialStatus.isExpired
-                  ? isModernSleek ? "bg-slate-100 text-slate-600 border-slate-300" : "bg-[#121926] text-slate-400 border-[#1f293d] hover:border-slate-500"
-                  : isModernSleek
-                    ? "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100"
-                    : "bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-emerald-500/20 text-amber-300 border-amber-500/50 hover:border-amber-300 hover:brightness-110"
-              }`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${liveTrialStatus.isExpired
+                ? isModernSleek ? "bg-slate-100 text-slate-600 border-slate-300" : "bg-[#121926] text-slate-400 border-[#1f293d] hover:border-slate-500"
+                : isModernSleek
+                  ? "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100"
+                  : "bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-emerald-500/20 text-amber-300 border-amber-500/50 hover:border-amber-300 hover:brightness-110"
+                }`}
               title="Cliquez pour afficher les détails du compte à rebours de votre période d'essai Pro (14 Jours)"
             >
               <span className={liveTrialStatus.isExpired ? "" : "animate-pulse"}>
@@ -6590,340 +6528,320 @@ export default function TacticsBoard({
           {/* Right tools and account card */}
           <div className="flex items-center gap-1.5 sm:gap-2.5">
 
-          {/* Guide / Tutoriel Coach Button - Only for non-admin coaches */}
-          {!isUserAdmin && (
-            <button
-              onClick={() => {
-                if (onOpenTutorial) onOpenTutorial();
-              }}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl ${
-                isModernSleek
+            {/* Guide / Tutoriel Coach Button - Only for non-admin coaches */}
+            {!isUserAdmin && (
+              <button
+                onClick={() => {
+                  if (onOpenTutorial) onOpenTutorial();
+                }}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl ${isModernSleek
                   ? "bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-500 shadow-xs"
                   : "bg-[#0d141f] hover:bg-[#152030] border-[#1f293d] hover:border-[#00E599] text-slate-200"
-              } border text-[10px] font-bold transition cursor-pointer shadow-sm group`}
-              title="Ouvrir le guide interactif et tutoriel du coach"
-            >
-              <span className="text-xs group-hover:scale-110 transition-transform">🎓</span>
-              <span className={`font-semibold hidden sm:inline ${isModernSleek ? "text-slate-700 group-hover:text-emerald-800" : "text-slate-200 group-hover:text-[#00E599]"}`}>Tuto Coach</span>
-            </button>
-          )}
+                  } border text-[10px] font-bold transition cursor-pointer shadow-sm group`}
+                title="Ouvrir le guide interactif et tutoriel du coach"
+              >
+                <span className="text-xs group-hover:scale-110 transition-transform">🎓</span>
+                <span className={`font-semibold hidden sm:inline ${isModernSleek ? "text-slate-700 group-hover:text-emerald-800" : "text-slate-200 group-hover:text-[#00E599]"}`}>Tuto Coach</span>
+              </button>
+            )}
 
-          {/* Firebase Cloud Sync Badge - Only for platform admin */}
-          {isUserAdmin && (
-            <div 
-              className={`hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl ${
-                isModernSleek ? "bg-white border-slate-200 text-slate-700 shadow-xs" : "bg-[#0d141f] border-[#1f293d] text-slate-300"
-              } border text-[10px] font-bold shadow-sm`}
-              title="Persistance & synchronisation Cloud actives via Firebase Firestore"
-            >
-              <Cloud className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
-              <span className="font-semibold">Cloud Sync</span>
-              <span className={`w-1.5 h-1.5 rounded-full ${isModernSleek ? "bg-emerald-800" : "bg-[#00E599]"} animate-pulse`}></span>
-            </div>
-          )}
-          
-          <button
-            onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-            className={`p-1.5 sm:p-2 ${
-              isModernSleek 
-                ? "hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 hover:text-emerald-800 shadow-xs" 
-                : "hover:bg-[#1f293d] border border-[#1f293d] text-[#62728f] hover:text-[#00E599]"
-            } rounded-xl transition cursor-pointer flex items-center justify-center shrink-0`}
-            title={isRightSidebarOpen ? "Masquer le menu droit" : "Afficher le menu droit"}
-          >
-            {isRightSidebarOpen ? <ChevronRight className={`h-4 w-4 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
-
-          {/* PWA In-App Install Button */}
-          <PWAInstallButton isModernSleek={isModernSleek} />
-
-          <div className={`h-6 w-[1.5px] ${isModernSleek ? "bg-slate-200" : "bg-[#1f293d]"} hidden sm:block`} />
-
-          {/* User Coach Account profile card */}
-          <div className="relative z-50">
-            {/* Click-away backdrop */}
-            {isUserMenuOpen && (
-              <div 
-                className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent"
-                onClick={() => setIsUserMenuOpen(false)}
-                aria-hidden="true"
-              />
+            {/* Firebase Cloud Sync Badge - Only for platform admin */}
+            {isUserAdmin && (
+              <div
+                className={`hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl ${isModernSleek ? "bg-white border-slate-200 text-slate-700 shadow-xs" : "bg-[#0d141f] border-[#1f293d] text-slate-300"
+                  } border text-[10px] font-bold shadow-sm`}
+                title="Persistance & synchronisation Cloud actives via Firebase Firestore"
+              >
+                <Cloud className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
+                <span className="font-semibold">Cloud Sync</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${isModernSleek ? "bg-emerald-800" : "bg-[#00E599]"} animate-pulse`}></span>
+              </div>
             )}
 
             <button
-              type="button"
-              id="tour-user-menu-btn"
-              onClick={() => setIsUserMenuOpen(prev => !prev)}
-              className={`flex items-center gap-1.5 sm:gap-2.5 ${
-                isModernSleek
-                  ? "bg-white hover:bg-slate-50 border border-slate-200 shadow-xs text-slate-800"
-                  : "bg-[#171f2c] hover:border-[#354563] border border-[#222d41]"
-              } p-1 sm:px-3 sm:py-1.5 rounded-xl transition cursor-pointer select-none`}
-              title="Profil & Options du compte"
-              aria-label="Menu profil utilisateur"
-              aria-expanded={isUserMenuOpen}
+              onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+              className={`p-1.5 sm:p-2 ${isModernSleek
+                ? "hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 hover:text-emerald-800 shadow-xs"
+                : "hover:bg-[#1f293d] border border-[#1f293d] text-[#62728f] hover:text-[#00E599]"
+                } rounded-xl transition cursor-pointer flex items-center justify-center shrink-0`}
+              title={isRightSidebarOpen ? "Masquer le menu droit" : "Afficher le menu droit"}
             >
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 ${
-                isUserAdmin 
-                  ? "bg-gradient-to-tr from-amber-500 to-emerald-400 text-slate-950 font-black ring-2 ring-amber-400/50" 
-                  : "bg-gradient-to-r from-purple-500 to-pink-500"
-              }`}>
-                {activeCoach?.firstName ? activeCoach.firstName.charAt(0) : "C"}{activeCoach?.lastName ? activeCoach.lastName.charAt(0) : "P"}
-              </div>
-              <div className="text-left hidden sm:block">
-                <p className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"} leading-none flex items-center gap-1`}>
-                  <span>{activeCoach?.firstName || "Coach"} {activeCoach?.lastName || "Principal"}</span>
-                  {isUserAdmin && <span className="text-[9px] bg-amber-500/20 text-amber-700 font-black px-1 rounded border border-amber-500/30">ADMIN</span>}
-                  <ChevronDown className={`h-3 w-3 ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} />
-                </p>
-                <p className={`text-[9px] ${isModernSleek ? "text-slate-500 font-bold" : "text-[#62728f] font-black"} uppercase tracking-wider leading-none mt-1`}>
-                  {isUserAdmin ? "👑 Admin Plateforme" : (activeCoach?.role || "Coach Principal")}
-                </p>
-              </div>
-              <ChevronDown className={`h-3.5 w-3.5 sm:hidden ${isModernSleek ? "text-slate-500" : "text-[#62728f]"} shrink-0 transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} />
+              {isRightSidebarOpen ? <ChevronRight className={`h-4 w-4 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} /> : <ChevronLeft className="h-4 w-4" />}
             </button>
 
-            {/* Profiles switching card popup */}
-            {isUserMenuOpen && (
-              <div className={`absolute right-0 top-full mt-2 ${
-                isModernSleek
+            {/* PWA In-App Install Button */}
+            <PWAInstallButton isModernSleek={isModernSleek} />
+
+            <div className={`h-6 w-[1.5px] ${isModernSleek ? "bg-slate-200" : "bg-[#1f293d]"} hidden sm:block`} />
+
+            {/* User Coach Account profile card */}
+            <div className="relative z-50">
+              {/* Click-away backdrop */}
+              {isUserMenuOpen && (
+                <div
+                  className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent"
+                  onClick={() => setIsUserMenuOpen(false)}
+                  aria-hidden="true"
+                />
+              )}
+
+              <button
+                type="button"
+                id="tour-user-menu-btn"
+                onClick={() => setIsUserMenuOpen(prev => !prev)}
+                className={`flex items-center gap-1.5 sm:gap-2.5 ${isModernSleek
+                  ? "bg-white hover:bg-slate-50 border border-slate-200 shadow-xs text-slate-800"
+                  : "bg-[#171f2c] hover:border-[#354563] border border-[#222d41]"
+                  } p-1 sm:px-3 sm:py-1.5 rounded-xl transition cursor-pointer select-none`}
+                title="Profil & Options du compte"
+                aria-label="Menu profil utilisateur"
+                aria-expanded={isUserMenuOpen}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 ${isUserAdmin
+                  ? "bg-gradient-to-tr from-amber-500 to-emerald-400 text-slate-950 font-black ring-2 ring-amber-400/50"
+                  : "bg-gradient-to-r from-purple-500 to-pink-500"
+                  }`}>
+                  {activeCoach?.firstName ? activeCoach.firstName.charAt(0) : "C"}{activeCoach?.lastName ? activeCoach.lastName.charAt(0) : "P"}
+                </div>
+                <div className="text-left hidden sm:block">
+                  <p className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"} leading-none flex items-center gap-1`}>
+                    <span>{activeCoach?.firstName || "Coach"} {activeCoach?.lastName || "Principal"}</span>
+                    {isUserAdmin && <span className="text-[9px] bg-amber-500/20 text-amber-700 font-black px-1 rounded border border-amber-500/30">ADMIN</span>}
+                    <ChevronDown className={`h-3 w-3 ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} />
+                  </p>
+                  <p className={`text-[9px] ${isModernSleek ? "text-slate-500 font-bold" : "text-[#62728f] font-black"} uppercase tracking-wider leading-none mt-1`}>
+                    {isUserAdmin ? "👑 Admin Plateforme" : (activeCoach?.role || "Coach Principal")}
+                  </p>
+                </div>
+                <ChevronDown className={`h-3.5 w-3.5 sm:hidden ${isModernSleek ? "text-slate-500" : "text-[#62728f]"} shrink-0 transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Profiles switching card popup */}
+              {isUserMenuOpen && (
+                <div className={`absolute right-0 top-full mt-2 ${isModernSleek
                   ? "bg-white border border-slate-200 shadow-2xl text-slate-800"
                   : "bg-[#0d1117] border border-[#1f293d] shadow-2xl text-white"
-              } rounded-2xl p-2.5 w-72 max-w-[calc(100vw-20px)] z-50 animate-fade-in`}>
-                {/* Mobile Identity Header (shows full name & role when collapsed on small screens) */}
-                <div className="sm:hidden flex items-center gap-2.5 pb-2.5 mb-2 border-b border-[#1f293d]/50">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 ${
-                    isUserAdmin 
-                      ? "bg-gradient-to-tr from-amber-500 to-emerald-400 text-slate-950 font-black ring-2 ring-amber-400/50" 
+                  } rounded-2xl p-2.5 w-72 max-w-[calc(100vw-20px)] z-50 animate-fade-in`}>
+                  {/* Mobile Identity Header (shows full name & role when collapsed on small screens) */}
+                  <div className="sm:hidden flex items-center gap-2.5 pb-2.5 mb-2 border-b border-[#1f293d]/50">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 ${isUserAdmin
+                      ? "bg-gradient-to-tr from-amber-500 to-emerald-400 text-slate-950 font-black ring-2 ring-amber-400/50"
                       : "bg-gradient-to-r from-purple-500 to-pink-500"
-                  }`}>
-                    {activeCoach?.firstName ? activeCoach.firstName.charAt(0) : "C"}{activeCoach?.lastName ? activeCoach.lastName.charAt(0) : "P"}
+                      }`}>
+                      {activeCoach?.firstName ? activeCoach.firstName.charAt(0) : "C"}{activeCoach?.lastName ? activeCoach.lastName.charAt(0) : "P"}
+                    </div>
+                    <div className="text-left overflow-hidden">
+                      <p className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"} truncate`}>
+                        {activeCoach?.firstName || "Coach"} {activeCoach?.lastName || "Principal"}
+                      </p>
+                      <p className={`text-[9px] ${isModernSleek ? "text-slate-500" : "text-[#62728f]"} font-bold uppercase tracking-wider truncate`}>
+                        {isUserAdmin ? "👑 Admin Plateforme" : (activeCoach?.role || "Coach Principal")}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-left overflow-hidden">
-                    <p className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"} truncate`}>
-                      {activeCoach?.firstName || "Coach"} {activeCoach?.lastName || "Principal"}
-                    </p>
-                    <p className={`text-[9px] ${isModernSleek ? "text-slate-500" : "text-[#62728f]"} font-bold uppercase tracking-wider truncate`}>
-                      {isUserAdmin ? "👑 Admin Plateforme" : (activeCoach?.role || "Coach Principal")}
-                    </p>
-                  </div>
-                </div>
 
-                {isUserAdmin && (
-                  <div className={`p-2 border-b ${isModernSleek ? "border-amber-200 bg-amber-50 text-amber-900" : "border-amber-500/30 bg-amber-950/30 text-amber-300"} rounded-lg mb-2`}>
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        if (onOpenAdminPlatform) onOpenAdminPlatform();
-                      }}
-                      className="w-full text-left px-2 py-1.5 rounded-md text-xs font-black hover:opacity-80 flex items-center gap-2 transition cursor-pointer"
-                    >
-                      <span>👑</span>
-                      <span>Console Admin Plateforme</span>
-                    </button>
-                  </div>
-                )}
+                  {isUserAdmin && (
+                    <div className={`p-2 border-b ${isModernSleek ? "border-amber-200 bg-amber-50 text-amber-900" : "border-amber-500/30 bg-amber-950/30 text-amber-300"} rounded-lg mb-2`}>
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          if (onOpenAdminPlatform) onOpenAdminPlatform();
+                        }}
+                        className="w-full text-left px-2 py-1.5 rounded-md text-xs font-black hover:opacity-80 flex items-center gap-2 transition cursor-pointer"
+                      >
+                        <span>👑</span>
+                        <span>Console Admin Plateforme</span>
+                      </button>
+                    </div>
+                  )}
 
-                {!isUserAdmin && (
-                  isPaidSubscriber ? (
-                    <>
+                  {!isUserAdmin && (
+                    isPaidSubscriber ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            setIsCheckoutOpen(true);
+                          }}
+                          className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${isModernSleek ? "text-emerald-800 hover:bg-slate-50 border-slate-200" : "text-emerald-400 hover:bg-[#1a2333] border-[#1f293d]"
+                            } transition flex items-center justify-between border-b pb-2 mb-1 cursor-pointer`}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span>✨</span>
+                            <span>Formule {currentPlan === "pro_plus" || currentPlan === "annuel" || currentPlan === "club" ? "PRO+" : "PRO"}</span>
+                          </span>
+                          <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded border ${isModernSleek ? "text-emerald-800 bg-emerald-100 border-emerald-300" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                            }`}>ACTIF</span>
+                        </button>
+
+                        {/* Bouton de désabonnement direct dans le menu profil */}
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            setIsCheckoutOpen(true);
+                          }}
+                          className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between cursor-pointer mb-1 border-b border-rose-500/20 pb-2"
+                          title="Se désabonner de l'application et repasser en version gratuite"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span>🛑</span>
+                            <span>Se désabonner</span>
+                          </span>
+                          <span className="text-[9px] uppercase font-black text-rose-500 px-1.5 py-0.2 rounded bg-rose-500/10">Résilier</span>
+                        </button>
+                      </>
+                    ) : hasHadPaidSubscription ? (
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
                           setIsCheckoutOpen(true);
                         }}
-                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                          isModernSleek ? "text-emerald-800 hover:bg-slate-50 border-slate-200" : "text-emerald-400 hover:bg-[#1a2333] border-[#1f293d]"
-                        } transition flex items-center justify-between border-b pb-2 mb-1 cursor-pointer`}
+                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${isModernSleek ? "text-slate-700 hover:bg-slate-50 border-slate-200" : "text-slate-300 hover:bg-[#1a2333] border-[#1f293d]"
+                          } transition flex items-center justify-between border-b pb-2 mb-1 cursor-pointer`}
                       >
                         <span className="flex items-center gap-1.5">
-                          <span>✨</span>
-                          <span>Formule {currentPlan === "pro_plus" || currentPlan === "annuel" || currentPlan === "club" ? "PRO+" : "PRO"}</span>
+                          <span>⚪</span>
+                          <span>Formule Gratuite</span>
                         </span>
-                        <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded border ${
-                          isModernSleek ? "text-emerald-800 bg-emerald-100 border-emerald-300" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                        }`}>ACTIF</span>
+                        <span className="text-[10px] font-mono text-slate-400 font-black bg-slate-500/10 px-1.5 py-0.5 rounded border border-slate-500/20">ACTIF</span>
                       </button>
-
-                      {/* Bouton de désabonnement direct dans le menu profil */}
+                    ) : (
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          setIsCheckoutOpen(true);
+                          if (onOpenTrialModal) onOpenTrialModal();
                         }}
-                        className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between cursor-pointer mb-1 border-b border-rose-500/20 pb-2"
-                        title="Se désabonner de l'application et repasser en version gratuite"
+                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${isModernSleek ? "text-amber-700 hover:bg-slate-50 border-slate-200" : "text-amber-300 hover:bg-[#1a2333] border-[#1f293d]"
+                          } transition flex items-center justify-between border-b pb-2 mb-1 cursor-pointer`}
                       >
                         <span className="flex items-center gap-1.5">
-                          <span>🛑</span>
-                          <span>Se désabonner</span>
+                          <span>⏰</span>
+                          <span>Temps Démo / Essai (14j)</span>
                         </span>
-                        <span className="text-[9px] uppercase font-black text-rose-500 px-1.5 py-0.2 rounded bg-rose-500/10">Résilier</span>
+                        <span className="text-[10px] font-mono text-amber-600 font-black">{liveTrialStatus.days}j {liveTrialStatus.hours}h</span>
                       </button>
-                    </>
-                  ) : hasHadPaidSubscription ? (
+                    )
+                  )}
+                  {!isUserAdmin && (
                     <button
                       onClick={() => {
                         setIsUserMenuOpen(false);
-                        setIsCheckoutOpen(true);
+                        if (onOpenTutorial) onOpenTutorial();
                       }}
-                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                        isModernSleek ? "text-slate-700 hover:bg-slate-50 border-slate-200" : "text-slate-300 hover:bg-[#1a2333] border-[#1f293d]"
-                      } transition flex items-center justify-between border-b pb-2 mb-1 cursor-pointer`}
+                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
+                        } transition flex items-center gap-1.5 cursor-pointer`}
                     >
-                      <span className="flex items-center gap-1.5">
-                        <span>⚪</span>
-                        <span>Formule Gratuite</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-400 font-black bg-slate-500/10 px-1.5 py-0.5 rounded border border-slate-500/20">ACTIF</span>
+                      <span>🎓</span>
+                      <span>Tutoriel & Guide de démarrage</span>
                     </button>
-                  ) : (
+                  )}
+                  {onOpenLegalModal && (
                     <button
                       onClick={() => {
                         setIsUserMenuOpen(false);
-                        if (onOpenTrialModal) onOpenTrialModal();
+                        onOpenLegalModal("faq");
                       }}
-                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                        isModernSleek ? "text-amber-700 hover:bg-slate-50 border-slate-200" : "text-amber-300 hover:bg-[#1a2333] border-[#1f293d]"
-                      } transition flex items-center justify-between border-b pb-2 mb-1 cursor-pointer`}
+                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
+                        } transition flex items-center gap-1.5 cursor-pointer`}
                     >
-                      <span className="flex items-center gap-1.5">
-                        <span>⏰</span>
-                        <span>Temps Démo / Essai (14j)</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-amber-600 font-black">{liveTrialStatus.days}j {liveTrialStatus.hours}h</span>
+                      <span>❓</span>
+                      <span>Foire Aux Questions (FAQ)</span>
                     </button>
-                  )
-                )}
-                {!isUserAdmin && (
+                  )}
                   <button
+                    type="button"
                     onClick={() => {
                       setIsUserMenuOpen(false);
-                      if (onOpenTutorial) onOpenTutorial();
+                      if (onOpenSupportModal) {
+                        onOpenSupportModal();
+                      } else {
+                        window.location.href = "mailto:pixup.agence@gmail.com?subject=%5BSupport%5D%20Demande%20d'aide%20coach";
+                      }
                     }}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                      isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
-                    } transition flex items-center gap-1.5 cursor-pointer`}
+                    className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
+                      } transition flex items-center gap-1.5 cursor-pointer`}
                   >
-                    <span>🎓</span>
-                    <span>Tutoriel & Guide de démarrage</span>
+                    <span>✉️</span>
+                    <span>Contacter le Support (Email)</span>
                   </button>
-                )}
-                {onOpenLegalModal && (
-                  <button
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      onOpenLegalModal("faq");
-                    }}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                      isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
-                    } transition flex items-center gap-1.5 cursor-pointer`}
-                  >
-                    <span>❓</span>
-                    <span>Foire Aux Questions (FAQ)</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    if (onOpenSupportModal) {
-                      onOpenSupportModal();
-                    } else {
-                      window.location.href = "mailto:pixup.agence@gmail.com?subject=%5BSupport%5D%20Demande%20d'aide%20coach";
-                    }
-                  }}
-                  className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                    isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
-                  } transition flex items-center gap-1.5 cursor-pointer`}
-                >
-                  <span>✉️</span>
-                  <span>Contacter le Support (Email)</span>
-                </button>
-                {/* Option Utilisateur : Thème d'Affichage (Sombre / Clair & Épuré) */}
-                <div className={`p-2.5 rounded-xl border ${
-                  isModernSleek 
-                    ? "bg-slate-50 border-slate-200 text-slate-900" 
+                  {/* Option Utilisateur : Thème d'Affichage (Sombre / Clair & Épuré) */}
+                  <div className={`p-2.5 rounded-xl border ${isModernSleek
+                    ? "bg-slate-50 border-slate-200 text-slate-900"
                     : "bg-[#121926] border-[#1f293d] text-slate-200"
-                } my-1.5 shadow-2xs`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm">{isModernSleek ? "☀️" : "🌙"}</span>
-                      <span className="text-[10px] font-black uppercase tracking-wider">
-                        {isModernSleek ? "Design Clair" : "Design Sombre"}
+                    } my-1.5 shadow-2xs`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">{isModernSleek ? "☀️" : "🌙"}</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider">
+                          {isModernSleek ? "Design Clair" : "Design Sombre"}
+                        </span>
+                      </div>
+                      <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded uppercase ${isModernSleek ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-slate-800 text-slate-400"
+                        }`}>
+                        {isModernSleek ? "Actif" : "Classique"}
                       </span>
                     </div>
-                    <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded uppercase ${
-                      isModernSleek ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-slate-800 text-slate-400"
-                    }`}>
-                      {isModernSleek ? "Actif" : "Classique"}
-                    </span>
-                  </div>
 
-                  <button
-                    onClick={toggleModernSleek}
-                    className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-between cursor-pointer border ${
-                      isModernSleek
+                    <button
+                      onClick={toggleModernSleek}
+                      className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-between cursor-pointer border ${isModernSleek
                         ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-800 shadow-2xs"
                         : "bg-[#090d14] hover:bg-[#162030] border-[#1f293d] text-slate-300 hover:text-white"
-                    }`}
-                    title={isModernSleek ? "Basculer vers le mode Sombre Classique" : "Basculer vers le mode Clair & Épuré"}
-                  >
-                    <span className="text-[10px] font-bold">
-                      {isModernSleek ? "Passer au thème Sombre" : "Passer au thème Clair"}
-                    </span>
+                        }`}
+                      title={isModernSleek ? "Basculer vers le mode Sombre Classique" : "Basculer vers le mode Clair & Épuré"}
+                    >
+                      <span className="text-[10px] font-bold">
+                        {isModernSleek ? "Passer au thème Sombre" : "Passer au thème Clair"}
+                      </span>
 
-                    {/* Switch Pill */}
-                    <div className={`w-8 h-4 rounded-full p-0.5 transition-colors duration-200 flex items-center ${
-                      isModernSleek ? "bg-emerald-600 justify-end shadow-inner" : "bg-slate-700 justify-start border border-slate-600"
-                    }`}>
-                      <div className="w-3 h-3 rounded-full bg-white shadow-sm transition-all transform" />
-                    </div>
-                  </button>
-                </div>
-                <button
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    handleOpenUserConfig();
-                  }}
-                  className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${
-                    isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
-                  } transition flex items-center gap-1.5 cursor-pointer`}
-                >
-                  <span>⚙️</span>
-                  <span>Configuration Profil & Sport</span>
-                </button>
-                {onLogout && (
+                      {/* Switch Pill */}
+                      <div className={`w-8 h-4 rounded-full p-0.5 transition-colors duration-200 flex items-center ${isModernSleek ? "bg-emerald-600 justify-end shadow-inner" : "bg-slate-700 justify-start border border-slate-600"
+                        }`}>
+                        <div className="w-3 h-3 rounded-full bg-white shadow-sm transition-all transform" />
+                      </div>
+                    </button>
+                  </div>
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
-                      onLogout();
+                      handleOpenUserConfig();
                     }}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 mt-1 border-t ${
-                      isModernSleek ? "border-slate-200" : "border-[#1f293d]"
-                    } pt-2 flex items-center justify-between transition cursor-pointer`}
+                    className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
+                      } transition flex items-center gap-1.5 cursor-pointer`}
                   >
-                    <span>🚪 Déconnexion</span>
+                    <span>⚙️</span>
+                    <span>Configuration Profil & Sport</span>
                   </button>
-                )}
-              </div>
-            )}
-          </div>
+                  {onLogout && (
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        onLogout();
+                      }}
+                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 mt-1 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+                        } pt-2 flex items-center justify-between transition cursor-pointer`}
+                    >
+                      <span>🚪 Déconnexion</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
-          <button 
-            onClick={() => {
-              if (onLogout) {
-                onLogout();
-              } else {
-                alert("Déconnexion sécurisée.");
-              }
-            }}
-            className="p-1.5 sm:p-2 hover:bg-[#1f293d] border border-[#1f293d] rounded-xl text-[#62728f] hover:text-[#00E599] transition cursor-pointer hidden sm:flex items-center justify-center shrink-0"
-            title="Déconnexion (Retour à la landing page)"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
+            <button
+              onClick={() => {
+                if (onLogout) {
+                  onLogout();
+                } else {
+                  alert("Déconnexion sécurisée.");
+                }
+              }}
+              className="p-1.5 sm:p-2 hover:bg-[#1f293d] border border-[#1f293d] rounded-xl text-[#62728f] hover:text-[#00E599] transition cursor-pointer hidden sm:flex items-center justify-center shrink-0"
+              title="Déconnexion (Retour à la landing page)"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
 
         </div>
 
@@ -6935,32 +6853,30 @@ export default function TacticsBoard({
         {/* ========================================================= */}
         {/* LEFT PANEL: OUTILS, ACTIONS, AFFICHAGE, PLAN PRO (ICON ONLY) */}
         {/* ========================================================= */}
-        <aside 
-          id="tour-left-toolbar" 
-          className={`${isLeftSidebarOpen ? (isModernSleek ? "w-18 opacity-100" : "w-16 opacity-100") : "w-0 opacity-0 overflow-hidden pointer-events-none"} ${
-            isModernSleek 
-              ? "bg-white/95 backdrop-blur-xl border-r border-slate-200/90 shadow-sm text-slate-800" 
-              : "border-r border-[#1f293d] bg-[#0d1117]"
-          } flex flex-col justify-between flex-shrink-0 transition-all duration-300 relative`}
+        <aside
+          id="tour-left-toolbar"
+          className={`${isLeftSidebarOpen ? (isModernSleek ? "w-18 opacity-100" : "w-16 opacity-100") : "w-0 opacity-0 overflow-hidden pointer-events-none"} ${isModernSleek
+            ? "bg-white/95 backdrop-blur-xl border-r border-slate-200/90 shadow-sm text-slate-800"
+            : "border-r border-[#1f293d] bg-[#0d1117]"
+            } flex flex-col justify-between flex-shrink-0 transition-all duration-300 relative`}
         >
-          
+
           <div className="flex-1 overflow-y-auto p-2.5 space-y-4 scrollbar-thin flex flex-col items-center">
-            
+
             {/* 1. OUTILS (ICON BUTTONS) */}
             <div className="flex flex-col items-center gap-1.5 w-full">
               <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>OUTILS</span>
-              
+
               <button
                 onClick={() => { setActiveTool("select"); setDrawingTool("brush"); }}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${
-                  activeTool === "select"
-                    ? isModernSleek
-                      ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                      : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                    : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                      : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                }`}
+                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${activeTool === "select"
+                  ? isModernSleek
+                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
+                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
+                  : isModernSleek
+                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
+                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
+                  }`}
                 title="Sélecteur"
               >
                 <MousePointer className="h-4 w-4" />
@@ -6969,15 +6885,14 @@ export default function TacticsBoard({
 
               <button
                 onClick={() => { setActiveTool("move"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${
-                  activeTool === "move"
-                    ? isModernSleek
-                      ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                      : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                    : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                      : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                }`}
+                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${activeTool === "move"
+                  ? isModernSleek
+                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
+                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
+                  : isModernSleek
+                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
+                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
+                  }`}
                 title="Déplacer"
               >
                 <Move className="h-4 w-4" />
@@ -6987,15 +6902,14 @@ export default function TacticsBoard({
               {/* Ligne Tactique (Pleine & Pointillée sur le même bouton) */}
               <button
                 onClick={handleToggleLineTool}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer relative ${
-                  activeTool === "line"
-                    ? isModernSleek
-                      ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                      : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                    : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                      : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                }`}
+                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer relative ${activeTool === "line"
+                  ? isModernSleek
+                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
+                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
+                  : isModernSleek
+                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
+                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
+                  }`}
                 title={
                   activeTool === "line"
                     ? drawingTool === "shape-dashed-line"
@@ -7024,11 +6938,10 @@ export default function TacticsBoard({
                 {/* Badge visuel de type de ligne actif */}
                 {activeTool === "line" && (
                   <span
-                    className={`absolute -top-1 -right-1 text-[6.5px] font-black px-1 py-0.5 rounded-full leading-none border shadow-2xs ${
-                      isModernSleek
-                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                        : "bg-[#05080e] text-[#00E599] border-[#00E599]"
-                    }`}
+                    className={`absolute -top-1 -right-1 text-[6.5px] font-black px-1 py-0.5 rounded-full leading-none border shadow-2xs ${isModernSleek
+                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                      : "bg-[#05080e] text-[#00E599] border-[#00E599]"
+                      }`}
                   >
                     {drawingTool === "shape-dashed-line" ? "••" : "—"}
                   </span>
@@ -7037,15 +6950,14 @@ export default function TacticsBoard({
 
               <button
                 onClick={() => { setActiveTool("arrow"); setDrawingTool("arrow-direct"); setSelectedStrokeIndex(null); }}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${
-                  activeTool === "arrow"
-                    ? isModernSleek
-                      ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                      : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                    : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                      : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                }`}
+                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${activeTool === "arrow"
+                  ? isModernSleek
+                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
+                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
+                  : isModernSleek
+                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
+                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
+                  }`}
                 title="Flèche de Course"
               >
                 <ArrowUpRight className="h-4 w-4" />
@@ -7054,15 +6966,14 @@ export default function TacticsBoard({
 
               <button
                 onClick={() => { setActiveTool("draw"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${
-                  activeTool === "draw"
-                    ? isModernSleek
-                      ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                      : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                    : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                      : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                }`}
+                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${activeTool === "draw"
+                  ? isModernSleek
+                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
+                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
+                  : isModernSleek
+                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
+                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
+                  }`}
                 title="Dessin Libre"
               >
                 <Pencil className="h-4 w-4" />
@@ -7072,15 +6983,14 @@ export default function TacticsBoard({
               <button
                 onClick={handleClearDrawings}
                 disabled={drawingActions.length === 0}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${
-                  drawingActions.length > 0
-                    ? isModernSleek
-                      ? "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100 hover:border-rose-400 shadow-2xs"
-                      : "bg-rose-950/80 border-rose-800 text-rose-300 hover:bg-rose-900 hover:text-white hover:border-rose-500 shadow-md shadow-rose-950/40"
-                    : isModernSleek
-                      ? "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed"
-                      : "bg-[#090d14] border-[#1a2130] text-[#62728f]/40 cursor-not-allowed"
-                }`}
+                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${drawingActions.length > 0
+                  ? isModernSleek
+                    ? "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100 hover:border-rose-400 shadow-2xs"
+                    : "bg-rose-950/80 border-rose-800 text-rose-300 hover:bg-rose-900 hover:text-white hover:border-rose-500 shadow-md shadow-rose-950/40"
+                  : isModernSleek
+                    ? "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed"
+                    : "bg-[#090d14] border-[#1a2130] text-[#62728f]/40 cursor-not-allowed"
+                  }`}
                 title="Effacer tous les dessins"
               >
                 <Trash2 className={`h-4 w-4 ${drawingActions.length > 0 ? (isModernSleek ? "text-rose-600" : "text-rose-400") : ""}`} />
@@ -7113,14 +7023,13 @@ export default function TacticsBoard({
             {/* 4. ACTIONS (ICON BUTTONS) */}
             <div id="tour-export-actions" className="flex flex-col items-center gap-1.5 w-full">
               <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>EXPORT</span>
-              
+
               <button
                 onClick={handleOpenExportModal}
-                className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center transition cursor-pointer shadow-sm ${
-                  isModernSleek
-                    ? "bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
-                    : "bg-gradient-to-r from-[#00E599]/20 to-emerald-600/20 hover:from-[#00E599]/30 hover:to-emerald-600/30 border border-[#00E599]/50 text-[#00E599] shadow-[#00e599]/10"
-                }`}
+                className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center transition cursor-pointer shadow-sm ${isModernSleek
+                  ? "bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
+                  : "bg-gradient-to-r from-[#00E599]/20 to-emerald-600/20 hover:from-[#00E599]/30 hover:to-emerald-600/30 border border-[#00E599]/50 text-[#00E599] shadow-[#00e599]/10"
+                  }`}
                 title="Exporter l'image PNG HD"
               >
                 <Download className="h-4 w-4" />
@@ -7129,11 +7038,10 @@ export default function TacticsBoard({
 
               <button
                 onClick={() => setShowSquad3DModal(true)}
-                className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center transition cursor-pointer shadow-sm ${
-                  isModernSleek
-                    ? "bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 shadow-2xs"
-                    : "bg-gradient-to-r from-amber-500/20 via-amber-600/20 to-yellow-500/20 hover:from-amber-500/30 hover:via-amber-600/30 hover:to-yellow-500/30 border border-amber-500/50 text-amber-300 shadow-amber-500/10"
-                }`}
+                className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center transition cursor-pointer shadow-sm ${isModernSleek
+                  ? "bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 shadow-2xs"
+                  : "bg-gradient-to-r from-amber-500/20 via-amber-600/20 to-yellow-500/20 hover:from-amber-500/30 hover:via-amber-600/30 hover:to-yellow-500/30 border border-amber-500/50 text-amber-300 shadow-amber-500/10"
+                  }`}
                 title="Vue Carte 3D (Squad Export)"
               >
                 <Sparkles className="h-4 w-4 text-amber-500" />
@@ -7153,13 +7061,12 @@ export default function TacticsBoard({
                   setIsCheckoutOpen(true);
                 }
               }}
-              className={`w-11 h-11 rounded-xl flex items-center justify-center transition cursor-pointer border ${
-                isProOrAdmin 
-                  ? isModernSleek
-                    ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 shadow-xs"
-                    : "bg-emerald-500/20 border-emerald-500/40 text-amber-400 hover:bg-emerald-500/30" 
-                  : "bg-gradient-to-r from-[#00E599] to-[#059669] border-[#00E599] text-[#0d1117] hover:brightness-110 shadow-lg shadow-[#00e599]/10"
-              }`}
+              className={`w-11 h-11 rounded-xl flex items-center justify-center transition cursor-pointer border ${isProOrAdmin
+                ? isModernSleek
+                  ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 shadow-xs"
+                  : "bg-emerald-500/20 border-emerald-500/40 text-amber-400 hover:bg-emerald-500/30"
+                : "bg-gradient-to-r from-[#00E599] to-[#059669] border-[#00E599] text-[#0d1117] hover:brightness-110 shadow-lg shadow-[#00e599]/10"
+                }`}
               title={isProOrAdmin ? (isUserAdmin ? "Compte Admin PRO Active" : `Plan ${activePlan.toUpperCase()} Actif`) : "Souscrire au Plan PRO"}
             >
               <Award className="h-5 w-5 shrink-0" />
@@ -7172,33 +7079,30 @@ export default function TacticsBoard({
         {/* CENTER PANEL: PITCH VIEWPORT & CONTROLLERS & FORMATIONS */}
         {/* ========================================================= */}
         <main className={`flex-1 flex flex-col ${isModernSleek ? "bg-[#f1f5f9]" : "bg-[#07090e]"} ${isCompactUI ? "p-1.5 sm:p-2" : "p-1.5 sm:p-2.5 lg:p-3 xl:p-4"} overflow-y-auto scrollbar-thin transition-all duration-200`}>
-          
+
           {/* Pitch Area Main Toolbar */}
-          <div 
-            id="tour-pitch-controllers" 
-            className={`flex flex-wrap items-center justify-between ${
-              isCompactUI ? "py-1.5 px-3 gap-1.5 mb-2 text-[90%]" : "py-2 px-4 gap-2 mb-3"
-            } ${
-              isModernSleek
+          <div
+            id="tour-pitch-controllers"
+            className={`flex flex-wrap items-center justify-between ${isCompactUI ? "py-1.5 px-3 gap-1.5 mb-2 text-[90%]" : "py-2 px-4 gap-2 mb-3"
+              } ${isModernSleek
                 ? "bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-sm text-slate-800"
                 : "bg-[#0d1117] border border-[#1f293d] rounded-xl shadow-lg"
-            } transition-all duration-300`}
+              } transition-all duration-300`}
           >
-            
+
             {/* GROUP 1: Pitch View Modes (Full Pitch & Half Pitch) & Animation Video Toggle */}
             <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
               <button
                 type="button"
                 onClick={() => setTerrainComplet(true)}
-                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                  terrainComplet 
-                    ? isModernSleek 
-                      ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black" 
-                      : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs" 
-                    : isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80" 
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                }`}
+                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${terrainComplet
+                  ? isModernSleek
+                    ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                    : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
                 title="Terrain complet"
                 aria-label="Terrain complet"
               >
@@ -7211,15 +7115,14 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => setTerrainComplet(false)}
-                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                  !terrainComplet 
-                    ? isModernSleek 
-                      ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black" 
-                      : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs" 
-                    : isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80" 
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                }`}
+                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${!terrainComplet
+                  ? isModernSleek
+                    ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                    : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
                 title="Demi-terrain"
                 aria-label="Demi-terrain"
               >
@@ -7249,17 +7152,16 @@ export default function TacticsBoard({
                     }, 100);
                   }
                 }}
-                className={`h-7 px-2.5 rounded-lg transition flex items-center justify-center ${
-                  isLiveMatchMode
-                    ? "opacity-30 cursor-not-allowed bg-[#0c1017] border border-[#1e293b] text-slate-500"
-                    : isAnimationCreatorOpen
+                className={`h-7 px-2.5 rounded-lg transition flex items-center justify-center ${isLiveMatchMode
+                  ? "opacity-30 cursor-not-allowed bg-[#0c1017] border border-[#1e293b] text-slate-500"
+                  : isAnimationCreatorOpen
                     ? isModernSleek
                       ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black cursor-pointer"
                       : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs cursor-pointer"
                     : isModernSleek
                       ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80 cursor-pointer"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d] cursor-pointer"
-                }`}
+                  }`}
                 title={isLiveMatchMode ? "L'animation n'est pas disponible en mode Live Match" : (isAnimationCreatorOpen ? "Masquer le créateur d'animation" : "Activer le créateur d'animation (Vidéo)")}
                 aria-label="Créer une animation"
               >
@@ -7272,15 +7174,14 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => setAspectRatioMode("desktop")}
-                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                  aspectRatioMode === "desktop" 
-                    ? isModernSleek 
-                      ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black" 
-                      : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs" 
-                    : isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80" 
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                }`}
+                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${aspectRatioMode === "desktop"
+                  ? isModernSleek
+                    ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                    : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
                 title="Ratio Écran Large (Paysage)"
                 aria-label="Ratio Écran Large"
               >
@@ -7289,15 +7190,14 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => setAspectRatioMode("mobile")}
-                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                  aspectRatioMode === "mobile" 
-                    ? isModernSleek 
-                      ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black" 
-                      : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs" 
-                    : isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80" 
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                }`}
+                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${aspectRatioMode === "mobile"
+                  ? isModernSleek
+                    ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                    : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
                 title="Ratio Écran Étroit (Portrait)"
                 aria-label="Ratio Écran Étroit"
               >
@@ -7310,15 +7210,14 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => setShowBall(!showBall)}
-                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                  showBall
-                    ? isModernSleek
-                      ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
-                      : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
-                    : isModernSleek
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                }`}
+                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${showBall
+                  ? isModernSleek
+                    ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                    : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
                 title={showBall ? "Masquer le ballon" : "Afficher le ballon"}
                 aria-label="Afficher ou masquer le ballon"
               >
@@ -7327,15 +7226,14 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => setShowOpponents(!showOpponents)}
-                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                  showOpponents
-                    ? isModernSleek
-                      ? "bg-white border border-rose-400 text-rose-700 shadow-xs font-black"
-                      : "bg-[#28131a] border border-rose-500/60 text-rose-400 shadow-xs"
-                    : isModernSleek
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                }`}
+                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${showOpponents
+                  ? isModernSleek
+                    ? "bg-white border border-rose-400 text-rose-700 shadow-xs font-black"
+                    : "bg-[#28131a] border border-rose-500/60 text-rose-400 shadow-xs"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
                 title={showOpponents ? "Masquer les adversaires" : "Afficher les adversaires"}
                 aria-label="Afficher ou masquer les adversaires"
               >
@@ -7344,15 +7242,14 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => setShowPlayerNames(!showPlayerNames)}
-                className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                  !showPlayerNames
-                    ? isModernSleek
-                      ? "bg-amber-500 border border-amber-600 text-white shadow-xs font-black"
-                      : "bg-[#382810] border border-amber-400 text-amber-300 shadow-xs font-black"
-                    : isModernSleek
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                }`}
+                className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${!showPlayerNames
+                  ? isModernSleek
+                    ? "bg-amber-500 border border-amber-600 text-white shadow-xs font-black"
+                    : "bg-[#382810] border border-amber-400 text-amber-300 shadow-xs font-black"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
                 title={showPlayerNames ? "Masquer les noms des joueurs (garder uniquement les numéros)" : "Afficher les noms des joueurs"}
                 aria-label="Masquer ou afficher les noms des joueurs"
               >
@@ -7365,15 +7262,14 @@ export default function TacticsBoard({
                   setIsTeamAPanelCollapsed(shouldCollapse);
                   setIsTeamBPanelCollapsed(shouldCollapse);
                 }}
-                className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                  isTeamAPanelCollapsed && isTeamBPanelCollapsed
-                    ? isModernSleek
-                      ? "bg-purple-600 border border-purple-700 text-white shadow-xs font-black"
-                      : "bg-[#361942] border border-purple-400 text-purple-200 shadow-xs font-black"
-                    : isModernSleek
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                }`}
+                className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${isTeamAPanelCollapsed && isTeamBPanelCollapsed
+                  ? isModernSleek
+                    ? "bg-purple-600 border border-purple-700 text-white shadow-xs font-black"
+                    : "bg-[#361942] border border-purple-400 text-purple-200 shadow-xs font-black"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
                 title={
                   isTeamAPanelCollapsed && isTeamBPanelCollapsed
                     ? "Déplier les panneaux d'équipes (Mon Club & Adverse)"
@@ -7393,11 +7289,10 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => setZoomScale(prev => Math.max(70, prev - 10))}
-                  className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${
-                    isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800" 
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                  }`}
+                  className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
+                    }`}
                   title="Réduire l'échelle du terrain"
                 >
                   -
@@ -7406,11 +7301,10 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => setZoomScale(prev => Math.min(150, prev + 10))}
-                  className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${
-                    isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800" 
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                  }`}
+                  className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
+                    }`}
                   title="Agrandir l'échelle du terrain"
                 >
                   +
@@ -7425,11 +7319,10 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => setPlayerScale(prev => Math.max(20, prev - 10))}
-                  className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${
-                    isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800" 
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                  }`}
+                  className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
+                    }`}
                   title="Réduire la taille des joueurs"
                 >
                   -
@@ -7438,11 +7331,10 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => setPlayerScale(prev => Math.min(130, prev + 10))}
-                  className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${
-                    isModernSleek 
-                      ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800" 
-                      : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                  }`}
+                  className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
+                    }`}
                   title="Agrandir la taille des joueurs"
                 >
                   +
@@ -7455,15 +7347,14 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={togglePitchFullscreen}
-                className={`h-8 px-3 rounded-xl font-black text-xs transition-all duration-200 cursor-pointer flex items-center gap-2 select-none shadow-md ${
-                  isPitchFullscreen
-                    ? isModernSleek
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 shadow-emerald-500/20"
-                      : "bg-gradient-to-r from-emerald-500 to-[#00E599] text-slate-950 border border-[#00E599] shadow-[#00E599]/30"
-                    : isModernSleek
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
-                      : "bg-gradient-to-r from-[#00E599] via-emerald-400 to-teal-300 hover:from-emerald-400 hover:to-[#00E599] text-slate-950 border border-[#00E599] shadow-md shadow-[#00E599]/25 hover:shadow-[#00E599]/40 hover:scale-[1.02] active:scale-[0.98]"
-                }`}
+                className={`h-8 px-3 rounded-xl font-black text-xs transition-all duration-200 cursor-pointer flex items-center gap-2 select-none shadow-md ${isPitchFullscreen
+                  ? isModernSleek
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 shadow-emerald-500/20"
+                    : "bg-gradient-to-r from-emerald-500 to-[#00E599] text-slate-950 border border-[#00E599] shadow-[#00E599]/30"
+                  : isModernSleek
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                    : "bg-gradient-to-r from-[#00E599] via-emerald-400 to-teal-300 hover:from-emerald-400 hover:to-[#00E599] text-slate-950 border border-[#00E599] shadow-md shadow-[#00E599]/25 hover:shadow-[#00E599]/40 hover:scale-[1.02] active:scale-[0.98]"
+                  }`}
                 title={isPitchFullscreen ? "Quitter le mode plein écran (Échap)" : "Afficher le terrain en plein écran"}
               >
                 {isPitchFullscreen ? (
@@ -7490,1045 +7381,1020 @@ export default function TacticsBoard({
 
             {/* 2. CENTER: THE PITCH ARTIFICIAL GRASS CONTAINER WITH PROPORTIONS LOCK */}
             <div className="flex-1 flex flex-col items-center justify-center min-w-0 w-full pr-1">
-            
-            {/* Fullscreen Pitch Wrapper (covers entire screen when isPitchFullscreen is true) */}
-            <div
-              ref={pitchWrapperRef}
-              id="pitch-main-viewport"
-              className={
-                isPitchFullscreen
-                  ? "fixed inset-0 z-[100] bg-[#070b13]/98 backdrop-blur-xl flex flex-col items-center justify-between p-2 sm:p-3 select-none animate-fade-in overflow-hidden h-screen w-screen"
-                  : "relative w-full mx-auto flex flex-col items-center justify-center transition-all duration-300 ease-in-out"
-              }
-            >
-              {/* Fullscreen Dedicated Top Controls Header with Full Tactics Tools & Animation Button */}
-              {isPitchFullscreen && (
-                <div className="w-full max-w-fit flex flex-wrap items-center justify-center gap-1.5 px-3 py-1.5 mb-2 bg-[#0d1117]/95 border border-[#1f293d] rounded-2xl shadow-2xl backdrop-blur-md z-40 shrink-0">
-                  
-                  {/* Mode Live Indicator & Score Pill in Top Fullscreen Bar */}
-                  {isLiveMatchMode && (
-                    <>
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-950/40 border border-rose-800/60 rounded-xl mr-1 shrink-0">
-                        <span className="relative flex h-2 w-2 shrink-0">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-80" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
-                        </span>
-                        <span className="text-[8.5px] font-black tracking-wider text-rose-300 uppercase">
-                          LIVE
-                        </span>
-                        <div className="h-3 w-px bg-rose-800/60" />
-                        <span className="text-[9.5px] font-mono font-black text-amber-300">
-                          {homeScore} - {awayScore}
-                        </span>
-                        <div className="h-3 w-px bg-rose-800/60" />
-                        <span className="text-[9px] font-mono font-bold text-slate-300">
-                          {formatLiveTime(liveTimerSeconds)}
-                        </span>
-                      </div>
-                      <div className="h-4 w-px bg-[#1f293d]" />
-                    </>
-                  )}
 
-                  {/* GROUP 1: Pitch View Modes (Full Pitch & Half Pitch) & Animation Video Toggle */}
-                  <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
-                    <button
-                      type="button"
-                      onClick={() => setTerrainComplet(true)}
-                      className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        terrainComplet 
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs" 
+              {/* Fullscreen Pitch Wrapper (covers entire screen when isPitchFullscreen is true) */}
+              <div
+                ref={pitchWrapperRef}
+                id="pitch-main-viewport"
+                className={
+                  isPitchFullscreen
+                    ? "fixed inset-0 z-[100] bg-[#070b13]/98 backdrop-blur-xl flex flex-col items-center justify-between p-2 sm:p-3 select-none animate-fade-in overflow-hidden h-screen w-screen"
+                    : "relative w-full mx-auto flex flex-col items-center justify-center transition-all duration-300 ease-in-out"
+                }
+              >
+                {/* Fullscreen Dedicated Top Controls Header with Full Tactics Tools & Animation Button */}
+                {isPitchFullscreen && (
+                  <div className="w-full max-w-fit flex flex-wrap items-center justify-center gap-1.5 px-3 py-1.5 mb-2 bg-[#0d1117]/95 border border-[#1f293d] rounded-2xl shadow-2xl backdrop-blur-md z-40 shrink-0">
+
+                    {/* Mode Live Indicator & Score Pill in Top Fullscreen Bar */}
+                    {isLiveMatchMode && (
+                      <>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-950/40 border border-rose-800/60 rounded-xl mr-1 shrink-0">
+                          <span className="relative flex h-2 w-2 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-80" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                          </span>
+                          <span className="text-[8.5px] font-black tracking-wider text-rose-300 uppercase">
+                            LIVE
+                          </span>
+                          <div className="h-3 w-px bg-rose-800/60" />
+                          <span className="text-[9.5px] font-mono font-black text-amber-300">
+                            {homeScore} - {awayScore}
+                          </span>
+                          <div className="h-3 w-px bg-rose-800/60" />
+                          <span className="text-[9px] font-mono font-bold text-slate-300">
+                            {formatLiveTime(liveTimerSeconds)}
+                          </span>
+                        </div>
+                        <div className="h-4 w-px bg-[#1f293d]" />
+                      </>
+                    )}
+
+                    {/* GROUP 1: Pitch View Modes (Full Pitch & Half Pitch) & Animation Video Toggle */}
+                    <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
+                      <button
+                        type="button"
+                        onClick={() => setTerrainComplet(true)}
+                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${terrainComplet
+                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title="Terrain complet"
-                      aria-label="Terrain complet"
-                    >
-                      <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="4" width="20" height="16" rx="2" />
-                        <line x1="12" y1="4" x2="12" y2="20" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTerrainComplet(false)}
-                      className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        !terrainComplet 
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs" 
+                          }`}
+                        title="Terrain complet"
+                        aria-label="Terrain complet"
+                      >
+                        <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="4" width="20" height="16" rx="2" />
+                          <line x1="12" y1="4" x2="12" y2="20" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTerrainComplet(false)}
+                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${!terrainComplet
+                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title="Demi-terrain"
-                      aria-label="Demi-terrain"
-                    >
-                      <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 3h16v18H4z" />
-                        <line x1="4" y1="21" x2="20" y2="21" />
-                        <path d="M8 3v5h8V3" />
-                        <path d="M9 21a3 3 0 0 1 6 0" />
-                      </svg>
-                    </button>
+                          }`}
+                        title="Demi-terrain"
+                        aria-label="Demi-terrain"
+                      >
+                        <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 3h16v18H4z" />
+                          <line x1="4" y1="21" x2="20" y2="21" />
+                          <path d="M8 3v5h8V3" />
+                          <path d="M9 21a3 3 0 0 1 6 0" />
+                        </svg>
+                      </button>
 
-                    <div className="h-4 w-px mx-0.5 bg-[#1a2130]" />
+                      <div className="h-4 w-px mx-0.5 bg-[#1a2130]" />
 
-                    <button
-                      type="button"
-                      disabled={isLiveMatchMode}
-                      onClick={() => {
-                        if (isLiveMatchMode) return;
-                        const nextState = !isAnimationCreatorOpen;
-                        setIsAnimationCreatorOpen(nextState);
-                        if (nextState) {
-                          setTimeout(() => {
-                            const animationEl = document.getElementById("animation-creator-panel");
-                            if (animationEl) {
-                              animationEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                            }
-                          }, 100);
-                        }
-                      }}
-                      className={`h-7 px-2.5 rounded-lg transition flex items-center justify-center ${
-                        isLiveMatchMode
+                      <button
+                        type="button"
+                        disabled={isLiveMatchMode}
+                        onClick={() => {
+                          if (isLiveMatchMode) return;
+                          const nextState = !isAnimationCreatorOpen;
+                          setIsAnimationCreatorOpen(nextState);
+                          if (nextState) {
+                            setTimeout(() => {
+                              const animationEl = document.getElementById("animation-creator-panel");
+                              if (animationEl) {
+                                animationEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                              }
+                            }, 100);
+                          }
+                        }}
+                        className={`h-7 px-2.5 rounded-lg transition flex items-center justify-center ${isLiveMatchMode
                           ? "opacity-30 cursor-not-allowed bg-[#0c1017] border border-[#1e293b] text-slate-500"
                           : isAnimationCreatorOpen
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs cursor-pointer"
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d] cursor-pointer"
-                      }`}
-                      title={isLiveMatchMode ? "L'animation n'est pas disponible en mode Live Match" : (isAnimationCreatorOpen ? "Masquer le créateur d'animation" : "Activer le créateur d'animation (Vidéo)")}
-                      aria-label="Créer une animation"
-                    >
-                      <Video className="h-4 w-4 shrink-0" />
-                    </button>
-                  </div>
+                            ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs cursor-pointer"
+                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d] cursor-pointer"
+                          }`}
+                        title={isLiveMatchMode ? "L'animation n'est pas disponible en mode Live Match" : (isAnimationCreatorOpen ? "Masquer le créateur d'animation" : "Activer le créateur d'animation (Vidéo)")}
+                        aria-label="Créer une animation"
+                      >
+                        <Video className="h-4 w-4 shrink-0" />
+                      </button>
+                    </div>
 
-                  {/* GROUP 2: Display Device Ratios (Paysage & Portrait) */}
-                  <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
-                    <button
-                      type="button"
-                      onClick={() => setAspectRatioMode("desktop")}
-                      className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        aspectRatioMode === "desktop" 
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs" 
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title="Ratio Écran Large (Paysage)"
-                      aria-label="Ratio Écran Large"
-                    >
-                      <Laptop className="h-4 w-4 shrink-0" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAspectRatioMode("mobile")}
-                      className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        aspectRatioMode === "mobile" 
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs" 
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title="Ratio Écran Étroit (Portrait)"
-                      aria-label="Ratio Écran Étroit"
-                    >
-                      <Smartphone className="h-4 w-4 shrink-0" />
-                    </button>
-                  </div>
-
-                  {/* GROUP 3: Pitch Interactive Elements (Ballon & Adversaires) */}
-                  <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
-                    <button
-                      type="button"
-                      onClick={() => setShowBall(!showBall)}
-                      className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        showBall
+                    {/* GROUP 2: Display Device Ratios (Paysage & Portrait) */}
+                    <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
+                      <button
+                        type="button"
+                        onClick={() => setAspectRatioMode("desktop")}
+                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${aspectRatioMode === "desktop"
                           ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title={showBall ? "Masquer le ballon" : "Afficher le ballon"}
-                      aria-label="Afficher ou masquer le ballon"
-                    >
-                      <CircleDot className="h-4 w-4 shrink-0" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowOpponents(!showOpponents)}
-                      className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        showOpponents
+                          }`}
+                        title="Ratio Écran Large (Paysage)"
+                        aria-label="Ratio Écran Large"
+                      >
+                        <Laptop className="h-4 w-4 shrink-0" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAspectRatioMode("mobile")}
+                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${aspectRatioMode === "mobile"
+                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title="Ratio Écran Étroit (Portrait)"
+                        aria-label="Ratio Écran Étroit"
+                      >
+                        <Smartphone className="h-4 w-4 shrink-0" />
+                      </button>
+                    </div>
+
+                    {/* GROUP 3: Pitch Interactive Elements (Ballon & Adversaires) */}
+                    <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
+                      <button
+                        type="button"
+                        onClick={() => setShowBall(!showBall)}
+                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${showBall
+                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title={showBall ? "Masquer le ballon" : "Afficher le ballon"}
+                        aria-label="Afficher ou masquer le ballon"
+                      >
+                        <CircleDot className="h-4 w-4 shrink-0" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowOpponents(!showOpponents)}
+                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${showOpponents
                           ? "bg-[#28131a] border border-rose-500/60 text-rose-400 shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title={showOpponents ? "Masquer les adversaires" : "Afficher les adversaires"}
-                      aria-label="Afficher ou masquer les adversaires"
-                    >
-                      <Users className="h-4 w-4 shrink-0" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowPlayerNames(!showPlayerNames)}
-                      className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        !showPlayerNames
+                          }`}
+                        title={showOpponents ? "Masquer les adversaires" : "Afficher les adversaires"}
+                        aria-label="Afficher ou masquer les adversaires"
+                      >
+                        <Users className="h-4 w-4 shrink-0" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowPlayerNames(!showPlayerNames)}
+                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${!showPlayerNames
                           ? "bg-[#382810] border border-amber-400 text-amber-300 shadow-xs font-black"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title={showPlayerNames ? "Masquer les noms des joueurs (garder uniquement les numéros)" : "Afficher les noms des joueurs"}
-                      aria-label="Masquer ou afficher les noms des joueurs"
-                    >
-                      <Hash className="h-4 w-4 shrink-0" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const shouldCollapse = !isTeamAPanelCollapsed || !isTeamBPanelCollapsed;
-                        setIsTeamAPanelCollapsed(shouldCollapse);
-                        setIsTeamBPanelCollapsed(shouldCollapse);
-                      }}
-                      className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        isTeamAPanelCollapsed && isTeamBPanelCollapsed
+                          }`}
+                        title={showPlayerNames ? "Masquer les noms des joueurs (garder uniquement les numéros)" : "Afficher les noms des joueurs"}
+                        aria-label="Masquer ou afficher les noms des joueurs"
+                      >
+                        <Hash className="h-4 w-4 shrink-0" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const shouldCollapse = !isTeamAPanelCollapsed || !isTeamBPanelCollapsed;
+                          setIsTeamAPanelCollapsed(shouldCollapse);
+                          setIsTeamBPanelCollapsed(shouldCollapse);
+                        }}
+                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${isTeamAPanelCollapsed && isTeamBPanelCollapsed
                           ? "bg-[#361942] border border-purple-400 text-purple-200 shadow-xs font-black"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title={
-                        isTeamAPanelCollapsed && isTeamBPanelCollapsed
-                          ? "Déplier les panneaux d'équipes (Mon Club & Adverse)"
-                          : "Réduire les panneaux d'équipes pour agrandir le terrain"
-                      }
-                      aria-label="Réduire ou déplier les panneaux d'équipes"
-                    >
-                      <Columns className="h-4 w-4 shrink-0" />
-                    </button>
-                  </div>
+                          }`}
+                        title={
+                          isTeamAPanelCollapsed && isTeamBPanelCollapsed
+                            ? "Déplier les panneaux d'équipes (Mon Club & Adverse)"
+                            : "Réduire les panneaux d'équipes pour agrandir le terrain"
+                        }
+                        aria-label="Réduire ou déplier les panneaux d'équipes"
+                      >
+                        <Columns className="h-4 w-4 shrink-0" />
+                      </button>
+                    </div>
 
-                  <div className="h-4 w-px bg-[#1f293d]" />
+                    <div className="h-4 w-px bg-[#1f293d]" />
 
-                  {/* GROUP 4: Drawing Tools (Select, Move, Line, Arrow, Draw) */}
-                  <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
-                    {/* Sélecteur */}
-                    <button
-                      type="button"
-                      onClick={() => { setActiveTool("select"); setDrawingTool("brush"); }}
-                      className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        activeTool === "select"
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title="Sélecteur de joueur"
-                      aria-label="Sélecteur"
-                    >
-                      <MousePointer className="h-4 w-4 shrink-0" />
-                    </button>
-
-                    {/* Déplacer */}
-                    <button
-                      type="button"
-                      onClick={() => { setActiveTool("move"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
-                      className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        activeTool === "move"
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title="Déplacer"
-                      aria-label="Déplacer"
-                    >
-                      <Move className="h-4 w-4 shrink-0" />
-                    </button>
-
-                    {/* Ligne Pleine & Pointillée */}
-                    <button
-                      type="button"
-                      onClick={handleToggleLineTool}
-                      className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        activeTool === "line"
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title={
-                        activeTool === "line"
-                          ? drawingTool === "shape-dashed-line"
-                            ? "Ligne Pointillée active (cliquer pour Pleine)"
-                            : "Ligne Pleine active (cliquer pour Pointillée)"
-                          : "Tracer une ligne (pleine / pointillée)"
-                      }
-                      aria-label="Tracer une ligne"
-                    >
-                      {activeTool === "line" && drawingTool === "shape-dashed-line" ? (
-                        <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                          <line x1="4" y1="20" x2="20" y2="4" strokeDasharray="3 3" />
-                        </svg>
-                      ) : (
-                        <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                          <line x1="5" y1="19" x2="19" y2="5" />
-                        </svg>
-                      )}
-                    </button>
-
-                    {/* Flèche */}
-                    <button
-                      type="button"
-                      onClick={() => { setActiveTool("arrow"); setDrawingTool("arrow-direct"); setSelectedStrokeIndex(null); }}
-                      className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        activeTool === "arrow"
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title="Tracer une flèche de course"
-                      aria-label="Tracer une flèche"
-                    >
-                      <ArrowUpRight className="h-4 w-4 shrink-0" />
-                    </button>
-
-                    {/* Crayon */}
-                    <button
-                      type="button"
-                      onClick={() => { setActiveTool("draw"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
-                      className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${
-                        activeTool === "draw"
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
-                      }`}
-                      title="Dessin libre au crayon"
-                      aria-label="Crayon"
-                    >
-                      <Pencil className="h-4 w-4 shrink-0" />
-                    </button>
-                  </div>
-
-                  <div className="h-4 w-px bg-[#1f293d]" />
-
-                  {/* Couleur de trait bleue */}
-                  <button
-                    type="button"
-                    onClick={() => setDrawColor("#3b82f6")}
-                    className="h-7 w-8 bg-[#0c1017] rounded-lg border border-[#3b82f6]/50 shadow-sm cursor-pointer flex items-center justify-center hover:bg-[#151e2d]"
-                    title="Couleur de trait : Bleu"
-                    aria-label="Couleur de trait : Bleu"
-                  >
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#3b82f6] border border-white/50 ring-2 ring-[#3b82f6]/50 shadow-sm" />
-                  </button>
-
-                  {/* Sélecteur d'épaisseur */}
-                  <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
-                    {[
-                      { size: 2, label: "Fin", dot: "w-1.5 h-1.5" },
-                      { size: 3, label: "Moyen", dot: "w-2.5 h-2.5" },
-                      { size: 5, label: "Épais", dot: "w-3.5 h-3.5" }
-                    ].map(({ size, label, dot }) => (
+                    {/* GROUP 4: Drawing Tools (Select, Move, Line, Arrow, Draw) */}
+                    <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
+                      {/* Sélecteur */}
                       <button
-                        key={size}
                         type="button"
-                        onClick={() => setDrawSize(size)}
-                        className={`h-7 w-6 rounded-md transition cursor-pointer flex items-center justify-center ${
-                          drawSize === size
+                        onClick={() => { setActiveTool("select"); setDrawingTool("brush"); }}
+                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "select"
+                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title="Sélecteur de joueur"
+                        aria-label="Sélecteur"
+                      >
+                        <MousePointer className="h-4 w-4 shrink-0" />
+                      </button>
+
+                      {/* Déplacer */}
+                      <button
+                        type="button"
+                        onClick={() => { setActiveTool("move"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
+                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "move"
+                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title="Déplacer"
+                        aria-label="Déplacer"
+                      >
+                        <Move className="h-4 w-4 shrink-0" />
+                      </button>
+
+                      {/* Ligne Pleine & Pointillée */}
+                      <button
+                        type="button"
+                        onClick={handleToggleLineTool}
+                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "line"
+                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title={
+                          activeTool === "line"
+                            ? drawingTool === "shape-dashed-line"
+                              ? "Ligne Pointillée active (cliquer pour Pleine)"
+                              : "Ligne Pleine active (cliquer pour Pointillée)"
+                            : "Tracer une ligne (pleine / pointillée)"
+                        }
+                        aria-label="Tracer une ligne"
+                      >
+                        {activeTool === "line" && drawingTool === "shape-dashed-line" ? (
+                          <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <line x1="4" y1="20" x2="20" y2="4" strokeDasharray="3 3" />
+                          </svg>
+                        ) : (
+                          <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <line x1="5" y1="19" x2="19" y2="5" />
+                          </svg>
+                        )}
+                      </button>
+
+                      {/* Flèche */}
+                      <button
+                        type="button"
+                        onClick={() => { setActiveTool("arrow"); setDrawingTool("arrow-direct"); setSelectedStrokeIndex(null); }}
+                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "arrow"
+                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title="Tracer une flèche de course"
+                        aria-label="Tracer une flèche"
+                      >
+                        <ArrowUpRight className="h-4 w-4 shrink-0" />
+                      </button>
+
+                      {/* Crayon */}
+                      <button
+                        type="button"
+                        onClick={() => { setActiveTool("draw"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
+                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "draw"
+                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title="Dessin libre au crayon"
+                        aria-label="Crayon"
+                      >
+                        <Pencil className="h-4 w-4 shrink-0" />
+                      </button>
+                    </div>
+
+                    <div className="h-4 w-px bg-[#1f293d]" />
+
+                    {/* Couleur de trait bleue */}
+                    <button
+                      type="button"
+                      onClick={() => setDrawColor("#3b82f6")}
+                      className="h-7 w-8 bg-[#0c1017] rounded-lg border border-[#3b82f6]/50 shadow-sm cursor-pointer flex items-center justify-center hover:bg-[#151e2d]"
+                      title="Couleur de trait : Bleu"
+                      aria-label="Couleur de trait : Bleu"
+                    >
+                      <span className="w-3.5 h-3.5 rounded-full bg-[#3b82f6] border border-white/50 ring-2 ring-[#3b82f6]/50 shadow-sm" />
+                    </button>
+
+                    {/* Sélecteur d'épaisseur */}
+                    <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
+                      {[
+                        { size: 2, label: "Fin", dot: "w-1.5 h-1.5" },
+                        { size: 3, label: "Moyen", dot: "w-2.5 h-2.5" },
+                        { size: 5, label: "Épais", dot: "w-3.5 h-3.5" }
+                      ].map(({ size, label, dot }) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setDrawSize(size)}
+                          className={`h-7 w-6 rounded-md transition cursor-pointer flex items-center justify-center ${drawSize === size
                             ? "bg-[#132338] text-[#3b82f6] border border-[#3b82f6]/50 font-bold"
                             : "bg-[#0c1017] border border-[#1e293b] text-slate-400 hover:text-white hover:bg-[#151e2d]"
-                        }`}
-                        title={`Épaisseur: ${label}`}
-                        aria-label={`Épaisseur: ${label}`}
-                      >
-                        <span className={`${dot} rounded-full bg-current`} />
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Effacer tous les tracés */}
-                  <button
-                    type="button"
-                    onClick={handleClearDrawings}
-                    disabled={drawingActions.length === 0}
-                    className={`h-7 px-2.5 rounded-lg border flex items-center justify-center transition cursor-pointer ${
-                      drawingActions.length > 0
-                        ? "bg-rose-950/80 hover:bg-rose-900 border-rose-800 text-rose-300 hover:text-white shadow-sm"
-                        : "bg-[#0c1017] border-[#1e293b] text-slate-600 cursor-not-allowed"
-                    }`}
-                    title="Effacer tous les dessins"
-                    aria-label="Effacer tous les dessins"
-                  >
-                    <Trash2 className="w-4 h-4 shrink-0" />
-                  </button>
-
-                  <div className="h-4 w-px bg-[#1f293d]" />
-
-                  {/* GROUP 5: Zooms (Échelle Terrain & Taille Joueurs) */}
-                  <div className="flex items-center gap-2 h-8 bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]">
-                    {/* Pitch Zoom */}
-                    <div title="Échelle du terrain" className="flex items-center gap-1">
-                      <ZoomIn className="h-4 w-4 shrink-0 text-[#718096]" />
-                      <button
-                        type="button"
-                        onClick={() => setZoomScale(prev => Math.max(70, prev - 10))}
-                        className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                        title="Réduire l'échelle du terrain"
-                      >
-                        -
-                      </button>
-                      <span className="text-[10px] font-black text-white w-7 text-center font-mono">{zoomScale}%</span>
-                      <button
-                        type="button"
-                        onClick={() => setZoomScale(prev => Math.min(150, prev + 10))}
-                        className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                        title="Agrandir l'échelle du terrain"
-                      >
-                        +
-                      </button>
+                            }`}
+                          title={`Épaisseur: ${label}`}
+                          aria-label={`Épaisseur: ${label}`}
+                        >
+                          <span className={`${dot} rounded-full bg-current`} />
+                        </button>
+                      ))}
                     </div>
 
-                    <div className="h-4 w-px bg-[#1a2130]" />
-
-                    {/* Players Scale */}
-                    <div title="Taille des joueurs" className="flex items-center gap-1">
-                      <User className="h-4 w-4 shrink-0 text-[#718096]" />
-                      <button
-                        type="button"
-                        onClick={() => setPlayerScale(prev => Math.max(20, prev - 10))}
-                        className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                        title="Réduire la taille des joueurs"
-                      >
-                        -
-                      </button>
-                      <span className="text-[10px] font-black text-white w-7 text-center font-mono">{playerScale}%</span>
-                      <button
-                        type="button"
-                        onClick={() => setPlayerScale(prev => Math.min(130, prev + 10))}
-                        className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                        title="Agrandir la taille des joueurs"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="h-4 w-px bg-[#1f293d]" />
-
-                  {/* GROUP 6: Quitter plein écran */}
-                  <div className="flex items-center">
+                    {/* Effacer tous les tracés */}
                     <button
                       type="button"
-                      onClick={togglePitchFullscreen}
-                      className="h-8 px-3 bg-rose-600 hover:bg-rose-500 border border-rose-400 text-white rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 font-black text-xs shadow-md shadow-rose-950/50"
-                      title="Quitter le mode plein écran (Échap)"
-                      aria-label="Quitter le plein écran"
+                      onClick={handleClearDrawings}
+                      disabled={drawingActions.length === 0}
+                      className={`h-7 px-2.5 rounded-lg border flex items-center justify-center transition cursor-pointer ${drawingActions.length > 0
+                        ? "bg-rose-950/80 hover:bg-rose-900 border-rose-800 text-rose-300 hover:text-white shadow-sm"
+                        : "bg-[#0c1017] border-[#1e293b] text-slate-600 cursor-not-allowed"
+                        }`}
+                      title="Effacer tous les dessins"
+                      aria-label="Effacer tous les dessins"
                     >
-                      <Minimize2 className="h-4 w-4 shrink-0 stroke-[2.5]" />
-                      <span className="uppercase tracking-wider text-[10px]">QUITTER LE PLEIN ÉCRAN</span>
+                      <Trash2 className="w-4 h-4 shrink-0" />
                     </button>
-                  </div>
 
-                </div>
-              )}
+                    <div className="h-4 w-px bg-[#1f293d]" />
 
-              {/* PITCH AND FLANKING SIDE PANELS ROW (IN FULLSCREEN: ROW WITH MON CLUB & MON ADVERSAIRE) */}
-              <div className={`w-full flex-1 flex ${isPitchFullscreen ? "flex-row items-center justify-center gap-2 xl:gap-3.5 min-h-0 overflow-hidden relative my-auto px-1 sm:px-2" : "flex-col items-center justify-center"}`}>
-                {isPitchFullscreen && renderTeamAPanel(true)}
-                <div className={isPitchFullscreen ? "flex-1 flex flex-col items-center justify-center h-full min-w-0 relative" : "w-full flex flex-col items-center justify-center"}>
-                  {/* Visual Pitch Box */}
-                  <div
-                    className={`relative w-full mx-auto my-auto shrink-0 rounded-3xl overflow-hidden ${
-                  isModernSleek
-                    ? "border-4 border-slate-300 ring-8 ring-white/90 shadow-2xl bg-[#032e22]"
-                    : "border-4 border-[#1f293d] shadow-2xl bg-[#032e22]"
-                } transition-all duration-300 ease-in-out`}
-                style={{
-                  aspectRatio: `${currentPitchRatio}`,
-                  maxWidth: pitchMaxWidth,
-                  maxHeight: pitchMaxHeight,
-                  transform: zoomScale !== 100 ? `scale(${zoomScale / 100})` : undefined,
-                  transformOrigin: "center center",
-                  marginTop: zoomScale > 100 ? `${(zoomScale - 100) * 3.8}px` : undefined,
-                  marginBottom: zoomScale > 100 ? `${(zoomScale - 100) * 4.5}px` : undefined,
-                }}
-              >
-
-                {/* Floating Quick Drawing Controls Bar overlay on Pitch - Only shown when a stroke is clicked in SELECT mode */}
-                {activeTool === "select" && selectedStrokeIndex !== null && drawingActions[selectedStrokeIndex] && (
-                  <div className="absolute top-2.5 right-12 sm:right-32 z-40 flex items-center gap-1.5 bg-[#0d1117]/95 border border-[#00E599]/60 p-1.5 px-3 rounded-xl shadow-2xl backdrop-blur-md animate-fade-in pointer-events-auto">
-                  <span className="text-[10px] font-black text-[#00E599] flex items-center gap-1 mr-1">
-                    <Pencil className="w-3.5 h-3.5" />
-                    <span>TRACÉ SÉLECTIONNÉ</span>
-                  </span>
-
-                  <div className="h-4 w-px bg-[#2a364f]" />
-
-                  <button
-                    onClick={handleDeleteSelectedStroke}
-                    className="px-2.5 py-1 bg-rose-950/90 hover:bg-rose-900 border border-rose-700/80 text-rose-200 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer shadow-md"
-                    title="Supprimer ce tracé sélectionné"
-                  >
-                    <Trash2 className="w-3 h-3 text-rose-400" />
-                    <span>Supprimer tracé</span>
-                  </button>
-
-                  <button
-                    onClick={handleUndo}
-                    className="px-2 py-1 bg-[#172233] hover:bg-[#202f4a] border border-[#233149] text-slate-200 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
-                    title="Annuler le dernier tracé (Ctrl+Z)"
-                  >
-                    <RotateCcw className="w-3 h-3 text-slate-300" />
-                    <span>Annuler</span>
-                  </button>
-
-                  <button
-                    onClick={handleClearDrawings}
-                    className="px-2.5 py-1 bg-rose-950/60 hover:bg-rose-900/90 border border-rose-800/60 text-rose-300 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
-                    title="Effacer tous les tracés sur le terrain"
-                  >
-                    <span>Tout effacer</span>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedStrokeIndex(null)}
-                    className="ml-1 p-0.5 hover:bg-[#1f293d] text-slate-400 hover:text-white rounded-lg transition"
-                    title="Fermer le menu"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-              <div 
-                ref={pitchContainerRef}
-                className="absolute left-0 top-0 touch-none transition-all duration-300"
-                style={{ 
-                  width: terrainComplet ? "100%" : (aspectRatioMode === "mobile" ? "100%" : "200%"),
-                  height: terrainComplet ? "100%" : (aspectRatioMode === "mobile" ? "200%" : "100%"),
-                  left: 0,
-                  top: 0,
-                }}
-              >
-                {/* Ground pitch texture lines rendering */}
-                <Pitch sport={activeSport} isPortrait={aspectRatioMode === "mobile"} />
-
-              {/* Corner Flags Overlay */}
-              {activeSport === "football" && ! (aspectRatioMode === "mobile") && (
-                <>
-                  <div className="absolute top-[3.42%] left-[2.27%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
-                  <div className="absolute top-[3.42%] right-[2.27%] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
-                  <div className="absolute bottom-[3.42%] left-[2.27%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
-                  <div className="absolute bottom-[3.42%] right-[2.27%] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
-                </>
-              )}
-
-              {activeSport === "football" && aspectRatioMode === "mobile" && (
-                <>
-                  {/* Portrait Corner flags */}
-                  <div className="absolute top-[2.27%] left-[3.42%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
-                  <div className="absolute top-[2.27%] right-[3.42%] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
-                  <div className="absolute bottom-[2.27%] left-[3.42%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
-                  <div className="absolute bottom-[2.27%] right-[3.42%] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
-                </>
-              )}
-
-              {/* Dynamic canvas drawing overlay */}
-              <canvas
-                ref={canvasRef}
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onTouchStart={handleCanvasMouseDown}
-                onTouchMove={handleCanvasMouseMove}
-                onTouchEnd={handleCanvasMouseUp}
-                className={`absolute inset-0 w-full h-full z-10 ${
-                  activeTool === "select"
-                    ? (drawingActions.length > 0 ? "pointer-events-auto cursor-pointer" : "pointer-events-none cursor-default")
-                    : activeTool === "move"
-                    ? "pointer-events-none cursor-default"
-                    : "cursor-crosshair pointer-events-auto"
-                }`}
-              />
-
-              {/* DRAGGABLE TOKENS */}
-              <div className="absolute inset-0 z-20 pointer-events-none">
-                {currentTokens.map((token) => {
-                  
-                  // Handle visibility toggles
-                  if (token.type === "ball" && !showBall) return null;
-                  if (token.type === "player_b" && !showOpponents) return null;
-
-                  // Custom visual profiles
-                  let tokenBg = "bg-[#090d14] border-[#00E599] text-[#00E599]"; // Team A looks like neon green matching layout
-                  let iconContent: React.ReactNode = token.number;
-
-                  if (token.type === "player_b") {
-                    tokenBg = "bg-rose-950/90 border-rose-500 text-rose-200";
-                  } else if (token.type === "referee") {
-                    tokenBg = "bg-slate-200 border-slate-400 text-slate-900";
-                    iconContent = "🏁";
-                  } else if (token.type === "ball") {
-                    tokenBg = "bg-white border-slate-500 shadow-xl text-slate-900";
-                    iconContent = activeSport === "rugby" ? "🏉" : "⚽";
-                  }
-
-                  const isSelected = selectedTokenId === token.id;
-                  const isPlayer = token.type.startsWith("player");
-                  const playerGoals = isPlayer ? matchEvents.filter(e => e.type === "goal" && e.player === token.name).length : 0;
-                  const playerAssists = isPlayer ? matchEvents.filter(e => (e.type === "assist" && e.player === token.name) || (e.type === "goal" && e.assister === token.name)).length : 0;
-                  const hasYellowCard = isPlayer && ((token.yellowCards && token.yellowCards > 0) || matchEvents.some(e => e.type === "yellow" && e.player === token.name));
-
-                  // Transition style for smooth animation of player movement
-                  const isCurrentlyDragging = selectedTokenId === token.id;
-                  const transitionStyle = isCurrentlyDragging
-                    ? "none"
-                    : `left ${isPlaying ? playbackSpeed * 0.95 : 350}ms ease-in-out, top ${isPlaying ? playbackSpeed * 0.95 : 350}ms ease-in-out`;
-
-                  return (
-                    <div
-                      key={token.id}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        handleTokenStartDrag(token.id, e);
-                      }}
-                      onTouchStart={(e) => {
-                        e.stopPropagation();
-                        handleTokenStartDrag(token.id, e);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Lors du déplacement d'un joueur sur le terrain, ne pas ouvrir la fenêtre de remplacement
-                        if (isDraggingTokenRef.current || Date.now() - dragEndTimeRef.current < 250) {
-                          return;
-                        }
-                        if (token.type.startsWith("player")) {
-                          setEditingToken(token);
-                          setQuickActionToken(token);
-                          if (isLiveMatchMode) {
-                            setLiveActionToken(token);
-                          } else {
-                            setSubPickerToken(token);
-                          }
-                        }
-                      }}
-                      onContextMenu={(e) => {
-                        if (token.type.startsWith("player")) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (isDraggingTokenRef.current || Date.now() - dragEndTimeRef.current < 250) return;
-                          setEditingToken(token);
-                          setQuickActionToken(token);
-                          if (isLiveMatchMode) {
-                            setLiveActionToken(token);
-                          } else {
-                            setSubPickerToken(token);
-                          }
-                        }
-                      }}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        if (isDraggingTokenRef.current || Date.now() - dragEndTimeRef.current < 250) return;
-                        if (token.type.startsWith("player")) {
-                          setEditingToken(token);
-                          setQuickActionToken(token);
-                          if (isLiveMatchMode) {
-                            setLiveActionToken(token);
-                          } else {
-                            setSubPickerToken(token);
-                          }
-                        }
-                      }}
-                      className="absolute pointer-events-auto select-none cursor-grab active:cursor-grabbing flex flex-col items-center justify-center transition-transform"
-                      title={
-                        token.type.startsWith("player")
-                          ? isLiveMatchMode
-                            ? `Double-clic pour les options de match (${token.name})`
-                            : `Clic pour remplacer ${token.name}`
-                          : "Glisser pour déplacer"
-                      }
-                      style={{
-                        left: `${aspectRatioMode === "mobile" ? token.y : token.x}%`,
-                        top: `${aspectRatioMode === "mobile" ? 100 - token.x : token.y}%`,
-                        transform: `translate(-50%, -50%) scale(${(isSelected ? 1.2 : 1) * (playerScale / 100)})`,
-                        zIndex: token.type === "ball" ? 40 : 30,
-                        transition: transitionStyle,
-                      }}
-                    >
-                      {/* Circle dot with border */}
-                      <div 
-                        className={`${
-                          token.type === "ball" 
-                            ? "w-6 h-6 sm:w-7 sm:h-7 text-[10px]" 
-                            : "w-9 h-9 sm:w-10 sm:h-10 text-xs"
-                        } rounded-full border-2 flex items-center justify-center font-black shadow-xl ${tokenBg} transition-all relative`}
-                      >
-                        {/* Inner photo/icon wrapper to keep rounded avatar without clipping badges */}
-                        <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                          {token.photo && showPlayerNames ? (
-                            <img src={token.photo} alt={token.name} className="w-full h-full object-cover rounded-full" />
-                          ) : (
-                            iconContent
-                          )}
-                        </div>
-
-                        {/* TOP BADGES ROW (Match stats: Yellow Cards, Goals, Assists, Fitness status) */}
-                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
-                          {/* Yellow Card 🟨 */}
-                          {hasYellowCard && (
-                            <span
-                              className="w-3.5 h-4 bg-amber-400 rounded-[1px] border border-amber-200 shadow-md flex items-center justify-center font-black text-[7px] text-amber-950"
-                              title="Carton Jaune 🟨"
-                            >
-                              🟨
-                            </span>
-                          )}
-
-                          {/* Goal Scorer ⚽ */}
-                          {playerGoals > 0 && (
-                            <span
-                              className="bg-emerald-500 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-emerald-200 flex items-center justify-center leading-none"
-                              title={`Buteur ⚽ (${playerGoals} goal${playerGoals > 1 ? "s" : ""})`}
-                            >
-                              ⚽{playerGoals > 1 ? playerGoals : ""}
-                            </span>
-                          )}
-
-                          {/* Assist 👟 */}
-                          {playerAssists > 0 && (
-                            <span
-                              className="bg-cyan-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
-                              title={`Passeur décisif 👟 (${playerAssists} passe${playerAssists > 1 ? "s" : ""})`}
-                            >
-                              👟{playerAssists > 1 ? playerAssists : ""}
-                            </span>
-                          )}
-
-                          {/* Fitness / Availability Status Badge */}
-                          {token.status && token.status !== "normal" && (
-                            <span
-                              className={`w-3.5 h-3.5 rounded-full border border-black shadow-md flex items-center justify-center text-[7.5px] leading-none shrink-0 ${
-                                token.status === "excellent"
-                                  ? "bg-emerald-500 text-white font-bold"
-                                  : token.status === "tired"
-                                  ? "bg-amber-500 text-slate-950 font-bold"
-                                  : token.status === "injured"
-                                  ? "bg-rose-600 text-white font-bold"
-                                  : token.status === "suspended"
-                                  ? "bg-red-700 text-white font-bold"
-                                  : "bg-rose-500 text-white font-bold"
-                              }`}
-                              title={`Disponibilité: ${
-                                token.status === "excellent"
-                                  ? "En forme ⚡"
-                                  : token.status === "tired"
-                                  ? "Fatigué 🥱"
-                                  : token.status === "injured"
-                                  ? "Blessé 🩹"
-                                  : token.status === "suspended"
-                                  ? "Suspendu 🟥"
-                                  : token.status
-                              }`}
-                            >
-                              {token.status === "excellent"
-                                ? "⚡"
-                                : token.status === "tired"
-                                ? "🥱"
-                                : token.status === "injured"
-                                ? "🩹"
-                                : token.status === "suspended"
-                                ? "🟥"
-                                : "•"}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* LEFT BADGES (Set-Piece Roles: Captain, Corner, Free Kick) */}
-                        {token.type === "player_a" && (
-                          <div className="absolute -left-3.5 top-1/2 -translate-y-1/2 flex flex-col items-end justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
-                            {/* Captain 👑 */}
-                            {setPieceRoles.captain === token.name && (
-                              <span
-                                className="bg-amber-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 w-4 shadow-md border border-amber-200 flex items-center justify-center leading-none"
-                                title="Capitaine d'Équipe 👑"
-                              >
-                                👑
-                              </span>
-                            )}
-
-                            {/* Tireur de Corner 🚩 */}
-                            {(setPieceRoles.cornerLeft === token.name || setPieceRoles.cornerRight === token.name) && (
-                              <span
-                                className="bg-rose-500 text-white rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-rose-300 flex items-center justify-center leading-none"
-                                title="Tireur de Corner 🚩"
-                              >
-                                {setPieceRoles.cornerLeft === token.name && setPieceRoles.cornerRight === token.name
-                                  ? "CK-2"
-                                  : setPieceRoles.cornerLeft === token.name
-                                  ? "CK-G"
-                                  : "CK-D"}
-                              </span>
-                            )}
-
-                            {/* Coup Franc Direct / Excentré */}
-                            {(setPieceRoles.directFreeKick === token.name || setPieceRoles.offCenterFKLeft === token.name || setPieceRoles.offCenterFKRight === token.name) && (
-                              <span
-                                className="bg-cyan-400 text-slate-950 rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
-                                title="Tireur de Coup Franc ⚡"
-                              >
-                                {setPieceRoles.directFreeKick === token.name
-                                  ? "CF"
-                                  : setPieceRoles.offCenterFKLeft === token.name
-                                  ? "CF-G"
-                                  : "CF-D"}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* RIGHT BADGES (Set-Piece Roles: Penalty Taker PK) */}
-                        {token.type === "player_a" && (
-                          <div className="absolute -right-3.5 top-1/2 -translate-y-1/2 flex flex-col items-start justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
-                            {/* Tireur Penalty ⚽ (PK) */}
-                            {setPieceRoles.penaltyTaker === token.name && (
-                              <span
-                                className="bg-[#00E599] text-[#0d1117] rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-emerald-300 flex items-center justify-center leading-none"
-                                title="Tireur de Penalty ⚽ (11m)"
-                              >
-                                PK
-                              </span>
-                            )}
-                          </div>
-                        )}
+                    {/* GROUP 5: Zooms (Échelle Terrain & Taille Joueurs) */}
+                    <div className="flex items-center gap-2 h-8 bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]">
+                      {/* Pitch Zoom */}
+                      <div title="Échelle du terrain" className="flex items-center gap-1">
+                        <ZoomIn className="h-4 w-4 shrink-0 text-[#718096]" />
+                        <button
+                          type="button"
+                          onClick={() => setZoomScale(prev => Math.max(70, prev - 10))}
+                          className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
+                          title="Réduire l'échelle du terrain"
+                        >
+                          -
+                        </button>
+                        <span className="text-[10px] font-black text-white w-7 text-center font-mono">{zoomScale}%</span>
+                        <button
+                          type="button"
+                          onClick={() => setZoomScale(prev => Math.min(150, prev + 10))}
+                          className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
+                          title="Agrandir l'échelle du terrain"
+                        >
+                          +
+                        </button>
                       </div>
 
-                      {/* Name Label JUST BELOW the token pastille */}
-                      {token.type.startsWith("player") && showPlayerNames && (
-                        <div className={`absolute top-[100%] mt-1 ${
-                          isModernSleek
-                            ? "bg-white/95 text-slate-900 border border-slate-300 font-black shadow-md shadow-slate-900/10"
-                            : "bg-slate-950/90 text-slate-200 border border-slate-800 font-bold"
-                        } text-[9px] px-1.5 py-0.5 rounded-md whitespace-nowrap pointer-events-none flex items-center gap-1 z-20`}>
-                          <span>{token.name}</span>
+                      <div className="h-4 w-px bg-[#1a2130]" />
+
+                      {/* Players Scale */}
+                      <div title="Taille des joueurs" className="flex items-center gap-1">
+                        <User className="h-4 w-4 shrink-0 text-[#718096]" />
+                        <button
+                          type="button"
+                          onClick={() => setPlayerScale(prev => Math.max(20, prev - 10))}
+                          className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
+                          title="Réduire la taille des joueurs"
+                        >
+                          -
+                        </button>
+                        <span className="text-[10px] font-black text-white w-7 text-center font-mono">{playerScale}%</span>
+                        <button
+                          type="button"
+                          onClick={() => setPlayerScale(prev => Math.min(130, prev + 10))}
+                          className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
+                          title="Agrandir la taille des joueurs"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="h-4 w-px bg-[#1f293d]" />
+
+                    {/* GROUP 6: Quitter plein écran */}
+                    <div className="flex items-center">
+                      <button
+                        type="button"
+                        onClick={togglePitchFullscreen}
+                        className="h-8 px-3 bg-rose-600 hover:bg-rose-500 border border-rose-400 text-white rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 font-black text-xs shadow-md shadow-rose-950/50"
+                        title="Quitter le mode plein écran (Échap)"
+                        aria-label="Quitter le plein écran"
+                      >
+                        <Minimize2 className="h-4 w-4 shrink-0 stroke-[2.5]" />
+                        <span className="uppercase tracking-wider text-[10px]">QUITTER LE PLEIN ÉCRAN</span>
+                      </button>
+                    </div>
+
+                  </div>
+                )}
+
+                {/* PITCH AND FLANKING SIDE PANELS ROW (IN FULLSCREEN: ROW WITH MON CLUB & MON ADVERSAIRE) */}
+                <div className={`w-full flex-1 flex ${isPitchFullscreen ? "flex-row items-center justify-center gap-2 xl:gap-3.5 min-h-0 overflow-hidden relative my-auto px-1 sm:px-2" : "flex-col items-center justify-center"}`}>
+                  {isPitchFullscreen && renderTeamAPanel(true)}
+                  <div className={isPitchFullscreen ? "flex-1 flex flex-col items-center justify-center h-full min-w-0 relative" : "w-full flex flex-col items-center justify-center"}>
+                    {/* Visual Pitch Box */}
+                    <div
+                      className={`relative w-full mx-auto my-auto shrink-0 rounded-3xl overflow-hidden ${isModernSleek
+                        ? "border-4 border-slate-300 ring-8 ring-white/90 shadow-2xl bg-[#032e22]"
+                        : "border-4 border-[#1f293d] shadow-2xl bg-[#032e22]"
+                        } transition-all duration-300 ease-in-out`}
+                      style={{
+                        aspectRatio: `${currentPitchRatio}`,
+                        maxWidth: pitchMaxWidth,
+                        maxHeight: pitchMaxHeight,
+                        transform: zoomScale !== 100 ? `scale(${zoomScale / 100})` : undefined,
+                        transformOrigin: "center center",
+                        marginTop: zoomScale > 100 ? `${(zoomScale - 100) * 3.8}px` : undefined,
+                        marginBottom: zoomScale > 100 ? `${(zoomScale - 100) * 4.5}px` : undefined,
+                      }}
+                    >
+
+                      {/* Floating Quick Drawing Controls Bar overlay on Pitch - Only shown when a stroke is clicked in SELECT mode */}
+                      {activeTool === "select" && selectedStrokeIndex !== null && drawingActions[selectedStrokeIndex] && (
+                        <div className="absolute top-2.5 right-12 sm:right-32 z-40 flex items-center gap-1.5 bg-[#0d1117]/95 border border-[#00E599]/60 p-1.5 px-3 rounded-xl shadow-2xl backdrop-blur-md animate-fade-in pointer-events-auto">
+                          <span className="text-[10px] font-black text-[#00E599] flex items-center gap-1 mr-1">
+                            <Pencil className="w-3.5 h-3.5" />
+                            <span>TRACÉ SÉLECTIONNÉ</span>
+                          </span>
+
+                          <div className="h-4 w-px bg-[#2a364f]" />
+
+                          <button
+                            onClick={handleDeleteSelectedStroke}
+                            className="px-2.5 py-1 bg-rose-950/90 hover:bg-rose-900 border border-rose-700/80 text-rose-200 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer shadow-md"
+                            title="Supprimer ce tracé sélectionné"
+                          >
+                            <Trash2 className="w-3 h-3 text-rose-400" />
+                            <span>Supprimer tracé</span>
+                          </button>
+
+                          <button
+                            onClick={handleUndo}
+                            className="px-2 py-1 bg-[#172233] hover:bg-[#202f4a] border border-[#233149] text-slate-200 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
+                            title="Annuler le dernier tracé (Ctrl+Z)"
+                          >
+                            <RotateCcw className="w-3 h-3 text-slate-300" />
+                            <span>Annuler</span>
+                          </button>
+
+                          <button
+                            onClick={handleClearDrawings}
+                            className="px-2.5 py-1 bg-rose-950/60 hover:bg-rose-900/90 border border-rose-800/60 text-rose-300 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
+                            title="Effacer tous les tracés sur le terrain"
+                          >
+                            <span>Tout effacer</span>
+                          </button>
+
+                          <button
+                            onClick={() => setSelectedStrokeIndex(null)}
+                            className="ml-1 p-0.5 hover:bg-[#1f293d] text-slate-400 hover:text-white rounded-lg transition"
+                            title="Fermer le menu"
+                          >
+                            ✕
+                          </button>
                         </div>
                       )}
+                      <div
+                        ref={pitchContainerRef}
+                        className="absolute left-0 top-0 touch-none transition-all duration-300"
+                        style={{
+                          width: terrainComplet ? "100%" : (aspectRatioMode === "mobile" ? "100%" : "200%"),
+                          height: terrainComplet ? "100%" : (aspectRatioMode === "mobile" ? "200%" : "100%"),
+                          left: 0,
+                          top: 0,
+                        }}
+                      >
+                        {/* Ground pitch texture lines rendering */}
+                        <Pitch sport={activeSport} isPortrait={aspectRatioMode === "mobile"} />
+
+                        {/* Corner Flags Overlay */}
+                        {activeSport === "football" && !(aspectRatioMode === "mobile") && (
+                          <>
+                            <div className="absolute top-[3.42%] left-[2.27%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
+                            <div className="absolute top-[3.42%] right-[2.27%] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
+                            <div className="absolute bottom-[3.42%] left-[2.27%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
+                            <div className="absolute bottom-[3.42%] right-[2.27%] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
+                          </>
+                        )}
+
+                        {activeSport === "football" && aspectRatioMode === "mobile" && (
+                          <>
+                            {/* Portrait Corner flags */}
+                            <div className="absolute top-[2.27%] left-[3.42%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
+                            <div className="absolute top-[2.27%] right-[3.42%] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
+                            <div className="absolute bottom-[2.27%] left-[3.42%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
+                            <div className="absolute bottom-[2.27%] right-[3.42%] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
+                          </>
+                        )}
+
+                        {/* Dynamic canvas drawing overlay */}
+                        <canvas
+                          ref={canvasRef}
+                          onMouseDown={handleCanvasMouseDown}
+                          onMouseMove={handleCanvasMouseMove}
+                          onMouseUp={handleCanvasMouseUp}
+                          onTouchStart={handleCanvasMouseDown}
+                          onTouchMove={handleCanvasMouseMove}
+                          onTouchEnd={handleCanvasMouseUp}
+                          className={`absolute inset-0 w-full h-full z-10 ${activeTool === "select"
+                            ? (drawingActions.length > 0 ? "pointer-events-auto cursor-pointer" : "pointer-events-none cursor-default")
+                            : activeTool === "move"
+                              ? "pointer-events-none cursor-default"
+                              : "cursor-crosshair pointer-events-auto"
+                            }`}
+                        />
+
+                        {/* DRAGGABLE TOKENS */}
+                        <div className="absolute inset-0 z-20 pointer-events-none">
+                          {currentTokens.map((token) => {
+
+                            // Handle visibility toggles
+                            if (token.type === "ball" && !showBall) return null;
+                            if (token.type === "player_b" && !showOpponents) return null;
+
+                            // Custom visual profiles
+                            let tokenBg = "bg-[#090d14] border-[#00E599] text-[#00E599]"; // Team A looks like neon green matching layout
+                            let iconContent: React.ReactNode = token.number;
+
+                            if (token.type === "player_b") {
+                              tokenBg = "bg-rose-950/90 border-rose-500 text-rose-200";
+                            } else if (token.type === "referee") {
+                              tokenBg = "bg-slate-200 border-slate-400 text-slate-900";
+                              iconContent = "🏁";
+                            } else if (token.type === "ball") {
+                              tokenBg = "bg-white border-slate-500 shadow-xl text-slate-900";
+                              iconContent = activeSport === "rugby" ? "🏉" : "⚽";
+                            }
+
+                            const isSelected = selectedTokenId === token.id;
+                            const isPlayer = token.type.startsWith("player");
+                            const playerGoals = isPlayer ? matchEvents.filter(e => e.type === "goal" && e.player === token.name).length : 0;
+                            const playerAssists = isPlayer ? matchEvents.filter(e => (e.type === "assist" && e.player === token.name) || (e.type === "goal" && e.assister === token.name)).length : 0;
+                            const hasYellowCard = isPlayer && ((token.yellowCards && token.yellowCards > 0) || matchEvents.some(e => e.type === "yellow" && e.player === token.name));
+
+                            // Transition style for smooth animation of player movement
+                            const isCurrentlyDragging = selectedTokenId === token.id;
+                            const transitionStyle = isCurrentlyDragging
+                              ? "none"
+                              : `left ${isPlaying ? playbackSpeed * 0.95 : 350}ms ease-in-out, top ${isPlaying ? playbackSpeed * 0.95 : 350}ms ease-in-out`;
+
+                            return (
+                              <div
+                                key={token.id}
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  handleTokenStartDrag(token.id, e);
+                                }}
+                                onTouchStart={(e) => {
+                                  e.stopPropagation();
+                                  handleTokenStartDrag(token.id, e);
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Lors du déplacement d'un joueur sur le terrain, ne pas ouvrir la fenêtre de remplacement
+                                  if (isDraggingTokenRef.current || Date.now() - dragEndTimeRef.current < 250) {
+                                    return;
+                                  }
+                                  if (token.type.startsWith("player")) {
+                                    setEditingToken(token);
+                                    setQuickActionToken(token);
+                                    if (isLiveMatchMode) {
+                                      setLiveActionToken(token);
+                                    } else {
+                                      setSubPickerToken(token);
+                                    }
+                                  }
+                                }}
+                                onContextMenu={(e) => {
+                                  if (token.type.startsWith("player")) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (isDraggingTokenRef.current || Date.now() - dragEndTimeRef.current < 250) return;
+                                    setEditingToken(token);
+                                    setQuickActionToken(token);
+                                    if (isLiveMatchMode) {
+                                      setLiveActionToken(token);
+                                    } else {
+                                      setSubPickerToken(token);
+                                    }
+                                  }
+                                }}
+                                onDoubleClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isDraggingTokenRef.current || Date.now() - dragEndTimeRef.current < 250) return;
+                                  if (token.type.startsWith("player")) {
+                                    setEditingToken(token);
+                                    setQuickActionToken(token);
+                                    if (isLiveMatchMode) {
+                                      setLiveActionToken(token);
+                                    } else {
+                                      setSubPickerToken(token);
+                                    }
+                                  }
+                                }}
+                                className="absolute pointer-events-auto select-none cursor-grab active:cursor-grabbing flex flex-col items-center justify-center transition-transform"
+                                title={
+                                  token.type.startsWith("player")
+                                    ? isLiveMatchMode
+                                      ? `Double-clic pour les options de match (${token.name})`
+                                      : `Clic pour remplacer ${token.name}`
+                                    : "Glisser pour déplacer"
+                                }
+                                style={{
+                                  left: `${aspectRatioMode === "mobile" ? token.y : token.x}%`,
+                                  top: `${aspectRatioMode === "mobile" ? 100 - token.x : token.y}%`,
+                                  transform: `translate(-50%, -50%) scale(${(isSelected ? 1.2 : 1) * (playerScale / 100)})`,
+                                  zIndex: token.type === "ball" ? 40 : 30,
+                                  transition: transitionStyle,
+                                }}
+                              >
+                                {/* Circle dot with border */}
+                                <div
+                                  className={`${token.type === "ball"
+                                    ? "w-6 h-6 sm:w-7 sm:h-7 text-[10px]"
+                                    : "w-9 h-9 sm:w-10 sm:h-10 text-xs"
+                                    } rounded-full border-2 flex items-center justify-center font-black shadow-xl ${tokenBg} transition-all relative`}
+                                >
+                                  {/* Inner photo/icon wrapper to keep rounded avatar without clipping badges */}
+                                  <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                                    {token.photo && showPlayerNames ? (
+                                      <img src={token.photo} alt={token.name} className="w-full h-full object-cover rounded-full" />
+                                    ) : (
+                                      iconContent
+                                    )}
+                                  </div>
+
+                                  {/* TOP BADGES ROW (Match stats: Yellow Cards, Goals, Assists, Fitness status) */}
+                                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
+                                    {/* Yellow Card 🟨 */}
+                                    {hasYellowCard && (
+                                      <span
+                                        className="w-3.5 h-4 bg-amber-400 rounded-[1px] border border-amber-200 shadow-md flex items-center justify-center font-black text-[7px] text-amber-950"
+                                        title="Carton Jaune 🟨"
+                                      >
+                                        🟨
+                                      </span>
+                                    )}
+
+                                    {/* Goal Scorer ⚽ */}
+                                    {playerGoals > 0 && (
+                                      <span
+                                        className="bg-emerald-500 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-emerald-200 flex items-center justify-center leading-none"
+                                        title={`Buteur ⚽ (${playerGoals} goal${playerGoals > 1 ? "s" : ""})`}
+                                      >
+                                        ⚽{playerGoals > 1 ? playerGoals : ""}
+                                      </span>
+                                    )}
+
+                                    {/* Assist 👟 */}
+                                    {playerAssists > 0 && (
+                                      <span
+                                        className="bg-cyan-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
+                                        title={`Passeur décisif 👟 (${playerAssists} passe${playerAssists > 1 ? "s" : ""})`}
+                                      >
+                                        👟{playerAssists > 1 ? playerAssists : ""}
+                                      </span>
+                                    )}
+
+                                    {/* Fitness / Availability Status Badge */}
+                                    {token.status && token.status !== "normal" && (
+                                      <span
+                                        className={`w-3.5 h-3.5 rounded-full border border-black shadow-md flex items-center justify-center text-[7.5px] leading-none shrink-0 ${token.status === "excellent"
+                                          ? "bg-emerald-500 text-white font-bold"
+                                          : token.status === "tired"
+                                            ? "bg-amber-500 text-slate-950 font-bold"
+                                            : token.status === "injured"
+                                              ? "bg-rose-600 text-white font-bold"
+                                              : token.status === "suspended"
+                                                ? "bg-red-700 text-white font-bold"
+                                                : "bg-rose-500 text-white font-bold"
+                                          }`}
+                                        title={`Disponibilité: ${token.status === "excellent"
+                                          ? "En forme ⚡"
+                                          : token.status === "tired"
+                                            ? "Fatigué 🥱"
+                                            : token.status === "injured"
+                                              ? "Blessé 🩹"
+                                              : token.status === "suspended"
+                                                ? "Suspendu 🟥"
+                                                : token.status
+                                          }`}
+                                      >
+                                        {token.status === "excellent"
+                                          ? "⚡"
+                                          : token.status === "tired"
+                                            ? "🥱"
+                                            : token.status === "injured"
+                                              ? "🩹"
+                                              : token.status === "suspended"
+                                                ? "🟥"
+                                                : "•"}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* LEFT BADGES (Set-Piece Roles: Captain, Corner, Free Kick) */}
+                                  {token.type === "player_a" && (
+                                    <div className="absolute -left-3.5 top-1/2 -translate-y-1/2 flex flex-col items-end justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
+                                      {/* Captain 👑 */}
+                                      {setPieceRoles.captain === token.name && (
+                                        <span
+                                          className="bg-amber-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 w-4 shadow-md border border-amber-200 flex items-center justify-center leading-none"
+                                          title="Capitaine d'Équipe 👑"
+                                        >
+                                          👑
+                                        </span>
+                                      )}
+
+                                      {/* Tireur de Corner 🚩 */}
+                                      {(setPieceRoles.cornerLeft === token.name || setPieceRoles.cornerRight === token.name) && (
+                                        <span
+                                          className="bg-rose-500 text-white rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-rose-300 flex items-center justify-center leading-none"
+                                          title="Tireur de Corner 🚩"
+                                        >
+                                          {setPieceRoles.cornerLeft === token.name && setPieceRoles.cornerRight === token.name
+                                            ? "CK-2"
+                                            : setPieceRoles.cornerLeft === token.name
+                                              ? "CK-G"
+                                              : "CK-D"}
+                                        </span>
+                                      )}
+
+                                      {/* Coup Franc Direct / Excentré */}
+                                      {(setPieceRoles.directFreeKick === token.name || setPieceRoles.offCenterFKLeft === token.name || setPieceRoles.offCenterFKRight === token.name) && (
+                                        <span
+                                          className="bg-cyan-400 text-slate-950 rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
+                                          title="Tireur de Coup Franc ⚡"
+                                        >
+                                          {setPieceRoles.directFreeKick === token.name
+                                            ? "CF"
+                                            : setPieceRoles.offCenterFKLeft === token.name
+                                              ? "CF-G"
+                                              : "CF-D"}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* RIGHT BADGES (Set-Piece Roles: Penalty Taker PK) */}
+                                  {token.type === "player_a" && (
+                                    <div className="absolute -right-3.5 top-1/2 -translate-y-1/2 flex flex-col items-start justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
+                                      {/* Tireur Penalty ⚽ (PK) */}
+                                      {setPieceRoles.penaltyTaker === token.name && (
+                                        <span
+                                          className="bg-[#00E599] text-[#0d1117] rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-emerald-300 flex items-center justify-center leading-none"
+                                          title="Tireur de Penalty ⚽ (11m)"
+                                        >
+                                          PK
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Name Label JUST BELOW the token pastille */}
+                                {token.type.startsWith("player") && showPlayerNames && (
+                                  <div className={`absolute top-[100%] mt-1 ${isModernSleek
+                                    ? "bg-white/95 text-slate-900 border border-slate-300 font-black shadow-md shadow-slate-900/10"
+                                    : "bg-slate-950/90 text-slate-200 border border-slate-800 font-bold"
+                                    } text-[9px] px-1.5 py-0.5 rounded-md whitespace-nowrap pointer-events-none flex items-center gap-1 z-20`}>
+                                    <span>{token.name}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                        </div>
+
+                      </div>
+
                     </div>
-                  );
-                })}
+
+                  </div>
+                  {isPitchFullscreen && showOpponents && renderTeamBPanel(true)}
+                </div>
+
+                {/* TACTICAL ANIMATION & PLAYER MOVEMENT CREATION PANEL */}
+                {!isLiveMatchMode && isAnimationCreatorOpen && (
+                  <div id="animation-creator-panel" className="mt-2.5 p-1.5 sm:p-2 bg-[#090d14]/95 border border-[#1f293d] rounded-2xl shadow-xl text-xs text-white animate-fade-in shrink-0 relative z-30">
+
+                    {/* Main Animation Toolbar Row - Compact & Icon-only */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 bg-[#121926] p-1.5 px-2.5 rounded-xl border border-[#1f293d]/80">
+
+                      {/* Left: Section Badge & Speed Pills */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] font-black text-purple-300 uppercase tracking-wider flex items-center gap-1">
+                          <span>🎬</span>
+                          <span className="hidden sm:inline">ANIMATION</span>
+                        </span>
+
+                        <div className="h-4 w-px bg-[#1f293d]" />
+
+                        {/* Vitesse de lecture */}
+                        <div className="flex items-center gap-0.5 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
+                          <span className="text-[9px] font-black text-slate-500 uppercase px-1">⚡</span>
+                          {[500, 1000, 1500, 2000].map((speed) => {
+                            const active = playbackSpeed === speed;
+                            return (
+                              <button
+                                key={speed}
+                                onClick={() => setPlaybackSpeed(speed)}
+                                className={`h-6 px-1.5 text-[8.5px] font-black rounded-md transition cursor-pointer ${active
+                                  ? "bg-[#00E599] text-[#0d1117] shadow-xs"
+                                  : "text-slate-400 hover:text-white"
+                                  }`}
+                                title={`Vitesse : ${speed / 1000}s par étape`}
+                              >
+                                {speed / 1000}s
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Center: Playback Controls & Sequence Timeline */}
+                      <div className="flex-1 flex items-center gap-2 min-w-0 justify-center">
+
+                        {/* Playback Controls (Prev, Play/Pause, Next) - Icon Only */}
+                        <div className="flex items-center gap-1 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130] shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setCurrentFrameIdx(prev => Math.max(0, prev - 1))}
+                            disabled={currentFrameIdx === 0}
+                            className="h-7 w-7 bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 disabled:opacity-25 disabled:pointer-events-none rounded-md border border-[#1f293d] transition cursor-pointer flex items-center justify-center"
+                            title="Étape Précédente"
+                            aria-label="Étape Précédente"
+                          >
+                            <ChevronLeft className="w-4 h-4 shrink-0" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setIsPlaying(!isPlaying)}
+                            className={`h-7 px-2.5 rounded-md transition cursor-pointer flex items-center justify-center shadow-md ${isPlaying
+                              ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20 animate-pulse border border-rose-400/50"
+                              : "bg-[#00E599] hover:bg-emerald-400 text-slate-950 shadow-[#00e599]/15 border border-emerald-300"
+                              }`}
+                            title={isPlaying ? "Mettre en Pause" : "Lancer la Lecture animée"}
+                            aria-label={isPlaying ? "Pause" : "Lecture"}
+                          >
+                            {isPlaying ? <Pause className="w-4 h-4 shrink-0" /> : <Play className="w-4 h-4 shrink-0 fill-current" />}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setCurrentFrameIdx(prev => Math.min(keyframes.length - 1, prev + 1))}
+                            disabled={currentFrameIdx === keyframes.length - 1}
+                            className="h-7 w-7 bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 disabled:opacity-25 disabled:pointer-events-none rounded-md border border-[#1f293d] transition cursor-pointer flex items-center justify-center"
+                            title="Étape Suivante"
+                            aria-label="Étape Suivante"
+                          >
+                            <ChevronRight className="w-4 h-4 shrink-0" />
+                          </button>
+                        </div>
+
+                        <div className="h-4 w-px bg-[#1f293d] shrink-0" />
+
+                        {/* Sequence Timeline Steps Navigation */}
+                        <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-thin">
+                          {keyframes.map((_, idx) => {
+                            const isActive = idx === currentFrameIdx;
+                            return (
+                              <div key={idx} className="flex items-center shrink-0 gap-1">
+                                <div className="flex items-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => setCurrentFrameIdx(idx)}
+                                    className={`h-7 w-7 rounded-md border flex items-center justify-center transition-all cursor-pointer text-xs font-black ${isActive
+                                      ? "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-[#00E599] shadow-xs"
+                                      : "bg-[#0c1017] border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
+                                      }`}
+                                    title={`Étape ${idx + 1}`}
+                                  >
+                                    <span>{idx + 1}</span>
+                                  </button>
+                                  {keyframes.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const deletedIdx = idx;
+                                        setKeyframes((prev) => prev.filter((_, i) => i !== deletedIdx));
+                                        if (currentFrameIdx >= deletedIdx && currentFrameIdx > 0) {
+                                          setCurrentFrameIdx((prev) => prev - 1);
+                                        }
+                                        setSleekToastMessage(`🗑️ Étape ${deletedIdx + 1} supprimée.`);
+                                        setTimeout(() => setSleekToastMessage(null), 2500);
+                                      }}
+                                      className="ml-0.5 p-0.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/60 rounded transition cursor-pointer text-[9px] font-black"
+                                      title={`Supprimer l'étape ${idx + 1}`}
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+
+                                {idx < keyframes.length - 1 && (
+                                  <div className={`w-2 h-0.5 shrink-0 ${isActive ? "bg-[#00E599]" : "bg-[#1f293d]"}`} />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                      </div>
+
+                      {/* Right: Operations Buttons - ICON ONLY */}
+                      <div className="flex items-center gap-1 shrink-0 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
+                        {/* Sauvegarder (Disquette) */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTacticName(`Animation ${activeSport.toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}`);
+                            setSaveTacticMatchId(activeMatchId);
+                            setIsSaveAnimationMode(true);
+                            setIsSaveModalOpen(true);
+                          }}
+                          className="h-7 w-8 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-md transition cursor-pointer flex items-center justify-center border border-purple-400/40 shadow-xs"
+                          title="Enregistrer l'animation (Disquette)"
+                          aria-label="Sauvegarder l'animation"
+                        >
+                          <Save className="w-4 h-4 shrink-0" />
+                        </button>
+
+                        {/* Nouvelle Étape */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const activeFrame = keyframes[currentFrameIdx] || keyframes[0];
+                            const newFrame = activeFrame.map((t) => ({ ...t }));
+                            setKeyframes((prev) => {
+                              const copy = [...prev];
+                              copy.splice(currentFrameIdx + 1, 0, newFrame);
+                              return copy;
+                            });
+                            setCurrentFrameIdx(currentFrameIdx + 1);
+                          }}
+                          className="h-7 w-8 bg-[#0c1017] hover:bg-[#121c2e] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white rounded-md transition cursor-pointer flex items-center justify-center"
+                          title="Ajouter une nouvelle étape"
+                          aria-label="Nouvelle Étape"
+                        >
+                          <Plus className="w-4 h-4 shrink-0" />
+                        </button>
+
+                        {/* Supprimer l'étape actuelle */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (keyframes.length <= 1) {
+                              setSleekToastMessage("⚠️ Vous devez conserver au moins 1 étape dans l'animation.");
+                              setTimeout(() => setSleekToastMessage(null), 3000);
+                              return;
+                            }
+                            const deletedIdx = currentFrameIdx;
+                            setKeyframes((prev) => prev.filter((_, idx) => idx !== deletedIdx));
+                            setCurrentFrameIdx((prev) => Math.max(0, prev - 1));
+                            setSleekToastMessage(`🗑️ Étape ${deletedIdx + 1} supprimée.`);
+                            setTimeout(() => setSleekToastMessage(null), 2500);
+                          }}
+                          disabled={keyframes.length <= 1}
+                          className="h-7 w-8 bg-rose-950/40 hover:bg-rose-900 border border-rose-800/60 hover:border-rose-500 text-rose-300 hover:text-white disabled:opacity-20 disabled:pointer-events-none rounded-md transition cursor-pointer flex items-center justify-center"
+                          title="Supprimer l'étape actuelle"
+                          aria-label="Supprimer l'étape"
+                        >
+                          <Trash className="w-4 h-4 shrink-0" />
+                        </button>
+
+                        {/* Réinitialiser */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const defaultTokens = getDefaultPlayersForSport(activeSport);
+                            setKeyframes([defaultTokens]);
+                            setCurrentFrameIdx(0);
+                            setIsPlaying(false);
+                            setSleekToastMessage("🔄 Séquences d'animation réinitialisées.");
+                            setTimeout(() => setSleekToastMessage(null), 2500);
+                          }}
+                          className="h-7 w-8 bg-[#0c1017] hover:bg-[#1b253b] border border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-md transition cursor-pointer flex items-center justify-center"
+                          title="Réinitialiser toute l'animation"
+                          aria-label="Réinitialiser"
+                        >
+                          <RotateCcw className="w-4 h-4 shrink-0" />
+                        </button>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
+
+                {/* Petite Boîte à Outils Live Match sous le terrain (dans le viewport principal du terrain, plein écran ou pas) */}
+                {isLiveMatchMode && renderLiveMatchToolbox()}
+
+                {/* Modale de remplacement joueur (accessible en plein écran et mode normal) */}
+                {renderSubstitutionModal()}
 
               </div>
 
             </div>
-
-          </div>
-
-        </div>
-        {isPitchFullscreen && showOpponents && renderTeamBPanel(true)}
-      </div>
-
-            {/* TACTICAL ANIMATION & PLAYER MOVEMENT CREATION PANEL */}
-            {!isLiveMatchMode && isAnimationCreatorOpen && (
-              <div id="animation-creator-panel" className="mt-2.5 p-1.5 sm:p-2 bg-[#090d14]/95 border border-[#1f293d] rounded-2xl shadow-xl text-xs text-white animate-fade-in shrink-0 relative z-30">
-              
-                {/* Main Animation Toolbar Row - Compact & Icon-only */}
-                <div className="flex flex-wrap items-center justify-between gap-2 bg-[#121926] p-1.5 px-2.5 rounded-xl border border-[#1f293d]/80">
-                  
-                  {/* Left: Section Badge & Speed Pills */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[11px] font-black text-purple-300 uppercase tracking-wider flex items-center gap-1">
-                      <span>🎬</span>
-                      <span className="hidden sm:inline">ANIMATION</span>
-                    </span>
-
-                    <div className="h-4 w-px bg-[#1f293d]" />
-
-                    {/* Vitesse de lecture */}
-                    <div className="flex items-center gap-0.5 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
-                      <span className="text-[9px] font-black text-slate-500 uppercase px-1">⚡</span>
-                      {[500, 1000, 1500, 2000].map((speed) => {
-                        const active = playbackSpeed === speed;
-                        return (
-                          <button
-                            key={speed}
-                            onClick={() => setPlaybackSpeed(speed)}
-                            className={`h-6 px-1.5 text-[8.5px] font-black rounded-md transition cursor-pointer ${
-                              active
-                                ? "bg-[#00E599] text-[#0d1117] shadow-xs"
-                                : "text-slate-400 hover:text-white"
-                            }`}
-                            title={`Vitesse : ${speed / 1000}s par étape`}
-                          >
-                            {speed / 1000}s
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Center: Playback Controls & Sequence Timeline */}
-                  <div className="flex-1 flex items-center gap-2 min-w-0 justify-center">
-                    
-                    {/* Playback Controls (Prev, Play/Pause, Next) - Icon Only */}
-                    <div className="flex items-center gap-1 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130] shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setCurrentFrameIdx(prev => Math.max(0, prev - 1))}
-                        disabled={currentFrameIdx === 0}
-                        className="h-7 w-7 bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 disabled:opacity-25 disabled:pointer-events-none rounded-md border border-[#1f293d] transition cursor-pointer flex items-center justify-center"
-                        title="Étape Précédente"
-                        aria-label="Étape Précédente"
-                      >
-                        <ChevronLeft className="w-4 h-4 shrink-0" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setIsPlaying(!isPlaying)}
-                        className={`h-7 px-2.5 rounded-md transition cursor-pointer flex items-center justify-center shadow-md ${
-                          isPlaying
-                            ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20 animate-pulse border border-rose-400/50"
-                            : "bg-[#00E599] hover:bg-emerald-400 text-slate-950 shadow-[#00e599]/15 border border-emerald-300"
-                        }`}
-                        title={isPlaying ? "Mettre en Pause" : "Lancer la Lecture animée"}
-                        aria-label={isPlaying ? "Pause" : "Lecture"}
-                      >
-                        {isPlaying ? <Pause className="w-4 h-4 shrink-0" /> : <Play className="w-4 h-4 shrink-0 fill-current" />}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setCurrentFrameIdx(prev => Math.min(keyframes.length - 1, prev + 1))}
-                        disabled={currentFrameIdx === keyframes.length - 1}
-                        className="h-7 w-7 bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 disabled:opacity-25 disabled:pointer-events-none rounded-md border border-[#1f293d] transition cursor-pointer flex items-center justify-center"
-                        title="Étape Suivante"
-                        aria-label="Étape Suivante"
-                      >
-                        <ChevronRight className="w-4 h-4 shrink-0" />
-                      </button>
-                    </div>
-
-                    <div className="h-4 w-px bg-[#1f293d] shrink-0" />
-
-                    {/* Sequence Timeline Steps Navigation */}
-                    <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-thin">
-                      {keyframes.map((_, idx) => {
-                        const isActive = idx === currentFrameIdx;
-                        return (
-                          <div key={idx} className="flex items-center shrink-0 gap-1">
-                            <div className="flex items-center">
-                              <button
-                                type="button"
-                                onClick={() => setCurrentFrameIdx(idx)}
-                                className={`h-7 w-7 rounded-md border flex items-center justify-center transition-all cursor-pointer text-xs font-black ${
-                                  isActive
-                                    ? "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-[#00E599] shadow-xs"
-                                    : "bg-[#0c1017] border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
-                                }`}
-                                title={`Étape ${idx + 1}`}
-                              >
-                                <span>{idx + 1}</span>
-                              </button>
-                              {keyframes.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const deletedIdx = idx;
-                                    setKeyframes((prev) => prev.filter((_, i) => i !== deletedIdx));
-                                    if (currentFrameIdx >= deletedIdx && currentFrameIdx > 0) {
-                                      setCurrentFrameIdx((prev) => prev - 1);
-                                    }
-                                    setSleekToastMessage(`🗑️ Étape ${deletedIdx + 1} supprimée.`);
-                                    setTimeout(() => setSleekToastMessage(null), 2500);
-                                  }}
-                                  className="ml-0.5 p-0.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/60 rounded transition cursor-pointer text-[9px] font-black"
-                                  title={`Supprimer l'étape ${idx + 1}`}
-                                >
-                                  ✕
-                                </button>
-                              )}
-                            </div>
-                            
-                            {idx < keyframes.length - 1 && (
-                              <div className={`w-2 h-0.5 shrink-0 ${isActive ? "bg-[#00E599]" : "bg-[#1f293d]"}`} />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                  </div>
-
-                  {/* Right: Operations Buttons - ICON ONLY */}
-                  <div className="flex items-center gap-1 shrink-0 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
-                    {/* Sauvegarder (Disquette) */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTacticName(`Animation ${activeSport.toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}`);
-                        setSaveTacticMatchId(activeMatchId);
-                        setIsSaveAnimationMode(true);
-                        setIsSaveModalOpen(true);
-                      }}
-                      className="h-7 w-8 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-md transition cursor-pointer flex items-center justify-center border border-purple-400/40 shadow-xs"
-                      title="Enregistrer l'animation (Disquette)"
-                      aria-label="Sauvegarder l'animation"
-                    >
-                      <Save className="w-4 h-4 shrink-0" />
-                    </button>
-
-                    {/* Nouvelle Étape */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const activeFrame = keyframes[currentFrameIdx] || keyframes[0];
-                        const newFrame = activeFrame.map((t) => ({ ...t }));
-                        setKeyframes((prev) => {
-                          const copy = [...prev];
-                          copy.splice(currentFrameIdx + 1, 0, newFrame);
-                          return copy;
-                        });
-                        setCurrentFrameIdx(currentFrameIdx + 1);
-                      }}
-                      className="h-7 w-8 bg-[#0c1017] hover:bg-[#121c2e] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white rounded-md transition cursor-pointer flex items-center justify-center"
-                      title="Ajouter une nouvelle étape"
-                      aria-label="Nouvelle Étape"
-                    >
-                      <Plus className="w-4 h-4 shrink-0" />
-                    </button>
-
-                    {/* Supprimer l'étape actuelle */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (keyframes.length <= 1) {
-                          setSleekToastMessage("⚠️ Vous devez conserver au moins 1 étape dans l'animation.");
-                          setTimeout(() => setSleekToastMessage(null), 3000);
-                          return;
-                        }
-                        const deletedIdx = currentFrameIdx;
-                        setKeyframes((prev) => prev.filter((_, idx) => idx !== deletedIdx));
-                        setCurrentFrameIdx((prev) => Math.max(0, prev - 1));
-                        setSleekToastMessage(`🗑️ Étape ${deletedIdx + 1} supprimée.`);
-                        setTimeout(() => setSleekToastMessage(null), 2500);
-                      }}
-                      disabled={keyframes.length <= 1}
-                      className="h-7 w-8 bg-rose-950/40 hover:bg-rose-900 border border-rose-800/60 hover:border-rose-500 text-rose-300 hover:text-white disabled:opacity-20 disabled:pointer-events-none rounded-md transition cursor-pointer flex items-center justify-center"
-                      title="Supprimer l'étape actuelle"
-                      aria-label="Supprimer l'étape"
-                    >
-                      <Trash className="w-4 h-4 shrink-0" />
-                    </button>
-
-                    {/* Réinitialiser */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const defaultTokens = getDefaultPlayersForSport(activeSport);
-                        setKeyframes([defaultTokens]);
-                        setCurrentFrameIdx(0);
-                        setIsPlaying(false);
-                        setSleekToastMessage("🔄 Séquences d'animation réinitialisées.");
-                        setTimeout(() => setSleekToastMessage(null), 2500);
-                      }}
-                      className="h-7 w-8 bg-[#0c1017] hover:bg-[#1b253b] border border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-md transition cursor-pointer flex items-center justify-center"
-                      title="Réinitialiser toute l'animation"
-                      aria-label="Réinitialiser"
-                    >
-                      <RotateCcw className="w-4 h-4 shrink-0" />
-                    </button>
-                  </div>
-
-                </div>
-              </div>
-            )}
-
-            {/* Petite Boîte à Outils Live Match sous le terrain (dans le viewport principal du terrain, plein écran ou pas) */}
-            {isLiveMatchMode && renderLiveMatchToolbox()}
-
-            {/* Modale de remplacement joueur (accessible en plein écran et mode normal) */}
-            {renderSubstitutionModal()}
-
-          </div>
-
-        </div>
 
             {/* 3. RIGHT FLANKING PANEL: COMPO ADVERSE (CLUB ADVERSE) */}
             {!isPitchFullscreen && showOpponents && renderTeamBPanel(false)}
@@ -8548,18 +8414,16 @@ export default function TacticsBoard({
             onMouseDown={handleRightSidebarResizeStart}
             onTouchStart={handleRightSidebarResizeStart}
             onDoubleClick={() => setRightSidebarWidth(isCompactUI ? 220 : 300)}
-            className={`hidden xl:flex w-1.5 hover:w-2 bg-[#121926] hover:bg-[#00E599]/50 cursor-col-resize flex-shrink-0 transition-all z-20 items-center justify-center relative group select-none border-l border-[#1f293d] ${
-              isResizingRightSidebar ? "bg-[#00E599] !w-2 shadow-lg shadow-[#00e599]/30" : ""
-            }`}
+            className={`hidden xl:flex w-1.5 hover:w-2 bg-[#121926] hover:bg-[#00E599]/50 cursor-col-resize flex-shrink-0 transition-all z-20 items-center justify-center relative group select-none border-l border-[#1f293d] ${isResizingRightSidebar ? "bg-[#00E599] !w-2 shadow-lg shadow-[#00e599]/30" : ""
+              }`}
             title="Glisser avec la souris pour ajuster la largeur (Double-clic pour réinitialiser)"
           >
             {/* Visual grab bar indicator */}
             <div
-              className={`w-0.5 h-8 rounded-full transition-all ${
-                isResizingRightSidebar
-                  ? "bg-slate-950 scale-y-125"
-                  : "bg-[#384869] group-hover:bg-[#00E599] group-hover:scale-y-110"
-              }`}
+              className={`w-0.5 h-8 rounded-full transition-all ${isResizingRightSidebar
+                ? "bg-slate-950 scale-y-125"
+                : "bg-[#384869] group-hover:bg-[#00E599] group-hover:scale-y-110"
+                }`}
             />
 
             {/* Floating width indicator tooltip when dragging */}
@@ -8586,7 +8450,7 @@ export default function TacticsBoard({
 
         {/* Backdrop on tablet/iPad/mobile (< 1280px) when right sidebar is open */}
         {isRightSidebarOpen && (
-          <div 
+          <div
             onClick={() => setIsRightSidebarOpen(false)}
             className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 xl:hidden cursor-pointer"
             aria-hidden="true"
@@ -8601,17 +8465,14 @@ export default function TacticsBoard({
           style={{
             width: isRightSidebarOpen ? `${rightSidebarWidth}px` : 0,
           }}
-          className={`${
-            isRightSidebarOpen
-              ? "opacity-100"
-              : "w-0 border-l-0 opacity-0 overflow-hidden pointer-events-none"
-          } ${
-            isModernSleek
+          className={`${isRightSidebarOpen
+            ? "opacity-100"
+            : "w-0 border-l-0 opacity-0 overflow-hidden pointer-events-none"
+            } ${isModernSleek
               ? "bg-white border-l border-slate-200/90 shadow-sm text-slate-800"
               : "bg-[#0d1117] border-l border-[#1f293d]"
-          } flex flex-col justify-between flex-shrink-0 fixed xl:relative inset-y-0 right-0 z-50 xl:z-auto shadow-2xl xl:shadow-none h-full max-w-[92vw] sm:max-w-[500px] ${
-            isResizingRightSidebar ? "transition-none select-none" : "transition-[width,opacity] duration-300"
-          }`}
+            } flex flex-col justify-between flex-shrink-0 fixed xl:relative inset-y-0 right-0 z-50 xl:z-auto shadow-2xl xl:shadow-none h-full max-w-[92vw] sm:max-w-[500px] ${isResizingRightSidebar ? "transition-none select-none" : "transition-[width,opacity] duration-300"
+            }`}
         >
           {/* Mobile / Tablet / iPad Drawer Header with Close Button */}
           <div className="xl:hidden flex items-center justify-between p-2.5 border-b border-[#1f293d] bg-[#090d14] shrink-0">
@@ -8628,9 +8489,9 @@ export default function TacticsBoard({
               <X className="w-4 h-4" />
             </button>
           </div>
-          
+
           <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto scrollbar-thin h-full">
-            
+
             {/* Active Team Pill (Above SCHÉMAS) */}
             <button
               onClick={() => {
@@ -8640,11 +8501,10 @@ export default function TacticsBoard({
                   setIsMultiTeamModalOpen(true);
                 }
               }}
-              className={`w-full ${
-                isModernSleek
-                  ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800 shadow-2xs"
-                  : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d]"
-              } border hover:border-amber-500/50 p-2 rounded-xl flex items-center justify-between transition cursor-pointer shadow-sm group`}
+              className={`w-full ${isModernSleek
+                ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800 shadow-2xs"
+                : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d]"
+                } border hover:border-amber-500/50 p-2 rounded-xl flex items-center justify-between transition cursor-pointer shadow-sm group`}
               title="Changer d'équipe ou gérer vos équipes (PRO)"
             >
               <div className="flex items-center gap-1.5 min-w-0">
@@ -8676,14 +8536,21 @@ export default function TacticsBoard({
                   </span>
                 </p>
                 <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => handleOpenShareSchema()}
+                  <button
+                    onClick={() => {
+                      if (!isProOrAdmin) {
+                        setSleekToastMessage("🔒 Le partage de schémas tactiques est réservé aux formules PRO & PRO+.");
+                        setIsCheckoutOpen(true);
+                        return;
+                      }
+                      handleOpenShareSchema();
+                    }}
                     className={`p-1 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-emerald-800" : "hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer`}
-                    title="Partager le schéma actuel (WhatsApp / Mail)"
+                    title="Partager le schéma actuel (PRO)"
                   >
                     <Share2 className="h-3 w-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={handleTriggerSaveModal}
                     className={`p-1 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-emerald-800 hover:text-emerald-900" : "hover:bg-[#1a2333] border-[#1a2130] text-[#00E599] hover:text-brand-cream"} border rounded transition cursor-pointer`}
                     title="Enregistrer sous (PRO)"
@@ -8694,18 +8561,16 @@ export default function TacticsBoard({
               </div>
 
               {/* En-tête Match actuel */}
-              <div className={`flex items-center justify-between px-2 py-1 mb-1.5 rounded-lg border text-[8.5px] font-black uppercase tracking-tight ${
-                isModernSleek
-                  ? "bg-slate-100 border-slate-200 text-slate-700"
-                  : "bg-[#080d14] border-[#1f293d] text-slate-300"
-              }`}>
+              <div className={`flex items-center justify-between px-2 py-1 mb-1.5 rounded-lg border text-[8.5px] font-black uppercase tracking-tight ${isModernSleek
+                ? "bg-slate-100 border-slate-200 text-slate-700"
+                : "bg-[#080d14] border-[#1f293d] text-slate-300"
+                }`}>
                 <span className="flex items-center gap-1 truncate">
                   <span>⚽</span>
                   <span className="truncate">{activeMatch ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}` : "Ce Match"}</span>
                 </span>
-                <span className={`px-1.5 py-0.2 rounded text-[7.5px] font-extrabold shrink-0 ${
-                  isModernSleek ? "bg-emerald-100 text-emerald-800" : "bg-[#00E599]/20 text-[#00E599]"
-                }`}>
+                <span className={`px-1.5 py-0.2 rounded text-[7.5px] font-extrabold shrink-0 ${isModernSleek ? "bg-emerald-100 text-emerald-800" : "bg-[#00E599]/20 text-[#00E599]"
+                  }`}>
                   {savedTactics.filter(sc => (sc.matchId || "match_1") === activeMatchId).length}
                 </span>
               </div>
@@ -8730,23 +8595,21 @@ export default function TacticsBoard({
                       <div
                         key={sc.id}
                         onClick={() => handleLoadSchema(sc)}
-                        className={`group ${
-                          isAnim
-                            ? isModernSleek
-                              ? "bg-purple-50/90 border-purple-300 hover:border-purple-600 shadow-2xs"
-                              : "bg-gradient-to-r from-[#170b22] to-[#0f091c] border-purple-500/50 hover:border-purple-400 shadow-md shadow-purple-950/40"
-                            : isModernSleek 
-                              ? "bg-white border-slate-200 hover:border-emerald-400 shadow-2xs" 
-                              : "bg-[#0d1117] border-[#1a2130] hover:border-[#00e599]/30"
-                        } border p-1.5 rounded-lg flex items-center justify-between cursor-pointer transition gap-1.5`}
+                        className={`group ${isAnim
+                          ? isModernSleek
+                            ? "bg-purple-50/90 border-purple-300 hover:border-purple-600 shadow-2xs"
+                            : "bg-gradient-to-r from-[#170b22] to-[#0f091c] border-purple-500/50 hover:border-purple-400 shadow-md shadow-purple-950/40"
+                          : isModernSleek
+                            ? "bg-white border-slate-200 hover:border-emerald-400 shadow-2xs"
+                            : "bg-[#0d1117] border-[#1a2130] hover:border-[#00e599]/30"
+                          } border p-1.5 rounded-lg flex items-center justify-between cursor-pointer transition gap-1.5`}
                       >
                         <div className="text-left min-w-0 flex-1">
                           <div className="flex items-center gap-1 flex-wrap">
-                            <p className={`text-[9.5px] font-black ${
-                              isAnim
-                                ? isModernSleek ? "text-purple-900 group-hover:text-purple-700" : "text-purple-200 group-hover:text-purple-300"
-                                : isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-[#00E599]"
-                            } truncate leading-tight transition flex items-center gap-1`}>
+                            <p className={`text-[9.5px] font-black ${isAnim
+                              ? isModernSleek ? "text-purple-900 group-hover:text-purple-700" : "text-purple-200 group-hover:text-purple-300"
+                              : isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-[#00E599]"
+                              } truncate leading-tight transition flex items-center gap-1`}>
                               {isAnim && <span className="text-[10px]">🎬</span>}
                               <span>{sc.name}</span>
                             </p>
@@ -8794,10 +8657,15 @@ export default function TacticsBoard({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
+                                if (!isProOrAdmin) {
+                                  setSleekToastMessage("🔒 Le partage de schémas tactiques est réservé aux formules PRO & PRO+.");
+                                  setIsCheckoutOpen(true);
+                                  return;
+                                }
                                 handleOpenShareSchema(sc);
                               }}
                               className={`p-1 ${isModernSleek ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#131b29] hover:bg-[#1f2b40] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
-                              title="Partager ce schéma (WhatsApp & Mail)"
+                              title="Partager ce schéma (PRO)"
                             >
                               <Share2 className="h-3 w-3" />
                             </button>
@@ -8841,7 +8709,7 @@ export default function TacticsBoard({
                   </span>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <button 
+                  <button
                     onClick={() => {
                       if (!isProOrAdmin) {
                         setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
@@ -8855,7 +8723,7 @@ export default function TacticsBoard({
                   >
                     <Plus className="h-3 w-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={handlePrevMatch}
                     disabled={filteredMatches.findIndex(m => m.id === activeMatchId) <= 0}
                     className={`p-0.5 ${isModernSleek ? "text-slate-500 hover:text-slate-900" : "text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer`}
@@ -8863,7 +8731,7 @@ export default function TacticsBoard({
                   >
                     <ChevronLeft className="h-3 w-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={handleNextMatch}
                     disabled={filteredMatches.findIndex(m => m.id === activeMatchId) >= filteredMatches.length - 1 || filteredMatches.length === 0}
                     className={`p-0.5 ${isModernSleek ? "text-slate-500 hover:text-slate-900" : "text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer`}
@@ -8875,14 +8743,12 @@ export default function TacticsBoard({
               </div>
 
               {/* Match details & Live controls card */}
-              <div 
-                className={`${
-                  isModernSleek ? "bg-white border-slate-200 text-slate-800 shadow-2xs" : "bg-[#0d1117]"
-                } border rounded-lg p-2 text-center relative overflow-hidden transition ${
-                  isLiveMatchMode
+              <div
+                className={`${isModernSleek ? "bg-white border-slate-200 text-slate-800 shadow-2xs" : "bg-[#0d1117]"
+                  } border rounded-lg p-2 text-center relative overflow-hidden transition ${isLiveMatchMode
                     ? "border-rose-600/70 shadow-lg shadow-rose-950/40 ring-1 ring-rose-500/30"
                     : isModernSleek ? "hover:border-slate-300 group cursor-pointer" : "border-[#1f293d] group cursor-pointer hover:border-[#354563]"
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between gap-1">
                   {/* Home Team */}
@@ -8922,11 +8788,10 @@ export default function TacticsBoard({
                           setTimeout(() => setSleekToastMessage(null), 3500);
                           setIsMatchFinishedModalOpen(true);
                         }}
-                        className={`px-2 py-0.5 rounded-full text-[8px] font-black transition cursor-pointer flex items-center gap-1 border shadow-sm ${
-                          isModernSleek
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
-                            : "bg-slate-900/90 text-emerald-400 border-emerald-500/50 hover:bg-slate-800"
-                        }`}
+                        className={`px-2 py-0.5 rounded-full text-[8px] font-black transition cursor-pointer flex items-center gap-1 border shadow-sm ${isModernSleek
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                          : "bg-slate-900/90 text-emerald-400 border-emerald-500/50 hover:bg-slate-800"
+                          }`}
                         title="Match terminé - Cliquez pour ouvrir le bilan du match"
                       >
                         <span>🏁 MATCH TERMINÉ</span>
@@ -8948,13 +8813,12 @@ export default function TacticsBoard({
                             setLiveActionToken(null);
                           }
                         }}
-                        className={`px-1.5 py-0.5 rounded-full text-[8px] font-black transition cursor-pointer flex items-center gap-0.5 border shadow-sm ${
-                          isLiveMatchMode
-                            ? "bg-rose-600 hover:bg-rose-700 text-white border-rose-400 shadow-rose-900/50"
-                            : isModernSleek
-                              ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : "bg-[#131d2b] hover:bg-[#1a283b] text-[#00E599] border-[#00E599]/40 hover:border-[#00E599]"
-                        }`}
+                        className={`px-1.5 py-0.5 rounded-full text-[8px] font-black transition cursor-pointer flex items-center gap-0.5 border shadow-sm ${isLiveMatchMode
+                          ? "bg-rose-600 hover:bg-rose-700 text-white border-rose-400 shadow-rose-900/50"
+                          : isModernSleek
+                            ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300"
+                            : "bg-[#131d2b] hover:bg-[#1a283b] text-[#00E599] border-[#00E599]/40 hover:border-[#00E599]"
+                          }`}
                         title={isLiveMatchMode ? "Désactiver le mode Live Match" : (!isProPlusOrAdmin ? "Mode Live Match (Exclusivité PRO+)" : "Lancer le mode Live Match")}
                       >
                         <span className={isLiveMatchMode ? "animate-pulse text-rose-200 text-[9px]" : "text-[9px]"}>🔴</span>
@@ -9025,15 +8889,14 @@ export default function TacticsBoard({
                               }
                             }
                           }}
-                          className={`flex-1 py-1 rounded text-[7.5px] font-black transition cursor-pointer text-center uppercase tracking-tight ${
-                            currentPeriod === periodKey
-                              ? periodKey === "FIN"
-                                ? "bg-rose-600 text-white shadow-sm"
-                                : periodKey === "MI-TEMPS"
+                          className={`flex-1 py-1 rounded text-[7.5px] font-black transition cursor-pointer text-center uppercase tracking-tight ${currentPeriod === periodKey
+                            ? periodKey === "FIN"
+                              ? "bg-rose-600 text-white shadow-sm"
+                              : periodKey === "MI-TEMPS"
                                 ? "bg-amber-400 text-slate-950 font-extrabold"
                                 : "bg-[#00E599] text-slate-950 font-extrabold"
-                              : "bg-[#111827] text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                          }`}
+                            : "bg-[#111827] text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                            }`}
                         >
                           {periodKey === "MI-TEMPS" ? "PAUSE" : periodKey}
                         </button>
@@ -9045,15 +8908,14 @@ export default function TacticsBoard({
                       <span className="text-xs font-mono font-black text-amber-400 bg-black px-1.5 py-0.5 rounded border border-amber-500/30">
                         ⏱️ {formatLiveTime(liveTimerSeconds)}
                       </span>
-                      
+
                       <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => { e.stopPropagation(); setIsLiveTimerRunning(!isLiveTimerRunning); }}
-                          className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase transition cursor-pointer ${
-                            isLiveTimerRunning
-                              ? "bg-amber-500 hover:bg-amber-400 text-slate-950"
-                              : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                          }`}
+                          className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase transition cursor-pointer ${isLiveTimerRunning
+                            ? "bg-amber-500 hover:bg-amber-400 text-slate-950"
+                            : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                            }`}
                         >
                           {isLiveTimerRunning ? "PAUSE" : "START"}
                         </button>
@@ -9128,7 +8990,7 @@ export default function TacticsBoard({
                     )}
                   </div>
                 ) : (
-                  <div 
+                  <div
                     onClick={() => {
                       if (!isProOrAdmin) {
                         setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
@@ -9172,20 +9034,19 @@ export default function TacticsBoard({
                   </span>
                 </p>
                 <div className="flex items-center gap-0.5">
-                  <button 
+                  <button
                     onClick={handleToggleMicRecording}
-                    className={`relative p-0.5 border rounded transition cursor-pointer ${
-                      isRecordingVoice
-                        ? "bg-rose-600 border-rose-500 text-white animate-pulse"
-                        : isModernSleek 
-                          ? "hover:bg-slate-200 border-slate-200 text-amber-600 hover:text-amber-800"
-                          : "hover:bg-[#1a2333] border-[#1a2130] text-amber-500 hover:text-brand-cream"
-                    }`}
+                    className={`relative p-0.5 border rounded transition cursor-pointer ${isRecordingVoice
+                      ? "bg-rose-600 border-rose-500 text-white animate-pulse"
+                      : isModernSleek
+                        ? "hover:bg-slate-200 border-slate-200 text-amber-600 hover:text-amber-800"
+                        : "hover:bg-[#1a2333] border-[#1a2130] text-amber-500 hover:text-brand-cream"
+                      }`}
                     title={isRecordingVoice ? "Arrêter l'enregistrement" : "Enregistrer une note vocale"}
                   >
                     <Mic className="h-3 w-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsNotesExpanded(true)}
                     className={`p-0.5 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} border rounded transition`}
                     title="Agrandir les notes"
@@ -9216,11 +9077,10 @@ export default function TacticsBoard({
                 value={tacticalNotes}
                 onChange={(e) => setTacticalNotes(e.target.value)}
                 placeholder="STRATÉGIE ET NOTES DU MATCH..."
-                className={`w-full flex-1 min-h-[110px] ${
-                  isModernSleek 
-                    ? "bg-white border-slate-300 focus:border-emerald-500 text-slate-900 placeholder-slate-400 shadow-2xs" 
-                    : "bg-[#0d1117] border-[#1f293d] focus:border-[#354563] text-slate-200 placeholder-[#62728f]"
-                } border rounded-lg p-2.5 text-xs focus:outline-none resize-none font-medium leading-relaxed scrollbar-thin transition`}
+                className={`w-full flex-1 min-h-[110px] ${isModernSleek
+                  ? "bg-white border-slate-300 focus:border-emerald-500 text-slate-900 placeholder-slate-400 shadow-2xs"
+                  : "bg-[#0d1117] border-[#1f293d] focus:border-[#354563] text-slate-200 placeholder-[#62728f]"
+                  } border rounded-lg p-2.5 text-xs focus:outline-none resize-none font-medium leading-relaxed scrollbar-thin transition`}
               />
             </div>
 
@@ -9248,21 +9108,18 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {isNotesExpanded && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-          <div className={`max-w-3xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto flex flex-col h-[75vh] border overflow-hidden ${
-            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
-          }`}>
+          <div className={`max-w-3xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto flex flex-col h-[75vh] border overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
+            }`}>
             {/* Ambient background glow accents */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header bar */}
-            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 shrink-0 ${
-              isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
-            }`}>
+            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 shrink-0 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+              }`}>
               <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl border ${
-                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
-                }`}>
+                <div className={`p-2.5 rounded-xl border ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
+                  }`}>
                   <span className="text-base">📝</span>
                 </div>
                 <div>
@@ -9274,11 +9131,10 @@ export default function TacticsBoard({
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsNotesExpanded(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${
-                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                }`}
+                className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -9289,11 +9145,10 @@ export default function TacticsBoard({
                 value={tacticalNotes}
                 onChange={(e) => setTacticalNotes(e.target.value)}
                 placeholder="Saisissez ici l'intégralité de vos consignes tactiques et physiques de match..."
-                className={`flex-1 w-full rounded-xl p-4 text-xs focus:outline-none transition resize-none font-medium leading-relaxed scrollbar-thin border ${
-                  isModernSleek 
-                    ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
-                    : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
-                }`}
+                className={`flex-1 w-full rounded-xl p-4 text-xs focus:outline-none transition resize-none font-medium leading-relaxed scrollbar-thin border ${isModernSleek
+                  ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white"
+                  : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                  }`}
               />
             </div>
           </div>
@@ -9305,21 +9160,18 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {pendingGoalToken && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-          <div className={`max-w-md w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto flex flex-col border overflow-hidden ${
-            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
-          }`}>
+          <div className={`max-w-md w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto flex flex-col border overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
+            }`}>
             {/* Ambient background glow accents */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header bar */}
-            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${
-              isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
-            }`}>
+            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+              }`}>
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl border ${
-                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
-                }`}>
+                <div className={`p-2 rounded-xl border ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
+                  }`}>
                   <span className="text-xl">⚽</span>
                 </div>
                 <div>
@@ -9334,9 +9186,8 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => setPendingGoalToken(null)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${
-                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                }`}
+                className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -9353,11 +9204,10 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => setSelectedPasseurName("")}
-                  className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
-                    selectedPasseurName === ""
-                      ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-800 dark:bg-[#00E599]/20 dark:border-[#00E599] dark:text-[#00E599]"
-                      : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#1f293d]"
-                  }`}
+                  className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${selectedPasseurName === ""
+                    ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-800 dark:bg-[#00E599]/20 dark:border-[#00E599] dark:text-[#00E599]"
+                    : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#1f293d]"
+                    }`}
                 >
                   <span>🚫 Aucun (Action individuelle / Solo)</span>
                   {selectedPasseurName === "" && <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-[#00E599]" />}
@@ -9381,16 +9231,14 @@ export default function TacticsBoard({
                           key={teammate.id}
                           type="button"
                           onClick={() => setSelectedPasseurName(teammate.name)}
-                          className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
-                            isSelected
-                              ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-800 dark:bg-[#00E599]/20 dark:border-[#00E599] dark:text-[#00E599] font-black shadow-sm"
-                              : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#131d2b]"
-                          }`}
+                          className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${isSelected
+                            ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-800 dark:bg-[#00E599]/20 dark:border-[#00E599] dark:text-[#00E599] font-black shadow-sm"
+                            : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#131d2b]"
+                            }`}
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <span className={`w-5 h-5 rounded-full font-black text-[9px] flex items-center justify-center shrink-0 ${
-                              isModernSleek ? "bg-slate-200 text-slate-800" : "bg-[#1f293d] text-[#00E599]"
-                            }`}>
+                            <span className={`w-5 h-5 rounded-full font-black text-[9px] flex items-center justify-center shrink-0 ${isModernSleek ? "bg-slate-200 text-slate-800" : "bg-[#1f293d] text-[#00E599]"
+                              }`}>
                               {teammate.number || "?"}
                             </span>
                             <span className="truncate">{teammate.name}</span>
@@ -9430,35 +9278,30 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {isMatchEditOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-          <div className={`border max-w-2xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto max-h-[90vh] flex flex-col overflow-hidden ${
-            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
-          }`}>
+          <div className={`border max-w-2xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto max-h-[90vh] flex flex-col overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
+            }`}>
             {/* Ambient background glow accents */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-            
+
             {/* Header */}
-            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between shrink-0 relative z-10 ${
-              isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
-            }`}>
+            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between shrink-0 relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+              }`}>
               <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl border ${
-                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
-                }`}>
+                <div className={`p-2.5 rounded-xl border ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
+                  }`}>
                   <span className="text-base">📋</span>
                 </div>
                 <div>
-                  <h3 className={`text-sm sm:text-base font-black uppercase tracking-wide flex items-center gap-2 ${
-                    isModernSleek ? "text-slate-900" : "text-white"
-                  }`}>
+                  <h3 className={`text-sm sm:text-base font-black uppercase tracking-wide flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"
+                    }`}>
                     <span>Gestion des Matchs du Club</span>
                     <span className="text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
                       <Award className="w-2.5 h-2.5" /> PRO
                     </span>
                   </h3>
-                  <p className={`text-[11px] font-medium mt-0.5 ${
-                    isModernSleek ? "text-slate-500" : "text-slate-400"
-                  }`}>
+                  <p className={`text-[11px] font-medium mt-0.5 ${isModernSleek ? "text-slate-500" : "text-slate-400"
+                    }`}>
                     Consultez, modifiez ou créez vos matchs enregistrés ({matchesList.length})
                   </p>
                 </div>
@@ -9484,9 +9327,8 @@ export default function TacticsBoard({
                 </button>
                 <button
                   onClick={() => setIsMatchEditOpen(false)}
-                  className={`p-1.5 rounded-xl transition cursor-pointer ${
-                    isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                  }`}
+                  className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                    }`}
                   title="Fermer"
                 >
                   <X className="w-5 h-5" />
@@ -9503,22 +9345,20 @@ export default function TacticsBoard({
                   placeholder="Rechercher un match, un adversaire ou une compétition..."
                   value={matchSearchQuery}
                   onChange={(e) => setMatchSearchQuery(e.target.value)}
-                  className={`w-full rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none transition border ${
-                    isModernSleek
-                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500"
-                      : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
-                  }`}
+                  className={`w-full rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none transition border ${isModernSleek
+                    ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500"
+                    : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
+                    }`}
                 />
               </div>
 
               <select
                 value={matchTeamFilter}
                 onChange={(e) => setMatchTeamFilter(e.target.value)}
-                className={`w-full sm:w-auto rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
-                  isModernSleek
-                    ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500 font-bold"
-                    : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                }`}
+                className={`w-full sm:w-auto rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${isModernSleek
+                  ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500 font-bold"
+                  : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                  }`}
               >
                 <option value="all">🛡️ Toutes les Équipes du Club</option>
                 {teams.map((t) => (
@@ -9547,9 +9387,8 @@ export default function TacticsBoard({
 
                 if (filtered.length === 0) {
                   return (
-                    <div className={`border border-dashed rounded-2xl p-8 text-center ${
-                      isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-slate-400"
-                    }`}>
+                    <div className={`border border-dashed rounded-2xl p-8 text-center ${isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-slate-400"
+                      }`}>
                       <p className="text-xs font-bold uppercase tracking-wider mb-2">AUCUN MATCH TROUVÉ</p>
                       <button
                         type="button"
@@ -9575,20 +9414,18 @@ export default function TacticsBoard({
                   return (
                     <div
                       key={m.id}
-                      className={`border rounded-2xl p-3.5 transition ${
-                        isActive
-                          ? isModernSleek 
-                            ? "border-emerald-500 bg-emerald-50/70 text-slate-900 shadow-md"
-                            : "border-[#00E599] bg-[#0c1a17] shadow-lg shadow-[#00e599]/10"
-                          : isModernSleek
-                            ? "border-slate-200 bg-slate-50 hover:border-slate-300 text-slate-900"
-                            : "border-[#1f293d] bg-[#090d14] hover:border-[#354563] text-white"
-                      }`}
+                      className={`border rounded-2xl p-3.5 transition ${isActive
+                        ? isModernSleek
+                          ? "border-emerald-500 bg-emerald-50/70 text-slate-900 shadow-md"
+                          : "border-[#00E599] bg-[#0c1a17] shadow-lg shadow-[#00e599]/10"
+                        : isModernSleek
+                          ? "border-slate-200 bg-slate-50 hover:border-slate-300 text-slate-900"
+                          : "border-[#1f293d] bg-[#090d14] hover:border-[#354563] text-white"
+                        }`}
                     >
                       {/* Match Card Row */}
-                      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2.5 ${
-                        isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"
-                      }`}>
+                      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2.5 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"
+                        }`}>
                         <div className="flex items-center gap-2 flex-wrap">
                           {/* Active badge */}
                           {isActive ? (
@@ -9598,9 +9435,8 @@ export default function TacticsBoard({
                           ) : (
                             <button
                               onClick={() => selectMatch(m.id)}
-                              className={`text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider transition cursor-pointer border ${
-                                isModernSleek ? "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300" : "bg-[#162235] hover:bg-[#233350] text-slate-300 border-[#2e3d5b]"
-                              }`}
+                              className={`text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider transition cursor-pointer border ${isModernSleek ? "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300" : "bg-[#162235] hover:bg-[#233350] text-slate-300 border-[#2e3d5b]"
+                                }`}
                             >
                               ▶️ Activer sur le terrain
                             </button>
@@ -9608,9 +9444,8 @@ export default function TacticsBoard({
 
                           {/* Status badge */}
                           {isFinished ? (
-                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border uppercase ${
-                              isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-slate-800 text-emerald-400 border-emerald-500/30"
-                            }`}>
+                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border uppercase ${isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-slate-800 text-emerald-400 border-emerald-500/30"
+                              }`}>
                               🏁 TERMINÉ ({m.score || `${m.homeScore || 0} - ${m.awayScore || 0}`})
                             </span>
                           ) : (
@@ -9620,9 +9455,8 @@ export default function TacticsBoard({
                           )}
 
                           {/* Team badge */}
-                          <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full border uppercase ${
-                            isModernSleek ? "bg-slate-200 text-slate-700 border-slate-300" : "bg-[#131d2b] text-slate-300 border-[#1f293d]"
-                          }`}>
+                          <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full border uppercase ${isModernSleek ? "bg-slate-200 text-slate-700 border-slate-300" : "bg-[#131d2b] text-slate-300 border-[#1f293d]"
+                            }`}>
                             🛡️ {mTeam?.name || "Équipe"}
                           </span>
                         </div>
@@ -9631,13 +9465,12 @@ export default function TacticsBoard({
                         <div className="flex items-center gap-1.5 self-end sm:self-auto">
                           <button
                             onClick={() => setEditingMatchId(isEditing ? null : m.id)}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer border ${
-                              isEditing
-                                ? "bg-amber-400 text-slate-950 border-amber-400 font-black"
-                                : isModernSleek
-                                  ? "bg-slate-200 hover:bg-slate-300 text-slate-800 border-slate-300"
-                                  : "bg-[#131d2b] hover:bg-[#1f2b40] text-slate-200 border-[#1f293d]"
-                            }`}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer border ${isEditing
+                              ? "bg-amber-400 text-slate-950 border-amber-400 font-black"
+                              : isModernSleek
+                                ? "bg-slate-200 hover:bg-slate-300 text-slate-800 border-slate-300"
+                                : "bg-[#131d2b] hover:bg-[#1f2b40] text-slate-200 border-[#1f293d]"
+                              }`}
                             title={isEditing ? "Fermer l'édition" : "Modifier les détails"}
                           >
                             <Pencil className="h-3 w-3" />
@@ -9659,25 +9492,22 @@ export default function TacticsBoard({
                       {!isEditing ? (
                         <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div>
-                            <h4 className={`text-xs font-black uppercase tracking-wide flex items-center gap-2 ${
-                              isModernSleek ? "text-slate-900" : "text-white"
-                            }`}>
+                            <h4 className={`text-xs font-black uppercase tracking-wide flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"
+                              }`}>
                               <span>⚽ {m.homeTeam}</span>
                               <span className="text-[#00E599] font-mono">VS</span>
                               <span>{m.awayTeam}</span>
                             </h4>
-                            <p className={`text-[10px] font-medium mt-0.5 ${
-                              isModernSleek ? "text-slate-500" : "text-slate-400"
-                            }`}>
+                            <p className={`text-[10px] font-medium mt-0.5 ${isModernSleek ? "text-slate-500" : "text-slate-400"
+                              }`}>
                               🏆 {m.competition} • 📅 {m.dateTime}
                             </p>
                           </div>
 
                           {m.score && (
                             <div className="text-right shrink-0">
-                              <span className={`text-xs font-mono font-black border px-2 py-1 rounded-lg ${
-                                isModernSleek ? "bg-slate-100 text-emerald-800 border-slate-200" : "text-[#00E599] bg-black/60 border-[#1f293d]"
-                              }`}>
+                              <span className={`text-xs font-mono font-black border px-2 py-1 rounded-lg ${isModernSleek ? "bg-slate-100 text-emerald-800 border-slate-200" : "text-[#00E599] bg-black/60 border-[#1f293d]"
+                                }`}>
                                 Score : {m.score}
                               </span>
                             </div>
@@ -9685,26 +9515,22 @@ export default function TacticsBoard({
                         </div>
                       ) : (
                         /* Inline Edit Form */
-                        <div className={`mt-3 p-3 rounded-xl border space-y-3 ${
-                          isModernSleek ? "bg-slate-100 border-slate-300 text-slate-900" : "bg-[#05080e] border-[#1f293d] text-white"
-                        }`}>
-                          <span className={`text-[10px] font-black uppercase tracking-wider block border-b pb-1 ${
-                            isModernSleek ? "text-amber-700 border-slate-300" : "text-amber-400 border-[#1f293d]"
+                        <div className={`mt-3 p-3 rounded-xl border space-y-3 ${isModernSleek ? "bg-slate-100 border-slate-300 text-slate-900" : "bg-[#05080e] border-[#1f293d] text-white"
                           }`}>
+                          <span className={`text-[10px] font-black uppercase tracking-wider block border-b pb-1 ${isModernSleek ? "text-amber-700 border-slate-300" : "text-amber-400 border-[#1f293d]"
+                            }`}>
                             ✏️ MODIFIER LE MATCH : {m.homeTeam} VS {m.awayTeam}
                           </span>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
-                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-400"
-                              }`}>Équipe Concernée</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-slate-400"
+                                }`}>Équipe Concernée</label>
                               <select
                                 value={m.teamId || activeTeamId || "team_1"}
                                 onChange={(e) => updateMatchById(m.id, "teamId", e.target.value)}
-                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
-                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                                }`}
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                  }`}
                               >
                                 {teams.map((t) => (
                                   <option key={t.id} value={t.id}>
@@ -9716,9 +9542,8 @@ export default function TacticsBoard({
 
                             {/* Type de Compétition */}
                             <div>
-                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-400"
-                              }`}>Type de Compétition</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-slate-400"
+                                }`}>Type de Compétition</label>
                               <select
                                 value={
                                   ["CHAMPIONNAT", "COUPE", "AMICAL"].includes(m.competitionType || m.competition?.toUpperCase() || "")
@@ -9732,9 +9557,8 @@ export default function TacticsBoard({
                                     updateMatchById(m.id, "competition", val);
                                   }
                                 }}
-                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
-                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                                }`}
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                  }`}
                               >
                                 <option value="CHAMPIONNAT">🏆 CHAMPIONNAT</option>
                                 <option value="COUPE">🏆 COUPE</option>
@@ -9744,92 +9568,80 @@ export default function TacticsBoard({
 
                             {/* Équipe Domicile */}
                             <div>
-                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-400"
-                              }`}>Équipe Domicile</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-slate-400"
+                                }`}>Équipe Domicile</label>
                               <input
                                 type="text"
                                 value={m.homeTeam || ""}
                                 onChange={(e) => updateMatchById(m.id, "homeTeam", e.target.value)}
-                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
-                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                                }`}
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                  }`}
                               />
                             </div>
 
                             {/* Équipe Extérieure */}
                             <div>
-                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-400"
-                              }`}>Équipe Extérieure</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-slate-400"
+                                }`}>Équipe Extérieure</label>
                               <input
                                 type="text"
                                 value={m.awayTeam || ""}
                                 onChange={(e) => updateMatchById(m.id, "awayTeam", e.target.value)}
-                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
-                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                                }`}
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                  }`}
                               />
                             </div>
 
                             {/* Nom Précis / Poule de la Compétition */}
                             <div className="sm:col-span-2">
-                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-400"
-                              }`}>Nom / Niveau de la Compétition (Optionnel)</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-slate-400"
+                                }`}>Nom / Niveau de la Compétition (Optionnel)</label>
                               <input
                                 type="text"
                                 value={m.competition || ""}
                                 onChange={(e) => updateMatchById(m.id, "competition", e.target.value)}
-                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
-                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
-                                }`}
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
+                                  }`}
                                 placeholder="ex: Championnat Régional 1, Coupe de France, Match Amical..."
                               />
                             </div>
 
                             {/* Date du Match */}
                             <div>
-                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-400"
-                              }`}>📅 Date du Match</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-slate-400"
+                                }`}>📅 Date du Match</label>
                               <input
                                 type="date"
                                 value={m.date || ""}
                                 onChange={(e) => updateMatchById(m.id, "date", e.target.value)}
-                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
-                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                                }`}
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                  }`}
                               />
                             </div>
 
                             {/* Heure du Match */}
                             <div>
-                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-400"
-                              }`}>⏰ Heure du Match</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-slate-400"
+                                }`}>⏰ Heure du Match</label>
                               <input
                                 type="time"
                                 value={m.time || "15:00"}
                                 onChange={(e) => updateMatchById(m.id, "time", e.target.value)}
-                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
-                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                                }`}
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                                  }`}
                               />
                             </div>
 
                             {/* Score (Facultatif) */}
                             <div className="sm:col-span-2">
-                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-400"
-                              }`}>Score Final (si le match est déjà terminé)</label>
+                              <label className={`block text-[9.5px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-slate-400"
+                                }`}>Score Final (si le match est déjà terminé)</label>
                               <input
                                 type="text"
                                 value={m.score || ""}
                                 onChange={(e) => updateMatchById(m.id, "score", e.target.value)}
-                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${
-                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
-                                }`}
+                                className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 font-bold" : "bg-[#090d14] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
+                                  }`}
                                 placeholder="ex: 2 - 1"
                               />
                             </div>
@@ -9852,14 +9664,12 @@ export default function TacticsBoard({
             </div>
 
             {/* Modal Footer */}
-            <div className={`pt-3 border-t mt-3 flex justify-end shrink-0 ${
-              isModernSleek ? "border-slate-200" : "border-[#1f293d]"
-            }`}>
+            <div className={`pt-3 border-t mt-3 flex justify-end shrink-0 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+              }`}>
               <button
                 onClick={() => setIsMatchEditOpen(false)}
-                className={`px-5 py-2 font-bold rounded-xl text-xs transition cursor-pointer ${
-                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-[#162235] hover:bg-[#233350] text-slate-300"
-                }`}
+                className={`px-5 py-2 font-bold rounded-xl text-xs transition cursor-pointer ${isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-[#162235] hover:bg-[#233350] text-slate-300"
+                  }`}
               >
                 Fermer
               </button>
@@ -9873,30 +9683,26 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {isMatchFinishedModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-md">
-          <div ref={matchFinishedModalRef} className={`border-2 border-emerald-500 max-w-lg w-full rounded-3xl p-6 shadow-2xl relative overflow-hidden ${
-            isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"
-          }`}>
-            {/* Header / Banner */}
-            <div className={`-mx-6 -mt-6 p-5 border-b text-center relative mb-5 ${
-              isModernSleek 
-                ? "bg-gradient-to-r from-emerald-100 via-white to-emerald-100 border-emerald-200 text-slate-900" 
-                : "bg-gradient-to-r from-emerald-950 via-[#0d1117] to-emerald-950 border-emerald-500/30 text-white"
+          <div ref={matchFinishedModalRef} className={`border-2 border-emerald-500 max-w-lg w-full rounded-3xl p-6 shadow-2xl relative overflow-hidden ${isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"
             }`}>
+            {/* Header / Banner */}
+            <div className={`-mx-6 -mt-6 p-5 border-b text-center relative mb-5 ${isModernSleek
+              ? "bg-gradient-to-r from-emerald-100 via-white to-emerald-100 border-emerald-200 text-slate-900"
+              : "bg-gradient-to-r from-emerald-950 via-[#0d1117] to-emerald-950 border-emerald-500/30 text-white"
+              }`}>
               <span className="text-2xl mb-1 block">🏆</span>
               <h3 className="text-sm sm:text-base font-black uppercase text-[#00E599] tracking-wider">
                 MATCH TERMINÉ — SCORE FINAL
               </h3>
-              <p className={`text-[11px] font-medium mt-0.5 ${
-                isModernSleek ? "text-slate-600" : "text-slate-300"
-              }`}>
+              <p className={`text-[11px] font-medium mt-0.5 ${isModernSleek ? "text-slate-600" : "text-slate-300"
+                }`}>
                 {activeMatch.competition} • {activeMatch.dateTime}
               </p>
               {!isExportingModalScreen && (
                 <button
                   onClick={() => setIsMatchFinishedModalOpen(false)}
-                  className={`absolute top-3 right-3 p-1 rounded-lg transition cursor-pointer ${
-                    isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-white/10"
-                  }`}
+                  className={`absolute top-3 right-3 p-1 rounded-lg transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-white/10"
+                    }`}
                 >
                   ✕
                 </button>
@@ -9904,17 +9710,15 @@ export default function TacticsBoard({
             </div>
 
             {/* Big Score Box */}
-            <div className={`border rounded-2xl p-4 text-center mb-5 shadow-lg relative ${
-              isModernSleek
-                ? "bg-gradient-to-b from-emerald-50/60 to-slate-50 border-emerald-300 text-slate-900"
-                : "bg-gradient-to-b from-[#131d2b] to-[#0a0f18] border-emerald-500/40 text-white"
-            }`}>
+            <div className={`border rounded-2xl p-4 text-center mb-5 shadow-lg relative ${isModernSleek
+              ? "bg-gradient-to-b from-emerald-50/60 to-slate-50 border-emerald-300 text-slate-900"
+              : "bg-gradient-to-b from-[#131d2b] to-[#0a0f18] border-emerald-500/40 text-white"
+              }`}>
               <div className="flex items-center justify-around gap-2">
                 <div className="flex flex-col items-center flex-1">
                   <span className="text-xl mb-1">🛡️</span>
-                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${
-                    isModernSleek ? "text-slate-900" : "text-white"
-                  }`}>
+                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${isModernSleek ? "text-slate-900" : "text-white"
+                    }`}>
                     {activeMatch.homeTeam}
                   </span>
                   <span className="text-3xl font-black font-mono text-[#00E599] mt-1">
@@ -9933,9 +9737,8 @@ export default function TacticsBoard({
 
                 <div className="flex flex-col items-center flex-1">
                   <span className="text-xl mb-1">🛡️</span>
-                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${
-                    isModernSleek ? "text-slate-900" : "text-white"
-                  }`}>
+                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${isModernSleek ? "text-slate-900" : "text-white"
+                    }`}>
                     {activeMatch.awayTeam}
                   </span>
                   <span className="text-3xl font-black font-mono text-rose-500 mt-1">
@@ -9951,20 +9754,17 @@ export default function TacticsBoard({
                 <span className="text-[10px] font-black text-[#00E599] uppercase tracking-wider block mb-1.5">
                   HISTORIQUE DES ÉVÉNEMENTS DU MATCH ({matchEvents.filter((evt) => evt.type !== "assist").length})
                 </span>
-                <div className={`p-2 rounded-xl border max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin ${
-                  isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#080d14] border-[#1f293d]"
-                }`}>
+                <div className={`p-2 rounded-xl border max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#080d14] border-[#1f293d]"
+                  }`}>
                   {matchEvents
                     .filter((evt) => evt.type !== "assist")
                     .map((evt) => (
-                      <div key={evt.id} className={`text-xs font-bold flex items-center justify-between px-2.5 py-1.5 rounded-lg border ${
-                        isModernSleek ? "text-slate-800 bg-white border-slate-200" : "text-slate-200 bg-[#0f172a] border-[#1f293d]"
-                      }`}>
+                      <div key={evt.id} className={`text-xs font-bold flex items-center justify-between px-2.5 py-1.5 rounded-lg border ${isModernSleek ? "text-slate-800 bg-white border-slate-200" : "text-slate-200 bg-[#0f172a] border-[#1f293d]"
+                        }`}>
                         <span className="flex items-center gap-2 truncate">
                           <span>{evt.type === "goal" ? "⚽" : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}</span>
-                          <span className={`font-extrabold flex items-center gap-1 ${
-                            isModernSleek ? "text-slate-900" : "text-white"
-                          }`}>
+                          <span className={`font-extrabold flex items-center gap-1 ${isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                             {evt.player}
                             {evt.type === "goal" && evt.assister ? (
                               <span className="text-[#00E599] font-bold text-xs">
@@ -9985,9 +9785,8 @@ export default function TacticsBoard({
 
             {/* Buttons / Actions */}
             {!isExportingModalScreen && (
-              <div className={`flex flex-col sm:flex-row items-center gap-2 pt-2 border-t ${
-                isModernSleek ? "border-slate-200" : "border-[#1f293d]"
-              }`}>
+              <div className={`flex flex-col sm:flex-row items-center gap-2 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+                }`}>
                 <button
                   onClick={handleShareMatchWhatsApp}
                   className="w-full sm:flex-1 py-2.5 px-3 bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 font-black text-xs rounded-xl transition cursor-pointer shadow-lg shadow-emerald-500/20 text-center flex items-center justify-center gap-1.5"
@@ -9999,11 +9798,10 @@ export default function TacticsBoard({
 
                 <button
                   onClick={handleExportModalWindowImage}
-                  className={`w-full sm:flex-1 py-2.5 px-3 border font-bold text-xs rounded-xl transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${
-                    isModernSleek
-                      ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
-                      : "bg-[#131d2b] hover:bg-[#1c2c40] border-[#00E599]/40 text-[#00E599]"
-                  }`}
+                  className={`w-full sm:flex-1 py-2.5 px-3 border font-bold text-xs rounded-xl transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${isModernSleek
+                    ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
+                    : "bg-[#131d2b] hover:bg-[#1c2c40] border-[#00E599]/40 text-[#00E599]"
+                    }`}
                   title="Exporter une capture image PNG exacte de cette fenêtre"
                 >
                   <Camera className="w-3.5 h-3.5" />
@@ -10015,9 +9813,8 @@ export default function TacticsBoard({
                     setIsMatchFinishedModalOpen(false);
                     setIsLiveMatchMode(false);
                   }}
-                  className={`w-full sm:w-auto py-2.5 px-4 font-bold text-xs rounded-xl transition cursor-pointer text-center ${
-                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-[#182338] hover:bg-[#233350] text-slate-300"
-                  }`}
+                  className={`w-full sm:w-auto py-2.5 px-4 font-bold text-xs rounded-xl transition cursor-pointer text-center ${isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-[#182338] hover:bg-[#233350] text-slate-300"
+                    }`}
                 >
                   Fermer
                 </button>
@@ -10034,21 +9831,18 @@ export default function TacticsBoard({
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header bar */}
-            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${
-              isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
-            }`}>
+            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+              }`}>
               <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl border ${
-                  isSaveAnimationMode
-                    ? isModernSleek ? "bg-purple-100 border-purple-300 text-purple-800" : "bg-purple-500/20 border-purple-500/40 text-purple-400"
-                    : isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
-                }`}>
+                <div className={`p-2.5 rounded-xl border ${isSaveAnimationMode
+                  ? isModernSleek ? "bg-purple-100 border-purple-300 text-purple-800" : "bg-purple-500/20 border-purple-500/40 text-purple-400"
+                  : isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
+                  }`}>
                   <span className="text-lg">{isSaveAnimationMode ? "🎬" : "📖"}</span>
                 </div>
                 <div>
-                  <h3 className={`text-sm sm:text-base font-black uppercase tracking-wide ${
-                    isSaveAnimationMode ? "text-purple-600 dark:text-purple-400" : isModernSleek ? "text-slate-900" : "text-white"
-                  }`}>
+                  <h3 className={`text-sm sm:text-base font-black uppercase tracking-wide ${isSaveAnimationMode ? "text-purple-600 dark:text-purple-400" : isModernSleek ? "text-slate-900" : "text-white"
+                    }`}>
                     {isSaveAnimationMode ? "Enregistrer l'animation" : "Sauvegarder ce schéma"}
                   </h3>
                   <p className={`text-[11px] font-medium ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
@@ -10058,9 +9852,8 @@ export default function TacticsBoard({
               </div>
               <button
                 onClick={() => setIsSaveModalOpen(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${
-                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                }`}
+                className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -10068,9 +9861,8 @@ export default function TacticsBoard({
 
             <div className="p-5 sm:p-6 relative z-10">
               {saveSuccess ? (
-                <div className={`p-4 border rounded-xl flex items-center gap-2 text-xs font-bold ${
-                  isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00e599]/20 text-[#00E599]"
-                }`}>
+                <div className={`p-4 border rounded-xl flex items-center gap-2 text-xs font-bold ${isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00e599]/20 text-[#00E599]"
+                  }`}>
                   <CheckCircle className="h-4 w-4" />
                   <span>{isSaveAnimationMode ? "Animation enregistrée avec succès !" : "Schéma tactique sauvegardé avec succès !"}</span>
                 </div>
@@ -10084,9 +9876,8 @@ export default function TacticsBoard({
                       type="text"
                       value={tacticName}
                       onChange={(e) => setTacticName(e.target.value)}
-                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border font-bold ${
-                        isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" : "bg-[#121824] border-[#233149] text-white focus:border-[#00E599]"
-                      }`}
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border font-bold ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" : "bg-[#121824] border-[#233149] text-white focus:border-[#00E599]"
+                        }`}
                     />
                   </div>
 
@@ -10101,9 +9892,8 @@ export default function TacticsBoard({
                       <select
                         value={saveTacticMatchId || activeMatchId}
                         onChange={(e) => setSaveTacticMatchId(e.target.value)}
-                        className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border font-bold ${
-                          isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#121824] border-[#233149] text-white focus:border-[#00E599]"
-                        }`}
+                        className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border font-bold ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#121824] border-[#233149] text-white focus:border-[#00E599]"
+                          }`}
                       >
                         {matchesList.map((m) => (
                           <option key={m.id} value={m.id}>
@@ -10112,16 +9902,14 @@ export default function TacticsBoard({
                         ))}
                       </select>
                     ) : (
-                      <div className={`w-full rounded-xl px-3 py-2.5 text-xs flex items-center justify-between border ${
-                        isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 font-bold" : "bg-[#121824] border-[#233149] text-white"
-                      }`}>
+                      <div className={`w-full rounded-xl px-3 py-2.5 text-xs flex items-center justify-between border ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 font-bold" : "bg-[#121824] border-[#233149] text-white"
+                        }`}>
                         <span className="font-bold flex items-center gap-2">
                           <span>⚽</span>
                           <span>{activeMatch ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}` : "Match en cours"}</span>
                         </span>
-                        <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded border ${
-                          isModernSleek ? "text-emerald-800 bg-emerald-100 border-emerald-300" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
-                        }`}>
+                        <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded border ${isModernSleek ? "text-emerald-800 bg-emerald-100 border-emerald-300" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                          }`}>
                           {activeMatch?.competition || "Match"}
                         </span>
                       </div>
@@ -10136,9 +9924,8 @@ export default function TacticsBoard({
                       value={tacticDesc}
                       onChange={(e) => setTacticDesc(e.target.value)}
                       placeholder="Consignes, objectifs, etc..."
-                      className={`w-full h-24 rounded-xl p-3 text-xs focus:outline-none resize-none transition border font-medium ${
-                        isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
-                      }`}
+                      className={`w-full h-24 rounded-xl p-3 text-xs focus:outline-none resize-none transition border font-medium ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
+                        }`}
                     />
                   </div>
 
@@ -10172,13 +9959,11 @@ export default function TacticsBoard({
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header bar */}
-            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 shrink-0 ${
-              isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
-            }`}>
+            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 shrink-0 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+              }`}>
               <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl border ${
-                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
-                }`}>
+                <div className={`p-2.5 rounded-xl border ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
+                  }`}>
                   <span className="text-base">🛡️</span>
                 </div>
                 <div>
@@ -10195,125 +9980,119 @@ export default function TacticsBoard({
               </div>
               <button
                 onClick={() => setIsMultiTeamModalOpen(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${
-                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                }`}
+                className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  }`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-5 sm:p-6 space-y-5 relative z-10">
-            {/* TEAM CARDS LIST */}
-            <div className="space-y-3">
-              <label className={`block text-[10px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-700" : "text-slate-400"}`}>
-                Équipes Enregistrées ({teams.length}) :
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {teams.map((team) => {
-                  const isActive = activeTeamId === team.id;
-                  const tacticCount = savedTactics.filter(
-                    (s) => s.teamId === team.id || (!s.teamId && team.isDefault)
-                  ).length;
+              {/* TEAM CARDS LIST */}
+              <div className="space-y-3">
+                <label className={`block text-[10px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-700" : "text-slate-400"}`}>
+                  Équipes Enregistrées ({teams.length}) :
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {teams.map((team) => {
+                    const isActive = activeTeamId === team.id;
+                    const tacticCount = savedTactics.filter(
+                      (s) => s.teamId === team.id || (!s.teamId && team.isDefault)
+                    ).length;
 
-                  return (
-                    <div
-                      key={team.id}
-                      onClick={() => handleSelectTeam(team.id)}
-                      className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
-                        isActive
+                    return (
+                      <div
+                        key={team.id}
+                        onClick={() => handleSelectTeam(team.id)}
+                        className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col justify-between ${isActive
                           ? isModernSleek
                             ? "bg-emerald-50 border-emerald-500 text-slate-900 shadow-md"
                             : "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-white shadow-lg shadow-[#00E599]/10"
                           : isModernSleek
                             ? "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-800"
                             : "bg-[#090d14] border-[#1f293d] hover:border-slate-600 text-slate-300"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">🛡️</span>
-                          <div>
-                            <p className="text-xs font-black truncate max-w-[140px]">{team.name}</p>
-                            <p className={`text-[9px] font-bold mt-0.5 uppercase ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>{team.category}</p>
+                          }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">🛡️</span>
+                            <div>
+                              <p className="text-xs font-black truncate max-w-[140px]">{team.name}</p>
+                              <p className={`text-[9px] font-bold mt-0.5 uppercase ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>{team.category}</p>
+                            </div>
                           </div>
+                          {isActive ? (
+                            <span className="text-[9px] bg-[#00E599] text-slate-950 font-black px-2 py-0.5 rounded-full uppercase">
+                              ACTIVE
+                            </span>
+                          ) : (
+                            !team.isDefault && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteTeam(team.id);
+                                }}
+                                className="p-1 text-slate-400 hover:text-rose-500 transition cursor-pointer"
+                                title="Supprimer cette équipe"
+                              >
+                                <Trash className="w-3.5 h-3.5" />
+                              </button>
+                            )
+                          )}
                         </div>
-                        {isActive ? (
-                          <span className="text-[9px] bg-[#00E599] text-slate-950 font-black px-2 py-0.5 rounded-full uppercase">
-                            ACTIVE
+
+                        <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[10px] ${isModernSleek ? "border-slate-200" : "border-[#1a2333]"
+                          }`}>
+                          <span className={`font-bold ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>📖 {tacticCount} Schéma(s)</span>
+                          <span className={isActive ? "text-[#00E599] font-black" : "text-amber-500 font-bold"}>
+                            {isActive ? "Sélectionnée" : "Basculez ➔"}
                           </span>
-                        ) : (
-                          !team.isDefault && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteTeam(team.id);
-                              }}
-                              className="p-1 text-slate-400 hover:text-rose-500 transition cursor-pointer"
-                              title="Supprimer cette équipe"
-                            >
-                              <Trash className="w-3.5 h-3.5" />
-                            </button>
-                          )
-                        )}
+                        </div>
                       </div>
-
-                      <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[10px] ${
-                        isModernSleek ? "border-slate-200" : "border-[#1a2333]"
-                      }`}>
-                        <span className={`font-bold ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>📖 {tacticCount} Schéma(s)</span>
-                        <span className={isActive ? "text-[#00E599] font-black" : "text-amber-500 font-bold"}>
-                          {isActive ? "Sélectionnée" : "Basculez ➔"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* CREATE NEW TEAM FORM */}
-            <form onSubmit={handleCreateNewTeam} className={`border rounded-xl p-4 space-y-3 ${
-              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#121926] border-[#1f293d] text-white"
-            }`}>
-              <label className="block text-[10px] text-amber-500 font-black uppercase tracking-wider flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5 text-[#00E599]" />
-                <span>Créer une nouvelle équipe (Séniors, U19, Féminines...)</span>
-              </label>
+              {/* CREATE NEW TEAM FORM */}
+              <form onSubmit={handleCreateNewTeam} className={`border rounded-xl p-4 space-y-3 ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#121926] border-[#1f293d] text-white"
+                }`}>
+                <label className="block text-[10px] text-amber-500 font-black uppercase tracking-wider flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5 text-[#00E599]" />
+                  <span>Créer une nouvelle équipe (Séniors, U19, Féminines...)</span>
+                </label>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder="Ex: U17 National, Séniors C, Équipe 1..."
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                  className={`border rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold ${
-                    isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                  }`}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ex: U17 National, Séniors C, Équipe 1..."
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    className={`border rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold ${isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                      }`}
+                  />
 
-                <select
-                  value={newTeamCategory}
-                  onChange={(e) => setNewTeamCategory(e.target.value)}
-                  className={`border rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold ${
-                    isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-slate-300 focus:border-[#00E599]"
-                  }`}
+                  <select
+                    value={newTeamCategory}
+                    onChange={(e) => setNewTeamCategory(e.target.value)}
+                    className={`border rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-slate-300 focus:border-[#00E599]"
+                      }`}
+                  >
+                    <option value="Séniors">Séniors</option>
+                    <option value="Jeunes / U19">Jeunes / U19 / U17</option>
+                    <option value="Féminines">Équipe Féminine</option>
+                    <option value="Formation">École de Foot / Formation</option>
+                    <option value="Loisirs">Loisirs / Vétérans</option>
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-2 bg-gradient-to-r from-amber-500 via-amber-400 to-emerald-400 text-slate-950 font-black text-xs uppercase rounded-lg hover:brightness-110 transition cursor-pointer shadow-md"
                 >
-                  <option value="Séniors">Séniors</option>
-                  <option value="Jeunes / U19">Jeunes / U19 / U17</option>
-                  <option value="Féminines">Équipe Féminine</option>
-                  <option value="Formation">École de Foot / Formation</option>
-                  <option value="Loisirs">Loisirs / Vétérans</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-2 bg-gradient-to-r from-amber-500 via-amber-400 to-emerald-400 text-slate-950 font-black text-xs uppercase rounded-lg hover:brightness-110 transition cursor-pointer shadow-md"
-              >
-                + Ajouter l&apos;équipe au club
-              </button>
-            </form>
+                  + Ajouter l&apos;équipe au club
+                </button>
+              </form>
             </div>
           </div>
         </div>
@@ -10322,9 +10101,8 @@ export default function TacticsBoard({
       {/* MULTI-TEAM PRO UPGRADE PROMPT MODAL */}
       {isMultiTeamUpgradeModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-          <div className={`border max-w-lg w-full rounded-2xl sm:rounded-3xl p-6 shadow-2xl relative overflow-hidden ${
-            isModernSleek ? "bg-white border-amber-500 text-slate-900" : "bg-[#0b0e14] border-amber-500/50 text-white"
-          }`}>
+          <div className={`border max-w-lg w-full rounded-2xl sm:rounded-3xl p-6 shadow-2xl relative overflow-hidden ${isModernSleek ? "bg-white border-amber-500 text-slate-900" : "bg-[#0b0e14] border-amber-500/50 text-white"
+            }`}>
             {/* Background ambient glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
@@ -10346,9 +10124,8 @@ export default function TacticsBoard({
               </div>
             </div>
 
-            <div className={`border rounded-xl p-4 my-4 space-y-2.5 relative z-10 text-xs ${
-              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
-            }`}>
+            <div className={`border rounded-xl p-4 my-4 space-y-2.5 relative z-10 text-xs ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
+              }`}>
               <p className="font-bold text-amber-500 uppercase text-[11px] tracking-wider border-b pb-1.5 flex items-center gap-1.5 border-slate-200 dark:border-[#1f293d]">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span>Fonctionnalités Multi-Équipes Débloquées en PRO :</span>
@@ -10398,9 +10175,8 @@ export default function TacticsBoard({
       {/* LIVE MATCH PRO+ UPGRADE PROMPT MODAL */}
       {isLiveMatchUpgradeModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-          <div className={`border max-w-lg w-full rounded-2xl sm:rounded-3xl p-6 shadow-2xl relative overflow-hidden ${
-            isModernSleek ? "bg-white border-amber-500 text-slate-900" : "bg-[#0b0e14] border-amber-500/60 text-white"
-          }`}>
+          <div className={`border max-w-lg w-full rounded-2xl sm:rounded-3xl p-6 shadow-2xl relative overflow-hidden ${isModernSleek ? "bg-white border-amber-500 text-slate-900" : "bg-[#0b0e14] border-amber-500/60 text-white"
+            }`}>
             {/* Background ambient glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -10422,9 +10198,8 @@ export default function TacticsBoard({
               </div>
             </div>
 
-            <div className={`border rounded-xl p-4 my-4 space-y-2.5 relative z-10 text-xs ${
-              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
-            }`}>
+            <div className={`border rounded-xl p-4 my-4 space-y-2.5 relative z-10 text-xs ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
+              }`}>
               <p className="font-bold text-amber-500 uppercase text-[11px] tracking-wider border-b pb-1.5 flex items-center gap-1.5 border-slate-200 dark:border-[#1f293d]">
                 <Zap className="w-3.5 h-3.5 text-amber-500" />
                 <span>Fonctionnalités Live Match Débloquées en PRO+ :</span>
@@ -10482,13 +10257,11 @@ export default function TacticsBoard({
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header bar */}
-            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 shrink-0 ${
-              isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
-            }`}>
+            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 shrink-0 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+              }`}>
               <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl border ${
-                  isModernSleek ? "bg-rose-100 border-rose-300 text-rose-800" : "bg-rose-500/20 border-rose-500/40 text-rose-400"
-                }`}>
+                <div className={`p-2.5 rounded-xl border ${isModernSleek ? "bg-rose-100 border-rose-300 text-rose-800" : "bg-rose-500/20 border-rose-500/40 text-rose-400"
+                  }`}>
                   <Pencil className="h-4 w-4" />
                 </div>
                 <div>
@@ -10505,9 +10278,8 @@ export default function TacticsBoard({
               </div>
               <button
                 onClick={() => setIsOpponentRosterModalOpen(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${
-                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                }`}
+                className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -10520,9 +10292,8 @@ export default function TacticsBoard({
 
               <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin mb-4">
                 {currentTokens.filter((t) => t.type === "player_b").length === 0 ? (
-                  <div className={`text-center p-6 border border-dashed rounded-xl ${
-                    isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-slate-400"
-                  }`}>
+                  <div className={`text-center p-6 border border-dashed rounded-xl ${isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-slate-400"
+                    }`}>
                     <p className="text-xs mb-3 font-semibold">Aucun joueur adverse actuellement sur le terrain.</p>
                     <button
                       onClick={handleAddOpponent}
@@ -10537,9 +10308,8 @@ export default function TacticsBoard({
                     .map((token, index) => (
                       <div
                         key={token.id}
-                        className={`flex items-center gap-2 p-2.5 rounded-xl border ${
-                          isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1f293d] text-white"
-                        }`}
+                        className={`flex items-center gap-2 p-2.5 rounded-xl border ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1f293d] text-white"
+                          }`}
                       >
                         <div className="w-7 h-7 rounded-full bg-rose-950 border border-rose-500 text-rose-200 text-xs font-black flex items-center justify-center shrink-0">
                           {token.number || index + 1}
@@ -10561,9 +10331,8 @@ export default function TacticsBoard({
                               });
                             }}
                             placeholder="Nom du joueur"
-                            className={`col-span-2 rounded px-2 py-1 text-xs focus:outline-none transition border font-bold ${
-                              isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-rose-500" : "bg-[#0d1117] border-[#1f293d] text-white focus:border-rose-500"
-                            }`}
+                            className={`col-span-2 rounded px-2 py-1 text-xs focus:outline-none transition border font-bold ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-rose-500" : "bg-[#0d1117] border-[#1f293d] text-white focus:border-rose-500"
+                              }`}
                           />
 
                           <select
@@ -10579,9 +10348,8 @@ export default function TacticsBoard({
                                 return copy;
                               });
                             }}
-                            className={`rounded px-2 py-1 text-xs text-rose-500 focus:outline-none transition border text-center font-bold cursor-pointer ${
-                              isModernSleek ? "bg-white border-slate-300 focus:border-rose-500" : "bg-[#0d1117] border-[#1f293d] focus:border-rose-500"
-                            }`}
+                            className={`rounded px-2 py-1 text-xs text-rose-500 focus:outline-none transition border text-center font-bold cursor-pointer ${isModernSleek ? "bg-white border-slate-300 focus:border-rose-500" : "bg-[#0d1117] border-[#1f293d] focus:border-rose-500"
+                              }`}
                             title="Numéro unique (seuls les numéros disponibles sont proposés)"
                           >
                             {getAvailableNumbersForOpponent(token.id, token.number).map((n) => (
@@ -10615,9 +10383,8 @@ export default function TacticsBoard({
             <div className={`flex items-center justify-between border-t p-4 px-5 sm:px-6 shrink-0 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <button
                 onClick={handleAddOpponent}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${
-                  isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300" : "bg-[#172233] hover:bg-[#1f2f47] text-slate-200 border-slate-700"
-                }`}
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300" : "bg-[#172233] hover:bg-[#1f2f47] text-slate-200 border-slate-700"
+                  }`}
               >
                 <Plus className="h-3.5 w-3.5" /> Ajouter un joueur
               </button>
@@ -10687,28 +10454,26 @@ export default function TacticsBoard({
         return (
           <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-[150] animate-fade-in backdrop-blur-sm overflow-y-auto">
             <div className={`max-w-4xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-6 flex flex-col max-h-[92vh] overflow-hidden border ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"}`}>
-              
+
               {/* Glow visual accents like Support Contact Modal */}
               <div className="absolute top-0 right-0 w-72 h-72 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
               {/* Header */}
-              <div className={`px-5 sm:px-6 py-4 border-b flex flex-col gap-3 relative z-10 shrink-0 ${
-                isModernSleek 
-                  ? "bg-slate-100 border-slate-200 text-slate-900" 
-                  : "bg-gradient-to-r from-[#0d1117] via-[#121926] to-[#0d1117] border-[#1f293d]"
-              }`}>
+              <div className={`px-5 sm:px-6 py-4 border-b flex flex-col gap-3 relative z-10 shrink-0 ${isModernSleek
+                ? "bg-slate-100 border-slate-200 text-slate-900"
+                : "bg-gradient-to-r from-[#0d1117] via-[#121926] to-[#0d1117] border-[#1f293d]"
+                }`}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl sm:rounded-2xl border flex items-center justify-center shadow-sm ${
-                      isModernSleek
-                        ? isAway
-                          ? "bg-rose-100 border-rose-300 text-rose-800"
-                          : "bg-emerald-100 border-emerald-300 text-emerald-800"
-                        : isAway
-                          ? "bg-gradient-to-br from-rose-500/20 to-red-600/30 border-rose-500/40 text-rose-400 shadow-inner"
-                          : "bg-gradient-to-br from-[#00E599]/20 to-emerald-600/30 border-[#00E599]/40 text-[#00E599] shadow-inner"
-                    }`}>
+                    <div className={`p-2.5 rounded-xl sm:rounded-2xl border flex items-center justify-center shadow-sm ${isModernSleek
+                      ? isAway
+                        ? "bg-rose-100 border-rose-300 text-rose-800"
+                        : "bg-emerald-100 border-emerald-300 text-emerald-800"
+                      : isAway
+                        ? "bg-gradient-to-br from-rose-500/20 to-red-600/30 border-rose-500/40 text-rose-400 shadow-inner"
+                        : "bg-gradient-to-br from-[#00E599]/20 to-emerald-600/30 border-[#00E599]/40 text-[#00E599] shadow-inner"
+                      }`}>
                       <Users className="w-5 h-5" />
                     </div>
                     <div>
@@ -10716,15 +10481,14 @@ export default function TacticsBoard({
                         <h3 className={`text-base font-black tracking-wide uppercase ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                           EFFECTIF & RÔLES
                         </h3>
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
-                          isModernSleek
-                            ? isAway
-                              ? "bg-rose-100 border-rose-300 text-rose-800"
-                              : "bg-emerald-100 border-emerald-300 text-emerald-800"
-                            : isAway
-                              ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
-                              : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
-                        }`}>
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${isModernSleek
+                          ? isAway
+                            ? "bg-rose-100 border-rose-300 text-rose-800"
+                            : "bg-emerald-100 border-emerald-300 text-emerald-800"
+                          : isAway
+                            ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                            : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
+                          }`}>
                           {teamDisplayName} • {activeSport.toUpperCase()}
                         </span>
                       </div>
@@ -10734,14 +10498,13 @@ export default function TacticsBoard({
                       </p>
                     </div>
                   </div>
-                  
+
                   <button
                     onClick={() => setIsSetPiecesOpen(false)}
-                    className={`p-1.5 rounded-xl transition cursor-pointer font-bold ${
-                      isModernSleek
-                        ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200"
-                        : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                    }`}
+                    className={`p-1.5 rounded-xl transition cursor-pointer font-bold ${isModernSleek
+                      ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200"
+                      : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                      }`}
                     title="Fermer"
                   >
                     <X className="w-5 h-5" />
@@ -10752,51 +10515,47 @@ export default function TacticsBoard({
                 <div className={`flex items-center gap-2 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/80"}`}>
                   <button
                     onClick={() => setTeamRolesModalTab("players")}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer ${
-                      teamRolesModalTab === "players"
-                        ? isAway
-                          ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
-                          : isModernSleek
-                            ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
-                            : "bg-[#00E599] text-slate-950 shadow-md shadow-[#00e599]/20"
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer ${teamRolesModalTab === "players"
+                      ? isAway
+                        ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                         : isModernSleek
-                          ? "bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-200 shadow-xs"
-                          : "bg-[#121926] text-slate-300 hover:text-white hover:bg-[#182234] border border-[#1f293d]"
-                    }`}
+                          ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                          : "bg-[#00E599] text-slate-950 shadow-md shadow-[#00e599]/20"
+                      : isModernSleek
+                        ? "bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-200 shadow-xs"
+                        : "bg-[#121926] text-slate-300 hover:text-white hover:bg-[#182234] border border-[#1f293d]"
+                      }`}
                   >
                     <Users className="w-3.5 h-3.5" />
                     <span>Effectif</span>
-                    <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
-                      teamRolesModalTab === "players" 
-                        ? isAway ? "bg-black/20 text-white" : isModernSleek ? "bg-black/15 text-white" : "bg-slate-950/20 text-slate-950" 
-                        : isModernSleek ? "bg-slate-100 text-emerald-800" : isAway ? "bg-[#1f293d] text-rose-400" : "bg-[#1f293d] text-[#00E599]"
-                    }`}>
+                    <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${teamRolesModalTab === "players"
+                      ? isAway ? "bg-black/20 text-white" : isModernSleek ? "bg-black/15 text-white" : "bg-slate-950/20 text-slate-950"
+                      : isModernSleek ? "bg-slate-100 text-emerald-800" : isAway ? "bg-[#1f293d] text-rose-400" : "bg-[#1f293d] text-[#00E599]"
+                      }`}>
                       {starters.length + activeSubs.length}
                     </span>
                   </button>
 
                   <button
                     onClick={() => setTeamRolesModalTab("setpieces")}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer ${
-                      teamRolesModalTab === "setpieces"
-                        ? isAway
-                          ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
-                          : isModernSleek
-                            ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
-                            : "bg-[#00E599] text-slate-950 shadow-md shadow-[#00e599]/20"
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer ${teamRolesModalTab === "setpieces"
+                      ? isAway
+                        ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                         : isModernSleek
-                          ? "bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-200 shadow-xs"
-                          : "bg-[#121926] text-slate-300 hover:text-white hover:bg-[#182234] border border-[#1f293d]"
-                    }`}
+                          ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                          : "bg-[#00E599] text-slate-950 shadow-md shadow-[#00e599]/20"
+                      : isModernSleek
+                        ? "bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-200 shadow-xs"
+                        : "bg-[#121926] text-slate-300 hover:text-white hover:bg-[#182234] border border-[#1f293d]"
+                      }`}
                   >
                     <Target className="w-3.5 h-3.5" />
                     <span>Coups arrêtés</span>
                     {assignedRolesCount > 0 && (
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
-                        teamRolesModalTab === "setpieces" 
-                          ? isAway ? "bg-black/20 text-white" : isModernSleek ? "bg-black/15 text-white" : "bg-slate-950/20 text-slate-950" 
-                          : isModernSleek ? "bg-slate-100 text-emerald-800" : isAway ? "bg-[#1f293d] text-rose-400" : "bg-[#1f293d] text-[#00E599]"
-                      }`}>
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${teamRolesModalTab === "setpieces"
+                        ? isAway ? "bg-black/20 text-white" : isModernSleek ? "bg-black/15 text-white" : "bg-slate-950/20 text-slate-950"
+                        : isModernSleek ? "bg-slate-100 text-emerald-800" : isAway ? "bg-[#1f293d] text-rose-400" : "bg-[#1f293d] text-[#00E599]"
+                        }`}>
                         {assignedRolesCount}/7
                       </span>
                     )}
@@ -10811,9 +10570,8 @@ export default function TacticsBoard({
                 {teamRolesModalTab === "players" && (
                   <div className="space-y-4">
                     {/* Filter / Search Bar */}
-                    <div className={`flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl border ${
-                      isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
-                    }`}>
+                    <div className={`flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
+                      }`}>
                       {/* Search box */}
                       <div className="relative flex-1 min-w-[200px]">
                         <Search className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 ${isModernSleek ? "text-slate-400" : "text-slate-400"}`} />
@@ -10822,18 +10580,16 @@ export default function TacticsBoard({
                           value={rosterSearchQuery}
                           onChange={(e) => setRosterSearchQuery(e.target.value)}
                           placeholder="Rechercher..."
-                          className={`w-full rounded-xl pl-8 pr-3 py-1.5 text-xs transition border focus:outline-none ${
-                            isModernSleek
-                              ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500"
-                              : "bg-[#121926] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
-                          }`}
+                          className={`w-full rounded-xl pl-8 pr-3 py-1.5 text-xs transition border focus:outline-none ${isModernSleek
+                            ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500"
+                            : "bg-[#121926] border-[#1f293d] text-white placeholder-slate-500 focus:border-[#00E599]"
+                            }`}
                         />
                         {rosterSearchQuery && (
                           <button
                             onClick={() => setRosterSearchQuery("")}
-                            className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-xs cursor-pointer ${
-                              isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-400 hover:text-white"
-                            }`}
+                            className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-xs cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-400 hover:text-white"
+                              }`}
                           >
                             ✕
                           </button>
@@ -10841,22 +10597,20 @@ export default function TacticsBoard({
                       </div>
 
                       {/* Filter Pills */}
-                      <div className={`flex items-center gap-1.5 p-1 rounded-xl border ${
-                        isModernSleek ? "bg-slate-200/60 border-slate-200" : "bg-[#121926] border-[#1f293d]"
-                      }`}>
+                      <div className={`flex items-center gap-1.5 p-1 rounded-xl border ${isModernSleek ? "bg-slate-200/60 border-slate-200" : "bg-[#121926] border-[#1f293d]"
+                        }`}>
                         <button
                           onClick={() => setRosterFilter("all")}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 ${
-                            rosterFilter === "all"
-                              ? isAway
-                                ? "bg-rose-500 text-white font-black"
-                                : isModernSleek
-                                  ? "bg-white text-slate-900 font-black shadow-xs"
-                                  : "bg-[#00E599] text-slate-950 font-black"
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 ${rosterFilter === "all"
+                            ? isAway
+                              ? "bg-rose-500 text-white font-black"
                               : isModernSleek
-                                ? "text-slate-600 hover:text-slate-900"
-                                : "text-slate-400 hover:text-white"
-                          }`}
+                                ? "bg-white text-slate-900 font-black shadow-xs"
+                                : "bg-[#00E599] text-slate-950 font-black"
+                            : isModernSleek
+                              ? "text-slate-600 hover:text-slate-900"
+                              : "text-slate-400 hover:text-white"
+                            }`}
                         >
                           <Users className="w-3 h-3" />
                           <span>Tous</span>
@@ -10864,17 +10618,16 @@ export default function TacticsBoard({
                         </button>
                         <button
                           onClick={() => setRosterFilter("starters")}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                            rosterFilter === "starters"
-                              ? isAway
-                                ? "bg-rose-500 text-white font-black"
-                                : isModernSleek
-                                  ? "bg-white text-slate-900 font-black shadow-xs"
-                                  : "bg-[#00E599] text-slate-950 font-black"
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1.5 ${rosterFilter === "starters"
+                            ? isAway
+                              ? "bg-rose-500 text-white font-black"
                               : isModernSleek
-                                ? "text-slate-600 hover:text-slate-900"
-                                : "text-slate-400 hover:text-white"
-                          }`}
+                                ? "bg-white text-slate-900 font-black shadow-xs"
+                                : "bg-[#00E599] text-slate-950 font-black"
+                            : isModernSleek
+                              ? "text-slate-600 hover:text-slate-900"
+                              : "text-slate-400 hover:text-white"
+                            }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${rosterFilter === "starters" ? (isModernSleek ? "bg-emerald-600" : "bg-slate-950") : "bg-emerald-500"}`} />
                           <span>Titulaires</span>
@@ -10882,17 +10635,16 @@ export default function TacticsBoard({
                         </button>
                         <button
                           onClick={() => setRosterFilter("subs")}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                            rosterFilter === "subs"
-                              ? isAway
-                                ? "bg-rose-500 text-white font-black"
-                                : isModernSleek
-                                  ? "bg-white text-slate-900 font-black shadow-xs"
-                                  : "bg-[#00E599] text-slate-950 font-black"
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1.5 ${rosterFilter === "subs"
+                            ? isAway
+                              ? "bg-rose-500 text-white font-black"
                               : isModernSleek
-                                ? "text-slate-600 hover:text-slate-900"
-                                : "text-slate-400 hover:text-white"
-                          }`}
+                                ? "bg-white text-slate-900 font-black shadow-xs"
+                                : "bg-[#00E599] text-slate-950 font-black"
+                            : isModernSleek
+                              ? "text-slate-600 hover:text-slate-900"
+                              : "text-slate-400 hover:text-white"
+                            }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${rosterFilter === "subs" ? (isModernSleek ? "bg-amber-600" : "bg-slate-950") : "bg-amber-500"}`} />
                           <span>Banc</span>
@@ -10904,29 +10656,26 @@ export default function TacticsBoard({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleOpenInterTeamSwap(undefined, undefined, rolesTargetTeam)}
-                          className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 border shadow-xs ${
-                            isModernSleek
-                              ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-800"
-                              : "bg-gradient-to-r from-cyan-600/20 via-blue-600/20 to-cyan-600/20 hover:from-cyan-600/30 hover:to-blue-600/30 border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white"
-                          }`}
+                          className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 border shadow-xs ${isModernSleek
+                            ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-800"
+                            : "bg-gradient-to-r from-cyan-600/20 via-blue-600/20 to-cyan-600/20 hover:from-cyan-600/30 hover:to-blue-600/30 border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white"
+                            }`}
                           title="Échanger avec une autre équipe du club"
                         >
                           <ArrowLeftRight className={`w-3.5 h-3.5 ${isModernSleek ? "text-cyan-700" : "text-cyan-400"}`} />
                           <span>Échanger</span>
-                          <span className={`text-[9px] px-1 rounded font-black border ${
-                            isModernSleek ? "bg-cyan-100 border-cyan-300 text-cyan-900" : "bg-cyan-500/25 border-cyan-500/40 text-cyan-200"
-                          }`}>
+                          <span className={`text-[9px] px-1 rounded font-black border ${isModernSleek ? "bg-cyan-100 border-cyan-300 text-cyan-900" : "bg-cyan-500/25 border-cyan-500/40 text-cyan-200"
+                            }`}>
                             {teams.length}
                           </span>
                         </button>
 
                         <button
                           onClick={() => handleAutoRenumberSquad(rolesTargetTeam)}
-                          className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition cursor-pointer flex items-center gap-1 border ${
-                            isModernSleek
-                              ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
-                              : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] hover:border-[#00E599]/40 text-slate-300 hover:text-white"
-                          }`}
+                          className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition cursor-pointer flex items-center gap-1 border ${isModernSleek
+                            ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
+                            : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] hover:border-[#00E599]/40 text-slate-300 hover:text-white"
+                            }`}
                           title="Renuméroter automatiquement de 1 à N sans doublon"
                         >
                           <Zap className="w-3 h-3 text-amber-500" />
@@ -10935,15 +10684,14 @@ export default function TacticsBoard({
 
                         <button
                           onClick={() => handleAddNewSubstitute(rolesTargetTeam)}
-                          className={`px-2.5 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow-xs ${
-                            isAway
-                              ? isModernSleek
-                                ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800"
-                                : "bg-gradient-to-r from-rose-500/20 to-red-600/20 hover:from-rose-500/30 hover:to-red-600/30 border-rose-500/40 text-rose-300"
-                              : isModernSleek
-                                ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
-                                : "bg-gradient-to-r from-[#00E599]/20 to-emerald-600/20 hover:from-[#00E599]/30 hover:to-emerald-600/30 border-[#00E599]/40 text-[#00E599]"
-                          }`}
+                          className={`px-2.5 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow-xs ${isAway
+                            ? isModernSleek
+                              ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800"
+                              : "bg-gradient-to-r from-rose-500/20 to-red-600/20 hover:from-rose-500/30 hover:to-red-600/30 border-rose-500/40 text-rose-300"
+                            : isModernSleek
+                              ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
+                              : "bg-gradient-to-r from-[#00E599]/20 to-emerald-600/20 hover:from-[#00E599]/30 hover:to-emerald-600/30 border-[#00E599]/40 text-[#00E599]"
+                            }`}
                           title="Ajouter un joueur à l'effectif"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -10953,9 +10701,8 @@ export default function TacticsBoard({
                     </div>
 
                     {/* Interactive Position Filter Bar */}
-                    <div className={`flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl border text-[10px] ${
-                      isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14]/80 border-[#1f293d]/80"
-                    }`}>
+                    <div className={`flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl border text-[10px] ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14]/80 border-[#1f293d]/80"
+                      }`}>
                       <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                         <span className={`font-extrabold flex items-center gap-1 shrink-0 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
                           <Filter className="w-3 h-3 text-amber-500" />
@@ -10964,24 +10711,22 @@ export default function TacticsBoard({
                         <div className="flex flex-wrap items-center gap-1">
                           <button
                             onClick={() => setRosterPositionFilter("ALL")}
-                            className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 border ${
-                              rosterPositionFilter === "ALL"
-                                ? isAway
-                                  ? "bg-rose-500 text-white border-rose-400 shadow-md"
-                                  : isModernSleek
-                                    ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                                    : "bg-[#00E599] text-slate-950 border-[#00E599] shadow-md shadow-[#00e599]/20"
+                            className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 border ${rosterPositionFilter === "ALL"
+                              ? isAway
+                                ? "bg-rose-500 text-white border-rose-400 shadow-md"
                                 : isModernSleek
-                                  ? "bg-white text-slate-700 border-slate-200 hover:border-emerald-500 hover:text-slate-900 shadow-xs"
-                                  : "bg-[#121926] text-slate-300 border-[#1f293d] hover:border-slate-500 hover:text-white"
-                            }`}
+                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                                  : "bg-[#00E599] text-slate-950 border-[#00E599] shadow-md shadow-[#00e599]/20"
+                              : isModernSleek
+                                ? "bg-white text-slate-700 border-slate-200 hover:border-emerald-500 hover:text-slate-900 shadow-xs"
+                                : "bg-[#121926] text-slate-300 border-[#1f293d] hover:border-slate-500 hover:text-white"
+                              }`}
                           >
                             <span>TOUS</span>
-                            <span className={`text-[8.5px] px-1.5 rounded-full font-bold ${
-                              rosterPositionFilter === "ALL"
-                                ? "bg-black/30 text-white"
-                                : isModernSleek ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-400"
-                            }`}>
+                            <span className={`text-[8.5px] px-1.5 rounded-full font-bold ${rosterPositionFilter === "ALL"
+                              ? "bg-black/30 text-white"
+                              : isModernSleek ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-400"
+                              }`}>
                               {starters.length + activeSubs.length}
                             </span>
                           </button>
@@ -11001,33 +10746,31 @@ export default function TacticsBoard({
                               <button
                                 key={pos}
                                 onClick={() => setRosterPositionFilter(isSelected ? "ALL" : pos)}
-                                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 border ${
-                                  isSelected
-                                    ? isAway
-                                      ? "bg-rose-500 text-white border-rose-400 shadow-md ring-2 ring-rose-400/40"
-                                      : isModernSleek
-                                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/30"
-                                        : "bg-[#00E599] text-slate-950 border-[#00E599] shadow-md ring-2 ring-[#00e599]/40 shadow-[#00e599]/30"
-                                    : countInRoster > 0
-                                      ? isModernSleek
-                                        ? "bg-white text-slate-700 border-slate-200 hover:border-emerald-500/50 hover:text-slate-900 shadow-xs"
-                                        : "bg-[#121926] text-slate-200 border-[#1f293d] hover:border-[#00E599]/50 hover:text-white"
-                                      : isModernSleek
-                                        ? "bg-slate-100/60 text-slate-400 border-slate-200/60 hover:text-slate-600"
-                                        : "bg-[#0e1420]/60 text-slate-500 border-[#1f293d]/50 hover:text-slate-300"
-                                }`}
+                                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 border ${isSelected
+                                  ? isAway
+                                    ? "bg-rose-500 text-white border-rose-400 shadow-md ring-2 ring-rose-400/40"
+                                    : isModernSleek
+                                      ? "bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/30"
+                                      : "bg-[#00E599] text-slate-950 border-[#00E599] shadow-md ring-2 ring-[#00e599]/40 shadow-[#00e599]/30"
+                                  : countInRoster > 0
+                                    ? isModernSleek
+                                      ? "bg-white text-slate-700 border-slate-200 hover:border-emerald-500/50 hover:text-slate-900 shadow-xs"
+                                      : "bg-[#121926] text-slate-200 border-[#1f293d] hover:border-[#00E599]/50 hover:text-white"
+                                    : isModernSleek
+                                      ? "bg-slate-100/60 text-slate-400 border-slate-200/60 hover:text-slate-600"
+                                      : "bg-[#0e1420]/60 text-slate-500 border-[#1f293d]/50 hover:text-slate-300"
+                                  }`}
                                 title={`Filtrer les joueurs au poste ${pos} (${countInRoster} trouvé${countInRoster > 1 ? "s" : ""})`}
                               >
                                 <span>{pos}</span>
                                 {countInRoster > 0 && (
                                   <span
-                                    className={`text-[8px] px-1 rounded-full font-bold ${
-                                      isSelected
-                                        ? "bg-black/30 text-white"
-                                        : isModernSleek
-                                          ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                                          : "bg-slate-800 text-[#00E599]"
-                                    }`}
+                                    className={`text-[8px] px-1 rounded-full font-bold ${isSelected
+                                      ? "bg-black/30 text-white"
+                                      : isModernSleek
+                                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                        : "bg-slate-800 text-[#00E599]"
+                                      }`}
                                   >
                                     {countInRoster}
                                   </span>
@@ -11041,17 +10784,15 @@ export default function TacticsBoard({
                       {rosterPositionFilter !== "ALL" && (
                         <button
                           onClick={() => setRosterPositionFilter("ALL")}
-                          className={`text-xs font-black flex items-center gap-1 cursor-pointer px-2.5 py-1 rounded-lg transition shadow-xs shrink-0 border ${
-                            isModernSleek
-                              ? "bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
-                              : "bg-amber-950/60 border-amber-700/60 text-amber-300 hover:text-amber-200"
-                          }`}
+                          className={`text-xs font-black flex items-center gap-1 cursor-pointer px-2.5 py-1 rounded-lg transition shadow-xs shrink-0 border ${isModernSleek
+                            ? "bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
+                            : "bg-amber-950/60 border-amber-700/60 text-amber-300 hover:text-amber-200"
+                            }`}
                           title="Effacer le filtre de poste actuel"
                         >
                           <span>Filtre : {rosterPositionFilter}</span>
-                          <span className={`rounded-full w-4 h-4 flex items-center justify-center text-[10px] ${
-                            isModernSleek ? "bg-amber-200 text-amber-900" : "bg-amber-800/80"
-                          }`}>✕</span>
+                          <span className={`rounded-full w-4 h-4 flex items-center justify-center text-[10px] ${isModernSleek ? "bg-amber-200 text-amber-900" : "bg-amber-800/80"
+                            }`}>✕</span>
                         </button>
                       )}
                     </div>
@@ -11059,37 +10800,33 @@ export default function TacticsBoard({
                     {/* 1. SECTION TITULAIRES */}
                     {(rosterFilter === "all" || rosterFilter === "starters") && (
                       <div className="space-y-2.5">
-                        <div className={`flex items-center justify-between px-3 py-1.5 rounded-xl border ${
-                          isAway
-                            ? isModernSleek
-                              ? "bg-rose-50 border-rose-200"
-                              : "bg-rose-950/60 border-rose-500/30"
-                            : isModernSleek
-                              ? "bg-emerald-50/80 border-emerald-200"
-                              : "bg-[#102420]/60 border-[#00e599]/30"
-                        }`}>
-                          <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                            isAway 
-                              ? isModernSleek ? "text-rose-800" : "text-rose-300"
-                              : isModernSleek ? "text-emerald-800" : "text-[#00E599]"
+                        <div className={`flex items-center justify-between px-3 py-1.5 rounded-xl border ${isAway
+                          ? isModernSleek
+                            ? "bg-rose-50 border-rose-200"
+                            : "bg-rose-950/60 border-rose-500/30"
+                          : isModernSleek
+                            ? "bg-emerald-50/80 border-emerald-200"
+                            : "bg-[#102420]/60 border-[#00e599]/30"
                           }`}>
+                          <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isAway
+                            ? isModernSleek ? "text-rose-800" : "text-rose-300"
+                            : isModernSleek ? "text-emerald-800" : "text-[#00E599]"
+                            }`}>
                             <span className={`w-2 h-2 rounded-full animate-pulse ${isAway ? "bg-rose-500" : isModernSleek ? "bg-emerald-500" : "bg-[#00E599]"}`} />
                             <span>Titulaires ({filteredStarters.length})</span>
                           </span>
-                          <span className={`flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-lg border ${
-                            isModernSleek 
-                              ? "bg-white border-emerald-200 text-emerald-800 shadow-xs" 
-                              : "text-slate-400 bg-[#121926] border-[#1f293d]"
-                          }`}>
+                          <span className={`flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-lg border ${isModernSleek
+                            ? "bg-white border-emerald-200 text-emerald-800 shadow-xs"
+                            : "text-slate-400 bg-[#121926] border-[#1f293d]"
+                            }`}>
                             <RefreshCw className={`w-2.5 h-2.5 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
                             <span>Direct terrain</span>
                           </span>
                         </div>
 
                         {filteredStarters.length === 0 ? (
-                          <div className={`p-4 text-center rounded-2xl border text-xs ${
-                            isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#090d14] border-[#1f293d] text-slate-400"
-                          }`}>
+                          <div className={`p-4 text-center rounded-2xl border text-xs ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#090d14] border-[#1f293d] text-slate-400"
+                            }`}>
                             Aucun titulaire ne correspond à votre recherche.
                           </div>
                         ) : (
@@ -11099,24 +10836,22 @@ export default function TacticsBoard({
                               return (
                                 <div
                                   key={player.id}
-                                  className={`p-3 rounded-2xl border-y border-r border-l-[4px] transition-all duration-150 space-y-2.5 shadow-xs ${
-                                    isAway
-                                      ? isModernSleek
-                                        ? "bg-slate-50/80 hover:bg-white border-slate-200 border-l-rose-500 hover:border-slate-300 hover:shadow-md"
-                                        : "bg-gradient-to-br from-[#1e0c18] via-[#120f1a] to-[#090d14] border-rose-500/30 border-l-rose-500 hover:border-rose-500/60 hover:shadow-md hover:shadow-rose-500/10"
-                                      : isModernSleek
-                                        ? "bg-slate-50/80 hover:bg-white border-slate-200 border-l-emerald-500 hover:border-slate-300 hover:shadow-md"
-                                        : "bg-gradient-to-br from-[#082018] via-[#09141b] to-[#090d14] border-emerald-500/30 border-l-[#00E599] hover:border-[#00E599]/60 hover:shadow-md hover:shadow-[#00E599]/10"
-                                  }`}
+                                  className={`p-3 rounded-2xl border-y border-r border-l-[4px] transition-all duration-150 space-y-2.5 shadow-xs ${isAway
+                                    ? isModernSleek
+                                      ? "bg-slate-50/80 hover:bg-white border-slate-200 border-l-rose-500 hover:border-slate-300 hover:shadow-md"
+                                      : "bg-gradient-to-br from-[#1e0c18] via-[#120f1a] to-[#090d14] border-rose-500/30 border-l-rose-500 hover:border-rose-500/60 hover:shadow-md hover:shadow-rose-500/10"
+                                    : isModernSleek
+                                      ? "bg-slate-50/80 hover:bg-white border-slate-200 border-l-emerald-500 hover:border-slate-300 hover:shadow-md"
+                                      : "bg-gradient-to-br from-[#082018] via-[#09141b] to-[#090d14] border-emerald-500/30 border-l-[#00E599] hover:border-[#00E599]/60 hover:shadow-md hover:shadow-[#00E599]/10"
+                                    }`}
                                 >
                                   {/* Top Row: Photo Avatar + Number + Name + Starter Swap */}
                                   <div className="flex items-center gap-2">
                                     {/* Player Photo Avatar with Upload / Delete */}
-                                    <div className={`relative group w-10 h-10 rounded-xl border flex items-center justify-center overflow-hidden shrink-0 shadow-inner ${
-                                      isAway
-                                        ? isModernSleek ? "bg-white border-rose-200" : "border-rose-500/40 bg-[#121926]"
-                                        : isModernSleek ? "bg-white border-emerald-200" : "border-emerald-500/40 bg-[#121926]"
-                                    }`}>
+                                    <div className={`relative group w-10 h-10 rounded-xl border flex items-center justify-center overflow-hidden shrink-0 shadow-inner ${isAway
+                                      ? isModernSleek ? "bg-white border-rose-200" : "border-rose-500/40 bg-[#121926]"
+                                      : isModernSleek ? "bg-white border-emerald-200" : "border-emerald-500/40 bg-[#121926]"
+                                      }`}>
                                       {player.photo ? (
                                         <>
                                           <img
@@ -11133,21 +10868,19 @@ export default function TacticsBoard({
                                           </button>
                                         </>
                                       ) : (
-                                        <div className={`w-full h-full flex flex-col items-center justify-center transition ${
-                                          isModernSleek
-                                            ? isAway ? "text-slate-400 group-hover:text-rose-600" : "text-slate-400 group-hover:text-emerald-600"
-                                            : isAway ? "text-slate-400 group-hover:text-rose-300" : "text-slate-400 group-hover:text-[#00E599]"
-                                        }`}>
+                                        <div className={`w-full h-full flex flex-col items-center justify-center transition ${isModernSleek
+                                          ? isAway ? "text-slate-400 group-hover:text-rose-600" : "text-slate-400 group-hover:text-emerald-600"
+                                          : isAway ? "text-slate-400 group-hover:text-rose-300" : "text-slate-400 group-hover:text-[#00E599]"
+                                          }`}>
                                           <User className="w-4 h-4 opacity-70" />
                                         </div>
                                       )}
 
                                       {/* Player number pill badge overlay on avatar */}
-                                      <span className={`absolute bottom-0 left-0 text-[8.5px] font-black px-1 rounded-tr shadow-xs leading-tight border-t border-r backdrop-blur-sm z-[5] ${
-                                        isAway 
-                                          ? isModernSleek ? "bg-white/95 text-rose-800 border-rose-200" : "bg-rose-950/90 text-rose-300 border-rose-500/40" 
-                                          : isModernSleek ? "bg-white/95 text-emerald-800 border-emerald-200" : "bg-slate-950/90 text-[#00E599] border-[#00E599]/40"
-                                      }`}>
+                                      <span className={`absolute bottom-0 left-0 text-[8.5px] font-black px-1 rounded-tr shadow-xs leading-tight border-t border-r backdrop-blur-sm z-[5] ${isAway
+                                        ? isModernSleek ? "bg-white/95 text-rose-800 border-rose-200" : "bg-rose-950/90 text-rose-300 border-rose-500/40"
+                                        : isModernSleek ? "bg-white/95 text-emerald-800 border-emerald-200" : "bg-slate-950/90 text-[#00E599] border-[#00E599]/40"
+                                        }`}>
                                         #{player.number ?? "?"}
                                       </span>
 
@@ -11181,15 +10914,14 @@ export default function TacticsBoard({
                                             Number(e.target.value)
                                           )
                                         }
-                                        className={`w-[66px] h-9 appearance-none font-black text-xs sm:text-[13px] rounded-xl focus:outline-none transition cursor-pointer pl-2 pr-5 text-center shadow-xs border-2 ${
-                                          isAway
-                                            ? isModernSleek
-                                              ? "bg-rose-50 border-rose-300 text-rose-800 hover:border-rose-400 focus:border-rose-500"
-                                              : "bg-rose-500/15 border-rose-500/50 text-rose-300 hover:border-rose-400 focus:border-rose-400 focus:bg-rose-500/25"
-                                            : isModernSleek
-                                              ? "bg-emerald-50 border-emerald-300 text-emerald-800 hover:border-emerald-400 focus:border-emerald-500"
-                                              : "bg-[#00E599]/15 border-[#00E599]/50 text-[#00E599] hover:border-[#00E599] focus:border-[#00E599] focus:bg-[#00E599]/25"
-                                        }`}
+                                        className={`w-[66px] h-9 appearance-none font-black text-xs sm:text-[13px] rounded-xl focus:outline-none transition cursor-pointer pl-2 pr-5 text-center shadow-xs border-2 ${isAway
+                                          ? isModernSleek
+                                            ? "bg-rose-50 border-rose-300 text-rose-800 hover:border-rose-400 focus:border-rose-500"
+                                            : "bg-rose-500/15 border-rose-500/50 text-rose-300 hover:border-rose-400 focus:border-rose-400 focus:bg-rose-500/25"
+                                          : isModernSleek
+                                            ? "bg-emerald-50 border-emerald-300 text-emerald-800 hover:border-emerald-400 focus:border-emerald-500"
+                                            : "bg-[#00E599]/15 border-[#00E599]/50 text-[#00E599] hover:border-[#00E599] focus:border-[#00E599] focus:bg-[#00E599]/25"
+                                          }`}
                                         title="Changer le numéro de maillot"
                                       >
                                         {getAvailableNumbersForPlayer(player.id, player.number, rolesTargetTeam).map((n) => (
@@ -11198,9 +10930,8 @@ export default function TacticsBoard({
                                           </option>
                                         ))}
                                       </select>
-                                      <ChevronDown className={`w-3.5 h-3.5 absolute right-1.5 pointer-events-none opacity-80 ${
-                                        isAway ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-emerald-700" : "text-[#00E599]")
-                                      }`} />
+                                      <ChevronDown className={`w-3.5 h-3.5 absolute right-1.5 pointer-events-none opacity-80 ${isAway ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-emerald-700" : "text-[#00E599]")
+                                        }`} />
                                     </div>
 
                                     {/* Name Input */}
@@ -11212,11 +10943,10 @@ export default function TacticsBoard({
                                           handleUpdatePitchPlayer(player.id, "name", e.target.value)
                                         }
                                         placeholder="Nom du joueur"
-                                        className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none transition truncate border ${
-                                          isModernSleek
-                                            ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                                            : `bg-[#121926] border-[#1f293d] hover:border-[#354563] text-white ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                                        }`}
+                                        className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none transition truncate border ${isModernSleek
+                                          ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
+                                          : `bg-[#121926] border-[#1f293d] hover:border-[#354563] text-white ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
+                                          }`}
                                       />
                                     </div>
 
@@ -11226,11 +10956,10 @@ export default function TacticsBoard({
                                       <button
                                         type="button"
                                         onClick={() => handleOpenInterTeamSwap(player, true, rolesTargetTeam)}
-                                        className={`p-1.5 rounded-xl border transition cursor-pointer flex items-center justify-center ${
-                                          isModernSleek
-                                            ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-700"
-                                            : "bg-cyan-950/60 hover:bg-cyan-900/90 border-cyan-500/40 hover:border-cyan-400 text-cyan-300"
-                                        }`}
+                                        className={`p-1.5 rounded-xl border transition cursor-pointer flex items-center justify-center ${isModernSleek
+                                          ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-700"
+                                          : "bg-cyan-950/60 hover:bg-cyan-900/90 border-cyan-500/40 hover:border-cyan-400 text-cyan-300"
+                                          }`}
                                         title="Échanger avec une autre équipe"
                                       >
                                         <ArrowLeftRight className={`w-3.5 h-3.5 ${isModernSleek ? "text-cyan-700" : "text-cyan-400"}`} />
@@ -11240,11 +10969,10 @@ export default function TacticsBoard({
                                       <button
                                         type="button"
                                         onClick={() => handleToggleStarterSubstitute(player.id, "starter", rolesTargetTeam)}
-                                        className={`px-2 py-1.5 rounded-xl text-[10px] font-bold border transition cursor-pointer flex items-center gap-1 ${
-                                          isModernSleek
-                                            ? "bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800"
-                                            : "bg-amber-950/60 hover:bg-amber-900/90 border-amber-500/40 hover:border-amber-400 text-amber-300"
-                                        }`}
+                                        className={`px-2 py-1.5 rounded-xl text-[10px] font-bold border transition cursor-pointer flex items-center gap-1 ${isModernSleek
+                                          ? "bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800"
+                                          : "bg-amber-950/60 hover:bg-amber-900/90 border-amber-500/40 hover:border-amber-400 text-amber-300"
+                                          }`}
                                         title="Envoyer sur le banc (remplaçant)"
                                       >
                                         <UserMinus className={`w-3 h-3 ${isModernSleek ? "text-amber-600" : "text-amber-400"}`} />
@@ -11254,14 +10982,12 @@ export default function TacticsBoard({
                                   </div>
 
                                   {/* Middle Row: Availability Status & Badges */}
-                                  <div className={`flex items-center justify-between gap-2 pt-1 border-t text-[10px] ${
-                                    isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"
-                                  }`}>
+                                  <div className={`flex items-center justify-between gap-2 pt-1 border-t text-[10px] ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"
+                                    }`}>
                                     {/* Availability Status Selector */}
                                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                      <Activity className={`w-3.5 h-3.5 shrink-0 ${
-                                        isAway ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-emerald-700" : "text-[#00E599]")
-                                      }`} />
+                                      <Activity className={`w-3.5 h-3.5 shrink-0 ${isAway ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-emerald-700" : "text-[#00E599]")
+                                        }`} />
                                       <select
                                         value={player.status || "normal"}
                                         onChange={(e) =>
@@ -11271,17 +10997,16 @@ export default function TacticsBoard({
                                             e.target.value
                                           )
                                         }
-                                        className={`text-[9.5px] rounded-lg px-2 py-1 font-bold border focus:outline-none cursor-pointer flex-1 truncate ${
-                                          player.status === "excellent"
-                                            ? isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-emerald-950/70 border-emerald-500/50 text-emerald-300"
-                                            : player.status === "tired"
+                                        className={`text-[9.5px] rounded-lg px-2 py-1 font-bold border focus:outline-none cursor-pointer flex-1 truncate ${player.status === "excellent"
+                                          ? isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-emerald-950/70 border-emerald-500/50 text-emerald-300"
+                                          : player.status === "tired"
                                             ? isModernSleek ? "bg-amber-50 border-amber-300 text-amber-800" : "bg-amber-950/70 border-amber-500/50 text-amber-300"
                                             : player.status === "injured"
-                                            ? isModernSleek ? "bg-rose-50 border-rose-300 text-rose-800" : "bg-rose-950/70 border-rose-500/50 text-rose-300"
-                                            : player.status === "suspended"
-                                            ? isModernSleek ? "bg-red-50 border-red-300 text-red-800 font-black" : "bg-red-950/80 border-red-600/60 text-red-300 font-black"
-                                            : isModernSleek ? "bg-white border-slate-300 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
-                                        }`}
+                                              ? isModernSleek ? "bg-rose-50 border-rose-300 text-rose-800" : "bg-rose-950/70 border-rose-500/50 text-rose-300"
+                                              : player.status === "suspended"
+                                                ? isModernSleek ? "bg-red-50 border-red-300 text-red-800 font-black" : "bg-red-950/80 border-red-600/60 text-red-300 font-black"
+                                                : isModernSleek ? "bg-white border-slate-300 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
+                                          }`}
                                       >
                                         <option value="normal" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>🟢 Disponible</option>
                                         <option value="excellent" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>⚡ En forme</option>
@@ -11293,21 +11018,19 @@ export default function TacticsBoard({
 
                                     {/* Badges: Titulaire tag + Captain tag */}
                                     <div className="flex items-center gap-1.5 shrink-0">
-                                      <span className={`text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs border ${
-                                        isAway
-                                          ? isModernSleek ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-rose-500/15 text-rose-300 border-rose-500/30"
-                                          : isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-emerald-500/15 text-[#00E599] border-emerald-500/30"
-                                      }`}>
+                                      <span className={`text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs border ${isAway
+                                        ? isModernSleek ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                                        : isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-emerald-500/15 text-[#00E599] border-emerald-500/30"
+                                        }`}>
                                         <span className={`w-1.5 h-1.5 rounded-full ${isAway ? "bg-rose-500 animate-pulse" : isModernSleek ? "bg-emerald-600 animate-pulse" : "bg-[#00E599] animate-pulse"}`} />
                                         Titulaire
                                       </span>
 
                                       {isCaptain && (
-                                        <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase shrink-0 flex items-center gap-1 border ${
-                                          isModernSleek
-                                            ? "bg-amber-100 text-amber-800 border-amber-300"
-                                            : "bg-amber-400/20 text-amber-300 border-amber-400/40"
-                                        }`}>
+                                        <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase shrink-0 flex items-center gap-1 border ${isModernSleek
+                                          ? "bg-amber-100 text-amber-800 border-amber-300"
+                                          : "bg-amber-400/20 text-amber-300 border-amber-400/40"
+                                          }`}>
                                           👑 Capitaine
                                         </span>
                                       )}
@@ -11315,9 +11038,8 @@ export default function TacticsBoard({
                                   </div>
 
                                   {/* Position / Role Field + Quick Position Badges */}
-                                  <div className={`flex items-center gap-1.5 pt-1 border-t ${
-                                    isModernSleek ? "border-slate-200" : "border-[#1f293d]/50"
-                                  }`}>
+                                  <div className={`flex items-center gap-1.5 pt-1 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/50"
+                                    }`}>
                                     <Shield className={`w-3.5 h-3.5 shrink-0 ${isModernSleek ? "text-amber-500" : "text-amber-400"}`} />
                                     <input
                                       type="text"
@@ -11326,13 +11048,12 @@ export default function TacticsBoard({
                                         handleUpdatePitchPlayer(player.id, "role", e.target.value)
                                       }
                                       placeholder="Poste"
-                                      className={`w-16 rounded-lg px-1.5 py-0.5 text-[11px] font-black text-center focus:outline-none uppercase border ${
-                                        isModernSleek
-                                          ? isAway
-                                            ? "bg-white border-slate-300 text-rose-800 focus:border-rose-500"
-                                            : "bg-white border-slate-300 text-emerald-800 focus:border-emerald-500"
-                                          : `bg-[#121926] border-[#1f293d] hover:border-[#354563] ${isAway ? "text-rose-300 focus:border-rose-500" : "text-[#00E599] focus:border-[#00E599]"}`
-                                      }`}
+                                      className={`w-16 rounded-lg px-1.5 py-0.5 text-[11px] font-black text-center focus:outline-none uppercase border ${isModernSleek
+                                        ? isAway
+                                          ? "bg-white border-slate-300 text-rose-800 focus:border-rose-500"
+                                          : "bg-white border-slate-300 text-emerald-800 focus:border-emerald-500"
+                                        : `bg-[#121926] border-[#1f293d] hover:border-[#354563] ${isAway ? "text-rose-300 focus:border-rose-500" : "text-[#00E599] focus:border-[#00E599]"}`
+                                        }`}
                                     />
                                     {/* Quick clickable position suggestions */}
                                     <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 flex-1">
@@ -11341,17 +11062,16 @@ export default function TacticsBoard({
                                           key={pos}
                                           type="button"
                                           onClick={() => handleUpdatePitchPlayer(player.id, "role", pos)}
-                                          className={`px-1.5 py-0.5 rounded-md text-[8.5px] font-bold cursor-pointer transition border ${
-                                            player.role === pos
-                                              ? isAway 
-                                                ? "bg-rose-500 text-white font-black border-rose-500" 
-                                                : isModernSleek 
-                                                  ? "bg-emerald-600 text-white font-black border-emerald-600 shadow-xs" 
-                                                  : "bg-[#00E599] text-slate-950 font-black border-[#00E599]"
+                                          className={`px-1.5 py-0.5 rounded-md text-[8.5px] font-bold cursor-pointer transition border ${player.role === pos
+                                            ? isAway
+                                              ? "bg-rose-500 text-white font-black border-rose-500"
                                               : isModernSleek
-                                                ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200"
-                                                : "bg-[#162032] text-slate-400 hover:text-white hover:bg-[#1f2d47] border-transparent"
-                                          }`}
+                                                ? "bg-emerald-600 text-white font-black border-emerald-600 shadow-xs"
+                                                : "bg-[#00E599] text-slate-950 font-black border-[#00E599]"
+                                            : isModernSleek
+                                              ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200"
+                                              : "bg-[#162032] text-slate-400 hover:text-white hover:bg-[#1f2d47] border-transparent"
+                                            }`}
                                         >
                                           {pos}
                                         </button>
@@ -11369,30 +11089,27 @@ export default function TacticsBoard({
                     {/* 2. SECTION REMPLAÇANTS */}
                     {(rosterFilter === "all" || rosterFilter === "subs") && (
                       <div className="space-y-2.5 pt-2">
-                        <div className={`flex items-center justify-between px-3 py-1.5 rounded-xl border ${
-                          isAway
-                            ? isModernSleek
-                              ? "bg-rose-50 border-rose-200"
-                              : "bg-rose-950/40 border-rose-500/30"
-                            : isModernSleek
-                              ? "bg-amber-50/80 border-amber-200"
-                              : "bg-[#151f30] border-[#1f293d]"
-                        }`}>
-                          <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                            isAway 
-                              ? isModernSleek ? "text-rose-800" : "text-rose-300"
-                              : isModernSleek ? "text-amber-800" : "text-amber-300"
+                        <div className={`flex items-center justify-between px-3 py-1.5 rounded-xl border ${isAway
+                          ? isModernSleek
+                            ? "bg-rose-50 border-rose-200"
+                            : "bg-rose-950/40 border-rose-500/30"
+                          : isModernSleek
+                            ? "bg-amber-50/80 border-amber-200"
+                            : "bg-[#151f30] border-[#1f293d]"
                           }`}>
+                          <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isAway
+                            ? isModernSleek ? "text-rose-800" : "text-rose-300"
+                            : isModernSleek ? "text-amber-800" : "text-amber-300"
+                            }`}>
                             <span className={`w-2 h-2 rounded-full ${isAway ? "bg-rose-500" : isModernSleek ? "bg-amber-500" : "bg-amber-400"}`} />
                             <span>Remplaçants ({filteredSubs.length})</span>
                           </span>
                           <button
                             onClick={() => handleAddNewSubstitute(rolesTargetTeam)}
-                            className={`text-[10px] hover:underline font-bold flex items-center gap-1 cursor-pointer ${
-                              isAway 
-                                ? isModernSleek ? "text-rose-800" : "text-rose-300"
-                                : isModernSleek ? "text-amber-800" : "text-[#00E599]"
-                            }`}
+                            className={`text-[10px] hover:underline font-bold flex items-center gap-1 cursor-pointer ${isAway
+                              ? isModernSleek ? "text-rose-800" : "text-rose-300"
+                              : isModernSleek ? "text-amber-800" : "text-[#00E599]"
+                              }`}
                           >
                             <Plus className="w-3 h-3" />
                             <span>Ajouter</span>
@@ -11400,9 +11117,8 @@ export default function TacticsBoard({
                         </div>
 
                         {filteredSubs.length === 0 ? (
-                          <div className={`p-4 text-center rounded-2xl border text-xs ${
-                            isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#090d14] border-[#1f293d] text-slate-400"
-                          }`}>
+                          <div className={`p-4 text-center rounded-2xl border text-xs ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#090d14] border-[#1f293d] text-slate-400"
+                            }`}>
                             Aucun remplaçant ne correspond à votre recherche.
                           </div>
                         ) : (
@@ -11410,18 +11126,16 @@ export default function TacticsBoard({
                             {filteredSubs.map((sub) => (
                               <div
                                 key={sub.id}
-                                className={`p-3 rounded-2xl border-y border-r border-l-[4px] transition-all duration-150 space-y-2.5 shadow-xs ${
-                                  isModernSleek
-                                    ? "bg-slate-50/80 hover:bg-white border-slate-200 border-l-amber-500 hover:border-slate-300 hover:shadow-md"
-                                    : "bg-gradient-to-br from-[#211608] via-[#14121a] to-[#090d14] border-amber-500/30 border-l-amber-500 hover:border-amber-400/60 hover:shadow-md hover:shadow-amber-500/10"
-                                }`}
+                                className={`p-3 rounded-2xl border-y border-r border-l-[4px] transition-all duration-150 space-y-2.5 shadow-xs ${isModernSleek
+                                  ? "bg-slate-50/80 hover:bg-white border-slate-200 border-l-amber-500 hover:border-slate-300 hover:shadow-md"
+                                  : "bg-gradient-to-br from-[#211608] via-[#14121a] to-[#090d14] border-amber-500/30 border-l-amber-500 hover:border-amber-400/60 hover:shadow-md hover:shadow-amber-500/10"
+                                  }`}
                               >
                                 {/* Top Row: Photo Avatar + Number + Name + Starter Promote + Delete */}
                                 <div className="flex items-center gap-2">
                                   {/* Sub Photo Avatar with Upload / Delete */}
-                                  <div className={`relative group w-10 h-10 rounded-xl border flex items-center justify-center overflow-hidden shrink-0 shadow-inner ${
-                                    isModernSleek ? "bg-white border-amber-200" : "bg-[#121926] border-amber-500/40"
-                                  }`}>
+                                  <div className={`relative group w-10 h-10 rounded-xl border flex items-center justify-center overflow-hidden shrink-0 shadow-inner ${isModernSleek ? "bg-white border-amber-200" : "bg-[#121926] border-amber-500/40"
+                                    }`}>
                                     {sub.photo ? (
                                       <>
                                         <img
@@ -11438,21 +11152,19 @@ export default function TacticsBoard({
                                         </button>
                                       </>
                                     ) : (
-                                      <div className={`w-full h-full flex flex-col items-center justify-center transition ${
-                                        isModernSleek
-                                          ? isAway ? "text-slate-400 group-hover:text-rose-600" : "text-slate-400 group-hover:text-amber-600"
-                                          : isAway ? "text-slate-400 group-hover:text-rose-300" : "text-slate-400 group-hover:text-amber-300"
-                                      }`}>
+                                      <div className={`w-full h-full flex flex-col items-center justify-center transition ${isModernSleek
+                                        ? isAway ? "text-slate-400 group-hover:text-rose-600" : "text-slate-400 group-hover:text-amber-600"
+                                        : isAway ? "text-slate-400 group-hover:text-rose-300" : "text-slate-400 group-hover:text-amber-300"
+                                        }`}>
                                         <User className="w-4 h-4 opacity-70" />
                                       </div>
                                     )}
 
                                     {/* Player number pill badge overlay on avatar */}
-                                    <span className={`absolute bottom-0 left-0 text-[8.5px] font-black px-1 rounded-tr shadow-xs leading-tight border-t border-r backdrop-blur-sm z-[5] ${
-                                      isAway 
-                                        ? isModernSleek ? "bg-white/95 text-rose-800 border-rose-200" : "bg-rose-950/90 text-rose-300 border-rose-500/40" 
-                                        : isModernSleek ? "bg-white/95 text-amber-800 border-amber-200" : "bg-slate-950/90 text-amber-300 border-amber-500/40"
-                                    }`}>
+                                    <span className={`absolute bottom-0 left-0 text-[8.5px] font-black px-1 rounded-tr shadow-xs leading-tight border-t border-r backdrop-blur-sm z-[5] ${isAway
+                                      ? isModernSleek ? "bg-white/95 text-rose-800 border-rose-200" : "bg-rose-950/90 text-rose-300 border-rose-500/40"
+                                      : isModernSleek ? "bg-white/95 text-amber-800 border-amber-200" : "bg-slate-950/90 text-amber-300 border-amber-500/40"
+                                      }`}>
                                       #{sub.number ?? "?"}
                                     </span>
 
@@ -11486,15 +11198,14 @@ export default function TacticsBoard({
                                           Number(e.target.value)
                                         )
                                       }
-                                      className={`w-[66px] h-9 appearance-none font-black text-xs sm:text-[13px] rounded-xl focus:outline-none transition cursor-pointer pl-2 pr-5 text-center shadow-xs border-2 ${
-                                        isAway
-                                          ? isModernSleek
-                                            ? "bg-rose-50 border-rose-300 text-rose-800 hover:border-rose-400 focus:border-rose-500"
-                                            : "bg-rose-500/15 border border-rose-500/50 text-rose-300 hover:border-rose-400 focus:border-rose-400 focus:bg-rose-500/25"
-                                          : isModernSleek
-                                            ? "bg-amber-50 border-amber-300 text-amber-800 hover:border-amber-400 focus:border-amber-500"
-                                            : "bg-amber-500/15 border border-amber-500/50 text-amber-300 hover:border-amber-400 focus:border-amber-400 focus:bg-amber-500/25"
-                                      }`}
+                                      className={`w-[66px] h-9 appearance-none font-black text-xs sm:text-[13px] rounded-xl focus:outline-none transition cursor-pointer pl-2 pr-5 text-center shadow-xs border-2 ${isAway
+                                        ? isModernSleek
+                                          ? "bg-rose-50 border-rose-300 text-rose-800 hover:border-rose-400 focus:border-rose-500"
+                                          : "bg-rose-500/15 border border-rose-500/50 text-rose-300 hover:border-rose-400 focus:border-rose-400 focus:bg-rose-500/25"
+                                        : isModernSleek
+                                          ? "bg-amber-50 border-amber-300 text-amber-800 hover:border-amber-400 focus:border-amber-500"
+                                          : "bg-amber-500/15 border border-amber-500/50 text-amber-300 hover:border-amber-400 focus:border-amber-400 focus:bg-amber-500/25"
+                                        }`}
                                       title="Changer le numéro de maillot"
                                     >
                                       {getAvailableNumbersForPlayer(sub.id, sub.number, rolesTargetTeam).map((n) => (
@@ -11503,9 +11214,8 @@ export default function TacticsBoard({
                                         </option>
                                       ))}
                                     </select>
-                                    <ChevronDown className={`w-3.5 h-3.5 absolute right-1.5 pointer-events-none opacity-80 ${
-                                      isAway ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-amber-600" : "text-amber-400")
-                                    }`} />
+                                    <ChevronDown className={`w-3.5 h-3.5 absolute right-1.5 pointer-events-none opacity-80 ${isAway ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-amber-600" : "text-amber-400")
+                                      }`} />
                                   </div>
 
                                   {/* Name Input */}
@@ -11517,11 +11227,10 @@ export default function TacticsBoard({
                                         handleUpdateSubstitute(sub.id, "name", e.target.value)
                                       }
                                       placeholder="Nom du remplaçant"
-                                      className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none transition truncate border ${
-                                        isModernSleek
-                                          ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400 focus:border-amber-500 shadow-xs"
-                                          : `bg-[#121926] border-[#1f293d] hover:border-[#354563] text-white ${isAway ? "focus:border-rose-400" : "focus:border-amber-400"}`
-                                      }`}
+                                      className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none transition truncate border ${isModernSleek
+                                        ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400 focus:border-amber-500 shadow-xs"
+                                        : `bg-[#121926] border-[#1f293d] hover:border-[#354563] text-white ${isAway ? "focus:border-rose-400" : "focus:border-amber-400"}`
+                                        }`}
                                     />
                                   </div>
 
@@ -11531,11 +11240,10 @@ export default function TacticsBoard({
                                     <button
                                       type="button"
                                       onClick={() => handleOpenInterTeamSwap(sub, false, rolesTargetTeam)}
-                                      className={`p-1.5 rounded-xl border transition cursor-pointer flex items-center justify-center ${
-                                        isModernSleek
-                                          ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-700"
-                                          : "bg-cyan-950/60 hover:bg-cyan-900/90 border-cyan-500/40 hover:border-cyan-400 text-cyan-300"
-                                      }`}
+                                      className={`p-1.5 rounded-xl border transition cursor-pointer flex items-center justify-center ${isModernSleek
+                                        ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-700"
+                                        : "bg-cyan-950/60 hover:bg-cyan-900/90 border-cyan-500/40 hover:border-cyan-400 text-cyan-300"
+                                        }`}
                                       title="Échanger avec une autre équipe"
                                     >
                                       <ArrowLeftRight className={`w-3.5 h-3.5 ${isModernSleek ? "text-cyan-700" : "text-cyan-400"}`} />
@@ -11545,15 +11253,14 @@ export default function TacticsBoard({
                                     <button
                                       type="button"
                                       onClick={() => handleToggleStarterSubstitute(sub.id, "substitute", rolesTargetTeam)}
-                                      className={`px-2 py-1.5 rounded-xl border text-[10px] font-bold transition cursor-pointer flex items-center gap-1 ${
-                                        isAway
-                                          ? isModernSleek
-                                            ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800"
-                                            : "bg-rose-500/20 hover:bg-rose-500/30 border-rose-500/50 text-rose-300"
-                                          : isModernSleek
-                                            ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
-                                            : "bg-[#00E599]/20 hover:bg-[#00E599]/30 border-[#00E599]/50 text-[#00E599]"
-                                      }`}
+                                      className={`px-2 py-1.5 rounded-xl border text-[10px] font-bold transition cursor-pointer flex items-center gap-1 ${isAway
+                                        ? isModernSleek
+                                          ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800"
+                                          : "bg-rose-500/20 hover:bg-rose-500/30 border-rose-500/50 text-rose-300"
+                                        : isModernSleek
+                                          ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
+                                          : "bg-[#00E599]/20 hover:bg-[#00E599]/30 border-[#00E599]/50 text-[#00E599]"
+                                        }`}
                                       title="Titulariser sur le terrain"
                                     >
                                       <UserCheck className={`w-3 h-3 ${isModernSleek ? "text-emerald-700" : ""}`} />
@@ -11563,11 +11270,10 @@ export default function TacticsBoard({
                                     {/* Delete Substitute Button */}
                                     <button
                                       onClick={() => handleDeleteSubstitute(sub.id, rolesTargetTeam)}
-                                      className={`p-1.5 rounded-xl transition cursor-pointer ${
-                                        isModernSleek
-                                          ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                                          : "text-slate-500 hover:text-rose-400 hover:bg-rose-950/40"
-                                      }`}
+                                      className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek
+                                        ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                        : "text-slate-500 hover:text-rose-400 hover:bg-rose-950/40"
+                                        }`}
                                       title="Supprimer ce joueur de l'effectif"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
@@ -11576,9 +11282,8 @@ export default function TacticsBoard({
                                 </div>
 
                                 {/* Middle Row: Availability Status Selector & Sub badge */}
-                                <div className={`flex items-center justify-between gap-2 pt-1 border-t text-[10px] ${
-                                  isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"
-                                }`}>
+                                <div className={`flex items-center justify-between gap-2 pt-1 border-t text-[10px] ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"
+                                  }`}>
                                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                     <Activity className={`w-3.5 h-3.5 shrink-0 ${isModernSleek ? "text-amber-600" : "text-amber-400"}`} />
                                     <select
@@ -11586,17 +11291,16 @@ export default function TacticsBoard({
                                       onChange={(e) =>
                                         handleUpdateSubstitute(sub.id, "status", e.target.value)
                                       }
-                                      className={`text-[9.5px] rounded-lg px-2 py-1 font-bold border focus:outline-none cursor-pointer flex-1 truncate ${
-                                        sub.status === "excellent"
-                                          ? isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-emerald-950/70 border-emerald-500/50 text-emerald-300"
-                                          : sub.status === "tired"
+                                      className={`text-[9.5px] rounded-lg px-2 py-1 font-bold border focus:outline-none cursor-pointer flex-1 truncate ${sub.status === "excellent"
+                                        ? isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-emerald-950/70 border-emerald-500/50 text-emerald-300"
+                                        : sub.status === "tired"
                                           ? isModernSleek ? "bg-amber-50 border-amber-300 text-amber-800" : "bg-amber-950/70 border-amber-500/50 text-amber-300"
                                           : sub.status === "injured"
-                                          ? isModernSleek ? "bg-rose-50 border-rose-300 text-rose-800" : "bg-rose-950/70 border-rose-500/50 text-rose-300"
-                                          : sub.status === "suspended"
-                                          ? isModernSleek ? "bg-red-50 border-red-300 text-red-800 font-black" : "bg-red-950/80 border-red-600/60 text-red-300 font-black"
-                                          : isModernSleek ? "bg-white border-slate-300 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
-                                      }`}
+                                            ? isModernSleek ? "bg-rose-50 border-rose-300 text-rose-800" : "bg-rose-950/70 border-rose-500/50 text-rose-300"
+                                            : sub.status === "suspended"
+                                              ? isModernSleek ? "bg-red-50 border-red-300 text-red-800 font-black" : "bg-red-950/80 border-red-600/60 text-red-300 font-black"
+                                              : isModernSleek ? "bg-white border-slate-300 text-slate-800" : "bg-[#121926] border-[#1f293d] text-slate-300"
+                                        }`}
                                     >
                                       <option value="normal" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>🟢 Disponible</option>
                                       <option value="excellent" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>⚡ En forme</option>
@@ -11607,20 +11311,18 @@ export default function TacticsBoard({
                                   </div>
 
                                   {/* Badge Remplaçant */}
-                                  <span className={`text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 flex items-center gap-1 border shadow-xs ${
-                                    isModernSleek
-                                      ? "bg-amber-100 text-amber-800 border-amber-300"
-                                      : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                                  }`}>
+                                  <span className={`text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 flex items-center gap-1 border shadow-xs ${isModernSleek
+                                    ? "bg-amber-100 text-amber-800 border-amber-300"
+                                    : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                                    }`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${isModernSleek ? "bg-amber-600" : "bg-amber-400"}`} />
                                     Remplaçant
                                   </span>
                                 </div>
 
                                 {/* Position / Role Field + Quick suggestions */}
-                                <div className={`flex items-center gap-1.5 pt-1 border-t ${
-                                  isModernSleek ? "border-slate-200" : "border-[#1f293d]/50"
-                                }`}>
+                                <div className={`flex items-center gap-1.5 pt-1 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/50"
+                                  }`}>
                                   <Shield className={`w-3.5 h-3.5 shrink-0 ${isModernSleek ? "text-amber-500" : "text-amber-400"}`} />
                                   <input
                                     type="text"
@@ -11629,11 +11331,10 @@ export default function TacticsBoard({
                                       handleUpdateSubstitute(sub.id, "role", e.target.value)
                                     }
                                     placeholder="Poste"
-                                    className={`w-16 rounded-lg px-1.5 py-0.5 text-[11px] font-black text-center focus:outline-none uppercase border ${
-                                      isModernSleek
-                                        ? "bg-white border-slate-300 text-amber-800 focus:border-amber-500"
-                                        : "bg-[#121926] border-[#1f293d] hover:border-[#354563] focus:border-[#00E599] text-amber-300"
-                                    }`}
+                                    className={`w-16 rounded-lg px-1.5 py-0.5 text-[11px] font-black text-center focus:outline-none uppercase border ${isModernSleek
+                                      ? "bg-white border-slate-300 text-amber-800 focus:border-amber-500"
+                                      : "bg-[#121926] border-[#1f293d] hover:border-[#354563] focus:border-[#00E599] text-amber-300"
+                                      }`}
                                   />
                                   {/* Quick clickable position suggestions */}
                                   <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 flex-1">
@@ -11642,15 +11343,14 @@ export default function TacticsBoard({
                                         key={pos}
                                         type="button"
                                         onClick={() => handleUpdateSubstitute(sub.id, "role", pos)}
-                                        className={`px-1.5 py-0.5 rounded-md text-[8.5px] font-bold cursor-pointer transition border ${
-                                          sub.role === pos
-                                            ? isModernSleek
-                                              ? "bg-amber-500 text-slate-950 font-black border-amber-500 shadow-xs"
-                                              : "bg-amber-400 text-slate-950 font-black border-amber-400"
-                                            : isModernSleek
-                                              ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200"
-                                              : "bg-[#162032] text-slate-400 hover:text-white hover:bg-[#1f2d47] border-transparent"
-                                        }`}
+                                        className={`px-1.5 py-0.5 rounded-md text-[8.5px] font-bold cursor-pointer transition border ${sub.role === pos
+                                          ? isModernSleek
+                                            ? "bg-amber-500 text-slate-950 font-black border-amber-500 shadow-xs"
+                                            : "bg-amber-400 text-slate-950 font-black border-amber-400"
+                                          : isModernSleek
+                                            ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200"
+                                            : "bg-[#162032] text-slate-400 hover:text-white hover:bg-[#1f2d47] border-transparent"
+                                          }`}
                                       >
                                         {pos}
                                       </button>
@@ -11670,18 +11370,15 @@ export default function TacticsBoard({
                 {teamRolesModalTab === "setpieces" && (
                   <div className="space-y-4">
                     {/* Auto-Assign and Reset Toolbar */}
-                    <div className={`flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl border ${
-                      isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
-                    }`}>
-                      <div className={`flex items-center gap-2 text-xs font-bold ${
-                        isModernSleek ? "text-slate-700" : "text-slate-300"
+                    <div className={`flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
                       }`}>
-                        <span>👥 Effectif éligible :</span>
-                        <span className={`px-2.5 py-1 rounded-xl border font-black text-xs ${
-                          isAway
-                            ? isModernSleek ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-[#121926] text-rose-400 border-rose-500/30"
-                            : isModernSleek ? "bg-white text-emerald-800 border-slate-200 shadow-xs" : "bg-[#121926] text-[#00E599] border-[#1f293d]"
+                      <div className={`flex items-center gap-2 text-xs font-bold ${isModernSleek ? "text-slate-700" : "text-slate-300"
                         }`}>
+                        <span>👥 Effectif éligible :</span>
+                        <span className={`px-2.5 py-1 rounded-xl border font-black text-xs ${isAway
+                          ? isModernSleek ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-[#121926] text-rose-400 border-rose-500/30"
+                          : isModernSleek ? "bg-white text-emerald-800 border-slate-200 shadow-xs" : "bg-[#121926] text-[#00E599] border-[#1f293d]"
+                          }`}>
                           {starters.length} Titulaires + {activeSubs.length} Remplaçants
                         </span>
                       </div>
@@ -11689,15 +11386,14 @@ export default function TacticsBoard({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleAutoAssignSetPieces(rolesTargetTeam)}
-                          className={`px-3.5 py-1.5 border rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 shadow-xs ${
-                            isAway
-                              ? isModernSleek
-                                ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800"
-                                : "bg-gradient-to-r from-rose-500/20 to-red-600/20 hover:from-rose-500/30 hover:to-red-600/30 border-rose-500/40 text-rose-300"
-                              : isModernSleek
-                                ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
-                                : "bg-gradient-to-r from-[#00E599]/20 to-emerald-600/20 hover:from-[#00E599]/30 hover:to-emerald-600/30 border-[#00E599]/40 text-[#00E599]"
-                          }`}
+                          className={`px-3.5 py-1.5 border rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 shadow-xs ${isAway
+                            ? isModernSleek
+                              ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800"
+                              : "bg-gradient-to-r from-rose-500/20 to-red-600/20 hover:from-rose-500/30 hover:to-red-600/30 border-rose-500/40 text-rose-300"
+                            : isModernSleek
+                              ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
+                              : "bg-gradient-to-r from-[#00E599]/20 to-emerald-600/20 hover:from-[#00E599]/30 hover:to-emerald-600/30 border-[#00E599]/40 text-[#00E599]"
+                            }`}
                         >
                           <Zap className="w-3.5 h-3.5" />
                           <span>ATTRIBUTION RAPIDE</span>
@@ -11710,11 +11406,10 @@ export default function TacticsBoard({
                               setSetPieceRoles(defaultSetPieceRoles);
                             }
                           }}
-                          className={`px-3 py-1.5 border rounded-xl text-xs font-bold transition cursor-pointer ${
-                            isModernSleek
-                              ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-700"
-                              : "bg-rose-950/40 hover:bg-rose-900/50 border-rose-800/60 text-rose-300"
-                          }`}
+                          className={`px-3 py-1.5 border rounded-xl text-xs font-bold transition cursor-pointer ${isModernSleek
+                            ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-700"
+                            : "bg-rose-950/40 hover:bg-rose-900/50 border-rose-800/60 text-rose-300"
+                            }`}
                         >
                           Effacer Tout
                         </button>
@@ -11723,40 +11418,36 @@ export default function TacticsBoard({
 
                     {/* Roles Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      
+
                       {/* 1. Capitaine */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${
-                        currentRoles.captain 
-                          ? isModernSleek 
-                            ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                            : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                          : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                      } space-y-2`}>
+                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.captain
+                        ? isModernSleek
+                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
+                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
+                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
+                        } space-y-2`}>
                         <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${
-                            isModernSleek ? "text-slate-900" : "text-white"
-                          }`}>
+                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                             <span>👑</span>
                             <span>CAPITAINE D&apos;ÉQUIPE</span>
                           </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${
-                            currentRoles.captain
-                              ? isModernSleek
-                                ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                              : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                          }`}>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.captain
+                            ? isModernSleek
+                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
+                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
+                            }`}>
                             BRASSARD
                           </span>
                         </div>
                         <select
                           value={currentRoles.captain}
                           onChange={(e) => updateRole("captain", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${
-                            isModernSleek
-                              ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                              : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                          }`}
+                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
+                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
+                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
+                            }`}
                         >
                           <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun capitaine attribué --</option>
                           {starters.map(p => (
@@ -11773,38 +11464,34 @@ export default function TacticsBoard({
                       </div>
 
                       {/* 2. Penalty (11m) */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${
-                        currentRoles.penaltyTaker 
-                          ? isModernSleek 
-                            ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                            : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                          : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                      } space-y-2`}>
+                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.penaltyTaker
+                        ? isModernSleek
+                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
+                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
+                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
+                        } space-y-2`}>
                         <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${
-                            isModernSleek ? "text-slate-900" : "text-white"
-                          }`}>
+                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                             <span>⚽</span>
                             <span>TIREUR DE PENALTY (11M)</span>
                           </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${
-                            currentRoles.penaltyTaker
-                              ? isModernSleek
-                                ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                              : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                          }`}>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.penaltyTaker
+                            ? isModernSleek
+                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
+                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
+                            }`}>
                             SURFACE
                           </span>
                         </div>
                         <select
                           value={currentRoles.penaltyTaker}
                           onChange={(e) => updateRole("penaltyTaker", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${
-                            isModernSleek
-                              ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                              : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                          }`}
+                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
+                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
+                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
+                            }`}
                         >
                           <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
                           {starters.map(p => (
@@ -11821,38 +11508,34 @@ export default function TacticsBoard({
                       </div>
 
                       {/* 3. Coup Franc Direct */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${
-                        currentRoles.directFreeKick 
-                          ? isModernSleek 
-                            ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                            : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                          : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                      } space-y-2`}>
+                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.directFreeKick
+                        ? isModernSleek
+                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
+                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
+                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
+                        } space-y-2`}>
                         <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${
-                            isModernSleek ? "text-slate-900" : "text-white"
-                          }`}>
+                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                             <span>⚡</span>
                             <span>COUP FRANC DIRECT</span>
                           </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${
-                            currentRoles.directFreeKick
-                              ? isModernSleek
-                                ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                              : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                          }`}>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.directFreeKick
+                            ? isModernSleek
+                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
+                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
+                            }`}>
                             TIR AXE
                           </span>
                         </div>
                         <select
                           value={currentRoles.directFreeKick}
                           onChange={(e) => updateRole("directFreeKick", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${
-                            isModernSleek
-                              ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                              : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                          }`}
+                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
+                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
+                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
+                            }`}
                         >
                           <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
                           {starters.map(p => (
@@ -11869,38 +11552,34 @@ export default function TacticsBoard({
                       </div>
 
                       {/* 4. Coup Franc Excentré Gauche */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${
-                        currentRoles.offCenterFKLeft 
-                          ? isModernSleek 
-                            ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                            : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                          : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                      } space-y-2`}>
+                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.offCenterFKLeft
+                        ? isModernSleek
+                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
+                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
+                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
+                        } space-y-2`}>
                         <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${
-                            isModernSleek ? "text-slate-900" : "text-white"
-                          }`}>
+                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                             <span>↪️</span>
                             <span>CF EXCENTRÉ GAUCHE</span>
                           </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${
-                            currentRoles.offCenterFKLeft
-                              ? isModernSleek
-                                ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                              : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                          }`}>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.offCenterFKLeft
+                            ? isModernSleek
+                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
+                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
+                            }`}>
                             CÔTÉ GAUCHE
                           </span>
                         </div>
                         <select
                           value={currentRoles.offCenterFKLeft}
                           onChange={(e) => updateRole("offCenterFKLeft", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${
-                            isModernSleek
-                              ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                              : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                          }`}
+                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
+                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
+                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
+                            }`}
                         >
                           <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
                           {starters.map(p => (
@@ -11917,38 +11596,34 @@ export default function TacticsBoard({
                       </div>
 
                       {/* 5. Coup Franc Excentré Droit */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${
-                        currentRoles.offCenterFKRight 
-                          ? isModernSleek 
-                            ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                            : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                          : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                      } space-y-2`}>
+                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.offCenterFKRight
+                        ? isModernSleek
+                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
+                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
+                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
+                        } space-y-2`}>
                         <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${
-                            isModernSleek ? "text-slate-900" : "text-white"
-                          }`}>
+                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                             <span>↩️</span>
                             <span>CF EXCENTRÉ DROIT</span>
                           </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${
-                            currentRoles.offCenterFKRight
-                              ? isModernSleek
-                                ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                              : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                          }`}>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.offCenterFKRight
+                            ? isModernSleek
+                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
+                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
+                            }`}>
                             CÔTÉ DROIT
                           </span>
                         </div>
                         <select
                           value={currentRoles.offCenterFKRight}
                           onChange={(e) => updateRole("offCenterFKRight", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${
-                            isModernSleek
-                              ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                              : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                          }`}
+                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
+                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
+                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
+                            }`}
                         >
                           <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
                           {starters.map(p => (
@@ -11965,38 +11640,34 @@ export default function TacticsBoard({
                       </div>
 
                       {/* 6. Corner Gauche */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${
-                        currentRoles.cornerLeft 
-                          ? isModernSleek 
-                            ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                            : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                          : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                      } space-y-2`}>
+                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.cornerLeft
+                        ? isModernSleek
+                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
+                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
+                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
+                        } space-y-2`}>
                         <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${
-                            isModernSleek ? "text-slate-900" : "text-white"
-                          }`}>
+                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                             <span>🚩</span>
                             <span>CORNER GAUCHE</span>
                           </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${
-                            currentRoles.cornerLeft
-                              ? isModernSleek
-                                ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                              : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                          }`}>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.cornerLeft
+                            ? isModernSleek
+                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
+                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
+                            }`}>
                             FLAG GAUCHE
                           </span>
                         </div>
                         <select
                           value={currentRoles.cornerLeft}
                           onChange={(e) => updateRole("cornerLeft", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${
-                            isModernSleek
-                              ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                              : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                          }`}
+                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
+                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
+                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
+                            }`}
                         >
                           <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
                           {starters.map(p => (
@@ -12013,38 +11684,34 @@ export default function TacticsBoard({
                       </div>
 
                       {/* 7. Corner Droit */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${
-                        currentRoles.cornerRight 
-                          ? isModernSleek 
-                            ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                            : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                          : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                      } space-y-2`}>
+                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.cornerRight
+                        ? isModernSleek
+                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
+                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
+                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
+                        } space-y-2`}>
                         <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${
-                            isModernSleek ? "text-slate-900" : "text-white"
-                          }`}>
+                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
+                            }`}>
                             <span>🚩</span>
                             <span>CORNER DROIT</span>
                           </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${
-                            currentRoles.cornerRight
-                              ? isModernSleek
-                                ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                              : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                          }`}>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.cornerRight
+                            ? isModernSleek
+                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
+                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
+                            }`}>
                             FLAG DROIT
                           </span>
                         </div>
                         <select
                           value={currentRoles.cornerRight}
                           onChange={(e) => updateRole("cornerRight", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${
-                            isModernSleek
-                              ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                              : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                          }`}
+                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
+                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
+                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
+                            }`}
                         >
                           <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
                           {starters.map(p => (
@@ -12067,28 +11734,24 @@ export default function TacticsBoard({
               </div>
 
               {/* Modal Footer */}
-              <div className={`p-4 border-t flex flex-wrap items-center justify-between gap-3 shrink-0 relative z-10 ${
-                isModernSleek ? "border-slate-200 bg-slate-100" : "border-[#1f293d] bg-[#090d14]"
-              }`}>
-                <div className={`flex items-center gap-2 text-[11px] font-medium ${
-                  isModernSleek ? "text-slate-600" : "text-slate-400"
+              <div className={`p-4 border-t flex flex-wrap items-center justify-between gap-3 shrink-0 relative z-10 ${isModernSleek ? "border-slate-200 bg-slate-100" : "border-[#1f293d] bg-[#090d14]"
                 }`}>
-                  <UserCheck className={`w-3.5 h-3.5 ${
-                    isAway 
-                      ? isModernSleek ? "text-rose-600" : "text-rose-400"
-                      : isModernSleek ? "text-emerald-700" : "text-[#00E599]"
-                  }`} />
+                <div className={`flex items-center gap-2 text-[11px] font-medium ${isModernSleek ? "text-slate-600" : "text-slate-400"
+                  }`}>
+                  <UserCheck className={`w-3.5 h-3.5 ${isAway
+                    ? isModernSleek ? "text-rose-600" : "text-rose-400"
+                    : isModernSleek ? "text-emerald-700" : "text-[#00E599]"
+                    }`} />
                   <span>
                     {starters.length} titulaires • {activeSubs.length} remplaçants • {assignedRolesCount} rôles assignés
                   </span>
                 </div>
                 <button
                   onClick={() => setIsSetPiecesOpen(false)}
-                  className={`px-5 py-2.5 font-black text-xs uppercase rounded-xl tracking-wider cursor-pointer transition flex items-center gap-1.5 shadow-lg ${
-                    isAway
-                      ? "bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white shadow-rose-500/20"
-                      : "bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] shadow-[#00e599]/20"
-                  }`}
+                  className={`px-5 py-2.5 font-black text-xs uppercase rounded-xl tracking-wider cursor-pointer transition flex items-center gap-1.5 shadow-lg ${isAway
+                    ? "bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white shadow-rose-500/20"
+                    : "bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] shadow-[#00e599]/20"
+                    }`}
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span>Appliquer & Fermer</span>
@@ -12135,23 +11798,20 @@ export default function TacticsBoard({
 
                 return (
                   <div className="fixed inset-0 bg-black/85 z-[160] flex items-center justify-center p-3 sm:p-4 backdrop-blur-md overflow-y-auto animate-fade-in">
-                    <div className={`max-w-4xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-6 flex flex-col max-h-[92vh] overflow-hidden border ${
-                      isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b1019] border-cyan-500/40 text-white"
-                    }`}>
-                      
+                    <div className={`max-w-4xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-6 flex flex-col max-h-[92vh] overflow-hidden border ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b1019] border-cyan-500/40 text-white"
+                      }`}>
+
                       {/* Glow accents */}
                       <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
                       <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
 
                       {/* Header */}
-                      <div className={`p-4 sm:p-5 border-b shrink-0 relative z-10 ${
-                        isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-gradient-to-r from-[#0d1424] via-[#101b30] to-[#0d1424] border-[#1f293d]"
-                      }`}>
+                      <div className={`p-4 sm:p-5 border-b shrink-0 relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-gradient-to-r from-[#0d1424] via-[#101b30] to-[#0d1424] border-[#1f293d]"
+                        }`}>
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl sm:rounded-2xl border flex items-center justify-center text-xl shadow-inner ${
-                              isModernSleek ? "bg-cyan-100 border-cyan-300 text-cyan-800" : "bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border-cyan-500/50 text-cyan-400"
-                            }`}>
+                            <div className={`w-10 h-10 rounded-xl sm:rounded-2xl border flex items-center justify-center text-xl shadow-inner ${isModernSleek ? "bg-cyan-100 border-cyan-300 text-cyan-800" : "bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border-cyan-500/50 text-cyan-400"
+                              }`}>
                               <ArrowLeftRight className="w-5 h-5" />
                             </div>
                             <div>
@@ -12159,9 +11819,8 @@ export default function TacticsBoard({
                                 <h3 className={`text-sm sm:text-base font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                                   PASSERELLE & ÉCHANGE INTER-ÉQUIPES DU CLUB
                                 </h3>
-                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border uppercase tracking-wider ${
-                                  isModernSleek ? "bg-cyan-100 border-cyan-300 text-cyan-800" : "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
-                                }`}>
+                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border uppercase tracking-wider ${isModernSleek ? "bg-cyan-100 border-cyan-300 text-cyan-800" : "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+                                  }`}>
                                   {teams.length} ÉQUIPES GÉRÉES
                                 </span>
                               </div>
@@ -12170,15 +11829,14 @@ export default function TacticsBoard({
                               </p>
                             </div>
                           </div>
-                          
+
                           <button
                             onClick={() => {
                               setIsInterTeamSwapOpen(false);
                               setSwapNotification(null);
                             }}
-                            className={`p-2 rounded-xl transition cursor-pointer font-bold ${
-                              isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                            }`}
+                            className={`p-2 rounded-xl transition cursor-pointer font-bold ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                              }`}
                             title="Fermer la passerelle"
                           >
                             <X className="w-5 h-5" />
@@ -12188,9 +11846,8 @@ export default function TacticsBoard({
 
                       {/* Success / Info Notification Banner */}
                       {swapNotification && (
-                        <div className={`mx-4 mt-4 p-3 rounded-xl border text-xs font-bold flex items-center justify-between gap-2 animate-fade-in shadow-md ${
-                          isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-emerald-950/80 border-emerald-500/40 text-emerald-300"
-                        }`}>
+                        <div className={`mx-4 mt-4 p-3 rounded-xl border text-xs font-bold flex items-center justify-between gap-2 animate-fade-in shadow-md ${isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-emerald-950/80 border-emerald-500/40 text-emerald-300"
+                          }`}>
                           <div className="flex items-center gap-2">
                             <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
                             <span>{swapNotification.message}</span>
@@ -12206,26 +11863,23 @@ export default function TacticsBoard({
 
                       {/* Modal Body */}
                       <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 scrollbar-thin relative z-10">
-                        
+
                         {/* Top Grid: Source Player on Left vs Target Team Selector on Right */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          
+
                           {/* LEFT BOX: SOURCE PLAYER (CURRENT SQUAD) */}
-                          <div className={`rounded-2xl border p-3.5 space-y-3 ${
-                            isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#0e1524] border-[#1f293d]"
-                          }`}>
+                          <div className={`rounded-2xl border p-3.5 space-y-3 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#0e1524] border-[#1f293d]"
+                            }`}>
                             <div className="flex items-center justify-between">
-                              <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-300"
-                              }`}>
+                              <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"
+                                }`}>
                                 <Shield className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
                                 <span>1. Équipe Source : <strong className={isModernSleek ? "text-slate-900" : "text-white"}>{activeTeam.name}</strong></span>
                               </span>
-                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border ${
-                                swapSourcePlayer?.isStarter
-                                  ? isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/40"
-                                  : isModernSleek ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                              }`}>
+                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border ${swapSourcePlayer?.isStarter
+                                ? isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/40"
+                                : isModernSleek ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                                }`}>
                                 {swapSourcePlayer?.isStarter ? "🟢 Titulaire" : "🔄 Remplaçant"}
                               </span>
                             </div>
@@ -12252,9 +11906,8 @@ export default function TacticsBoard({
                                     });
                                   }
                                 }}
-                                className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none cursor-pointer border ${
-                                  isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-cyan-500 shadow-xs" : "bg-[#141d2e] border-[#1f293d] text-white focus:border-cyan-400"
-                                }`}
+                                className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none cursor-pointer border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-cyan-500 shadow-xs" : "bg-[#141d2e] border-[#1f293d] text-white focus:border-cyan-400"
+                                  }`}
                               >
                                 <optgroup label="Titulaires sur le terrain">
                                   {sourceTeamStarters.map(p => (
@@ -12275,12 +11928,10 @@ export default function TacticsBoard({
 
                             {/* Source Player Visual Card */}
                             {swapSourcePlayer && (
-                              <div className={`p-3 rounded-xl border flex items-center gap-3 shadow-xs ${
-                                isModernSleek ? "bg-white border-slate-200" : "bg-[#080d16] border-cyan-500/30"
-                              }`}>
-                                <div className={`w-12 h-12 rounded-xl border flex items-center justify-center font-black text-sm overflow-hidden shrink-0 shadow-xs ${
-                                  isModernSleek ? "bg-cyan-50 text-cyan-800 border-cyan-300" : "bg-gradient-to-br from-cyan-950 to-blue-950 border-cyan-500/40 text-cyan-300"
+                              <div className={`p-3 rounded-xl border flex items-center gap-3 shadow-xs ${isModernSleek ? "bg-white border-slate-200" : "bg-[#080d16] border-cyan-500/30"
                                 }`}>
+                                <div className={`w-12 h-12 rounded-xl border flex items-center justify-center font-black text-sm overflow-hidden shrink-0 shadow-xs ${isModernSleek ? "bg-cyan-50 text-cyan-800 border-cyan-300" : "bg-gradient-to-br from-cyan-950 to-blue-950 border-cyan-500/40 text-cyan-300"
+                                  }`}>
                                   {swapSourcePlayer.photo ? (
                                     <img src={swapSourcePlayer.photo} alt={swapSourcePlayer.name} className="w-full h-full object-cover" />
                                   ) : (
@@ -12290,9 +11941,8 @@ export default function TacticsBoard({
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-xs font-black truncate ${isModernSleek ? "text-slate-900" : "text-white"}`}>{swapSourcePlayer.name}</p>
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-black border ${
-                                      isModernSleek ? "bg-cyan-50 border-cyan-200 text-cyan-800" : "bg-cyan-950 border-cyan-500/40 text-cyan-300"
-                                    }`}>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-black border ${isModernSleek ? "bg-cyan-50 border-cyan-200 text-cyan-800" : "bg-cyan-950 border-cyan-500/40 text-cyan-300"
+                                      }`}>
                                       Poste : {swapSourcePlayer.role}
                                     </span>
                                     <span className={`text-[9.5px] font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
@@ -12301,9 +11951,8 @@ export default function TacticsBoard({
                                   </div>
                                 </div>
                                 <div className="text-right shrink-0">
-                                  <span className={`text-[9px] px-2 py-1 rounded font-bold block border ${
-                                    isModernSleek ? "bg-cyan-50 text-cyan-800 border-cyan-200" : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
-                                  }`}>
+                                  <span className={`text-[9px] px-2 py-1 rounded font-bold block border ${isModernSleek ? "bg-cyan-50 text-cyan-800 border-cyan-200" : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                                    }`}>
                                     En partance ➔
                                   </span>
                                 </div>
@@ -12312,19 +11961,16 @@ export default function TacticsBoard({
                           </div>
 
                           {/* RIGHT BOX: TARGET TEAM SELECTOR */}
-                          <div className={`rounded-2xl border p-3.5 space-y-3 ${
-                            isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#0e1524] border-[#1f293d]"
-                          }`}>
+                          <div className={`rounded-2xl border p-3.5 space-y-3 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#0e1524] border-[#1f293d]"
+                            }`}>
                             <div className="flex items-center justify-between">
-                              <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                                isModernSleek ? "text-slate-700" : "text-slate-300"
-                              }`}>
+                              <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"
+                                }`}>
                                 <Users className={`w-3.5 h-3.5 ${isModernSleek ? "text-cyan-700" : "text-cyan-400"}`} />
                                 <span>2. Choisir l&apos;Équipe Partenaire :</span>
                               </span>
-                              <span className={`text-[9px] px-2 py-0.5 rounded-full border font-bold ${
-                                isModernSleek ? "bg-white text-slate-600 border-slate-200" : "bg-[#141d2e] text-slate-400 border-[#1f293d]"
-                              }`}>
+                              <span className={`text-[9px] px-2 py-0.5 rounded-full border font-bold ${isModernSleek ? "bg-white text-slate-600 border-slate-200" : "bg-[#141d2e] text-slate-400 border-[#1f293d]"
+                                }`}>
                                 {otherTeamsList.length} équipe(s) disponible(s)
                               </span>
                             </div>
@@ -12342,23 +11988,21 @@ export default function TacticsBoard({
                                       setSwapTargetTeamId(team.id);
                                       setSwapTargetPlayerId(null);
                                     }}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 border shadow-xs ${
-                                      isSelected
-                                        ? isModernSleek 
-                                          ? "bg-cyan-600 text-white border-cyan-600 font-black shadow-md"
-                                          : "bg-cyan-500 text-slate-950 border-cyan-400 font-black shadow-md shadow-cyan-500/20"
-                                        : isModernSleek
-                                          ? "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:text-slate-900"
-                                          : "bg-[#141d2e] text-slate-300 border-[#1f293d] hover:border-slate-500 hover:text-white"
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 border shadow-xs ${isSelected
+                                      ? isModernSleek
+                                        ? "bg-cyan-600 text-white border-cyan-600 font-black shadow-md"
+                                        : "bg-cyan-500 text-slate-950 border-cyan-400 font-black shadow-md shadow-cyan-500/20"
+                                      : isModernSleek
+                                        ? "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:text-slate-900"
+                                        : "bg-[#141d2e] text-slate-300 border-[#1f293d] hover:border-slate-500 hover:text-white"
+                                      }`}
                                   >
                                     <span>🛡️</span>
                                     <span>{team.name}</span>
-                                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-black ${
-                                      isSelected 
-                                        ? "bg-black/20 text-white" 
-                                        : isModernSleek ? "bg-slate-100 text-slate-600" : "bg-[#0b1019] text-slate-400"
-                                    }`}>
+                                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-black ${isSelected
+                                      ? "bg-black/20 text-white"
+                                      : isModernSleek ? "bg-slate-100 text-slate-600" : "bg-[#0b1019] text-slate-400"
+                                      }`}>
                                       {rosterCount}
                                     </span>
                                   </button>
@@ -12367,9 +12011,8 @@ export default function TacticsBoard({
                             </div>
 
                             {/* Current Target Team Info Banner */}
-                            <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
-                              isModernSleek ? "bg-white border-slate-200" : "bg-[#080d16] border-[#1f293d]"
-                            }`}>
+                            <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${isModernSleek ? "bg-white border-slate-200" : "bg-[#080d16] border-[#1f293d]"
+                              }`}>
                               <div>
                                 <span className={`font-medium text-[10px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Équipe sélectionnée : </span>
                                 <strong className={`font-bold ${isModernSleek ? "text-cyan-800" : "text-cyan-300"}`}>{targetTeamObj.name}</strong>
@@ -12384,13 +12027,11 @@ export default function TacticsBoard({
                         </div>
 
                         {/* MIDDLE SECTION: TARGET TEAM ROSTER & PLAYER SELECTION */}
-                        <div className={`rounded-2xl border p-3.5 space-y-3 ${
-                          isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#0e1524] border-[#1f293d]"
-                        }`}>
+                        <div className={`rounded-2xl border p-3.5 space-y-3 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#0e1524] border-[#1f293d]"
+                          }`}>
                           <div className="flex flex-wrap items-center justify-between gap-2.5">
-                            <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                              isModernSleek ? "text-slate-800" : "text-slate-200"
-                            }`}>
+                            <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isModernSleek ? "text-slate-800" : "text-slate-200"
+                              }`}>
                               <span>⚡</span>
                               <span>3. Choisir le Joueur de {targetTeamObj.name} à échanger ({filteredTargetRoster.length}) :</span>
                             </span>
@@ -12404,18 +12045,16 @@ export default function TacticsBoard({
                                   value={swapSearchQuery}
                                   onChange={(e) => setSwapSearchQuery(e.target.value)}
                                   placeholder="Filtrer nom ou poste..."
-                                  className={`w-full rounded-xl pl-7 pr-2.5 py-1 text-xs focus:outline-none border ${
-                                    isModernSleek 
-                                      ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-cyan-500 shadow-xs" 
-                                      : "bg-[#141d2e] border-[#1f293d] text-white placeholder-slate-500 focus:border-cyan-400"
-                                  }`}
+                                  className={`w-full rounded-xl pl-7 pr-2.5 py-1 text-xs focus:outline-none border ${isModernSleek
+                                    ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-cyan-500 shadow-xs"
+                                    : "bg-[#141d2e] border-[#1f293d] text-white placeholder-slate-500 focus:border-cyan-400"
+                                    }`}
                                 />
                                 {swapSearchQuery && (
                                   <button
                                     onClick={() => setSwapSearchQuery("")}
-                                    className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs cursor-pointer ${
-                                      isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-400 hover:text-white"
-                                    }`}
+                                    className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-400 hover:text-white"
+                                      }`}
                                   >
                                     ✕
                                   </button>
@@ -12423,19 +12062,17 @@ export default function TacticsBoard({
                               </div>
 
                               {/* Position Filter Pills */}
-                              <div className={`flex items-center gap-1 p-1 rounded-xl border text-[9.5px] ${
-                                isModernSleek ? "bg-slate-200/60 border-slate-200" : "bg-[#141d2e] border-[#1f293d]"
-                              }`}>
+                              <div className={`flex items-center gap-1 p-1 rounded-xl border text-[9.5px] ${isModernSleek ? "bg-slate-200/60 border-slate-200" : "bg-[#141d2e] border-[#1f293d]"
+                                }`}>
                                 {["ALL", "GB", "DEF", "MIL", "ATT"].map((pos) => (
                                   <button
                                     key={pos}
                                     type="button"
                                     onClick={() => setSwapPositionFilter(pos)}
-                                    className={`px-2 py-0.5 rounded-lg font-black transition cursor-pointer ${
-                                      swapPositionFilter === pos
-                                        ? isModernSleek ? "bg-cyan-600 text-white shadow-xs" : "bg-cyan-500 text-slate-950 shadow-sm"
-                                        : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
-                                    }`}
+                                    className={`px-2 py-0.5 rounded-lg font-black transition cursor-pointer ${swapPositionFilter === pos
+                                      ? isModernSleek ? "bg-cyan-600 text-white shadow-xs" : "bg-cyan-500 text-slate-950 shadow-sm"
+                                      : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
+                                      }`}
                                   >
                                     {pos === "ALL" ? "Tous" : pos}
                                   </button>
@@ -12446,9 +12083,8 @@ export default function TacticsBoard({
 
                           {/* Roster Cards Grid */}
                           {filteredTargetRoster.length === 0 ? (
-                            <div className={`p-6 text-center rounded-2xl border text-xs ${
-                              isModernSleek ? "bg-white border-slate-200 text-slate-500" : "bg-[#080d16] border-[#1f293d] text-slate-400"
-                            }`}>
+                            <div className={`p-6 text-center rounded-2xl border text-xs ${isModernSleek ? "bg-white border-slate-200 text-slate-500" : "bg-[#080d16] border-[#1f293d] text-slate-400"
+                              }`}>
                               Aucun joueur ne correspond aux critères de filtre.
                             </div>
                           ) : (
@@ -12459,37 +12095,33 @@ export default function TacticsBoard({
                                   <div
                                     key={player.id}
                                     onClick={() => setSwapTargetPlayerId(player.id)}
-                                    className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 shadow-xs ${
-                                      isSelected
-                                        ? isModernSleek 
-                                          ? "bg-cyan-50 border-cyan-500 ring-2 ring-cyan-500/30 text-cyan-950"
-                                          : "bg-cyan-950/80 border-cyan-400 ring-2 ring-cyan-400/40 text-white"
-                                        : isModernSleek
-                                          ? "bg-white hover:bg-slate-50 border-slate-200 text-slate-800 hover:border-slate-300"
-                                          : "bg-[#080d16] hover:bg-[#121c2e] border-[#1f293d] text-slate-300 hover:border-slate-500"
-                                    }`}
+                                    className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 shadow-xs ${isSelected
+                                      ? isModernSleek
+                                        ? "bg-cyan-50 border-cyan-500 ring-2 ring-cyan-500/30 text-cyan-950"
+                                        : "bg-cyan-950/80 border-cyan-400 ring-2 ring-cyan-400/40 text-white"
+                                      : isModernSleek
+                                        ? "bg-white hover:bg-slate-50 border-slate-200 text-slate-800 hover:border-slate-300"
+                                        : "bg-[#080d16] hover:bg-[#121c2e] border-[#1f293d] text-slate-300 hover:border-slate-500"
+                                      }`}
                                   >
                                     <div className="flex items-center gap-2.5 min-w-0">
-                                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${
-                                        isSelected
-                                          ? "bg-cyan-500 text-white shadow-xs"
-                                          : isModernSleek ? "bg-cyan-50 text-cyan-800 border border-cyan-200" : "bg-[#141d2e] text-cyan-300 border border-[#1f293d]"
-                                      }`}>
+                                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${isSelected
+                                        ? "bg-cyan-500 text-white shadow-xs"
+                                        : isModernSleek ? "bg-cyan-50 text-cyan-800 border border-cyan-200" : "bg-[#141d2e] text-cyan-300 border border-[#1f293d]"
+                                        }`}>
                                         {player.number}
                                       </div>
                                       <div className="min-w-0">
                                         <p className="text-xs font-bold truncate leading-tight">{player.name}</p>
                                         <div className="flex items-center gap-1.5 mt-0.5">
-                                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-black border ${
-                                            isModernSleek ? "bg-slate-100 text-slate-700 border-slate-200" : "bg-[#141d2e] text-cyan-300 border border-[#1f293d]"
-                                          }`}>
+                                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-black border ${isModernSleek ? "bg-slate-100 text-slate-700 border-slate-200" : "bg-[#141d2e] text-cyan-300 border border-[#1f293d]"
+                                            }`}>
                                             {player.role || "JOUEUR"}
                                           </span>
-                                          <span className={`text-[8.5px] font-bold ${
-                                            player.status === "excellent" 
-                                              ? isModernSleek ? "text-emerald-700" : "text-emerald-400"
-                                              : isModernSleek ? "text-slate-500" : "text-slate-400"
-                                          }`}>
+                                          <span className={`text-[8.5px] font-bold ${player.status === "excellent"
+                                            ? isModernSleek ? "text-emerald-700" : "text-emerald-400"
+                                            : isModernSleek ? "text-slate-500" : "text-slate-400"
+                                            }`}>
                                             {player.status === "excellent" ? "⚡ En forme" : "🟢 Prêt"}
                                           </span>
                                         </div>
@@ -12498,9 +12130,8 @@ export default function TacticsBoard({
 
                                     <div className="shrink-0">
                                       {isSelected ? (
-                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-xs shadow ${
-                                          isModernSleek ? "bg-cyan-600 text-white" : "bg-cyan-400 text-slate-950"
-                                        }`}>
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-xs shadow ${isModernSleek ? "bg-cyan-600 text-white" : "bg-cyan-400 text-slate-950"
+                                          }`}>
                                           ✓
                                         </span>
                                       ) : (
@@ -12518,15 +12149,13 @@ export default function TacticsBoard({
 
                         {/* BOTTOM SECTION: DUO COMPARISON PREVIEW & ACTION CTA */}
                         {selectedTargetPlayer && swapSourcePlayer && (
-                          <div className={`rounded-2xl border p-4 space-y-3 animate-fade-in shadow-lg ${
-                            isModernSleek
-                              ? "bg-gradient-to-r from-cyan-50/80 via-slate-50 to-emerald-50/80 border-cyan-200"
-                              : "bg-gradient-to-r from-cyan-950/50 via-[#0a1628] to-blue-950/50 border-cyan-500/40"
-                          }`}>
+                          <div className={`rounded-2xl border p-4 space-y-3 animate-fade-in shadow-lg ${isModernSleek
+                            ? "bg-gradient-to-r from-cyan-50/80 via-slate-50 to-emerald-50/80 border-cyan-200"
+                            : "bg-gradient-to-r from-cyan-950/50 via-[#0a1628] to-blue-950/50 border-cyan-500/40"
+                            }`}>
                             <div className={`flex items-center justify-between border-b pb-2 ${isModernSleek ? "border-slate-200" : "border-cyan-500/30"}`}>
-                              <span className={`text-xs font-black uppercase flex items-center gap-1.5 tracking-wider ${
-                                isModernSleek ? "text-cyan-900" : "text-cyan-300"
-                              }`}>
+                              <span className={`text-xs font-black uppercase flex items-center gap-1.5 tracking-wider ${isModernSleek ? "text-cyan-900" : "text-cyan-300"
+                                }`}>
                                 <Sparkles className={`w-3.5 h-3.5 ${isModernSleek ? "text-cyan-600" : "text-cyan-400"}`} />
                                 <span>Aperçu de la permutation inter-équipes :</span>
                               </span>
@@ -12537,20 +12166,17 @@ export default function TacticsBoard({
 
                             {/* Side-by-Side Dual Card */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                              
+
                               {/* Source card moving out */}
-                              <div className={`p-3 rounded-xl border space-y-1 relative ${
-                                isModernSleek ? "bg-white border-slate-200 shadow-xs" : "bg-[#080d16] border-cyan-500/30"
-                              }`}>
-                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase border ${
-                                  isModernSleek ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-rose-500/15 text-rose-300 border border-rose-500/30"
+                              <div className={`p-3 rounded-xl border space-y-1 relative ${isModernSleek ? "bg-white border-slate-200 shadow-xs" : "bg-[#080d16] border-cyan-500/30"
                                 }`}>
+                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase border ${isModernSleek ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-rose-500/15 text-rose-300 border border-rose-500/30"
+                                  }`}>
                                   Quitte {activeTeam.name}
                                 </span>
                                 <div className="flex items-center gap-2.5 pt-1">
-                                  <span className={`w-8 h-8 rounded-lg font-black text-xs flex items-center justify-center border ${
-                                    isModernSleek ? "bg-cyan-50 text-cyan-800 border-cyan-200" : "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
-                                  }`}>
+                                  <span className={`w-8 h-8 rounded-lg font-black text-xs flex items-center justify-center border ${isModernSleek ? "bg-cyan-50 text-cyan-800 border-cyan-200" : "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                                    }`}>
                                     N°{swapSourcePlayer.number}
                                   </span>
                                   <div className="min-w-0 flex-1">
@@ -12564,18 +12190,15 @@ export default function TacticsBoard({
                               </div>
 
                               {/* Target card moving in */}
-                              <div className={`p-3 rounded-xl border space-y-1 relative ${
-                                isModernSleek ? "bg-white border-emerald-200 shadow-xs" : "bg-[#080d16] border-[#00E599]/40"
-                              }`}>
-                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase border ${
-                                  isModernSleek ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30"
+                              <div className={`p-3 rounded-xl border space-y-1 relative ${isModernSleek ? "bg-white border-emerald-200 shadow-xs" : "bg-[#080d16] border-[#00E599]/40"
                                 }`}>
+                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase border ${isModernSleek ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30"
+                                  }`}>
                                   Rejoint {activeTeam.name}
                                 </span>
                                 <div className="flex items-center gap-2.5 pt-1">
-                                  <span className={`w-8 h-8 rounded-lg font-black text-xs flex items-center justify-center border ${
-                                    isModernSleek ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-[#00E599]/20 text-[#00E599] border border-[#00E599]/40"
-                                  }`}>
+                                  <span className={`w-8 h-8 rounded-lg font-black text-xs flex items-center justify-center border ${isModernSleek ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-[#00E599]/20 text-[#00E599] border border-[#00E599]/40"
+                                    }`}>
                                     N°{selectedTargetPlayer.number}
                                   </span>
                                   <div className="min-w-0 flex-1">
@@ -12595,11 +12218,10 @@ export default function TacticsBoard({
                               <button
                                 type="button"
                                 onClick={() => handleExecuteDirectTransfer("bring_from_target")}
-                                className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer border ${
-                                  isModernSleek
-                                    ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
-                                    : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] hover:border-slate-500 text-slate-300 hover:text-white"
-                                }`}
+                                className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer border ${isModernSleek
+                                  ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
+                                  : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] hover:border-slate-500 text-slate-300 hover:text-white"
+                                  }`}
                                 title="Faire venir uniquement ce joueur sur le banc sans renvoyer de joueur"
                               >
                                 Ajouter comme renfort simple
@@ -12621,9 +12243,8 @@ export default function TacticsBoard({
                       </div>
 
                       {/* Modal Footer */}
-                      <div className={`p-4 border-t flex flex-wrap items-center justify-between gap-3 shrink-0 relative z-10 ${
-                        isModernSleek ? "border-slate-200 bg-slate-100 text-slate-600" : "border-[#1f293d] bg-[#080d16] text-slate-400"
-                      }`}>
+                      <div className={`p-4 border-t flex flex-wrap items-center justify-between gap-3 shrink-0 relative z-10 ${isModernSleek ? "border-slate-200 bg-slate-100 text-slate-600" : "border-[#1f293d] bg-[#080d16] text-slate-400"
+                        }`}>
                         <div className="flex items-center gap-2 text-[11px]">
                           <span>🛡️</span>
                           <span>Les statistiques, rôles et effectifs sont synchronisés pour les deux équipes en temps réel.</span>
@@ -12633,11 +12254,10 @@ export default function TacticsBoard({
                             setIsInterTeamSwapOpen(false);
                             setSwapNotification(null);
                           }}
-                          className={`px-4 py-2 text-xs font-bold rounded-xl border transition cursor-pointer ${
-                            isModernSleek
-                              ? "bg-white hover:bg-slate-200 text-slate-700 border-slate-300"
-                              : "bg-[#141d2e] hover:bg-[#1c283f] text-slate-300 hover:text-white border-[#1f293d]"
-                          }`}
+                          className={`px-4 py-2 text-xs font-bold rounded-xl border transition cursor-pointer ${isModernSleek
+                            ? "bg-white hover:bg-slate-200 text-slate-700 border-slate-300"
+                            : "bg-[#141d2e] hover:bg-[#1c283f] text-slate-300 hover:text-white border-[#1f293d]"
+                            }`}
                         >
                           Fermer la passerelle
                         </button>
@@ -12654,7 +12274,7 @@ export default function TacticsBoard({
       })()}
 
 
-            {/* ========================================================= */}
+      {/* ========================================================= */}
       {/* MODAL : VUE EXPORT 3D CARTE (SQUAD) */}
       {/* ========================================================= */}
       {showSquad3DModal && (
@@ -12663,13 +12283,12 @@ export default function TacticsBoard({
             {/* Background ambient glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
-            
+
             {/* Header */}
             <div className={`flex items-center justify-between border-b pb-4 mb-2 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-xl shadow-inner ${
-                  isModernSleek ? "bg-amber-100 border-amber-300 text-amber-800" : "bg-gradient-to-br from-amber-400/20 via-amber-500/20 to-yellow-600/30 border-amber-500/40 text-amber-400"
-                }`}>
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-xl shadow-inner ${isModernSleek ? "bg-amber-100 border-amber-300 text-amber-800" : "bg-gradient-to-br from-amber-400/20 via-amber-500/20 to-yellow-600/30 border-amber-500/40 text-amber-400"
+                  }`}>
                   🏆
                 </div>
                 <div>
@@ -12684,22 +12303,20 @@ export default function TacticsBoard({
                   </p>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => setShowSquad3DModal(false)}
-                className={`p-1.5 rounded-xl cursor-pointer transition text-base font-bold ${
-                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                }`}
+                className={`p-1.5 rounded-xl cursor-pointer transition text-base font-bold ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  }`}
               >
                 ✕
               </button>
             </div>
 
             {/* Toolbar Controls */}
-            <div className={`relative z-10 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border ${
-              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900 shadow-sm" : "bg-[#090d14] border-[#1f293d] text-white"
-            }`}>
-              
+            <div className={`relative z-10 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900 shadow-sm" : "bg-[#090d14] border-[#1f293d] text-white"
+              }`}>
+
               {/* Card Theme Selector */}
               <div className="flex items-center gap-2">
                 <span className={`text-xs font-black uppercase ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>Style Cartes:</span>
@@ -12713,9 +12330,8 @@ export default function TacticsBoard({
                     <button
                       key={t.id}
                       onClick={() => setCardTheme(t.id as any)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition cursor-pointer ${t.color} ${
-                        cardTheme === t.id ? "ring-2 ring-white scale-105" : "opacity-60 hover:opacity-100"
-                      }`}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition cursor-pointer ${t.color} ${cardTheme === t.id ? "ring-2 ring-white scale-105" : "opacity-60 hover:opacity-100"
+                        }`}
                     >
                       {t.label}
                     </button>
@@ -12724,18 +12340,16 @@ export default function TacticsBoard({
               </div>
 
               {/* Orientation Format Selector */}
-              <div className={`flex items-center gap-1.5 p-1 rounded-xl border ${
-                isModernSleek ? "bg-white border-slate-300" : "bg-[#121926] border-[#1f293d]"
-              }`}>
+              <div className={`flex items-center gap-1.5 p-1 rounded-xl border ${isModernSleek ? "bg-white border-slate-300" : "bg-[#121926] border-[#1f293d]"
+                }`}>
                 <span className={`text-[11px] font-black uppercase px-1.5 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Format:</span>
                 <button
                   type="button"
                   onClick={() => setSquad3DOrientation("landscape")}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 transition cursor-pointer ${
-                    squad3DOrientation === "landscape"
-                      ? "bg-[#00E599] text-[#0d1117] shadow"
-                      : isModernSleek ? "text-slate-600 hover:text-slate-900 bg-slate-100" : "text-slate-400 hover:text-white bg-[#090d14]"
-                  }`}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 transition cursor-pointer ${squad3DOrientation === "landscape"
+                    ? "bg-[#00E599] text-[#0d1117] shadow"
+                    : isModernSleek ? "text-slate-600 hover:text-slate-900 bg-slate-100" : "text-slate-400 hover:text-white bg-[#090d14]"
+                    }`}
                 >
                   <Laptop className="w-3.5 h-3.5" />
                   <span>Paysage (16:9)</span>
@@ -12743,11 +12357,10 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => setSquad3DOrientation("portrait")}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 transition cursor-pointer ${
-                    squad3DOrientation === "portrait"
-                      ? "bg-[#00E599] text-[#0d1117] shadow"
-                      : isModernSleek ? "text-slate-600 hover:text-slate-900 bg-slate-100" : "text-slate-400 hover:text-white bg-[#090d14]"
-                  }`}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 transition cursor-pointer ${squad3DOrientation === "portrait"
+                    ? "bg-[#00E599] text-[#0d1117] shadow"
+                    : isModernSleek ? "text-slate-600 hover:text-slate-900 bg-slate-100" : "text-slate-400 hover:text-white bg-[#090d14]"
+                    }`}
                 >
                   <Smartphone className="w-3.5 h-3.5" />
                   <span>Portrait (9:16)</span>
@@ -12755,9 +12368,8 @@ export default function TacticsBoard({
               </div>
 
               {/* Pitch Scale Zoom Control */}
-              <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${
-                isModernSleek ? "bg-white border-slate-300" : "bg-[#121926] border-[#1f293d]"
-              }`}>
+              <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${isModernSleek ? "bg-white border-slate-300" : "bg-[#121926] border-[#1f293d]"
+                }`}>
                 <span className={`text-[11px] font-black uppercase flex items-center gap-1 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
                   <Maximize2 className="w-3.5 h-3.5 text-[#00E599]" />
                   <span>Agrandir Terrain:</span>
@@ -12775,9 +12387,8 @@ export default function TacticsBoard({
                 {squad3DPitchScale !== 100 && (
                   <button
                     onClick={() => setSquad3DPitchScale(100)}
-                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition cursor-pointer ${
-                      isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800" : "bg-[#1a2333] hover:bg-[#253247] text-slate-300"
-                    }`}
+                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition cursor-pointer ${isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800" : "bg-[#1a2333] hover:bg-[#253247] text-slate-300"
+                      }`}
                     title="Réinitialiser à 100%"
                   >
                     100%
@@ -12787,9 +12398,8 @@ export default function TacticsBoard({
 
               {/* Read-Only Club Title Display & Export Button */}
               <div className="flex items-center gap-2">
-                <div className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-black shadow-inner ${
-                  isModernSleek ? "bg-white border-slate-300 text-amber-700" : "bg-[#121926] border-[#1f293d] text-amber-300"
-                }`} title="Nom de l'équipe active (non modifiable ici)">
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-black shadow-inner ${isModernSleek ? "bg-white border-slate-300 text-amber-700" : "bg-[#121926] border-[#1f293d] text-amber-300"
+                  }`} title="Nom de l'équipe active (non modifiable ici)">
                   <span>🛡️</span>
                   <span className="truncate max-w-[140px] uppercase">{displayClubTitle}</span>
                 </div>
@@ -12817,11 +12427,10 @@ export default function TacticsBoard({
             {/* THE EXPORTABLE 3D STAGE CONTAINER */}
             <div
               ref={squad3DRef}
-              className={`bg-[#0a0f18] text-white p-4 sm:p-6 rounded-2xl border-2 border-[#1f293d] relative select-none flex flex-col justify-between shadow-2xl mx-auto transition-all duration-300 ${
-                squad3DOrientation === "portrait"
-                  ? "max-w-[540px] min-h-[820px] w-full"
-                  : "max-w-[960px] w-full min-h-[600px]"
-              }`}
+              className={`bg-[#0a0f18] text-white p-4 sm:p-6 rounded-2xl border-2 border-[#1f293d] relative select-none flex flex-col justify-between shadow-2xl mx-auto transition-all duration-300 ${squad3DOrientation === "portrait"
+                ? "max-w-[540px] min-h-[820px] w-full"
+                : "max-w-[960px] w-full min-h-[600px]"
+                }`}
               style={{
                 backgroundImage: "radial-gradient(circle at 50% 30%, rgba(30, 58, 138, 0.35) 0%, rgba(13, 17, 23, 1) 80%)"
               }}
@@ -12842,14 +12451,13 @@ export default function TacticsBoard({
               </div>
 
               {/* 3D Pitch Container */}
-              <div className={`relative z-10 my-3 w-full flex items-center justify-center transition-all ${
-                squad3DOrientation === "portrait"
-                  ? "h-[660px] sm:h-[690px]"
-                  : (squad3DPitchScale > 120 ? "h-[600px] sm:h-[640px]" : squad3DPitchScale > 100 ? "h-[540px] sm:h-[580px]" : "h-[500px]")
-              }`}>
-                
+              <div className={`relative z-10 my-3 w-full flex items-center justify-center transition-all ${squad3DOrientation === "portrait"
+                ? "h-[660px] sm:h-[690px]"
+                : (squad3DPitchScale > 120 ? "h-[600px] sm:h-[640px]" : squad3DPitchScale > 100 ? "h-[540px] sm:h-[580px]" : "h-[500px]")
+                }`}>
+
                 {/* Perspective wrapper */}
-                <div 
+                <div
                   className={`relative ${squad3DOrientation === "portrait" ? "w-[96%] h-[100%]" : "w-[92%] h-[100%]"}`}
                   style={{
                     perspective: squad3DOrientation === "portrait" ? "1200px" : "1100px",
@@ -12857,7 +12465,7 @@ export default function TacticsBoard({
                   }}
                 >
                   {/* Rotated Pitch Surface */}
-                  <div 
+                  <div
                     className="w-full h-full relative rounded-2xl border-4 border-white/40 shadow-[0_30px_60px_rgba(0,0,0,0.95)] overflow-hidden bg-emerald-950 transition-transform duration-200"
                     style={{
                       transform: squad3DOrientation === "portrait"
@@ -12894,7 +12502,7 @@ export default function TacticsBoard({
                         <line x1="2.5" y1="55" x2="70.5" y2="55" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
                         <circle cx="36.5" cy="55" r="9.15" fill="none" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
                         <circle cx="36.5" cy="55" r="0.5" fill="white" />
-                        
+
                         {/* The Box Official Logo Emblem on 3D Turf (100% Identical to Navbar) */}
                         <svg x="27.35" y="45.85" width="18.3" height="18.3" viewBox="0 0 100 100" className="pointer-events-none">
                           <g stroke="white" strokeOpacity="0.4" fill="none">
@@ -12911,7 +12519,7 @@ export default function TacticsBoard({
                         {/* Top Goal Box */}
                         <rect x="16.34" y="2.5" width="40.32" height="16.5" fill="none" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
                         <rect x="27.34" y="2.5" width="18.32" height="5.5" fill="none" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
-                        
+
                         {/* Bottom Goal Box */}
                         <rect x="16.34" y="91" width="40.32" height="16.5" fill="none" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
                         <rect x="27.34" y="102" width="18.32" height="5.5" fill="none" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
@@ -12935,11 +12543,11 @@ export default function TacticsBoard({
                             <path d="M 79 32 L 61 50 L 79 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
                           </g>
                         </svg>
-                        
+
                         {/* Left Penalty Box */}
                         <rect x="2.5" y="16.34" width="16.5" height="40.32" fill="none" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
                         <rect x="2.5" y="27.34" width="5.5" height="18.32" fill="none" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
-                        
+
                         {/* Right Penalty Box */}
                         <rect x="91" y="16.34" width="16.5" height="40.32" fill="none" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
                         <rect x="102" y="27.34" width="5.5" height="18.32" fill="none" stroke="white" strokeWidth="0.35" strokeOpacity="0.85" />
@@ -12966,18 +12574,16 @@ export default function TacticsBoard({
                           }}
                         >
                           {/* Reduced & Compact Player Card */}
-                          <div 
-                            className={`${
-                              squad3DOrientation === "portrait" ? "w-13 sm:w-15 p-1" : "w-15 sm:w-18 p-1.5"
-                            } rounded-xl shadow-2xl text-center border-2 flex flex-col items-center justify-between transition-all ${
-                              cardTheme === "gold"
+                          <div
+                            className={`${squad3DOrientation === "portrait" ? "w-13 sm:w-15 p-1" : "w-15 sm:w-18 p-1.5"
+                              } rounded-xl shadow-2xl text-center border-2 flex flex-col items-center justify-between transition-all ${cardTheme === "gold"
                                 ? "bg-gradient-to-b from-amber-300 via-amber-500 to-amber-700 border-amber-200 text-amber-950 shadow-amber-950/60"
                                 : cardTheme === "silver"
-                                ? "bg-gradient-to-b from-slate-200 via-slate-400 to-slate-600 border-slate-100 text-slate-950 shadow-slate-950/60"
-                                : cardTheme === "black_special"
-                                ? "bg-gradient-to-b from-zinc-800 via-zinc-950 to-black border-amber-400 text-amber-300 shadow-black/90"
-                                : "bg-gradient-to-b from-emerald-400 via-emerald-600 to-emerald-950 border-emerald-300 text-white shadow-emerald-950/60"
-                            }`}
+                                  ? "bg-gradient-to-b from-slate-200 via-slate-400 to-slate-600 border-slate-100 text-slate-950 shadow-slate-950/60"
+                                  : cardTheme === "black_special"
+                                    ? "bg-gradient-to-b from-zinc-800 via-zinc-950 to-black border-amber-400 text-amber-300 shadow-black/90"
+                                    : "bg-gradient-to-b from-emerald-400 via-emerald-600 to-emerald-950 border-emerald-300 text-white shadow-emerald-950/60"
+                              }`}
                           >
                             {/* Top bar: Number & Role */}
                             <div className="w-full flex items-center justify-between px-0.5 text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-tight leading-none mb-0.5">
@@ -13042,9 +12648,8 @@ export default function TacticsBoard({
             {/* Header */}
             <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 shrink-0 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"}`}>
               <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl border flex items-center justify-center text-lg shrink-0 ${
-                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
-                }`}>
+                <div className={`p-2.5 rounded-xl border flex items-center justify-center text-lg shrink-0 ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
+                  }`}>
                   ⚙️
                 </div>
                 <div>
@@ -13052,21 +12657,20 @@ export default function TacticsBoard({
                     CONFIGURATION DE L&apos;UTILISATEUR
                   </h3>
                   <p className={`text-xs font-bold ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                    Ajustez votre profil coach et sélectionnez votre discipline sportive principale.
+                    Ajustez votre profil coach et votre abonnement.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsUserConfigModalOpen(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer text-sm shrink-0 ${
-                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                }`}
+                className={`p-1.5 rounded-xl transition cursor-pointer text-sm shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  }`}
               >
                 ✕
               </button>
             </div>
 
-             {/* Form Body - Scrollable */}
+            {/* Form Body - Scrollable */}
             <form onSubmit={handleSaveUserConfig} className="flex-1 overflow-y-auto space-y-4 px-5 sm:px-6 py-4 scrollbar-thin relative z-10">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -13078,9 +12682,8 @@ export default function TacticsBoard({
                     required
                     value={editFirstName}
                     onChange={(e) => setEditFirstName(e.target.value)}
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
-                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                    }`}
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                      }`}
                   />
                 </div>
                 <div>
@@ -13092,9 +12695,8 @@ export default function TacticsBoard({
                     required
                     value={editLastName}
                     onChange={(e) => setEditLastName(e.target.value)}
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
-                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                    }`}
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                      }`}
                   />
                 </div>
               </div>
@@ -13111,9 +12713,8 @@ export default function TacticsBoard({
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
                   placeholder="ex: coach@monclub.fr"
-                  className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
-                    isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                  }`}
+                  className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                    }`}
                 />
               </div>
 
@@ -13127,9 +12728,8 @@ export default function TacticsBoard({
                     value={editClub}
                     onChange={(e) => setEditClub(e.target.value)}
                     placeholder="ex: Olympique Lyonnais"
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${
-                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                    }`}
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                      }`}
                   />
                 </div>
 
@@ -13140,9 +12740,8 @@ export default function TacticsBoard({
                   <select
                     value={editRole}
                     onChange={(e) => setEditRole(e.target.value)}
-                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold cursor-pointer ${
-                      isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                    }`}
+                    className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold cursor-pointer ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
+                      }`}
                   >
                     <option value="Coach Principal">Coach Principal</option>
                     <option value="Entraîneur Adjoint">Entraîneur Adjoint</option>
@@ -13159,9 +12758,8 @@ export default function TacticsBoard({
                   <span>Thème & Apparence de l&apos;Interface</span>
                   <span className={`font-normal text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>(Mode Sombre ou Clair & Épuré)</span>
                 </label>
-                <div className={`flex items-center justify-between border p-2.5 rounded-lg flex-wrap gap-2 ${
-                  isModernSleek ? "bg-white border-slate-200" : "bg-[#0d1117] border-[#1f293d]"
-                }`}>
+                <div className={`flex items-center justify-between border p-2.5 rounded-lg flex-wrap gap-2 ${isModernSleek ? "bg-white border-slate-200" : "bg-[#0d1117] border-[#1f293d]"
+                  }`}>
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{isModernSleek ? "☀️" : "🌙"}</span>
                     <div>
@@ -13176,11 +12774,10 @@ export default function TacticsBoard({
                   <button
                     type="button"
                     onClick={toggleModernSleek}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm ${
-                      isModernSleek
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 shadow-emerald-900/20"
-                        : "bg-[#121926] hover:bg-[#1a253b] text-slate-200 border-[#1f293d]"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm ${isModernSleek
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 shadow-emerald-900/20"
+                      : "bg-[#121926] hover:bg-[#1a253b] text-slate-200 border-[#1f293d]"
+                      }`}
                   >
                     <span>{isModernSleek ? "Passer en Sombre" : "Passer en Clair"}</span>
                     <div className={`w-7 h-4 rounded-full p-0.5 flex items-center ${isModernSleek ? "bg-white justify-end" : "bg-slate-700 justify-start"}`}>
@@ -13201,9 +12798,8 @@ export default function TacticsBoard({
                 <select
                   value={editSport}
                   onChange={(e) => setEditSport(e.target.value)}
-                  className={`w-full rounded-lg px-3 py-2.5 text-xs font-black uppercase focus:outline-none cursor-pointer border ${
-                    isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#0d1117] border-[#1f293d] text-white focus:border-[#00E599]"
-                  }`}
+                  className={`w-full rounded-lg px-3 py-2.5 text-xs font-black uppercase focus:outline-none cursor-pointer border ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#0d1117] border-[#1f293d] text-white focus:border-[#00E599]"
+                    }`}
                 >
                   {[
                     { id: "football", label: "⚽ FOOTBALL" },
@@ -13247,9 +12843,8 @@ export default function TacticsBoard({
                   </span>
                 </div>
 
-                <div className={`flex items-center justify-between border p-3 rounded-lg flex-wrap gap-2 ${
-                  isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
-                }`}>
+                <div className={`flex items-center justify-between border p-3 rounded-lg flex-wrap gap-2 ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-[#1f293d] text-white"
+                  }`}>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Formule actuelle :</span>
@@ -13282,11 +12877,10 @@ export default function TacticsBoard({
                       setActivePlan("gratuit");
                       alert("Formule Gratuit sélectionnée.");
                     }}
-                    className={`p-2 rounded-lg border text-left transition cursor-pointer ${
-                      activePlan === "gratuit"
-                        ? "bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/30"
-                        : isModernSleek ? "bg-white border-slate-200 hover:border-slate-300" : "bg-[#0d1117] border-[#1f293d] hover:border-slate-700"
-                    }`}
+                    className={`p-2 rounded-lg border text-left transition cursor-pointer ${activePlan === "gratuit"
+                      ? "bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/30"
+                      : isModernSleek ? "bg-white border-slate-200 hover:border-slate-300" : "bg-[#0d1117] border-[#1f293d] hover:border-slate-700"
+                      }`}
                   >
                     <div className={`text-[9px] font-black uppercase ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Démo Gratuit</div>
                     <div className={`text-xs font-black mt-0.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>0 €</div>
@@ -13298,11 +12892,10 @@ export default function TacticsBoard({
                       setActivePlan("pro");
                       alert("Formule PRO (9.90 €/mois) sélectionnée !");
                     }}
-                    className={`p-2 rounded-lg border text-left transition cursor-pointer ${
-                      activePlan === "pro" || activePlan === "mensuel"
-                        ? "bg-[#00E599]/10 border-[#00E599] ring-1 ring-[#00E599]/30"
-                        : isModernSleek ? "bg-white border-slate-200 hover:border-emerald-500/50" : "bg-[#0d1117] border-[#1f293d] hover:border-[#00E599]/50"
-                    }`}
+                    className={`p-2 rounded-lg border text-left transition cursor-pointer ${activePlan === "pro" || activePlan === "mensuel"
+                      ? "bg-[#00E599]/10 border-[#00E599] ring-1 ring-[#00E599]/30"
+                      : isModernSleek ? "bg-white border-slate-200 hover:border-emerald-500/50" : "bg-[#0d1117] border-[#1f293d] hover:border-[#00E599]/50"
+                      }`}
                   >
                     <div className="text-[9px] font-black text-[#00E599] uppercase">Formule PRO</div>
                     <div className={`text-xs font-black mt-0.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>9,90 €/mo</div>
@@ -13314,11 +12907,10 @@ export default function TacticsBoard({
                       setActivePlan("pro_plus");
                       alert("Formule PRO+ (14.90 €/mois) sélectionnée !");
                     }}
-                    className={`p-2 rounded-lg border text-left transition cursor-pointer ${
-                      activePlan === "pro_plus" || activePlan === "annuel" || activePlan === "club"
-                        ? "bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/30"
-                        : isModernSleek ? "bg-white border-slate-200 hover:border-amber-500/50" : "bg-[#0d1117] border-[#1f293d] hover:border-amber-500/50"
-                    }`}
+                    className={`p-2 rounded-lg border text-left transition cursor-pointer ${activePlan === "pro_plus" || activePlan === "annuel" || activePlan === "club"
+                      ? "bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/30"
+                      : isModernSleek ? "bg-white border-slate-200 hover:border-amber-500/50" : "bg-[#0d1117] border-[#1f293d] hover:border-amber-500/50"
+                      }`}
                   >
                     <div className="text-[9px] font-black text-amber-500 uppercase">Formule PRO+</div>
                     <div className={`text-xs font-black mt-0.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>14,90 €/mo</div>
@@ -13327,9 +12919,8 @@ export default function TacticsBoard({
               </div>
 
               {/* Actions - Sticky at bottom */}
-              <div className={`flex items-center justify-end gap-2.5 pt-3 border-t shrink-0 sticky bottom-0 mt-2 ${
-                isModernSleek ? "bg-white border-slate-200" : "bg-[#0b0e14] border-[#1e293b]"
-              }`}>
+              <div className={`flex items-center justify-end gap-2.5 pt-3 border-t shrink-0 sticky bottom-0 mt-2 ${isModernSleek ? "bg-white border-slate-200" : "bg-[#0b0e14] border-[#1e293b]"
+                }`}>
                 <button
                   type="button"
                   onClick={() => setIsUserConfigModalOpen(false)}
@@ -13370,9 +12961,8 @@ export default function TacticsBoard({
 
             <div className={`flex items-center justify-between border-b pb-4 mb-6 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-xl shadow-inner ${
-                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-emerald-600/30 border-[#00E599]/40 text-[#00E599]"
-                }`}>
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-xl shadow-inner ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-emerald-600/30 border-[#00E599]/40 text-[#00E599]"
+                  }`}>
                   💳
                 </div>
                 <div>
@@ -13386,9 +12976,8 @@ export default function TacticsBoard({
               </div>
               <button
                 onClick={() => setIsCheckoutOpen(false)}
-                className={`font-bold p-1.5 rounded-xl cursor-pointer transition text-lg ${
-                  isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                }`}
+                className={`font-bold p-1.5 rounded-xl cursor-pointer transition text-lg ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  }`}
               >
                 ✕
               </button>

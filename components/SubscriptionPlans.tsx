@@ -156,6 +156,7 @@ export default function SubscriptionPlans({
         "Toutes les fonctionnalités Gratuite",
         "Gestion multi-équipes pour un seul utilisateur",
         "Enregistrements des schémas tactiques liés au match sélectionné",
+        "Partage des schémas tactiques (WhatsApp & Mail)",
         "Enregistrements vocales et saisies de notes activés",
         "Gestion des matchs",
         "Gestion de l'équipe adverse"
