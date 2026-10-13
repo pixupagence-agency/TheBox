@@ -3,7 +3,8 @@
 import React from "react";
 import { 
   Users, ArrowRight, Zap, Activity, LogIn, UserPlus, 
-  Trophy, Target, Check, Share2, HelpCircle, FileText, Scale, Mail
+  Trophy, Target, Check, Share2, HelpCircle, FileText, Scale, Mail,
+  Monitor, Tv, Tablet, Sparkles, CheckCircle2
 } from "lucide-react";
 import { CoachProfile } from "@/app/page";
 import SportIcon from "./SportIcon";
@@ -70,6 +71,48 @@ export default function LandingPage({
 
   // Filter out blocked sports from landing page display
   const availableSports = allSportsList.filter((sp) => !sp.isBlocked);
+
+  const useCases = [
+    {
+      step: "01",
+      tag: "AU BUREAU & À LA MAISON",
+      title: "Analyse & Modélisation Stratégique",
+      desc: "Préparez vos séances et vos matchs en toute sérénité. Concevez vos combinaisons tactiques, étudiez l'adversaire et synchronisez vos schémas entre grand écran et tablette tactile.",
+      image: "/usecase-bureau.jpg",
+      icon: Monitor,
+      highlights: [
+        "Tracés vectoriels précis & phases de jeu animées",
+        "Modélisation complète du bloc adverse & pressing",
+        "Attribution des tireurs de coups arrêtés & effectif"
+      ]
+    },
+    {
+      step: "02",
+      tag: "DANS LE VESTIAIRE",
+      title: "Causerie Tactique & Cohésion d'Équipe",
+      desc: "Projetez vos plans de jeu sur grand écran ou TV dans le vestiaire. Offrez à vos joueurs une lecture claire et dynamique des consignes pour une adhésion totale avant le coup d'envoi.",
+      image: "/usecase-vestiaire.jpg",
+      icon: Tv,
+      highlights: [
+        "Affichage immersif grand format pour tout le groupe",
+        "Ajustements tactiques percutants à la mi-temps",
+        "Notes de causerie & consignes individuelles claires"
+      ]
+    },
+    {
+      step: "03",
+      tag: "SUR LE BANC DE TOUCHE",
+      title: "Coaching en Direct & Mode Live Match",
+      desc: "Emportez votre tablette au bord de la pelouse le jour de match. Ajustez votre dispositif en temps réel, réalisez vos changements tactiques et enregistrez chaque fait marquant.",
+      image: "/usecase-terrain.jpg",
+      icon: Tablet,
+      highlights: [
+        "Mode Live Match & chronomètre officiel de rencontre",
+        "Remplacements et réorganisations instantanées",
+        "Statistiques en direct : buts, cartons, tirs & passes"
+      ]
+    }
+  ];
 
   const features = [
     {
@@ -299,6 +342,97 @@ export default function LandingPage({
           </div>
         </section>
       )}
+
+      {/* USE CASES SHOWCASE SECTION (3 IMAGES DÉMONTRANT LES UTILITÉS DU COACHING) */}
+      <section className="py-24 bg-gradient-to-b from-[#090d14] via-[#07090e] to-[#090d14] border-b border-[#1b2436] px-4 sm:px-6 relative overflow-hidden">
+        {/* Glow ambient background effects */}
+        <div className="absolute top-1/3 left-10 w-96 h-96 bg-[#00E599]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/3 right-10 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#121926] border border-[#233149] text-[10px] font-black uppercase tracking-widest text-[#00E599] mb-4 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-[#00E599]" />
+              <span>L&apos;APPLICATION EN CONDITIONS RÉELLES</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+              Pensé pour le Terrain, <br className="hidden sm:inline" />
+              <span className="text-[#00E599]">du Bureau au Coup de Sifflet Final</span>
+            </h2>
+            <p className="text-xs sm:text-sm md:text-base text-slate-300 mt-4 max-w-2xl mx-auto font-medium leading-relaxed">
+              Une expérience fluide conçue pour chaque moment clé : préparez vos stratégies à froid, fédérez vos joueurs dans le vestiaire et réagissez en direct sur le banc de touche.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {useCases.map((uc, i) => {
+              const Icon = uc.icon;
+              return (
+                <div
+                  key={i}
+                  className="bg-[#0d1117] border border-[#233149] hover:border-[#00E599]/60 rounded-3xl overflow-hidden flex flex-col group transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(0,229,153,0.12)] hover:-translate-y-1.5"
+                >
+                  {/* Image container with badges and overlay */}
+                  <div className="relative aspect-[16/11] w-full overflow-hidden bg-slate-900">
+                    <img
+                      src={uc.image}
+                      alt={uc.title}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0d1117] via-transparent to-black/40 opacity-90" />
+                    
+                    {/* Top pill badges */}
+                    <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
+                      <span className="bg-[#0d1117]/90 backdrop-blur-md text-[9px] font-black tracking-widest uppercase text-[#00E599] px-3 py-1 rounded-full border border-[#00E599]/40 shadow-lg">
+                        {uc.tag}
+                      </span>
+                      <span className="bg-[#07090e]/85 backdrop-blur-md text-white font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-lg border border-white/10">
+                        {uc.step}
+                      </span>
+                    </div>
+
+                    {/* Bottom floating icon */}
+                    <div className="absolute -bottom-5 right-6 w-12 h-12 rounded-2xl bg-[#121926] border border-[#00E599]/40 shadow-xl flex items-center justify-center text-[#00E599] group-hover:bg-[#00E599] group-hover:text-[#07090e] transition-colors duration-300 z-10">
+                      <Icon className="w-6 h-6" />
+                    </div>
+                  </div>
+
+                  {/* Text description & checklist */}
+                  <div className="p-7 pt-9 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-xl font-black text-white group-hover:text-[#00E599] transition-colors duration-200">
+                        {uc.title}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-400 mt-2.5 leading-relaxed font-medium">
+                        {uc.desc}
+                      </p>
+
+                      <div className="border-t border-[#1b2436] mt-6 pt-5 space-y-2.5">
+                        {uc.highlights.map((h, hIdx) => (
+                          <div key={hIdx} className="flex items-start gap-2.5 text-xs text-slate-300 font-medium">
+                            <CheckCircle2 className="w-4 h-4 text-[#00E599] shrink-0 mt-0.5" />
+                            <span>{h}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-8 pt-4 border-t border-[#1b2436]/60 flex items-center justify-between">
+                      <button
+                        onClick={onOpenLoginModal}
+                        className="text-xs font-black text-[#00E599] hover:text-white flex items-center gap-1.5 transition cursor-pointer group-hover:translate-x-1"
+                      >
+                        <span>Tester cette fonctionnalité</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* FEATURES GRID */}
       <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">

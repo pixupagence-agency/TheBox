@@ -1718,21 +1718,21 @@ export default function TacticsBoard({
   // Roster / Substitutes (16 real bench players)
   const [substitutes, setSubstitutes] = useState<any[]>([
     { id: "s1", name: "Gavi", role: "MC", number: 6, status: "excellent" },
-    { id: "s2", name: "Raphinha", role: "AiG", number: 11, status: "normal" },
-    { id: "s3", name: "Dani Olmo", role: "MOC", number: 20, status: "normal" },
-    { id: "s4", name: "Ansu Fati", role: "AC", number: 10, status: "tired" },
-    { id: "s5", name: "Iñigo Martínez", role: "DC", number: 5, status: "normal" },
-    { id: "s6", name: "Héctor Fort", role: "DD", number: 32, status: "normal" },
-    { id: "s7", name: "Fermín López", role: "MC", number: 16, status: "excellent" },
-    { id: "s8", name: "Ferran Torres", role: "AC", number: 7, status: "normal" },
-    { id: "s9", name: "Pablo Torre", role: "MC", number: 14, status: "normal" },
-    { id: "s10", name: "Pau Víctor", role: "AC", number: 18, status: "normal" },
-    { id: "s11", name: "Eric García", role: "DC", number: 24, status: "injured" },
-    { id: "s12", name: "Gerard Martín", role: "DG", number: 35, status: "normal" },
-    { id: "s13", name: "Sergi Domínguez", role: "DC", number: 36, status: "normal" },
-    { id: "s14", name: "Ander Astralaga", role: "G", number: 26, status: "normal" },
-    { id: "s15", name: "Quim Junyent", role: "MC", number: 28, status: "normal" },
-    { id: "s16", name: "Guille Fernández", role: "MC", number: 30, status: "excellent" }
+    { id: "s2", name: "Ferran Torres", role: "AC", number: 7, status: "normal" },
+    { id: "s3", name: "Ansu Fati", role: "AC", number: 10, status: "tired" },
+    { id: "s4", name: "Iñaki Peña", role: "G", number: 13, status: "normal" },
+    { id: "s5", name: "Pablo Torre", role: "MC", number: 14, status: "normal" },
+    { id: "s6", name: "Fermín López", role: "MC", number: 16, status: "excellent" },
+    { id: "s7", name: "Marc Casadó", role: "MDC", number: 17, status: "excellent" },
+    { id: "s8", name: "Pau Víctor", role: "AC", number: 18, status: "normal" },
+    { id: "s9", name: "Iñigo Martínez", role: "DC", number: 2, status: "normal" },
+    { id: "s10", name: "Eric García", role: "DC", number: 24, status: "injured" },
+    { id: "s11", name: "Ander Astralaga", role: "G", number: 26, status: "normal" },
+    { id: "s12", name: "Quim Junyent", role: "MC", number: 28, status: "normal" },
+    { id: "s13", name: "Guille Fernández", role: "MC", number: 30, status: "excellent" },
+    { id: "s14", name: "Héctor Fort", role: "DD", number: 32, status: "normal" },
+    { id: "s15", name: "Gerard Martín", role: "DG", number: 35, status: "normal" },
+    { id: "s16", name: "Sergi Domínguez", role: "DC", number: 36, status: "normal" }
   ]);
 
   // Opponent Roster / Substitutes (16 bench players for opponent team)
@@ -2781,10 +2781,11 @@ export default function TacticsBoard({
       return copy;
     });
 
-    // 2. Put original player into appropriate substitutes list
+    // 2. Put original player into appropriate substitutes list, and remove incoming sub from bench
     if (isOpponent) {
       setOpponentSubstitutes((prev) => {
-        const exists = prev.some((s) => s.name.toLowerCase() === originalToken.name.toLowerCase());
+        const withoutSub = prev.filter((s) => s.id !== newSub.id && (!newSub.name || s.name.toLowerCase() !== newSub.name.toLowerCase()));
+        const exists = withoutSub.some((s) => s.name.toLowerCase() === originalToken.name.toLowerCase());
         if (!exists) {
           return [
             {
@@ -2797,14 +2798,15 @@ export default function TacticsBoard({
               type: "player_b",
               photo: originalToken.photo
             },
-            ...prev
+            ...withoutSub
           ];
         }
-        return prev;
+        return withoutSub;
       });
     } else {
       setSubstitutes((prev) => {
-        const exists = prev.some((s) => s.name.toLowerCase() === originalToken.name.toLowerCase());
+        const withoutSub = prev.filter((s) => s.id !== newSub.id && (!newSub.name || s.name.toLowerCase() !== newSub.name.toLowerCase()));
+        const exists = withoutSub.some((s) => s.name.toLowerCase() === originalToken.name.toLowerCase());
         if (!exists) {
           return [
             {
@@ -2817,10 +2819,10 @@ export default function TacticsBoard({
               type: originalToken.type,
               photo: originalToken.photo
             },
-            ...prev
+            ...withoutSub
           ];
         }
-        return prev;
+        return withoutSub;
       });
     }
 
@@ -2978,15 +2980,135 @@ export default function TacticsBoard({
     return getAvailableNumbersForPlayer(tokenId, currentNum, "away");
   };
 
-  // Assign Unique Number to a player without duplicates
-  const handleAssignUniqueNumber = (targetId: string, isStarter: boolean, rawValue: string | number) => {
-    const newNum = parseInt(String(rawValue), 10);
-    if (isNaN(newNum) || newNum < 1) return;
+  // Sanitize all squad player numbers (starters + substitutes) to guarantee 100% uniqueness
+  const sanitizeSquadNumbers = (targetTeam: "home" | "away") => {
+    const isAway = targetTeam === "away";
+    const starters = currentTokens.filter((t) => isAway ? t.type === "player_b" : t.type === "player_a");
+    const bench = isAway ? opponentSubstitutes : substitutes;
 
+    const usedNumbers = new Set<number>();
+    let hasStarterChanges = false;
+    let hasBenchChanges = false;
+
+    const getFreeNumber = (): number => {
+      for (let n = 1; n <= 99; n++) {
+        if (!usedNumbers.has(n)) {
+          usedNumbers.add(n);
+          return n;
+        }
+      }
+      return 99;
+    };
+
+    // 1. Process starters first
+    const updatedStarterNumbers: Record<string, number> = {};
+    starters.forEach((p) => {
+      const num = typeof p.number === "number" && !isNaN(p.number) ? p.number : null;
+      if (num !== null && num >= 1 && num <= 99 && !usedNumbers.has(num)) {
+        usedNumbers.add(num);
+        updatedStarterNumbers[p.id] = num;
+      } else {
+        hasStarterChanges = true;
+      }
+    });
+
+    starters.forEach((p) => {
+      if (updatedStarterNumbers[p.id] === undefined) {
+        updatedStarterNumbers[p.id] = getFreeNumber();
+      }
+    });
+
+    // 2. Process bench substitutes
+    const updatedBench = bench.map((s) => {
+      const num = typeof s.number === "number" && !isNaN(s.number) ? s.number : null;
+      if (num !== null && num >= 1 && num <= 99 && !usedNumbers.has(num)) {
+        usedNumbers.add(num);
+        return s;
+      } else {
+        hasBenchChanges = true;
+        const newNum = getFreeNumber();
+        return { ...s, number: newNum };
+      }
+    });
+
+    if (hasStarterChanges) {
+      setKeyframes((prev) =>
+        prev.map((frame) =>
+          frame.map((t) => (updatedStarterNumbers[t.id] !== undefined ? { ...t, number: updatedStarterNumbers[t.id] } : t))
+        )
+      );
+    }
+
+    if (hasBenchChanges) {
+      if (isAway) {
+        setOpponentSubstitutes(updatedBench);
+      } else {
+        setSubstitutes(updatedBench);
+      }
+    }
+  };
+
+  // Automatically sanitize squad numbers on modal open
+  useEffect(() => {
+    if (isSetPiecesOpen) {
+      sanitizeSquadNumbers("home");
+      sanitizeSquadNumbers("away");
+    }
+  }, [isSetPiecesOpen]);
+
+  // Assign Unique Number to a player without duplicates (atomic swap if conflict)
+  const handleAssignUniqueNumber = (
+    targetId: string,
+    isStarter: boolean,
+    rawValue: string | number,
+    targetTeam?: "home" | "away"
+  ) => {
+    const newNum = parseInt(String(rawValue), 10);
+    if (isNaN(newNum) || newNum < 1 || newNum > 99) return;
+    const isAway = (targetTeam || rolesTargetTeam) === "away";
+
+    const starters = currentTokens.filter((t) => isAway ? t.type === "player_b" : t.type === "player_a");
+    const bench = isAway ? opponentSubstitutes : substitutes;
+
+    const targetPlayer = isStarter
+      ? starters.find((p) => p.id === targetId)
+      : bench.find((s) => s.id === targetId);
+
+    const oldNum = targetPlayer?.number && !isNaN(targetPlayer.number) ? targetPlayer.number : null;
+    if (oldNum === newNum) return;
+
+    // Check if conflicting player exists with newNum
+    const conflictingStarter = starters.find((p) => p.id !== targetId && p.number === newNum);
+    const conflictingSub = bench.find((s) => s.id !== targetId && s.number === newNum);
+
+    // Number to assign to conflicting player (swap with oldNum, or find free number)
+    let fallbackNum = oldNum;
+    if (!fallbackNum || fallbackNum < 1 || fallbackNum > 99 || fallbackNum === newNum) {
+      const taken = new Set<number>();
+      starters.forEach((p) => { if (typeof p.number === "number") taken.add(p.number); });
+      bench.forEach((s) => { if (typeof s.number === "number") taken.add(s.number); });
+      taken.add(newNum);
+      for (let n = 1; n <= 99; n++) {
+        if (!taken.has(n)) {
+          fallbackNum = n;
+          break;
+        }
+      }
+      fallbackNum = fallbackNum || 99;
+    }
+
+    // 1. Update target player
     if (isStarter) {
       handleUpdatePitchPlayer(targetId, "number", newNum);
     } else {
       handleUpdateSubstitute(targetId, "number", newNum);
+    }
+
+    // 2. If conflicting player existed, reassign / swap them
+    if (conflictingStarter) {
+      handleUpdatePitchPlayer(conflictingStarter.id, "number", fallbackNum);
+    } else if (conflictingSub) {
+      handleUpdateSubstitute(conflictingSub.id, "number", fallbackNum);
     }
   };
 
@@ -3644,6 +3766,13 @@ export default function TacticsBoard({
     if (alreadyOnPitch) {
       alert(`${sub.name} est déjà sur le terrain !`);
       return;
+    }
+
+    // Remove from substitutes so player is not on both pitch and bench simultaneously
+    if (sub.type === "player_b") {
+      setOpponentSubstitutes((prev) => prev.filter((s) => s.id !== sub.id));
+    } else {
+      setSubstitutes((prev) => prev.filter((s) => s.id !== sub.id));
     }
 
     const indexOffset = currentTokens.length;
@@ -5123,9 +5252,9 @@ export default function TacticsBoard({
                   const val = parseInt(e.target.value, 10);
                   if (isNaN(val)) return;
                   if (isHome) {
-                    handleAssignUniqueNumber(activeToken.id, true, val);
+                    handleAssignUniqueNumber(activeToken.id, true, val, "home");
                   } else {
-                    updateTokenField("number", val);
+                    handleAssignUniqueNumber(activeToken.id, true, val, "away");
                   }
                 }}
                 className="bg-transparent text-xs font-black text-white w-full outline-none text-center cursor-pointer"
@@ -5349,7 +5478,9 @@ export default function TacticsBoard({
           {/* LIGNE ACTIONS LIVE MATCH (UNIQUEMENT QUAND LE MODE LIVE EST ACTIVÉ) */}
           {isLiveMatchMode && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[8.5px] font-black text-amber-400 uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1">
+              <span className={`text-[8.5px] font-black uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1 ${
+                isModernSleek ? "text-amber-600" : "text-amber-400"
+              }`}>
                 <Award className="w-3 h-3" />
                 <span>ACTIONS LIVE :</span>
               </span>
@@ -5357,7 +5488,11 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleRecordGoal(activeToken)}
-                className="px-2 py-1 bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/80 text-emerald-200 hover:text-white rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm"
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${
+                  isModernSleek
+                    ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800"
+                    : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/80 text-emerald-200 hover:text-white"
+                }`}
                 title="Ajouter un but à ce joueur"
               >
                 <span>⚽</span>
@@ -5367,7 +5502,11 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleRecordAssist(activeToken)}
-                className="px-2 py-1 bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/80 text-cyan-200 hover:text-white rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm"
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${
+                  isModernSleek
+                    ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800"
+                    : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/80 text-cyan-200 hover:text-white"
+                }`}
                 title="Ajouter une passe décisive à ce joueur"
               >
                 <span>👟</span>
@@ -5377,7 +5516,11 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleGiveYellowCard(activeToken)}
-                className="px-2 py-1 bg-amber-950/90 hover:bg-amber-800 border border-amber-500/80 text-amber-200 hover:text-white rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm"
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${
+                  isModernSleek
+                    ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800"
+                    : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/80 text-amber-200 hover:text-white"
+                }`}
                 title="Attribuer un carton jaune"
               >
                 <span>🟨</span>
@@ -5387,7 +5530,11 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleRemovePlayerFromPitch(activeToken, "red_card")}
-                className="px-2 py-1 bg-rose-950/90 hover:bg-rose-800 border border-rose-600/80 text-rose-200 hover:text-white rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm border ${
+                  isModernSleek
+                    ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800"
+                    : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/80 text-rose-200 hover:text-white"
+                }`}
                 title="Expulsion (Carton Rouge)"
               >
                 <span>🟥</span>
@@ -5459,33 +5606,55 @@ export default function TacticsBoard({
         className="w-full mx-auto mt-2 transition-all duration-300 ease-in-out z-40 shrink-0 select-none animate-fade-in"
         style={{ maxWidth: pitchMaxWidth }}
       >
-        <div className="bg-[#0d1117]/95 border border-[#00E599]/60 shadow-[0_0_20px_rgba(0,229,153,0.12)] rounded-2xl px-3 py-2 backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5">
+        <div
+          className={`rounded-2xl px-3 py-2 backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 transition-all duration-300 ${
+            isModernSleek
+              ? "bg-white/95 border border-slate-200/90 shadow-lg text-slate-800"
+              : "bg-[#0d1117]/95 border border-[#00E599]/60 shadow-[0_0_20px_rgba(0,229,153,0.12)] text-white"
+          }`}
+        >
           {/* Identité joueur */}
           <div className="flex items-center gap-2 shrink-0">
             <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs border shrink-0 ${isHome
-                ? "bg-[#00E599] text-[#0d1117] border-[#00e599]"
-                : "bg-rose-600 text-white border-rose-400"
-                }`}
+              className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs border shrink-0 ${
+                isHome
+                  ? isModernSleek
+                    ? "bg-emerald-600 text-white border-emerald-500 shadow-2xs"
+                    : "bg-[#00E599] text-[#0d1117] border-[#00e599]"
+                  : "bg-rose-600 text-white border-rose-400"
+              }`}
             >
               {currentLiveToken.number || "?"}
             </div>
 
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-black text-white truncate max-w-[130px] sm:max-w-[180px]">
+                <span
+                  className={`text-xs font-black truncate max-w-[130px] sm:max-w-[180px] ${
+                    isModernSleek ? "text-slate-900" : "text-white"
+                  }`}
+                >
                   {currentLiveToken.name}
                 </span>
                 <span
-                  className={`text-[8px] font-black px-1.5 py-0.2 rounded border shrink-0 ${isHome
-                    ? "bg-[#102420] text-[#00E599] border-[#00e599]/30"
-                    : "bg-rose-950 text-rose-300 border-rose-800"
-                    }`}
+                  className={`text-[8px] font-black px-1.5 py-0.2 rounded border shrink-0 ${
+                    isHome
+                      ? isModernSleek
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                        : "bg-[#102420] text-[#00E599] border-[#00e599]/30"
+                      : isModernSleek
+                        ? "bg-rose-50 text-rose-800 border-rose-300"
+                        : "bg-rose-950 text-rose-300 border-rose-800"
+                  }`}
                 >
                   {isHome ? "MON CLUB" : "MON ADVERSAIRE"}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-[9px] text-slate-400">
+              <div
+                className={`flex items-center gap-2 text-[9px] ${
+                  isModernSleek ? "text-slate-500 font-medium" : "text-slate-400"
+                }`}
+              >
                 <span>{currentLiveToken.role || "JOUEUR"}</span>
                 {currentGoals > 0 && (
                   <span className={`font-black flex items-center gap-0.5 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>
@@ -5493,12 +5662,12 @@ export default function TacticsBoard({
                   </span>
                 )}
                 {currentAssists > 0 && (
-                  <span className="text-cyan-300 font-black flex items-center gap-0.5">
+                  <span className={`font-black flex items-center gap-0.5 ${isModernSleek ? "text-cyan-800" : "text-cyan-300"}`}>
                     👟 x{currentAssists}
                   </span>
                 )}
                 {currentYellows > 0 && (
-                  <span className="text-amber-400 font-black flex items-center gap-0.5">
+                  <span className={`font-black flex items-center gap-0.5 ${isModernSleek ? "text-amber-800" : "text-amber-400"}`}>
                     🟨 (1/2)
                   </span>
                 )}
@@ -5512,7 +5681,11 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => handleRecordGoal(currentLiveToken)}
-              className="px-2.5 py-1.5 bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/70 hover:border-emerald-400 text-emerald-200 hover:text-white rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
+                isModernSleek
+                  ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800 hover:text-emerald-950 shadow-2xs"
+                  : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/70 hover:border-emerald-400 text-emerald-200 hover:text-white"
+              }`}
               title="Ajouter un but à ce joueur (Raccourci clavier : B)"
             >
               <span>⚽</span>
@@ -5523,7 +5696,11 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => handleRecordAssist(currentLiveToken)}
-              className="px-2.5 py-1.5 bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/70 hover:border-cyan-400 text-cyan-200 hover:text-white rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
+                isModernSleek
+                  ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800 hover:text-cyan-950 shadow-2xs"
+                  : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/70 hover:border-cyan-400 text-cyan-200 hover:text-white"
+              }`}
               title="Ajouter une passe décisive à ce joueur (Raccourci clavier : P)"
             >
               <span>👟</span>
@@ -5542,7 +5719,11 @@ export default function TacticsBoard({
                   setLiveActionToken({ ...currentLiveToken, yellowCards: 1 });
                 }
               }}
-              className="px-2.5 py-1.5 bg-amber-950/90 hover:bg-amber-800 border border-amber-500/70 hover:border-amber-400 text-amber-200 hover:text-white rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
+                isModernSleek
+                  ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800 hover:text-amber-950 shadow-2xs"
+                  : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/70 hover:border-amber-400 text-amber-200 hover:text-white"
+              }`}
               title="Donner un carton jaune (CJ) - 2ème = exclusion (Raccourci clavier : J)"
             >
               <span>🟨</span>
@@ -5556,7 +5737,11 @@ export default function TacticsBoard({
                 handleRemovePlayerFromPitch(currentLiveToken, "red_card");
                 setLiveActionToken(null);
               }}
-              className="px-2.5 py-1.5 bg-rose-950/90 hover:bg-rose-800 border border-rose-600/70 hover:border-rose-400 text-rose-200 hover:text-white rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
+                isModernSleek
+                  ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800 hover:text-rose-950 shadow-2xs"
+                  : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/70 hover:border-rose-400 text-rose-200 hover:text-white"
+              }`}
               title="Carton rouge (CR) - Expulsion immédiate (Raccourci clavier : R)"
             >
               <span>🟥</span>
@@ -5570,7 +5755,11 @@ export default function TacticsBoard({
                 handleRemovePlayerFromPitch(currentLiveToken, "injured");
                 setLiveActionToken(null);
               }}
-              className="px-2.5 py-1.5 bg-red-950/90 hover:bg-red-800 border border-red-500/70 hover:border-red-400 text-red-200 hover:text-white rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
+                isModernSleek
+                  ? "bg-red-50 hover:bg-red-100 border-red-400 text-red-800 hover:text-red-950 shadow-2xs"
+                  : "bg-red-950/90 hover:bg-red-800 border border-red-500/70 hover:border-red-400 text-red-200 hover:text-white"
+              }`}
               title="Blessure (B) - Sortie sur blessure et proposition de remplacement"
             >
               <span>🏥</span>
@@ -5583,7 +5772,11 @@ export default function TacticsBoard({
               onClick={() => {
                 setSubPickerToken(currentLiveToken);
               }}
-              className="px-2 py-1.5 bg-[#172233] hover:bg-[#202f47] border border-[#2d3f5e] hover:border-[#00e599]/40 text-slate-200 hover:text-white rounded-xl text-[10px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
+              className={`px-2 py-1.5 rounded-xl text-[10px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm border ${
+                isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700 hover:text-slate-900"
+                  : "bg-[#172233] hover:bg-[#202f47] border-[#2d3f5e] hover:border-[#00e599]/40 text-slate-200 hover:text-white"
+              }`}
               title="Effectuer un remplacement pour ce joueur"
             >
               <span>🔄</span>
@@ -5594,7 +5787,11 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => setLiveActionToken(null)}
-              className="p-1.5 bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white rounded-xl transition cursor-pointer shrink-0 ml-0.5"
+              className={`p-1.5 rounded-xl transition cursor-pointer shrink-0 ml-0.5 ${
+                isModernSleek
+                  ? "bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700"
+                  : "bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white"
+              }`}
               title="Fermer la boîte à outils (Échap)"
             >
               <X className="w-3.5 h-3.5" />
@@ -7421,13 +7618,17 @@ export default function TacticsBoard({
                     )}
 
                     {/* GROUP 1: Pitch View Modes (Full Pitch & Half Pitch) & Animation Video Toggle */}
-                    <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
+                    <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                       <button
                         type="button"
                         onClick={() => setTerrainComplet(true)}
                         className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${terrainComplet
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          ? isModernSleek
+                            ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                            : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : isModernSleek
+                            ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
                         title="Terrain complet"
                         aria-label="Terrain complet"
@@ -7442,8 +7643,12 @@ export default function TacticsBoard({
                         type="button"
                         onClick={() => setTerrainComplet(false)}
                         className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${!terrainComplet
-                          ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
-                          : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          ? isModernSleek
+                            ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                            : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : isModernSleek
+                            ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
                         title="Demi-terrain"
                         aria-label="Demi-terrain"
@@ -7456,7 +7661,7 @@ export default function TacticsBoard({
                         </svg>
                       </button>
 
-                      <div className="h-4 w-px mx-0.5 bg-[#1a2130]" />
+                      <div className={`h-4 w-px mx-0.5 ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
 
                       <button
                         type="button"
@@ -7477,8 +7682,12 @@ export default function TacticsBoard({
                         className={`h-7 px-2.5 rounded-lg transition flex items-center justify-center ${isLiveMatchMode
                           ? "opacity-30 cursor-not-allowed bg-[#0c1017] border border-[#1e293b] text-slate-500"
                           : isAnimationCreatorOpen
-                            ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs cursor-pointer"
-                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d] cursor-pointer"
+                            ? isModernSleek
+                              ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black cursor-pointer"
+                              : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs cursor-pointer"
+                            : isModernSleek
+                              ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80 cursor-pointer"
+                              : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d] cursor-pointer"
                           }`}
                         title={isLiveMatchMode ? "L'animation n'est pas disponible en mode Live Match" : (isAnimationCreatorOpen ? "Masquer le créateur d'animation" : "Activer le créateur d'animation (Vidéo)")}
                         aria-label="Créer une animation"
@@ -8174,33 +8383,67 @@ export default function TacticsBoard({
 
                 {/* TACTICAL ANIMATION & PLAYER MOVEMENT CREATION PANEL */}
                 {!isLiveMatchMode && isAnimationCreatorOpen && (
-                  <div id="animation-creator-panel" className="mt-2.5 p-1.5 sm:p-2 bg-[#090d14]/95 border border-[#1f293d] rounded-2xl shadow-xl text-xs text-white animate-fade-in shrink-0 relative z-30">
+                  <div
+                    id="animation-creator-panel"
+                    className={`mt-2.5 p-1.5 sm:p-2 rounded-2xl shadow-xl text-xs animate-fade-in shrink-0 relative z-30 transition-all duration-300 ${
+                      isModernSleek
+                        ? "bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-800 shadow-md"
+                        : "bg-[#090d14]/95 border border-[#1f293d] text-white"
+                    }`}
+                  >
 
                     {/* Main Animation Toolbar Row - Compact & Icon-only */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 bg-[#121926] p-1.5 px-2.5 rounded-xl border border-[#1f293d]/80">
+                    <div
+                      className={`flex flex-wrap items-center justify-between gap-2 p-1.5 px-2.5 rounded-xl border transition-colors ${
+                        isModernSleek
+                          ? "bg-slate-50 border-slate-200"
+                          : "bg-[#121926] border-[#1f293d]/80"
+                      }`}
+                    >
 
                       {/* Left: Section Badge & Speed Pills */}
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[11px] font-black text-purple-300 uppercase tracking-wider flex items-center gap-1">
+                        <span
+                          className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1 ${
+                            isModernSleek ? "text-purple-700" : "text-purple-300"
+                          }`}
+                        >
                           <span>🎬</span>
                           <span className="hidden sm:inline">ANIMATION</span>
                         </span>
 
-                        <div className="h-4 w-px bg-[#1f293d]" />
+                        <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
 
                         {/* Vitesse de lecture */}
-                        <div className="flex items-center gap-0.5 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
-                          <span className="text-[9px] font-black text-slate-500 uppercase px-1">⚡</span>
+                        <div
+                          className={`flex items-center gap-0.5 p-0.5 rounded-lg border ${
+                            isModernSleek
+                              ? "bg-white border-slate-200 shadow-2xs"
+                              : "bg-[#090d14] border-[#1a2130]"
+                          }`}
+                        >
+                          <span
+                            className={`text-[9px] font-black uppercase px-1 ${
+                              isModernSleek ? "text-slate-400" : "text-slate-500"
+                            }`}
+                          >
+                            ⚡
+                          </span>
                           {[500, 1000, 1500, 2000].map((speed) => {
                             const active = playbackSpeed === speed;
                             return (
                               <button
                                 key={speed}
                                 onClick={() => setPlaybackSpeed(speed)}
-                                className={`h-6 px-1.5 text-[8.5px] font-black rounded-md transition cursor-pointer ${active
-                                  ? "bg-[#00E599] text-[#0d1117] shadow-xs"
-                                  : "text-slate-400 hover:text-white"
-                                  }`}
+                                className={`h-6 px-1.5 text-[8.5px] font-black rounded-md transition cursor-pointer ${
+                                  active
+                                    ? isModernSleek
+                                      ? "bg-emerald-600 text-white shadow-xs"
+                                      : "bg-[#00E599] text-[#0d1117] shadow-xs"
+                                    : isModernSleek
+                                      ? "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                                      : "text-slate-400 hover:text-white"
+                                }`}
                                 title={`Vitesse : ${speed / 1000}s par étape`}
                               >
                                 {speed / 1000}s
@@ -8214,12 +8457,22 @@ export default function TacticsBoard({
                       <div className="flex-1 flex items-center gap-2 min-w-0 justify-center">
 
                         {/* Playback Controls (Prev, Play/Pause, Next) - Icon Only */}
-                        <div className="flex items-center gap-1 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130] shrink-0">
+                        <div
+                          className={`flex items-center gap-1 p-0.5 rounded-lg border shrink-0 ${
+                            isModernSleek
+                              ? "bg-white border-slate-200 shadow-2xs"
+                              : "bg-[#090d14] border-[#1a2130]"
+                          }`}
+                        >
                           <button
                             type="button"
-                            onClick={() => setCurrentFrameIdx(prev => Math.max(0, prev - 1))}
+                            onClick={() => setCurrentFrameIdx((prev) => Math.max(0, prev - 1))}
                             disabled={currentFrameIdx === 0}
-                            className="h-7 w-7 bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 disabled:opacity-25 disabled:pointer-events-none rounded-md border border-[#1f293d] transition cursor-pointer flex items-center justify-center"
+                            className={`h-7 w-7 disabled:opacity-25 disabled:pointer-events-none rounded-md border transition cursor-pointer flex items-center justify-center ${
+                              isModernSleek
+                                ? "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                : "bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 border-[#1f293d]"
+                            }`}
                             title="Étape Précédente"
                             aria-label="Étape Précédente"
                           >
@@ -8229,10 +8482,13 @@ export default function TacticsBoard({
                           <button
                             type="button"
                             onClick={() => setIsPlaying(!isPlaying)}
-                            className={`h-7 px-2.5 rounded-md transition cursor-pointer flex items-center justify-center shadow-md ${isPlaying
-                              ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20 animate-pulse border border-rose-400/50"
-                              : "bg-[#00E599] hover:bg-emerald-400 text-slate-950 shadow-[#00e599]/15 border border-emerald-300"
-                              }`}
+                            className={`h-7 px-2.5 rounded-md transition cursor-pointer flex items-center justify-center shadow-md ${
+                              isPlaying
+                                ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20 animate-pulse border border-rose-400/50"
+                                : isModernSleek
+                                  ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/15 border border-emerald-500 font-bold"
+                                  : "bg-[#00E599] hover:bg-emerald-400 text-slate-950 shadow-[#00e599]/15 border border-emerald-300"
+                            }`}
                             title={isPlaying ? "Mettre en Pause" : "Lancer la Lecture animée"}
                             aria-label={isPlaying ? "Pause" : "Lecture"}
                           >
@@ -8241,9 +8497,13 @@ export default function TacticsBoard({
 
                           <button
                             type="button"
-                            onClick={() => setCurrentFrameIdx(prev => Math.min(keyframes.length - 1, prev + 1))}
+                            onClick={() => setCurrentFrameIdx((prev) => Math.min(keyframes.length - 1, prev + 1))}
                             disabled={currentFrameIdx === keyframes.length - 1}
-                            className="h-7 w-7 bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 disabled:opacity-25 disabled:pointer-events-none rounded-md border border-[#1f293d] transition cursor-pointer flex items-center justify-center"
+                            className={`h-7 w-7 disabled:opacity-25 disabled:pointer-events-none rounded-md border transition cursor-pointer flex items-center justify-center ${
+                              isModernSleek
+                                ? "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                : "bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 border-[#1f293d]"
+                            }`}
                             title="Étape Suivante"
                             aria-label="Étape Suivante"
                           >
@@ -8251,7 +8511,7 @@ export default function TacticsBoard({
                           </button>
                         </div>
 
-                        <div className="h-4 w-px bg-[#1f293d] shrink-0" />
+                        <div className={`h-4 w-px shrink-0 ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
 
                         {/* Sequence Timeline Steps Navigation */}
                         <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-thin">
@@ -8263,10 +8523,15 @@ export default function TacticsBoard({
                                   <button
                                     type="button"
                                     onClick={() => setCurrentFrameIdx(idx)}
-                                    className={`h-7 w-7 rounded-md border flex items-center justify-center transition-all cursor-pointer text-xs font-black ${isActive
-                                      ? "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-[#00E599] shadow-xs"
-                                      : "bg-[#0c1017] border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
-                                      }`}
+                                    className={`h-7 w-7 rounded-md border flex items-center justify-center transition-all cursor-pointer text-xs font-black ${
+                                      isActive
+                                        ? isModernSleek
+                                          ? "bg-emerald-50 border-emerald-500 text-emerald-800 shadow-xs"
+                                          : "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-[#00E599] shadow-xs"
+                                        : isModernSleek
+                                          ? "bg-white border-slate-200 hover:border-slate-400 text-slate-600 hover:text-slate-900"
+                                          : "bg-[#0c1017] border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
+                                    }`}
                                     title={`Étape ${idx + 1}`}
                                   >
                                     <span>{idx + 1}</span>
@@ -8284,7 +8549,11 @@ export default function TacticsBoard({
                                         setSleekToastMessage(`🗑️ Étape ${deletedIdx + 1} supprimée.`);
                                         setTimeout(() => setSleekToastMessage(null), 2500);
                                       }}
-                                      className="ml-0.5 p-0.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/60 rounded transition cursor-pointer text-[9px] font-black"
+                                      className={`ml-0.5 p-0.5 rounded transition cursor-pointer text-[9px] font-black ${
+                                        isModernSleek
+                                          ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                          : "text-slate-500 hover:text-rose-400 hover:bg-rose-950/60"
+                                      }`}
                                       title={`Supprimer l'étape ${idx + 1}`}
                                     >
                                       ✕
@@ -8293,7 +8562,17 @@ export default function TacticsBoard({
                                 </div>
 
                                 {idx < keyframes.length - 1 && (
-                                  <div className={`w-2 h-0.5 shrink-0 ${isActive ? "bg-[#00E599]" : "bg-[#1f293d]"}`} />
+                                  <div
+                                    className={`w-2 h-0.5 shrink-0 ${
+                                      isActive
+                                        ? isModernSleek
+                                          ? "bg-emerald-500"
+                                          : "bg-[#00E599]"
+                                        : isModernSleek
+                                          ? "bg-slate-300"
+                                          : "bg-[#1f293d]"
+                                    }`}
+                                  />
                                 )}
                               </div>
                             );
@@ -8303,7 +8582,13 @@ export default function TacticsBoard({
                       </div>
 
                       {/* Right: Operations Buttons - ICON ONLY */}
-                      <div className="flex items-center gap-1 shrink-0 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
+                      <div
+                        className={`flex items-center gap-1 shrink-0 p-0.5 rounded-lg border ${
+                          isModernSleek
+                            ? "bg-white border-slate-200 shadow-2xs"
+                            : "bg-[#090d14] border-[#1a2130]"
+                        }`}
+                      >
                         {/* Sauvegarder (Disquette) */}
                         <button
                           type="button"
@@ -8313,7 +8598,11 @@ export default function TacticsBoard({
                             setIsSaveAnimationMode(true);
                             setIsSaveModalOpen(true);
                           }}
-                          className="h-7 w-8 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-md transition cursor-pointer flex items-center justify-center border border-purple-400/40 shadow-xs"
+                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center shadow-xs ${
+                            isModernSleek
+                              ? "bg-purple-600 hover:bg-purple-500 text-white border border-purple-400 shadow-purple-600/15"
+                              : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border border-purple-400/40"
+                          }`}
                           title="Enregistrer l'animation (Disquette)"
                           aria-label="Sauvegarder l'animation"
                         >
@@ -8333,7 +8622,11 @@ export default function TacticsBoard({
                             });
                             setCurrentFrameIdx(currentFrameIdx + 1);
                           }}
-                          className="h-7 w-8 bg-[#0c1017] hover:bg-[#121c2e] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white rounded-md transition cursor-pointer flex items-center justify-center"
+                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center ${
+                            isModernSleek
+                              ? "bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 text-cyan-700 hover:text-cyan-900"
+                              : "bg-[#0c1017] hover:bg-[#121c2e] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white"
+                          }`}
                           title="Ajouter une nouvelle étape"
                           aria-label="Nouvelle Étape"
                         >
@@ -8356,7 +8649,11 @@ export default function TacticsBoard({
                             setTimeout(() => setSleekToastMessage(null), 2500);
                           }}
                           disabled={keyframes.length <= 1}
-                          className="h-7 w-8 bg-rose-950/40 hover:bg-rose-900 border border-rose-800/60 hover:border-rose-500 text-rose-300 hover:text-white disabled:opacity-20 disabled:pointer-events-none rounded-md transition cursor-pointer flex items-center justify-center"
+                          className={`h-7 w-8 disabled:opacity-20 disabled:pointer-events-none rounded-md transition cursor-pointer flex items-center justify-center ${
+                            isModernSleek
+                              ? "bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 hover:text-rose-900"
+                              : "bg-rose-950/40 hover:bg-rose-900 border border-rose-800/60 hover:border-rose-500 text-rose-300 hover:text-white"
+                          }`}
                           title="Supprimer l'étape actuelle"
                           aria-label="Supprimer l'étape"
                         >
@@ -8374,7 +8671,11 @@ export default function TacticsBoard({
                             setSleekToastMessage("🔄 Séquences d'animation réinitialisées.");
                             setTimeout(() => setSleekToastMessage(null), 2500);
                           }}
-                          className="h-7 w-8 bg-[#0c1017] hover:bg-[#1b253b] border border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-md transition cursor-pointer flex items-center justify-center"
+                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center ${
+                            isModernSleek
+                              ? "bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900"
+                              : "bg-[#0c1017] hover:bg-[#1b253b] border border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
+                          }`}
                           title="Réinitialiser toute l'animation"
                           aria-label="Réinitialiser"
                         >
@@ -10911,7 +11212,8 @@ export default function TacticsBoard({
                                           handleAssignUniqueNumber(
                                             player.id,
                                             true,
-                                            Number(e.target.value)
+                                            Number(e.target.value),
+                                            rolesTargetTeam
                                           )
                                         }
                                         className={`w-[66px] h-9 appearance-none font-black text-xs sm:text-[13px] rounded-xl focus:outline-none transition cursor-pointer pl-2 pr-5 text-center shadow-xs border-2 ${isAway
@@ -11195,7 +11497,8 @@ export default function TacticsBoard({
                                         handleAssignUniqueNumber(
                                           sub.id,
                                           false,
-                                          Number(e.target.value)
+                                          Number(e.target.value),
+                                          rolesTargetTeam
                                         )
                                       }
                                       className={`w-[66px] h-9 appearance-none font-black text-xs sm:text-[13px] rounded-xl focus:outline-none transition cursor-pointer pl-2 pr-5 text-center shadow-xs border-2 ${isAway
