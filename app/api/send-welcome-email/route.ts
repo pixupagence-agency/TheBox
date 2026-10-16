@@ -1,10 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter, DEFAULT_FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from "@/lib/mailer";
-import { escapeHtml, isValidEmail, sanitizeText } from "@/lib/security";
+import { 
+  escapeHtml, 
+  isValidEmail, 
+  sanitizeText, 
+  checkRateLimit, 
+  getClientIp, 
+  isAllowedOrigin 
+} from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, firstName, lastName } = await req.json();
+    // CSRF Protection
+    if (!isAllowedOrigin(req)) {
+      return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
+    }
+
+    // IP Rate Limiting (10 requests per minute per IP)
+    const clientIp = getClientIp(req);
+    const rateCheck = checkRateLimit(`welcome_${clientIp}`, 10, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },
+        { 
+          status: 429, 
+          headers: { "Retry-After": String(rateCheck.retryAfterSeconds || 60) } 
+        }
+      );
+    }
+
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Données de bienvenue invalides." }, { status: 400 });
+    }
+
+    const { email, firstName, lastName } = body;
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: "Une adresse email valide est requise." }, { status: 400 });
@@ -257,6 +287,6 @@ Vous recevez cet e-mail suite à votre inscription sur l'application The Box.`;
     return NextResponse.json({ success: true, message: "Welcome email sent successfully", messageId: info.messageId });
   } catch (err: any) {
     console.error("Error in welcome email API:", err);
-    return NextResponse.json({ error: "Failed to send email", details: err?.message }, { status: 500 });
+    return NextResponse.json({ error: "Échec de l'envoi de l'e-mail de bienvenue. Veuillez réessayer ultérieurement." }, { status: 500 });
   }
 }

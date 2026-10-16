@@ -1,10 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter, DEFAULT_FROM_EMAIL } from "@/lib/mailer";
-import { escapeHtml, sanitizeSubject, isValidEmail, sanitizeText } from "@/lib/security";
+import { 
+  escapeHtml, 
+  sanitizeSubject, 
+  isValidEmail, 
+  sanitizeText,
+  checkRateLimit,
+  getClientIp,
+  isAllowedOrigin
+} from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, subject, body, imageUrl, title, clubLabel } = await req.json();
+    // CSRF Protection
+    if (!isAllowedOrigin(req)) {
+      return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
+    }
+
+    // IP Rate Limiting (10 requests per minute per IP)
+    const clientIp = getClientIp(req);
+    const rateCheck = checkRateLimit(`schema_${clientIp}`, 10, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },
+        { 
+          status: 429, 
+          headers: { "Retry-After": String(rateCheck.retryAfterSeconds || 60) } 
+        }
+      );
+    }
+
+    const bodyData = await req.json().catch(() => null);
+    if (!bodyData || typeof bodyData !== "object") {
+      return NextResponse.json({ error: "Données de schéma invalides." }, { status: 400 });
+    }
+
+    const { email, subject, body, imageUrl, title, clubLabel } = bodyData;
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: "Une adresse email valide est requise." }, { status: 400 });
@@ -239,6 +270,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("Error in send-schema-email API:", err);
-    return NextResponse.json({ error: "Échec de l'envoi de l'e-mail", details: err?.message }, { status: 500 });
+    return NextResponse.json({ error: "Échec de l'envoi de l'e-mail. Veuillez réessayer ultérieurement." }, { status: 500 });
   }
 }

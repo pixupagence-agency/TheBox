@@ -1,12 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter } from "@/lib/mailer";
-import { escapeHtml, sanitizeSubject, isValidEmail, sanitizeText } from "@/lib/security";
+import { 
+  escapeHtml, 
+  sanitizeSubject, 
+  isValidEmail, 
+  sanitizeText, 
+  checkRateLimit, 
+  getClientIp, 
+  isAllowedOrigin, 
+  isBotDetected 
+} from "@/lib/security";
 
 const TARGET_CONTACT_EMAIL = "pixup.agence@gmail.com";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, subject, message, club, sport, phone } = await req.json();
+    // CSRF Protection
+    if (!isAllowedOrigin(req)) {
+      return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
+    }
+
+    // IP Rate Limiting (5 requests per 5 minutes per IP)
+    const clientIp = getClientIp(req);
+    const rateCheck = checkRateLimit(`contact_${clientIp}`, 5, 300000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },
+        { 
+          status: 429, 
+          headers: { "Retry-After": String(rateCheck.retryAfterSeconds || 60) } 
+        }
+      );
+    }
+
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Données de formulaire invalides." }, { status: 400 });
+    }
+
+    // Bot Honeypot Trap Check
+    if (isBotDetected(body)) {
+      // Silently succeed for bots without sending real email
+      return NextResponse.json({ success: true, message: "Message transmis." });
+    }
+
+    const { name, email, subject, message, club, sport, phone } = body;
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json(
@@ -272,7 +310,7 @@ Pour répondre directement à ce contact : ${cleanEmail}
   } catch (err: any) {
     console.error("Error in send-contact-email API:", err);
     return NextResponse.json(
-      { error: "Échec de l'envoi du message de contact.", details: err?.message },
+      { error: "Échec de l'envoi du message de contact. Veuillez réessayer ultérieurement." },
       { status: 500 }
     );
   }

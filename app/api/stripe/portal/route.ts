@@ -1,10 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
-import { validateSafeReturnUrl, isValidEmail, sanitizeText } from "@/lib/security";
+import { 
+  validateSafeReturnUrl, 
+  isValidEmail, 
+  sanitizeText,
+  checkRateLimit,
+  getClientIp,
+  isAllowedOrigin
+} from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
-    const { customerId, coachEmail, returnUrl } = await req.json();
+    // CSRF Protection
+    if (!isAllowedOrigin(req)) {
+      return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
+    }
+
+    // IP Rate Limiting (15 portal sessions per minute per IP)
+    const clientIp = getClientIp(req);
+    const rateCheck = checkRateLimit(`portal_${clientIp}`, 15, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },
+        { 
+          status: 429, 
+          headers: { "Retry-After": String(rateCheck.retryAfterSeconds || 60) } 
+        }
+      );
+    }
+
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Paramètres invalides." }, { status: 400 });
+    }
+
+    const { customerId, coachEmail, returnUrl } = body;
 
     const stripe = getStripe();
     if (!stripe || !isStripeConfigured) {
