@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Award, Clock, Sparkles, CheckCircle, Shield, ArrowRight, Zap, X } from "lucide-react";
+import { isSuperAdminEmail } from "@/lib/security";
 
 export const TRIAL_DURATION_DAYS = 14;
 export const TRIAL_DURATION_MS = TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000;
@@ -114,8 +115,7 @@ export default function TrialCountdownModal({
 }: TrialCountdownModalProps) {
   const isCreatorAdmin = Boolean(
     isAdmin || 
-    coachEmail.toLowerCase().includes("pixup") || 
-    coachEmail.toLowerCase() === "pixup.agence@gmail.com"
+    isSuperAdminEmail(coachEmail)
   );
 
   const [remaining, setRemaining] = useState<TrialTimeRemaining>(() =>

@@ -20,6 +20,7 @@ import {
   Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target
 } from "lucide-react";
 import { saveTacticToFirestore, deleteTacticFromFirestore } from "@/lib/firebase";
+import { isSuperAdminEmail } from "@/lib/security";
 
 export interface Token {
   id: string;
@@ -339,8 +340,7 @@ export default function TacticsBoard({
   const isUserAdmin = Boolean(
     isAdmin ||
     activeCoach?.isAdmin ||
-    activeCoach?.email?.toLowerCase().includes("pixup") ||
-    activeCoach?.email?.toLowerCase() === "pixup.agence@gmail.com"
+    isSuperAdminEmail(activeCoach?.email)
   );
 
   const currentPlan = (activeCoach as any)?.activePlan || activePlan || "free";

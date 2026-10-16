@@ -1,14 +1,17 @@
 import nodemailer from "nodemailer";
 
-// Default Gmail credentials if production env vars are not set in Vercel/hosting
+// Default sender user if SMTP_USER is not explicitly provided
 const DEFAULT_SMTP_USER = "pixup.agence@gmail.com";
-const DEFAULT_SMTP_PASS = "sedluzfgdudwrawu";
 
 export function getMailTransporter() {
   const host = process.env.SMTP_HOST || "smtp.gmail.com";
   const user = process.env.SMTP_USER || DEFAULT_SMTP_USER;
-  const rawPass = process.env.SMTP_PASS || DEFAULT_SMTP_PASS;
+  const rawPass = process.env.SMTP_PASS || "";
   const pass = rawPass.replace(/\s+/g, "");
+
+  if (!pass) {
+    throw new Error("SMTP_PASS is not configured in server environment variables.");
+  }
 
   // If using Gmail, using service: 'gmail' is the most robust transport across all serverless environments
   if (host === "smtp.gmail.com" || user.endsWith("@gmail.com")) {

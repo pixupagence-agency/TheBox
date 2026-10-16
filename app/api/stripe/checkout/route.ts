@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe, STRIPE_PLANS, isStripeConfigured } from "@/lib/stripe";
+import { validateSafeReturnUrl, isValidEmail, sanitizeText } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { planId, coachId, coachEmail, returnUrl } = body;
 
-    if (!planId || !STRIPE_PLANS[planId]) {
+    if (!planId || typeof planId !== "string" || !STRIPE_PLANS[planId]) {
       return NextResponse.json(
         { error: `Formule invalide ou introuvable : ${planId}` },
         { status: 400 }
@@ -28,11 +29,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determine host origin for success and cancel callbacks
-    const origin = returnUrl || req.headers.get("origin") || process.env.APP_URL || "http://localhost:3000";
+    // Determine safe host origin to prevent open redirect vulnerabilities
+    const fallbackOrigin = req.headers.get("origin") || process.env.APP_URL || req.nextUrl.origin || "http://localhost:3000";
+    const safeBaseUrl = validateSafeReturnUrl(returnUrl, fallbackOrigin).replace(/\/$/, "");
 
-    const successUrl = `${origin}/?stripe_status=success&session_id={CHECKOUT_SESSION_ID}&plan=${planId}`;
-    const cancelUrl = `${origin}/?stripe_status=cancel&plan=${planId}`;
+    const successUrl = `${safeBaseUrl}/?stripe_status=success&session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(planId)}`;
+    const cancelUrl = `${safeBaseUrl}/?stripe_status=cancel&plan=${encodeURIComponent(planId)}`;
 
     // Line items: use configured Stripe Price ID if set, otherwise generate on-the-fly recurring subscription item
     const lineItems = plan.priceEnvVar

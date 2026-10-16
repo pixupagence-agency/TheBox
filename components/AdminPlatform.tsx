@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { CoachProfile } from "@/app/page";
 import { calculateTrialRemaining } from "@/components/TrialCountdownModal";
+import { isSuperAdminEmail } from "@/lib/security";
 import { 
   ShieldCheck, 
   Users, 
@@ -138,7 +139,7 @@ export default function AdminPlatform({
     // Default plan mapping
     const initial: Record<string, string> = {};
     coaches.forEach((c) => {
-      initial[c.id] = c.email?.toLowerCase().includes("pixup") ? "club" : "free";
+      initial[c.id] = (isSuperAdminEmail(c.email) || c.isAdmin) ? "club" : "free";
     });
     return initial;
   });
@@ -298,7 +299,7 @@ export default function AdminPlatform({
 
   // Delete coach profile
   const handleDeleteCoach = (coachId: string, email: string) => {
-    if (email.toLowerCase().includes("pixup")) {
+    if (isSuperAdminEmail(email)) {
       alert("Impossible de supprimer le compte Administrateur Suprême.");
       return;
     }
@@ -653,7 +654,7 @@ export default function AdminPlatform({
                     </thead>
                     <tbody className={`divide-y ${isModernSleek ? "divide-slate-200" : "divide-[#182236]"}`}>
                       {filteredCoaches.map((coach) => {
-                        const isPixupAdmin = coach.email.toLowerCase().includes("pixup") || coach.email.toLowerCase() === "pixup.agence@gmail.com";
+                        const isPixupAdmin = isSuperAdminEmail(coach.email) || Boolean(coach.isAdmin);
                         const currentPlan = userPlans[coach.id] || (isPixupAdmin ? "club" : "free");
                         const trialInfo = calculateTrialRemaining(coach.createdAt, coach.trialBonusDays || 0);
 

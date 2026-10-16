@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter, DEFAULT_FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from "@/lib/mailer";
+import { escapeHtml, isValidEmail, sanitizeText } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, firstName, lastName } = await req.json();
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    if (!email || !isValidEmail(email)) {
+      return NextResponse.json({ error: "Une adresse email valide est requise." }, { status: 400 });
     }
 
-    const name = firstName ? `${firstName} ${lastName}` : "Coach";
+    const cleanEmail = email.trim().slice(0, 254);
+    const cleanFirst = sanitizeText(firstName, 50);
+    const cleanLast = sanitizeText(lastName, 50);
+    const rawName = cleanFirst ? `${cleanFirst}${cleanLast ? ` ${cleanLast}` : ""}` : "Coach";
+    const safeName = escapeHtml(rawName);
 
     // Build the gorgeous HTML template for "The Box" applet
     const htmlContent = `
@@ -134,7 +139,7 @@ export async function POST(req: NextRequest) {
           </div>
           <div class="content">
             <div class="badge">THE BOX - ZONE DE DÉCISION TACTIQUE</div>
-            <h1>Bienvenue dans The Box, Coach ${name} !</h1>
+            <h1>Bienvenue dans The Box, Coach ${safeName} !</h1>
             <p>
               Votre compte a été créé avec succès sur l'application <strong>The Box</strong>. Pour fêter votre arrivée dans l'équipe, nous avons le plaisir de vous offrir <strong>14 jours d'accès gratuit et illimité à notre formule d'élite PRO+</strong>.
             </p>
@@ -207,7 +212,7 @@ export async function POST(req: NextRequest) {
     const textContent = `THE BOX - ZONE DE DÉCISION TACTIQUE
 THE BOX - ZONE DE DÉCISION TACTIQUE
 
-Bienvenue dans The Box, Coach ${name} !
+Bienvenue dans The Box, Coach ${rawName} !
 
 Votre compte a été créé avec succès sur l'application The Box. Pour fêter votre arrivée dans l'équipe, nous avons le plaisir de vous offrir 14 jours d'accès gratuit et illimité à notre formule d'élite PRO+.
 
@@ -239,7 +244,7 @@ Vous recevez cet e-mail suite à votre inscription sur l'application The Box.`;
 
     const mailOptions = {
       from: DEFAULT_FROM_EMAIL,
-      to: email,
+      to: cleanEmail,
       bcc: ADMIN_NOTIFICATION_EMAIL || undefined,
       subject: "Bienvenue sur The Box - Activation de votre compte Coach",
       text: textContent,

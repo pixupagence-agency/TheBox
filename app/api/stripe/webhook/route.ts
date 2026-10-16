@@ -18,10 +18,16 @@ export async function POST(req: NextRequest) {
 
     if (webhookSecret && signature) {
       event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-    } else {
-      // In development without webhook secret, fallback to direct json parse
-      console.warn("⚠️ Stripe Webhook: Signature verification skipped because STRIPE_WEBHOOK_SECRET is not configured.");
+    } else if (process.env.NODE_ENV !== "production" && !webhookSecret) {
+      // In local development only without webhook secret, fallback to direct json parse with explicit warning
+      console.warn("⚠️ Stripe Webhook: Signature verification skipped in non-production because STRIPE_WEBHOOK_SECRET is not configured.");
       event = JSON.parse(rawBody) as Stripe.Event;
+    } else {
+      console.error("❌ Stripe Webhook: STRIPE_WEBHOOK_SECRET and stripe-signature header are required.");
+      return NextResponse.json(
+        { error: "Webhook verification failed: signature and secret are required." },
+        { status: 400 }
+      );
     }
   } catch (err: any) {
     console.error("❌ Stripe Webhook Signature Verification Failed:", err.message);

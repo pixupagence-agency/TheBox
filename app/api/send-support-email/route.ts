@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter } from "@/lib/mailer";
+import { escapeHtml, sanitizeSubject, isValidEmail, sanitizeText } from "@/lib/security";
 
 const SUPPORT_EMAIL = "pixup.agence@gmail.com";
 
@@ -7,27 +8,41 @@ export async function POST(req: NextRequest) {
   try {
     const { name, email, subject, message, club, sport, plan } = await req.json();
 
-    if (!email || !email.trim()) {
+    if (!email || !isValidEmail(email)) {
       return NextResponse.json(
-        { error: "L'adresse email est requise." },
+        { error: "L'adresse email renseignée n'est pas valide." },
         { status: 400 }
       );
     }
 
-    if (!message || !message.trim()) {
+    if (!message || typeof message !== "string" || !message.trim()) {
       return NextResponse.json(
         { error: "Le message ne peut pas être vide." },
         { status: 400 }
       );
     }
 
-    const senderName = name?.trim() || "Utilisateur The Box";
-    const rawSubject = subject?.trim() || "Demande d'assistance";
+    const cleanEmail = email.trim().slice(0, 254);
+    const rawSenderName = sanitizeText(name, 100) || "Utilisateur The Box";
+    const rawMessage = sanitizeText(message, 10000);
+    const rawClub = sanitizeText(club, 100);
+    const rawSport = sanitizeText(sport, 50);
+    const rawPlan = sanitizeText(plan, 50);
+    const inputSubject = sanitizeSubject(subject, 150) || "Demande d'assistance";
     
-    // Ensure the subject strictly starts with [Support]
-    const finalSubject = rawSubject.startsWith("[Support]")
-      ? rawSubject
-      : `[Support] ${rawSubject}`;
+    // Ensure the subject strictly starts with [Support] and contains no CRLF
+    const finalSubject = sanitizeSubject(
+      inputSubject.startsWith("[Support]") ? inputSubject : `[Support] ${inputSubject}`,
+      200
+    );
+
+    const safeSenderName = escapeHtml(rawSenderName);
+    const safeEmail = escapeHtml(cleanEmail);
+    const safeSubject = escapeHtml(inputSubject);
+    const safeClub = escapeHtml(rawClub);
+    const safeSport = escapeHtml(rawSport);
+    const safePlan = escapeHtml(rawPlan);
+    const safeMessage = escapeHtml(rawMessage);
 
     const dateStr = new Date().toLocaleString("fr-FR", {
       timeZone: "Europe/Paris",
@@ -175,19 +190,19 @@ export async function POST(req: NextRequest) {
             <table class="info-table">
               <tr>
                 <td class="label">Expéditeur :</td>
-                <td class="value">${senderName}</td>
+                <td class="value">${safeSenderName}</td>
               </tr>
               <tr>
                 <td class="label">Email de réponse :</td>
-                <td class="value"><a href="mailto:${email}" style="color: #00e599; text-decoration: none;">${email}</a></td>
+                <td class="value"><a href="mailto:${safeEmail}" style="color: #00e599; text-decoration: none;">${safeEmail}</a></td>
               </tr>
               <tr>
                 <td class="label">Objet / Motif :</td>
-                <td class="value">${rawSubject}</td>
+                <td class="value">${safeSubject}</td>
               </tr>
-              ${club ? `<tr><td class="label">Club :</td><td class="value">${club}</td></tr>` : ""}
-              ${sport ? `<tr><td class="label">Sport :</td><td class="value">${sport.toUpperCase()}</td></tr>` : ""}
-              ${plan ? `<tr><td class="label">Offre :</td><td class="value">${plan.toUpperCase()}</td></tr>` : ""}
+              ${rawClub ? `<tr><td class="label">Club :</td><td class="value">${safeClub}</td></tr>` : ""}
+              ${rawSport ? `<tr><td class="label">Sport :</td><td class="value">${safeSport.toUpperCase()}</td></tr>` : ""}
+              ${rawPlan ? `<tr><td class="label">Offre :</td><td class="value">${safePlan.toUpperCase()}</td></tr>` : ""}
               <tr>
                 <td class="label">Date d'envoi :</td>
                 <td class="value">${dateStr}</td>
@@ -196,12 +211,12 @@ export async function POST(req: NextRequest) {
 
             <div class="message-box">
               <div class="message-title">Message du Coach / Utilisateur</div>
-              <p class="message-body">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+              <p class="message-body">${safeMessage}</p>
             </div>
 
             <div class="cta-box">
-              <a href="mailto:${email}?subject=Re:%20${encodeURIComponent(finalSubject)}" class="cta-button">
-                Répondre directement à ${senderName}
+              <a href="mailto:${safeEmail}?subject=Re:%20${encodeURIComponent(finalSubject)}" class="cta-button">
+                Répondre directement à ${safeSenderName}
               </a>
             </div>
           </div>
@@ -220,16 +235,16 @@ Objet: ${finalSubject}
 Date: ${dateStr}
 
 EXPÉDITEUR:
-- Nom: ${senderName}
-- Email: ${email}
-${club ? `- Club: ${club}\n` : ""}${sport ? `- Sport: ${sport}\n` : ""}${plan ? `- Offre: ${plan}\n` : ""}
+- Nom: ${rawSenderName}
+- Email: ${cleanEmail}
+${rawClub ? `- Club: ${rawClub}\n` : ""}${rawSport ? `- Sport: ${rawSport}\n` : ""}${rawPlan ? `- Offre: ${rawPlan}\n` : ""}
 
 MESSAGE:
 ----------------------------------------
-${message}
+${rawMessage}
 ----------------------------------------
 
-Pour répondre: ${email}
+Pour répondre: ${cleanEmail}
     `.trim();
 
     // Configure SMTP transport
@@ -238,7 +253,7 @@ Pour répondre: ${email}
     const mailOptions = {
       from: process.env.SMTP_FROM || `"The Box Support" <${SUPPORT_EMAIL}>`,
       to: SUPPORT_EMAIL,
-      replyTo: email,
+      replyTo: cleanEmail,
       subject: finalSubject,
       text: textContent,
       html: htmlContent,

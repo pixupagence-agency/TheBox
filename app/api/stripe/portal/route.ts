@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
+import { validateSafeReturnUrl, isValidEmail, sanitizeText } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,9 +11,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Stripe non configuré" }, { status: 503 });
     }
 
-    let targetCustomerId = customerId;
+    let targetCustomerId = typeof customerId === "string" ? sanitizeText(customerId, 100) : null;
 
-    if (!targetCustomerId && coachEmail && coachEmail.includes("@")) {
+    if (!targetCustomerId && coachEmail && isValidEmail(coachEmail)) {
       try {
         const existingCustomers = await stripe.customers.list({
           email: coachEmail.trim().toLowerCase(),
@@ -33,11 +34,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const origin = returnUrl || req.headers.get("origin") || process.env.APP_URL || "http://localhost:3000";
+    const fallbackOrigin = req.headers.get("origin") || process.env.APP_URL || req.nextUrl.origin || "http://localhost:3000";
+    const safeReturnUrl = validateSafeReturnUrl(returnUrl, fallbackOrigin);
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: targetCustomerId,
-      return_url: origin,
+      return_url: safeReturnUrl,
     });
 
     return NextResponse.json({ url: portalSession.url });

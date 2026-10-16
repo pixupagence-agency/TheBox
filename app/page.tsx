@@ -19,6 +19,7 @@ import {
   getTacticsForUser 
 } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { isSuperAdminEmail } from "@/lib/security";
 
 export interface CoachProfile {
   id: string;
@@ -114,8 +115,7 @@ export default function Home() {
   const isAdmin = Boolean(
     activeCoach && (
       activeCoach.isAdmin ||
-      activeCoach.email?.toLowerCase().includes("pixup") ||
-      activeCoach.email?.toLowerCase() === "pixup.agence@gmail.com"
+      isSuperAdminEmail(activeCoach.email)
     )
   );
 
@@ -268,8 +268,7 @@ export default function Home() {
         const first = parts[0] || "Coach";
         const last = parts.slice(1).join(" ") || "Principal";
         const isGoogleAdmin = Boolean(
-          email.toLowerCase().includes("pixup") ||
-          email.toLowerCase() === "pixup.agence@gmail.com"
+          isSuperAdminEmail(email)
         );
 
         // Fetch user profile from Firestore if exists
@@ -373,8 +372,7 @@ export default function Home() {
       const isCreatorOrAdmin = Boolean(
         isAdmin ||
         activeCoach.isAdmin ||
-        activeCoach.email?.toLowerCase().includes("pixup") ||
-        activeCoach.email?.toLowerCase() === "pixup.agence@gmail.com"
+        isSuperAdminEmail(activeCoach.email)
       );
 
       const isPaidUser = Boolean(
@@ -469,8 +467,7 @@ export default function Home() {
 
     const isNewAdmin = Boolean(
       newProfile.isAdmin ||
-      newProfile.email.toLowerCase().includes("pixup") ||
-      newProfile.email.toLowerCase() === "pixup.agence@gmail.com"
+      isSuperAdminEmail(newProfile.email)
     );
 
     setCoaches([...coaches, newProfile]);
@@ -552,8 +549,7 @@ export default function Home() {
 
       const isGoogleAdmin = Boolean(
         googleProfile.isAdmin ||
-        googleProfile.email.toLowerCase().includes("pixup") ||
-        googleProfile.email.toLowerCase() === "pixup.agence@gmail.com"
+        isSuperAdminEmail(googleProfile.email)
       );
 
       setCoaches([...coaches, googleProfile]);
@@ -605,8 +601,7 @@ export default function Home() {
     const targetCoach = coaches.find((c) => c.id === coachId);
     const isTargetAdmin = Boolean(
       targetCoach?.isAdmin ||
-      targetCoach?.email?.toLowerCase().includes("pixup") ||
-      targetCoach?.email?.toLowerCase() === "pixup.agence@gmail.com"
+      isSuperAdminEmail(targetCoach?.email)
     );
     if (isTargetAdmin) {
       setIsTrialModalOpen(false);

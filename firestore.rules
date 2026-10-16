@@ -36,6 +36,16 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function hasUnchangedCreatedAt() {
+      return !('createdAt' in existing()) || !('createdAt' in incoming()) || incoming().createdAt == existing().createdAt;
+    }
+
+    function hasSafeAdminStatus() {
+      return isSuperAdmin() || 
+        ((!('isAdmin' in incoming()) || incoming().isAdmin == false) && (!('isAdmin' in existing()) || existing().isAdmin == false)) ||
+        (('isAdmin' in incoming()) && ('isAdmin' in existing()) && incoming().isAdmin == existing().isAdmin);
+    }
+
     // --- User Profiles ---
     match /users/{userId} {
       allow read: if isOwner(userId) || isSuperAdmin();
@@ -43,12 +53,19 @@ service cloud.firestore {
       allow create: if isOwner(userId) &&
         isValidId(userId) &&
         incoming().id == userId &&
-        (incoming().isAdmin != true || isSuperAdmin());
+        (incoming().isAdmin != true || isSuperAdmin()) &&
+        (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 254)) &&
+        (!('firstName' in incoming()) || (incoming().firstName is string && incoming().firstName.size() <= 100)) &&
+        (!('lastName' in incoming()) || (incoming().lastName is string && incoming().lastName.size() <= 100));
 
       allow update: if (isOwner(userId) || isSuperAdmin()) &&
         isValidId(userId) &&
         incoming().id == existing().id &&
-        (incoming().isAdmin == existing().isAdmin || isSuperAdmin());
+        hasSafeAdminStatus() &&
+        hasUnchangedCreatedAt() &&
+        (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 254)) &&
+        (!('firstName' in incoming()) || (incoming().firstName is string && incoming().firstName.size() <= 100)) &&
+        (!('lastName' in incoming()) || (incoming().lastName is string && incoming().lastName.size() <= 100));
 
       allow delete: if isSuperAdmin();
     }
@@ -66,12 +83,19 @@ service cloud.firestore {
 
       allow create: if isSignedIn() &&
         isValidId(tacticId) &&
-        (incoming().userId == request.auth.uid || isSuperAdmin());
+        (incoming().userId == request.auth.uid || isSuperAdmin()) &&
+        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200)) &&
+        (!('notes' in incoming()) || (incoming().notes is string && incoming().notes.size() <= 10000)) &&
+        (!('payload' in incoming()) || (incoming().payload is string && incoming().payload.size() <= 1048576));
 
       allow update: if isSignedIn() &&
         isValidId(tacticId) &&
         (existing().userId == request.auth.uid || isSuperAdmin()) &&
-        (incoming().userId == existing().userId || isSuperAdmin());
+        (incoming().userId == existing().userId || isSuperAdmin()) &&
+        hasUnchangedCreatedAt() &&
+        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200)) &&
+        (!('notes' in incoming()) || (incoming().notes is string && incoming().notes.size() <= 10000)) &&
+        (!('payload' in incoming()) || (incoming().payload is string && incoming().payload.size() <= 1048576));
 
       allow delete: if isSignedIn() &&
         isValidId(tacticId) &&
@@ -85,12 +109,19 @@ service cloud.firestore {
 
       allow create: if isSignedIn() &&
         isValidId(matchId) &&
-        (incoming().userId == request.auth.uid || isSuperAdmin());
+        (incoming().userId == request.auth.uid || isSuperAdmin()) &&
+        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200)) &&
+        (!('tacticalNotes' in incoming()) || (incoming().tacticalNotes is string && incoming().tacticalNotes.size() <= 10000)) &&
+        (!('dataPayload' in incoming()) || (incoming().dataPayload is string && incoming().dataPayload.size() <= 1048576));
 
       allow update: if isSignedIn() &&
         isValidId(matchId) &&
         (existing().userId == request.auth.uid || isSuperAdmin()) &&
-        (incoming().userId == existing().userId || isSuperAdmin());
+        (incoming().userId == existing().userId || isSuperAdmin()) &&
+        hasUnchangedCreatedAt() &&
+        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200)) &&
+        (!('tacticalNotes' in incoming()) || (incoming().tacticalNotes is string && incoming().tacticalNotes.size() <= 10000)) &&
+        (!('dataPayload' in incoming()) || (incoming().dataPayload is string && incoming().dataPayload.size() <= 1048576));
 
       allow delete: if isSignedIn() &&
         isValidId(matchId) &&
@@ -104,12 +135,15 @@ service cloud.firestore {
 
       allow create: if isSignedIn() &&
         isValidId(teamId) &&
-        (incoming().userId == request.auth.uid || isSuperAdmin());
+        (incoming().userId == request.auth.uid || isSuperAdmin()) &&
+        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200));
 
       allow update: if isSignedIn() &&
         isValidId(teamId) &&
         (existing().userId == request.auth.uid || isSuperAdmin()) &&
-        (incoming().userId == existing().userId || isSuperAdmin());
+        (incoming().userId == existing().userId || isSuperAdmin()) &&
+        hasUnchangedCreatedAt() &&
+        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200));
 
       allow delete: if isSignedIn() &&
         isValidId(teamId) &&

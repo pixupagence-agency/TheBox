@@ -1,31 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter, DEFAULT_FROM_EMAIL } from "@/lib/mailer";
+import { escapeHtml, sanitizeSubject, isValidEmail, sanitizeText } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, subject, body, imageUrl, title, clubLabel } = await req.json();
 
-    if (!email) {
-      return NextResponse.json({ error: "L'adresse email du destinataire est requise." }, { status: 400 });
+    if (!email || !isValidEmail(email)) {
+      return NextResponse.json({ error: "Une adresse email valide est requise." }, { status: 400 });
     }
 
-    const club = clubLabel || "The Box";
-    const schemaTitle = title || "Schéma Tactique";
-    const mailSubject = subject || `[Briefing Tactique] ${schemaTitle} - ${club}`;
+    const cleanEmail = email.trim().slice(0, 254);
+    const rawClub = sanitizeText(clubLabel, 100) || "The Box";
+    const rawTitle = sanitizeText(title, 150) || "Schéma Tactique";
+    const rawBody = sanitizeText(body, 30000);
+    const rawSubject = sanitizeSubject(subject, 150) || `[Briefing Tactique] ${rawTitle} - ${rawClub}`;
+    const mailSubject = sanitizeSubject(rawSubject, 200);
+
+    const safeClub = escapeHtml(rawClub);
+    const safeTitle = escapeHtml(rawTitle);
+    const safeBody = escapeHtml(rawBody);
 
     // Prepare attachments if an image is provided (base64 data URL)
     const attachments: any[] = [];
-    const hasImage = Boolean(imageUrl && typeof imageUrl === "string" && imageUrl.startsWith("data:image"));
+    const MAX_IMAGE_BASE64_LENGTH = 10 * 1024 * 1024; // 10MB limit
+    const hasImage = Boolean(
+      imageUrl && 
+      typeof imageUrl === "string" && 
+      imageUrl.length <= MAX_IMAGE_BASE64_LENGTH &&
+      /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(imageUrl)
+    );
 
     if (hasImage) {
       const commaIndex = imageUrl.indexOf(",");
       if (commaIndex !== -1) {
         const header = imageUrl.slice(0, commaIndex);
         const base64Data = imageUrl.slice(commaIndex + 1);
-        const extMatch = header.match(/^data:image\/(\w+)/);
-        const ext = extMatch ? extMatch[1] : "png";
+        const extMatch = header.match(/^data:image\/(\w+)/i);
+        const ext = extMatch ? extMatch[1].toLowerCase() : "png";
         const buffer = Buffer.from(base64Data, "base64");
-        const filename = `Schema_${schemaTitle.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
+        const filename = `Schema_${rawTitle.replace(/[^a-zA-Z0-9_-]/g, "_")}.${ext}`;
 
         attachments.push({
           filename,
@@ -174,7 +188,7 @@ export async function POST(req: NextRequest) {
             <div class="logo">THE BOX - ZONE DE DÉCISION TACTIQUE</div>
           </div>
           <div class="content">
-            <div class="badge">📋 BRIEFING TACTIQUE &bull; ${club}</div>
+            <div class="badge">📋 BRIEFING TACTIQUE &bull; ${safeClub}</div>
 
             <div class="transfer-notice">
               ✉️ <strong>Briefing prêt à transférer :</strong> Vous recevez cet e-mail sur votre boîte personnelle. Il vous suffit de cliquer sur <strong>« Transférer »</strong> dans votre messagerie pour l'adresser directement à vos joueurs, à votre adjoint ou à vos dirigeants.
@@ -182,13 +196,13 @@ export async function POST(req: NextRequest) {
 
             ${hasImage ? `
               <div class="schema-card">
-                <img src="cid:schemaImage" alt="${schemaTitle}" />
+                <img src="cid:schemaImage" alt="${safeTitle}" />
               </div>
             ` : ""}
 
             <div class="briefing-card">
               <div class="briefing-title">Détails du Briefing & Consignes</div>
-              <pre class="briefing-body">${body}</pre>
+              <pre class="briefing-body">${safeBody}</pre>
             </div>
 
             <div class="cta-box">
@@ -209,9 +223,9 @@ export async function POST(req: NextRequest) {
 
     const mailOptions = {
       from: DEFAULT_FROM_EMAIL,
-      to: email,
+      to: cleanEmail,
       subject: mailSubject,
-      text: `${mailSubject}\n\n${body}\n\n(Ce message vous a été envoyé pour transfert à vos contacts)\n© 2026 The Box`,
+      text: `${mailSubject}\n\n${rawBody}\n\n(Ce message vous a été envoyé pour transfert à vos contacts)\n© 2026 The Box`,
       html: htmlContent,
       attachments,
     };

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter } from "@/lib/mailer";
+import { escapeHtml, sanitizeSubject, isValidEmail, sanitizeText } from "@/lib/security";
 
 const TARGET_CONTACT_EMAIL = "pixup.agence@gmail.com";
 
@@ -7,36 +8,34 @@ export async function POST(req: NextRequest) {
   try {
     const { name, email, subject, message, club, sport, phone } = await req.json();
 
-    if (!email || !email.trim()) {
-      return NextResponse.json(
-        { error: "L'adresse email est requise." },
-        { status: 400 }
-      );
-    }
-
-    // Basic email format check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    if (!email || !isValidEmail(email)) {
       return NextResponse.json(
         { error: "L'adresse email renseignée n'est pas valide." },
         { status: 400 }
       );
     }
 
-    if (!message || !message.trim()) {
+    if (!message || typeof message !== "string" || !message.trim()) {
       return NextResponse.json(
         { error: "Le message ne peut pas être vide." },
         { status: 400 }
       );
     }
 
-    const senderName = name?.trim() || "Visiteur Landing Page";
-    const rawSubject = subject?.trim() || "Demande de contact";
+    // Bounds checking to prevent payload inflation / DoS
+    const cleanEmail = email.trim().slice(0, 254);
+    const rawSenderName = sanitizeText(name, 100) || "Visiteur Landing Page";
+    const rawMessage = sanitizeText(message, 10000);
+    const rawClub = sanitizeText(club, 100);
+    const rawSport = sanitizeText(sport, 50);
+    const rawPhone = sanitizeText(phone, 30);
+    const inputSubject = sanitizeSubject(subject, 150) || "Demande de contact";
     
-    // Ensure the subject strictly starts with [Contact]
-    const finalSubject = rawSubject.startsWith("[Contact]")
-      ? rawSubject
-      : `[Contact] ${rawSubject}`;
+    // Ensure the subject strictly starts with [Contact] and has no CRLF
+    const finalSubject = sanitizeSubject(
+      inputSubject.startsWith("[Contact]") ? inputSubject : `[Contact] ${inputSubject}`,
+      200
+    );
 
     const dateStr = new Date().toLocaleString("fr-FR", {
       timeZone: "Europe/Paris",
@@ -46,6 +45,15 @@ export async function POST(req: NextRequest) {
       hour: "2-digit",
       minute: "2-digit",
     });
+
+    // Escaped versions for safe HTML rendering
+    const safeSenderName = escapeHtml(rawSenderName);
+    const safeEmail = escapeHtml(cleanEmail);
+    const safePhone = escapeHtml(rawPhone);
+    const safeSubject = escapeHtml(inputSubject);
+    const safeClub = escapeHtml(rawClub);
+    const safeSport = escapeHtml(rawSport);
+    const safeMessage = escapeHtml(rawMessage);
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -184,19 +192,19 @@ export async function POST(req: NextRequest) {
             <table class="info-table">
               <tr>
                 <td class="label">Expéditeur :</td>
-                <td class="value">${senderName}</td>
+                <td class="value">${safeSenderName}</td>
               </tr>
               <tr>
                 <td class="label">Email de réponse :</td>
-                <td class="value"><a href="mailto:${email}" style="color: #00e599; text-decoration: none;">${email}</a></td>
+                <td class="value"><a href="mailto:${safeEmail}" style="color: #00e599; text-decoration: none;">${safeEmail}</a></td>
               </tr>
-              ${phone ? `<tr><td class="label">Téléphone :</td><td class="value">${phone}</td></tr>` : ""}
+              ${rawPhone ? `<tr><td class="label">Téléphone :</td><td class="value">${safePhone}</td></tr>` : ""}
               <tr>
                 <td class="label">Objet / Motif :</td>
-                <td class="value">${rawSubject}</td>
+                <td class="value">${safeSubject}</td>
               </tr>
-              ${club ? `<tr><td class="label">Club / Structure :</td><td class="value">${club}</td></tr>` : ""}
-              ${sport ? `<tr><td class="label">Discipline :</td><td class="value">${sport.toUpperCase()}</td></tr>` : ""}
+              ${rawClub ? `<tr><td class="label">Club / Structure :</td><td class="value">${safeClub}</td></tr>` : ""}
+              ${rawSport ? `<tr><td class="label">Discipline :</td><td class="value">${safeSport.toUpperCase()}</td></tr>` : ""}
               <tr>
                 <td class="label">Date de réception :</td>
                 <td class="value">${dateStr}</td>
@@ -205,12 +213,12 @@ export async function POST(req: NextRequest) {
 
             <div class="message-box">
               <div class="message-title">Message transmis</div>
-              <p class="message-body">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+              <p class="message-body">${safeMessage}</p>
             </div>
 
             <div class="cta-box">
-              <a href="mailto:${email}?subject=Re:%20${encodeURIComponent(finalSubject)}" class="cta-button">
-                Répondre à ${senderName}
+              <a href="mailto:${safeEmail}?subject=Re:%20${encodeURIComponent(finalSubject)}" class="cta-button">
+                Répondre à ${safeSenderName}
               </a>
             </div>
           </div>
@@ -229,16 +237,16 @@ Objet: ${finalSubject}
 Date: ${dateStr}
 
 COORDONNÉES DU CONTACT:
-- Nom: ${senderName}
-- Email: ${email}
-${phone ? `- Téléphone: ${phone}\n` : ""}${club ? `- Club / Organisation: ${club}\n` : ""}${sport ? `- Sport: ${sport}\n` : ""}
+- Nom: ${rawSenderName}
+- Email: ${cleanEmail}
+${rawPhone ? `- Téléphone: ${rawPhone}\n` : ""}${rawClub ? `- Club / Organisation: ${rawClub}\n` : ""}${rawSport ? `- Sport: ${rawSport}\n` : ""}
 
 MESSAGE:
 ----------------------------------------
-${message}
+${rawMessage}
 ----------------------------------------
 
-Pour répondre directement à ce contact : ${email}
+Pour répondre directement à ce contact : ${cleanEmail}
     `.trim();
 
     // Configure SMTP transport
@@ -247,7 +255,7 @@ Pour répondre directement à ce contact : ${email}
     const mailOptions = {
       from: process.env.SMTP_FROM || `"The Box Contact" <${TARGET_CONTACT_EMAIL}>`,
       to: TARGET_CONTACT_EMAIL,
-      replyTo: email,
+      replyTo: cleanEmail,
       subject: finalSubject,
       text: textContent,
       html: htmlContent,
