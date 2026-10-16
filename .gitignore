@@ -5,3 +5,5 @@ coverage/
 *.log
 .env*
 !.env.example
+.agents/mcp_config.json
+

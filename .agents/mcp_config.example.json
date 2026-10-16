@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "google-secops": {
+      "command": "C:\\Users\\denis\\AppData\\Local\\Python\\pythoncore-3.14-64\\Scripts\\secops-mcp.exe",
+      "args": [],
+      "env": {
+        "CHRONICLE_CUSTOMER_ID": "<VOTRE_CUSTOMER_ID_CHRONICLE>",
+        "CHRONICLE_PROJECT_ID": "<VOTRE_ID_PROJET_GCP>",
+        "CHRONICLE_REGION": "europe-west1",
+        "GOOGLE_APPLICATION_CREDENTIALS": "C:\\chemin\\vers\\votre\\service-account.json"
+      }
+    }
+  }
+}
