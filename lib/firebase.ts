@@ -147,6 +147,7 @@ export interface FirebaseCoachProfile {
   welcomeEmailSent?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  language?: "fr" | "en";
 }
 
 export async function saveUserProfileToFirestore(profile: FirebaseCoachProfile) {

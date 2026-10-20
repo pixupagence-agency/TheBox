@@ -19,8 +19,9 @@ import {
   Search, UserCheck, Upload, ArrowLeftRight, Zap, AlertCircle, Cloud, Filter, Film,
   Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target
 } from "lucide-react";
-import { saveTacticToFirestore, deleteTacticFromFirestore } from "@/lib/firebase";
+import { saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
 import { isSuperAdminEmail } from "@/lib/security";
+import { Language, translations, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 
 export interface Token {
   id: string;
@@ -82,6 +83,7 @@ interface CoachProfile {
   isAdmin?: boolean;
   createdAt?: string;
   trialBonusDays?: number;
+  language?: Language;
 }
 
 export interface TeamCategory {
@@ -369,6 +371,32 @@ export default function TacticsBoard({
       }
     }
   }, [isPaidSubscriber, coachId]);
+
+  // Internationalization (i18n) state: French (default) or English
+  const [currentLang, setCurrentLang] = useState<Language>(() => {
+    if (activeCoach?.language) return activeCoach.language;
+    return getStoredLanguage();
+  });
+  const t = translations[currentLang];
+
+  useEffect(() => {
+    if (activeCoach?.language && activeCoach.language !== currentLang) {
+      setCurrentLang(activeCoach.language);
+      setStoredLanguage(activeCoach.language);
+    }
+  }, [activeCoach?.language]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleLangChange = (e: any) => {
+      const newLang = e.detail?.language as Language;
+      if (newLang && newLang !== currentLang) {
+        setCurrentLang(newLang);
+      }
+    };
+    window.addEventListener("thebox_language_change", handleLangChange);
+    return () => window.removeEventListener("thebox_language_change", handleLangChange);
+  }, [currentLang]);
 
   const isFreePlan = Boolean(
     !currentPlan ||
@@ -1057,6 +1085,7 @@ export default function TacticsBoard({
   const [editClub, setEditClub] = useState("");
   const [editRole, setEditRole] = useState("");
   const [editSport, setEditSport] = useState(activeSport);
+  const [editLanguage, setEditLanguage] = useState<Language>(currentLang);
 
   const handleOpenUserConfig = () => {
     if (activeCoach) {
@@ -1066,6 +1095,7 @@ export default function TacticsBoard({
       setEditClub(activeCoach.club || "");
       setEditRole(activeCoach.role || "Coach Principal");
       setEditSport(activeSport || activeCoach.preferredSport || "football");
+      setEditLanguage(activeCoach.language || currentLang);
     }
     setIsUserConfigModalOpen(true);
   };
@@ -1073,18 +1103,22 @@ export default function TacticsBoard({
   const handleSaveUserConfig = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editFirstName.trim() || !editLastName.trim()) {
-      alert("Veuillez remplir votre prénom et votre nom.");
+      alert(t.userModal.validationName);
       return;
     }
     if (!editEmail.trim() || !editEmail.includes("@")) {
-      alert("Veuillez saisir une adresse email de connexion valide.");
+      alert(t.userModal.validationEmail);
       return;
     }
 
     if (!isUserAdmin && blockedSports.includes(editSport)) {
-      alert(`Le sport "${editSport.toUpperCase()}" est actuellement bloqué et restreint par l'administration.`);
+      alert(t.userModal.sportBlockedAlert(editSport));
       return;
     }
+
+    const finalLang = editLanguage;
+    setCurrentLang(finalLang);
+    setStoredLanguage(finalLang);
 
     setCoaches((prev) =>
       prev.map((c) =>
@@ -1097,10 +1131,24 @@ export default function TacticsBoard({
             club: editClub.trim(),
             role: editRole,
             preferredSport: editSport,
+            language: finalLang,
           }
           : c
       )
     );
+
+    if (activeCoach) {
+      saveUserProfileToFirestore({
+        ...activeCoach,
+        firstName: editFirstName.trim(),
+        lastName: editLastName.trim(),
+        email: editEmail.trim(),
+        club: editClub.trim(),
+        role: editRole,
+        preferredSport: editSport,
+        language: finalLang,
+      }).catch((err) => console.log("Firestore profile sync queued:", err));
+    }
 
     if (typeof window !== "undefined") {
       localStorage.setItem("thebox_user_email", editEmail.trim());
@@ -1108,8 +1156,27 @@ export default function TacticsBoard({
 
     setActiveSport(editSport);
     setIsUserConfigModalOpen(false);
-    setSleekToastMessage("✅ Profil et adresse email mis à jour avec succès !");
+    setSleekToastMessage(translations[finalLang].userModal.successToast);
     setTimeout(() => setSleekToastMessage(null), 3000);
+  };
+
+  const handleLanguageSelect = (lang: Language) => {
+    setCurrentLang(lang);
+    setStoredLanguage(lang);
+    setCoaches((prev) =>
+      prev.map((c) =>
+        c.id === activeCoachId ? { ...c, language: lang } : c
+      )
+    );
+    if (activeCoach) {
+      saveUserProfileToFirestore({
+        ...activeCoach,
+        language: lang,
+      }).catch((err) => console.log("Firestore profile sync queued:", err));
+    }
+    const msg = lang === "en" ? "✅ Language switched to English" : "✅ Langue modifiée en Français";
+    setSleekToastMessage(msg);
+    setTimeout(() => setSleekToastMessage(null), 2500);
   };
 
   // Opponent Roster & Player Token Editing (PRO Mode)
@@ -5233,19 +5300,19 @@ export default function TacticsBoard({
 
             {/* Nom */}
             <div className="flex items-center gap-1.5 bg-[#111827] border border-[#1f293d] rounded-lg px-2 py-1 flex-1 min-w-[130px] max-w-[200px]">
-              <span className="text-[8px] font-black text-[#62728f] uppercase shrink-0">NOM :</span>
+              <span className="text-[8px] font-black text-[#62728f] uppercase shrink-0">{t.tactics.playerCard.nameLabel}</span>
               <input
                 type="text"
                 value={activeToken.name}
                 onChange={(e) => updateTokenField("name", e.target.value)}
                 className="bg-transparent text-xs font-black text-white w-full outline-none"
-                placeholder="Nom du joueur"
+                placeholder={t.tactics.playerCard.namePlaceholder}
               />
             </div>
 
             {/* N° */}
             <div className="flex items-center gap-1.5 bg-[#111827] border border-[#1f293d] rounded-lg px-2 py-1 w-20 shrink-0">
-              <span className="text-[8px] font-black text-[#62728f] uppercase shrink-0">N° :</span>
+              <span className="text-[8px] font-black text-[#62728f] uppercase shrink-0">{t.tactics.playerCard.numberLabel}</span>
               <select
                 value={activeToken.number ?? ""}
                 onChange={(e) => {
@@ -5258,7 +5325,7 @@ export default function TacticsBoard({
                   }
                 }}
                 className="bg-transparent text-xs font-black text-white w-full outline-none text-center cursor-pointer"
-                title="Numéro unique (seuls les numéros disponibles sont proposés)"
+                title={t.tactics.playerCard.numberTooltip}
               >
                 {(isHome
                   ? getAvailableNumbersForPlayer(activeToken.id, activeToken.number)
@@ -5273,19 +5340,19 @@ export default function TacticsBoard({
 
             {/* Poste / Rôle */}
             <div className="flex items-center gap-1.5 bg-[#111827] border border-[#1f293d] rounded-lg px-2 py-1 w-24 shrink-0">
-              <span className="text-[8px] font-black text-[#62728f] uppercase shrink-0">POSTE :</span>
+              <span className="text-[8px] font-black text-[#62728f] uppercase shrink-0">{t.tactics.playerCard.roleLabel}</span>
               <input
                 type="text"
                 value={activeToken.role || ""}
                 onChange={(e) => updateTokenField("role", e.target.value)}
                 className="bg-transparent text-xs font-black text-white w-full outline-none uppercase text-center"
-                placeholder="Poste"
+                placeholder={t.tactics.playerCard.rolePlaceholder}
               />
             </div>
 
             {/* Photo URL */}
             <div className="hidden md:flex items-center gap-1.5 bg-[#111827] border border-[#1f293d] rounded-lg px-2 py-1 flex-1 min-w-[110px] max-w-[190px]">
-              <span className="text-[8px] font-black text-[#62728f] uppercase shrink-0">PHOTO :</span>
+              <span className="text-[8px] font-black text-[#62728f] uppercase shrink-0">{t.tactics.playerCard.photoLabel}</span>
               <input
                 type="text"
                 value={activeToken.photo || ""}
@@ -5302,7 +5369,7 @@ export default function TacticsBoard({
                 : "bg-rose-950 text-rose-300 border-rose-800"
                 }`}
             >
-              {isHome ? "MON CLUB" : "MON ADVERSAIRE"}
+              {isHome ? t.tactics.playerCard.myClubBadge : t.tactics.playerCard.myOpponentBadge}
             </span>
           </div>
 
@@ -5313,7 +5380,7 @@ export default function TacticsBoard({
               setQuickActionToken(null);
             }}
             className="p-1.5 bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white rounded-lg transition cursor-pointer shrink-0"
-            title="Fermer la fiche joueur"
+            title={t.tactics.playerCard.close}
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -5324,7 +5391,7 @@ export default function TacticsBoard({
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="text-[9px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1">
               <Award className="w-3.5 h-3.5 text-amber-400" />
-              <span>STATS GLOBALES :</span>
+              <span>{t.tactics.playerCard.globalStatsHeader}</span>
             </span>
           </div>
 
@@ -5333,45 +5400,45 @@ export default function TacticsBoard({
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] ${isModernSleek ? "bg-emerald-50 border border-emerald-300 text-emerald-800" : "bg-[#102420] border border-[#00e599]/30 text-emerald-300"
               }`}>
               <span>⚽</span>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">Buts :</span>
+              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.goalsLabel}</span>
               <span className={`font-black text-xs ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{playerGoals}</span>
             </div>
 
             {/* Passes D. 👟 */}
             <div className="flex items-center gap-1.5 bg-[#0f2334] border border-cyan-500/30 px-2.5 py-1 rounded-lg text-cyan-300 font-bold text-[10.5px]">
               <span>👟</span>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">Passes D. :</span>
+              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.assistsLabel}</span>
               <span className="font-black text-cyan-400 text-xs">{playerAssists}</span>
             </div>
 
             {/* Cartons Jaunes 🟨 */}
             <div className="flex items-center gap-1.5 bg-[#241c10] border border-amber-500/30 px-2.5 py-1 rounded-lg text-amber-300 font-bold text-[10.5px]">
               <span>🟨</span>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">Jaune :</span>
+              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.yellowsLabel}</span>
               <span className="font-black text-amber-400 text-xs">{playerYellows}</span>
             </div>
 
             {/* Cartons Rouges 🟥 */}
             <div className="flex items-center gap-1.5 bg-[#2c1318] border border-rose-500/30 px-2.5 py-1 rounded-lg text-rose-300 font-bold text-[10.5px]">
               <span>🟥</span>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">Rouge :</span>
+              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.redsLabel}</span>
               <span className="font-black text-rose-400 text-xs">{playerReds}</span>
             </div>
 
             {/* État / Forme */}
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#111827] border-[#1f293d]"
               }`}>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">Forme :</span>
+              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.fitnessLabel}</span>
               {isInjured ? (
-                <span className="text-amber-400 font-black flex items-center gap-1">🏥 Blessé</span>
+                <span className="text-amber-400 font-black flex items-center gap-1">{t.tactics.subModal.injured}</span>
               ) : playerReds > 0 ? (
-                <span className="text-rose-400 font-black flex items-center gap-1">🟥 Expulsé</span>
+                <span className="text-rose-400 font-black flex items-center gap-1">{t.tactics.subModal.sentOff}</span>
               ) : isTired ? (
-                <span className="text-yellow-400 font-black flex items-center gap-1">⚠️ Fatigué</span>
+                <span className="text-yellow-400 font-black flex items-center gap-1">{t.tactics.subModal.tired}</span>
               ) : isExcellent ? (
-                <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>⭐ Excellente</span>
+                <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>{t.tactics.playerCard.formExcellent}</span>
               ) : (
-                <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>✅ En forme</span>
+                <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{t.tactics.playerCard.formFit}</span>
               )}
             </div>
           </div>
@@ -5384,14 +5451,14 @@ export default function TacticsBoard({
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs shrink-0 shadow-sm border ${isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00E599]/40 text-[#00E599]"
               }`}>
               <RefreshCw className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
-              <span className="text-[9.5px] uppercase tracking-wider">REMPLACEMENT :</span>
+              <span className="text-[9.5px] uppercase tracking-wider">{t.tactics.playerCard.replacementHeader}</span>
             </div>
 
             {/* Menu Déroulant Principal */}
             {availableSubs.length === 0 ? (
               <span className={`text-[10px] italic px-2.5 py-1.5 rounded-xl border ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#111827] border-[#1a2130] text-slate-500"
                 }`}>
-                Aucun remplaçant disponible sur le banc
+                {t.tactics.playerCard.noSubsAvailable}
               </span>
             ) : (
               <div className="relative flex items-center">
@@ -5411,10 +5478,10 @@ export default function TacticsBoard({
                     ? "bg-white border-emerald-600 text-slate-900 focus:border-emerald-700"
                     : "bg-[#111827] border-[#00E599]/60 hover:border-[#00E599] focus:border-[#00E599] text-white"
                     }`}
-                  title="Sélectionner un remplaçant sur le banc pour effectuer le remplacement"
+                  title={t.tactics.playerCard.selectSubTooltip}
                 >
                   <option value="" disabled>
-                    🔄 Sélectionner un remplaçant sur le banc...
+                    {t.tactics.playerCard.selectSubPlaceholder}
                   </option>
                   {availableSubs.map((sub) => {
                     const isCurrentlyOnPitch = currentTokens.some(
@@ -5429,9 +5496,9 @@ export default function TacticsBoard({
                       >
                         {isCurrentlyOnPitch ? "⚠️ " : "🔄 "}
                         N°{sub.number || "?"} - {sub.name} ({sub.role || "SUB"})
-                        {isCurrentlyOnPitch ? " [Déjà sur le terrain]" : ""}
-                        {sub.status === "injured" ? " [Blessé 🏥]" : ""}
-                        {sub.status === "tired" ? " [Fatigué ⚠️]" : ""}
+                        {isCurrentlyOnPitch ? t.tactics.playerCard.alreadyOnPitch : ""}
+                        {sub.status === "injured" ? t.tactics.playerCard.injuredTag : ""}
+                        {sub.status === "tired" ? t.tactics.playerCard.tiredTag : ""}
                       </option>
                     );
                   })}
@@ -5447,10 +5514,10 @@ export default function TacticsBoard({
               type="button"
               onClick={() => setSubPickerToken(activeToken)}
               className="px-2.5 py-1.5 bg-[#172233] hover:bg-[#202f4a] border border-[#263750] text-slate-200 hover:text-white font-bold text-[10px] rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm"
-              title="Ouvrir la modale complète avec les cartes et photos de tous les remplaçants"
+              title={t.tactics.playerCard.benchSubModalTooltip}
             >
               <span>📋</span>
-              <span>Fiche banc</span>
+              <span>{t.tactics.playerCard.benchSubModalBtn}</span>
             </button>
 
             {/* Sorties directes */}
@@ -5458,20 +5525,20 @@ export default function TacticsBoard({
               type="button"
               onClick={() => handleRemovePlayerFromPitch(activeToken, "normal")}
               className="px-2.5 py-1.5 bg-[#172233] hover:bg-[#22334d] border border-[#263750] text-slate-300 hover:text-white rounded-xl text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
-              title="Sortie normale du joueur (sans remplacement)"
+              title={t.tactics.playerCard.subOutTooltip}
             >
               <span>🚪</span>
-              <span>Sortie</span>
+              <span>{t.tactics.playerCard.subOutBtn}</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleRemovePlayerFromPitch(activeToken, "injured")}
               className="px-2.5 py-1.5 bg-amber-950/80 hover:bg-amber-800 border border-amber-600/80 text-amber-200 hover:text-white rounded-xl text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
-              title="Sortie sur blessure"
+              title={t.tactics.playerCard.injuryTooltip}
             >
               <span>🏥</span>
-              <span>Blessure</span>
+              <span>{t.tactics.playerCard.injuryBtn}</span>
             </button>
           </div>
 
@@ -5482,7 +5549,7 @@ export default function TacticsBoard({
                 isModernSleek ? "text-amber-600" : "text-amber-400"
               }`}>
                 <Award className="w-3 h-3" />
-                <span>ACTIONS LIVE :</span>
+                <span>{t.tactics.playerCard.liveActionsHeader}</span>
               </span>
 
               <button
@@ -5493,10 +5560,10 @@ export default function TacticsBoard({
                     ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800"
                     : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/80 text-emerald-200 hover:text-white"
                 }`}
-                title="Ajouter un but à ce joueur"
+                title={t.tactics.playerCard.addGoalTooltip}
               >
                 <span>⚽</span>
-                <span>+1 BUT</span>
+                <span>{t.tactics.playerCard.addGoalBtn}</span>
               </button>
 
               <button
@@ -5507,10 +5574,10 @@ export default function TacticsBoard({
                     ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800"
                     : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/80 text-cyan-200 hover:text-white"
                 }`}
-                title="Ajouter une passe décisive à ce joueur"
+                title={t.tactics.playerCard.addAssistTooltip}
               >
                 <span>👟</span>
-                <span>+1 PASSE D.</span>
+                <span>{t.tactics.playerCard.addAssistBtn}</span>
               </button>
 
               <button
@@ -5521,10 +5588,10 @@ export default function TacticsBoard({
                     ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800"
                     : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/80 text-amber-200 hover:text-white"
                 }`}
-                title="Attribuer un carton jaune"
+                title={t.tactics.playerCard.yellowCardTooltip}
               >
                 <span>🟨</span>
-                <span>CARTON J.</span>
+                <span>{t.tactics.playerCard.yellowCardBtn}</span>
               </button>
 
               <button
@@ -5535,10 +5602,10 @@ export default function TacticsBoard({
                     ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800"
                     : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/80 text-rose-200 hover:text-white"
                 }`}
-                title="Expulsion (Carton Rouge)"
+                title={t.tactics.playerCard.redCardTooltip}
               >
                 <span>🟥</span>
-                <span>ROUGE</span>
+                <span>{t.tactics.playerCard.redCardBtn}</span>
               </button>
             </div>
           )}
@@ -5647,7 +5714,7 @@ export default function TacticsBoard({
                         : "bg-rose-950 text-rose-300 border-rose-800"
                   }`}
                 >
-                  {isHome ? "MON CLUB" : "MON ADVERSAIRE"}
+                  {isHome ? t.tactics.playerCard.myClubBadge : t.tactics.playerCard.myOpponentBadge}
                 </span>
               </div>
               <div
@@ -5655,7 +5722,7 @@ export default function TacticsBoard({
                   isModernSleek ? "text-slate-500 font-medium" : "text-slate-400"
                 }`}
               >
-                <span>{currentLiveToken.role || "JOUEUR"}</span>
+                <span>{currentLiveToken.role || t.tactics.liveToolbox.player}</span>
                 {currentGoals > 0 && (
                   <span className={`font-black flex items-center gap-0.5 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>
                     ⚽ x{currentGoals}
@@ -5686,10 +5753,10 @@ export default function TacticsBoard({
                   ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800 hover:text-emerald-950 shadow-2xs"
                   : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/70 hover:border-emerald-400 text-emerald-200 hover:text-white"
               }`}
-              title="Ajouter un but à ce joueur (Raccourci clavier : B)"
+              title={t.tactics.liveToolbox.goalTooltip}
             >
               <span>⚽</span>
-              <span>buteur (b)</span>
+              <span>{t.tactics.liveToolbox.goalBtn}</span>
             </button>
 
             {/* passeur (p) */}
@@ -5701,10 +5768,10 @@ export default function TacticsBoard({
                   ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800 hover:text-cyan-950 shadow-2xs"
                   : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/70 hover:border-cyan-400 text-cyan-200 hover:text-white"
               }`}
-              title="Ajouter une passe décisive à ce joueur (Raccourci clavier : P)"
+              title={t.tactics.liveToolbox.assistTooltip}
             >
               <span>👟</span>
-              <span>passeur (p)</span>
+              <span>{t.tactics.liveToolbox.assistBtn}</span>
             </button>
 
             {/* carton jaune (CJ) */}
@@ -5724,10 +5791,10 @@ export default function TacticsBoard({
                   ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800 hover:text-amber-950 shadow-2xs"
                   : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/70 hover:border-amber-400 text-amber-200 hover:text-white"
               }`}
-              title="Donner un carton jaune (CJ) - 2ème = exclusion (Raccourci clavier : J)"
+              title={t.tactics.liveToolbox.yellowTooltip}
             >
               <span>🟨</span>
-              <span>carton jaune (CJ)</span>
+              <span>{t.tactics.liveToolbox.yellowBtn}</span>
             </button>
 
             {/* carton rouge (CR) */}
@@ -5742,10 +5809,10 @@ export default function TacticsBoard({
                   ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800 hover:text-rose-950 shadow-2xs"
                   : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/70 hover:border-rose-400 text-rose-200 hover:text-white"
               }`}
-              title="Carton rouge (CR) - Expulsion immédiate (Raccourci clavier : R)"
+              title={t.tactics.liveToolbox.redTooltip}
             >
               <span>🟥</span>
-              <span>carton rouge (CR)</span>
+              <span>{t.tactics.liveToolbox.redBtn}</span>
             </button>
 
             {/* blessure (B) */}
@@ -5760,10 +5827,10 @@ export default function TacticsBoard({
                   ? "bg-red-50 hover:bg-red-100 border-red-400 text-red-800 hover:text-red-950 shadow-2xs"
                   : "bg-red-950/90 hover:bg-red-800 border border-red-500/70 hover:border-red-400 text-red-200 hover:text-white"
               }`}
-              title="Blessure (B) - Sortie sur blessure et proposition de remplacement"
+              title={t.tactics.liveToolbox.injuryTooltip}
             >
               <span>🏥</span>
-              <span>blessure (B)</span>
+              <span>{t.tactics.liveToolbox.injuryBtn}</span>
             </button>
 
             {/* Remplacer */}
@@ -5777,10 +5844,10 @@ export default function TacticsBoard({
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700 hover:text-slate-900"
                   : "bg-[#172233] hover:bg-[#202f47] border-[#2d3f5e] hover:border-[#00e599]/40 text-slate-200 hover:text-white"
               }`}
-              title="Effectuer un remplacement pour ce joueur"
+              title={t.tactics.liveToolbox.substituteTooltip}
             >
               <span>🔄</span>
-              <span className="hidden sm:inline">Remplacer</span>
+              <span className="hidden sm:inline">{t.tactics.liveToolbox.substituteBtn}</span>
             </button>
 
             {/* Fermer */}
@@ -5792,7 +5859,7 @@ export default function TacticsBoard({
                   ? "bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700"
                   : "bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white"
               }`}
-              title="Fermer la boîte à outils (Échap)"
+              title={t.tactics.liveToolbox.closeTooltip}
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -5841,7 +5908,7 @@ export default function TacticsBoard({
               </div>
               <div>
                 <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-                  <span>Effectuer un Remplacement</span>
+                  <span>{t.tactics.subModal.title}</span>
                   <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${isOpponent
                     ? isModernSleek
                       ? "bg-rose-100 text-rose-800 border-rose-300"
@@ -5855,8 +5922,8 @@ export default function TacticsBoard({
                 </h3>
                 <p className={`text-[10.5px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                   {isOpponent
-                    ? "Sélectionnez un remplaçant sur le banc adverse pour entrer à la place de ce joueur"
-                    : "Sélectionnez un remplaçant sur le banc pour entrer à la place de ce joueur"}
+                    ? t.tactics.subModal.subtitleOpponent
+                    : t.tactics.subModal.subtitleHome}
                 </p>
               </div>
             </div>
@@ -5865,7 +5932,7 @@ export default function TacticsBoard({
               onClick={() => setSubPickerToken(null)}
               className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                 }`}
-              title="Fermer"
+              title={t.tactics.subModal.close}
             >
               <X className="w-4 h-4" />
             </button>
@@ -5910,12 +5977,12 @@ export default function TacticsBoard({
                   </span>
                   <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase shrink-0 ${isModernSleek ? "bg-slate-200 text-slate-700" : "bg-[#1a2333] text-slate-300"
                     }`}>
-                    {subPickerToken.role || "TITULAIRE"}
+                    {subPickerToken.role || t.tactics.subModal.starter}
                   </span>
                 </div>
                 <div className={`text-[10px] font-bold mt-0.5 flex items-center gap-1 ${isModernSleek ? "text-rose-700" : "text-rose-500"
                   }`}>
-                  <span>🚪 Joueur sortant du terrain</span>
+                  <span>{t.tactics.subModal.playerLeaving}</span>
                 </div>
               </div>
             </div>
@@ -5933,9 +6000,9 @@ export default function TacticsBoard({
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
                   : "bg-[#172233] hover:bg-[#22334d] border-[#263750] text-slate-200 hover:text-white"
                   }`}
-                title="Faire sortir sans remplacement"
+                title={t.tactics.subModal.simpleExitTooltip}
               >
-                <span>🚪 Sortie simple</span>
+                <span>{t.tactics.subModal.simpleExit}</span>
               </button>
               <button
                 type="button"
@@ -5948,9 +6015,9 @@ export default function TacticsBoard({
                   ? "bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800"
                   : "bg-amber-950/80 hover:bg-amber-800 border-amber-600/80 text-amber-200 hover:text-white"
                   }`}
-                title="Sortie sur blessure"
+                title={t.tactics.subModal.injuryExitTooltip}
               >
-                <span>🏥 Blessure</span>
+                <span>{t.tactics.subModal.injuryExit}</span>
               </button>
             </div>
           </div>
@@ -5963,10 +6030,10 @@ export default function TacticsBoard({
                 : isModernSleek ? "text-emerald-800 font-black" : "text-[#00E599]"
                 }`}>
                 <User className="w-3.5 h-3.5" />
-                <span>Remplaçants sur le banc ({activeBenchList.length})</span>
+                <span>{t.tactics.subModal.benchSubstitutes(activeBenchList.length)}</span>
               </span>
               <span className={`text-[9px] font-normal ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                Cliquez sur &quot;Faire entrer&quot; pour valider
+                {t.tactics.subModal.confirmHint}
               </span>
             </div>
 
@@ -5975,8 +6042,8 @@ export default function TacticsBoard({
                 <div className={`p-4 rounded-xl border text-center text-xs italic ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#090d14] border-[#1a2130] text-slate-500"
                   }`}>
                   {isOpponent
-                    ? "Aucun remplaçant présent sur le banc adverse."
-                    : "Aucun remplaçant présent sur la feuille de match."}
+                    ? t.tactics.subModal.noSubsOpponent
+                    : t.tactics.subModal.noSubsHome}
                 </div>
               ) : (
                 activeBenchList.map((sub) => {
@@ -6056,25 +6123,25 @@ export default function TacticsBoard({
                           <div className="flex items-center gap-2 text-[9px] mt-0.5">
                             {alreadyActive && (
                               <span className={isOpponent ? (isModernSleek ? "text-rose-700 font-bold" : "text-rose-400 font-bold") : isModernSleek ? "text-emerald-800 font-bold" : "text-[#00E599] font-bold"}>
-                                Sur le terrain
+                                {t.tactics.subModal.onPitch}
                               </span>
                             )}
                             {isInjured && (
-                              <span className={isModernSleek ? "text-amber-800 font-bold" : "text-amber-400 font-bold"}>🏥 Blessé</span>
+                              <span className={isModernSleek ? "text-amber-800 font-bold" : "text-amber-400 font-bold"}>{t.tactics.subModal.injured}</span>
                             )}
                             {isRedCard && (
-                              <span className={isModernSleek ? "text-rose-700 font-bold" : "text-rose-400 font-bold"}>🟥 Expulsé</span>
+                              <span className={isModernSleek ? "text-rose-700 font-bold" : "text-rose-400 font-bold"}>{t.tactics.subModal.sentOff}</span>
                             )}
                             {!alreadyActive && !isInjured && !isRedCard && (
                               <>
                                 {isExcellent && (
-                                  <span className={isModernSleek ? "text-emerald-800 font-bold" : "text-emerald-400 font-bold"}>⭐ Excellente forme</span>
+                                  <span className={isModernSleek ? "text-emerald-800 font-bold" : "text-emerald-400 font-bold"}>{t.tactics.subModal.topForm}</span>
                                 )}
                                 {isTired && (
-                                  <span className={isModernSleek ? "text-amber-800 font-bold" : "text-yellow-400 font-bold"}>⚠️ Fatigué</span>
+                                  <span className={isModernSleek ? "text-amber-800 font-bold" : "text-yellow-400 font-bold"}>{t.tactics.subModal.tired}</span>
                                 )}
                                 {!isExcellent && !isTired && (
-                                  <span className={isModernSleek ? "text-slate-600 font-medium" : "text-emerald-400 font-medium"}>✅ Disponible</span>
+                                  <span className={isModernSleek ? "text-slate-600 font-medium" : "text-emerald-400 font-medium"}>{t.tactics.subModal.available}</span>
                                 )}
                               </>
                             )}
@@ -6086,11 +6153,11 @@ export default function TacticsBoard({
                       <div>
                         {alreadyActive ? (
                           <span className={`text-[9.5px] font-bold px-2 py-1 ${isModernSleek ? "text-slate-400" : "text-slate-500"}`}>
-                            En jeu
+                            {t.tactics.subModal.inGame}
                           </span>
                         ) : isInjured || isRedCard ? (
                           <span className={`text-[9.5px] font-bold px-2 py-1 ${isModernSleek ? "text-rose-700" : "text-rose-400"}`}>
-                            Indisponible
+                            {t.tactics.subModal.unavailable}
                           </span>
                         ) : (
                           <button
@@ -6106,7 +6173,7 @@ export default function TacticsBoard({
                               }`}
                           >
                             <RefreshCw className="w-3 h-3" />
-                            <span>Faire entrer</span>
+                            <span>{t.tactics.subModal.bringOn}</span>
                           </button>
                         )}
                       </div>
@@ -6130,7 +6197,7 @@ export default function TacticsBoard({
               className={`text-[10px] font-bold underline cursor-pointer ${isModernSleek ? "text-blue-600 hover:text-blue-800" : "text-cyan-400 hover:text-cyan-300"
                 }`}
             >
-              Ouvrir la fiche complète du joueur
+              {t.tactics.subModal.openFullCard}
             </button>
 
             <button
@@ -6142,7 +6209,7 @@ export default function TacticsBoard({
                 : "bg-[#172233] hover:bg-[#202f4a] text-slate-300 hover:text-white"
                 }`}
             >
-              Annuler
+              {t.userModal.cancel}
             </button>
           </div>
         </div>
@@ -6176,16 +6243,16 @@ export default function TacticsBoard({
           <div
             onClick={() => setIsTeamAPanelCollapsed(false)}
             className={`w-full flex ${isFullscreenMode ? "flex-col" : "lg:flex-col"} items-center justify-between py-1 px-2 ${isFullscreenMode ? "py-2.5 px-1" : "lg:py-2.5 lg:px-1"} cursor-pointer group select-none gap-2`}
-            title="Agrandir le panneau Mon Club"
+            title={t.tactics.teamPanel.expandClub}
           >
             <div className={`flex items-center ${isFullscreenMode ? "flex-col" : "lg:flex-col"} gap-1.5`}>
               <span className="w-2.5 h-2.5 rounded-full bg-[#00E599] animate-pulse shrink-0" />
               <span className={`text-[11px] font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} ${isFullscreenMode ? "inline" : "hidden lg:inline"} [writing-mode:vertical-rl] rotate-180 my-2`}>
-                MON CLUB
+                {t.tactics.playerCard.myClubBadge}
               </span>
               {!isFullscreenMode && (
                 <span className={`text-xs font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} lg:hidden`}>
-                  MON CLUB
+                  {t.tactics.playerCard.myClubBadge}
                 </span>
               )}
             </div>
@@ -6196,10 +6263,10 @@ export default function TacticsBoard({
                 ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
                 : "bg-[#162234] text-[#00E599] hover:bg-[#00E599] hover:text-slate-950 border border-[#233149]"
                 }`}
-              title="Déplier Mon Club"
+              title={t.tactics.teamPanel.expandClub}
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
-              {!isFullscreenMode && <span className="lg:hidden text-[9px]">Déplier</span>}
+              {!isFullscreenMode && <span className="lg:hidden text-[9px]">{t.tactics.teamPanel.unfoldBtn}</span>}
             </button>
           </div>
         ) : (
@@ -6209,7 +6276,7 @@ export default function TacticsBoard({
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#00E599] animate-pulse" />
                 <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>
-                  MON CLUB
+                  {t.tactics.playerCard.myClubBadge}
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -6220,11 +6287,11 @@ export default function TacticsBoard({
                     ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
                     : "bg-[#162234] text-[#00E599] hover:bg-[#00E599] hover:text-slate-950 border border-[#233149]"
                     }`}
-                  title="Réduire le panneau Mon Club"
-                  aria-label="Réduire le panneau Mon Club"
+                  title={t.tactics.teamPanel.collapseClub}
+                  aria-label={t.tactics.teamPanel.collapseClub}
                 >
                   <Minus className="w-3.5 h-3.5 shrink-0" />
-                  {!isFullscreenMode && <span className="lg:hidden text-[9px]">Réduire</span>}
+                  {!isFullscreenMode && <span className="lg:hidden text-[9px]">{t.tactics.teamPanel.foldBtn}</span>}
                 </button>
               </div>
             </div>
@@ -6234,7 +6301,7 @@ export default function TacticsBoard({
               {!isFullscreenMode && (
                 <div className="lg:hidden flex items-center gap-1.5 w-full">
                   <span className={`text-[9px] font-black uppercase tracking-wider shrink-0 ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                    SCHÉMA :
+                    {t.tactics.teamPanel.formationLabel}
                   </span>
                   <select
                     value={selectedFormationA}
@@ -6255,7 +6322,7 @@ export default function TacticsBoard({
 
               <div className={isFullscreenMode ? "block" : "hidden lg:block"}>
                 <span className={`text-[9px] font-black uppercase tracking-wider block mb-1 ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                  SCHÉMA :
+                  {t.tactics.teamPanel.formationLabel}
                 </span>
                 <div className={`flex flex-col gap-1 ${isFullscreenMode ? "max-h-36 xl:max-h-52" : "max-h-32 xl:max-h-48"} overflow-y-auto scrollbar-thin pr-0.5`}>
                   {getAvailableFormationsForSport(activeSport).map((form) => (
@@ -6286,10 +6353,10 @@ export default function TacticsBoard({
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
                   : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs`}
-                title="Regrouper les joueurs dans leur camp"
+                title={t.tactics.teamPanel.regroupClubTooltip}
               >
                 <RotateCcw className={`w-3 h-3 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} shrink-0`} />
-                <span>Dans leur camp</span>
+                <span>{t.tactics.teamPanel.inTheirHalf}</span>
               </button>
 
               <button
@@ -6299,7 +6366,7 @@ export default function TacticsBoard({
                   : "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-800/80 text-emerald-200 hover:text-white"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
               >
-                Effacer
+                {t.tactics.teamPanel.clear}
               </button>
 
               {/* Button 1: Effectif Mon Club */}
@@ -6313,10 +6380,10 @@ export default function TacticsBoard({
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
                   : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
-                title="Gérer l'effectif, les noms, numéros de maillot et postes de Mon Club"
+                title={t.tactics.teamPanel.rosterTooltipClub}
               >
                 <span className="text-xs">👥</span>
-                <span>Effectif</span>
+                <span>{t.tactics.teamPanel.roster}</span>
                 <span className={`text-[8.5px] font-mono font-bold ml-0.5 ${isModernSleek ? "text-emerald-800" : "text-emerald-300"}`}>
                   ({currentTokens.filter((t) => t.type === "player_a").length + substitutes.length})
                 </span>
@@ -6333,10 +6400,10 @@ export default function TacticsBoard({
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
                   : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
-                title="Désigner le Capitaine, Penaltys, Corners et Coups Francs de Mon Club"
+                title={t.tactics.teamPanel.rolesTooltipClub}
               >
                 <span className="text-xs">🎯</span>
-                <span>Rôles Tactiques</span>
+                <span>{t.tactics.teamPanel.tacticalRoles}</span>
                 {Object.values(setPieceRoles).filter(Boolean).length > 0 && (
                   <span className="bg-[#00E599] text-slate-950 font-black text-[8px] px-1.5 py-0.2 rounded-full ml-0.5">
                     {Object.values(setPieceRoles).filter(Boolean).length}
@@ -6376,16 +6443,16 @@ export default function TacticsBoard({
           <div
             onClick={() => setIsTeamBPanelCollapsed(false)}
             className={`w-full flex ${isFullscreenMode ? "flex-col" : "lg:flex-col"} items-center justify-between py-1 px-2 ${isFullscreenMode ? "py-2.5 px-1" : "lg:py-2.5 lg:px-1"} cursor-pointer group select-none gap-2`}
-            title="Agrandir le panneau Mon Adversaire"
+            title={t.tactics.teamPanel.expandOpponent}
           >
             <div className={`flex items-center ${isFullscreenMode ? "flex-col" : "lg:flex-col"} gap-1.5`}>
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
               <span className={`text-[11px] font-black uppercase tracking-wider ${isModernSleek ? "text-rose-700" : "text-rose-400"} ${isFullscreenMode ? "inline" : "hidden lg:inline"} [writing-mode:vertical-rl] rotate-180 my-2`}>
-                MON ADVERSAIRE
+                {t.tactics.playerCard.myOpponentBadge}
               </span>
               {!isFullscreenMode && (
                 <span className={`text-xs font-black uppercase tracking-wider ${isModernSleek ? "text-rose-700" : "text-rose-400"} lg:hidden`}>
-                  MON ADVERSAIRE
+                  {t.tactics.playerCard.myOpponentBadge}
                 </span>
               )}
             </div>
@@ -6396,10 +6463,10 @@ export default function TacticsBoard({
                 ? "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
                 : "bg-[#251217] text-rose-300 hover:bg-rose-500 hover:text-slate-950 border border-[#492331]"
                 }`}
-              title="Déplier Mon Adversaire"
+              title={t.tactics.teamPanel.expandOpponent}
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
-              {!isFullscreenMode && <span className="lg:hidden text-[9px]">Déplier</span>}
+              {!isFullscreenMode && <span className="lg:hidden text-[9px]">{t.tactics.teamPanel.unfoldBtn}</span>}
             </button>
           </div>
         ) : (
@@ -6409,7 +6476,7 @@ export default function TacticsBoard({
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                 <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${isModernSleek ? "text-rose-700" : "text-rose-400"}`}>
-                  MON ADVERSAIRE
+                  {t.tactics.playerCard.myOpponentBadge}
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -6420,11 +6487,11 @@ export default function TacticsBoard({
                     ? "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
                     : "bg-[#251217] text-rose-300 hover:bg-rose-500 hover:text-slate-950 border border-[#492331]"
                     }`}
-                  title="Réduire le panneau Mon Adversaire"
-                  aria-label="Réduire le panneau Mon Adversaire"
+                  title={t.tactics.teamPanel.collapseOpponent}
+                  aria-label={t.tactics.teamPanel.collapseOpponent}
                 >
                   <Minus className="w-3.5 h-3.5 shrink-0" />
-                  {!isFullscreenMode && <span className="lg:hidden text-[9px]">Réduire</span>}
+                  {!isFullscreenMode && <span className="lg:hidden text-[9px]">{t.tactics.teamPanel.foldBtn}</span>}
                 </button>
               </div>
             </div>
@@ -6434,7 +6501,7 @@ export default function TacticsBoard({
               {!isFullscreenMode && (
                 <div className="lg:hidden flex items-center gap-1.5 w-full">
                   <span className={`text-[9px] font-black uppercase tracking-wider shrink-0 ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                    SCHÉMA :
+                    {t.tactics.teamPanel.formationLabel}
                   </span>
                   <select
                     value={selectedFormationB}
@@ -6455,7 +6522,7 @@ export default function TacticsBoard({
 
               <div className={isFullscreenMode ? "block" : "hidden lg:block"}>
                 <span className={`text-[9px] font-black uppercase tracking-wider block mb-1 ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                  SCHÉMA :
+                  {t.tactics.teamPanel.formationLabel}
                 </span>
                 <div className={`flex flex-col gap-1 ${isFullscreenMode ? "max-h-36 xl:max-h-52" : "max-h-32 xl:max-h-48"} overflow-y-auto scrollbar-thin pr-0.5`}>
                   {getAvailableFormationsForSport(activeSport).map((form) => (
@@ -6486,10 +6553,10 @@ export default function TacticsBoard({
                   ? "bg-rose-600 hover:bg-rose-700 border-rose-600 text-white shadow-2xs"
                   : "bg-rose-950/90 hover:bg-rose-900 border-rose-700/80 text-rose-200 hover:text-white"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 shadow-sm`}
-                title="Ajouter un joueur dans l'équipe adverse"
+                title={t.tactics.teamPanel.addOpponentTooltip}
               >
                 <Plus className={`w-3 h-3 ${isModernSleek ? "text-white" : "text-rose-400"} shrink-0`} />
-                <span>+ Adv</span>
+                <span>{t.tactics.teamPanel.addOpponentBtn}</span>
               </button>
 
               <button
@@ -6498,10 +6565,10 @@ export default function TacticsBoard({
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
                   : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 shadow-sm`}
-                title="Regrouper les joueurs adverses dans leur camp"
+                title={t.tactics.teamPanel.regroupOpponentTooltip}
               >
                 <RotateCcw className={`w-3 h-3 ${isModernSleek ? "text-rose-600" : "text-rose-400"} shrink-0`} />
-                <span>Dans leur camp</span>
+                <span>{t.tactics.teamPanel.inTheirHalf}</span>
               </button>
 
               <button
@@ -6511,14 +6578,14 @@ export default function TacticsBoard({
                   : "bg-rose-950/80 hover:bg-rose-900 border-rose-800/80 text-rose-200 hover:text-white"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
               >
-                Effacer
+                {t.tactics.teamPanel.clear}
               </button>
 
               {/* Button 1: Effectif Adverse */}
               <button
                 onClick={() => {
                   if (!isProOrAdmin) {
-                    setSleekToastMessage("🔒 La gestion de l'effectif adverse est réservée aux formules PRO & PRO+.");
+                    setSleekToastMessage(t.tactics.teamPanel.lockedProRoster);
                     setIsCheckoutOpen(true);
                     return;
                   }
@@ -6530,10 +6597,10 @@ export default function TacticsBoard({
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
                   : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
-                title="Gérer l'effectif, les noms, numéros de maillot et postes de l'équipe adverse"
+                title={t.tactics.teamPanel.rosterTooltipOpponent}
               >
                 <span className="text-xs">👥</span>
-                <span>Effectif</span>
+                <span>{t.tactics.teamPanel.roster}</span>
                 {!isProOrAdmin && (
                   <span className="text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm">
                     PRO
@@ -6548,7 +6615,7 @@ export default function TacticsBoard({
               <button
                 onClick={() => {
                   if (!isProOrAdmin) {
-                    setSleekToastMessage("🔒 La configuration des rôles adverses est réservée aux formules PRO & PRO+.");
+                    setSleekToastMessage(t.tactics.teamPanel.lockedProRoles);
                     setIsCheckoutOpen(true);
                     return;
                   }
@@ -6560,10 +6627,10 @@ export default function TacticsBoard({
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
                   : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
-                title="Désigner Capitaine, Penaltys, Corners et Coups Francs de l'équipe adverse"
+                title={t.tactics.teamPanel.rolesTooltipOpponent}
               >
                 <span className="text-xs">🎯</span>
-                <span>Rôles Tactiques</span>
+                <span>{t.tactics.teamPanel.tacticalRoles}</span>
                 {!isProOrAdmin && (
                   <span className="text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm">
                     PRO
@@ -6659,7 +6726,7 @@ export default function TacticsBoard({
                 ? "bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
                 : "bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 text-amber-300 border-amber-500/50 hover:border-amber-300 hover:brightness-110"
                 }`}
-              title="Compte Administrateur The Box : Accès total sans restriction de temps ni de fonction (Espace Admin)"
+              title={t.tactics.adminBadgeTooltip}
             >
               <span>👑</span>
               <span className="hidden sm:inline">Accès Illimité • Admin The Box</span>
@@ -6689,7 +6756,7 @@ export default function TacticsBoard({
                 ? "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
                 : "bg-[#121926] text-slate-300 border-[#1f293d] hover:border-slate-500"
                 }`}
-              title="Formule Gratuite active. Cliquez pour passer à la formule PRO."
+              title={t.tactics.freeBadgeTooltip}
             >
               <span>⚪</span>
               <span className="font-bold hidden sm:inline">Formule Gratuite</span>
@@ -6706,7 +6773,7 @@ export default function TacticsBoard({
                   ? "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100"
                   : "bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-emerald-500/20 text-amber-300 border-amber-500/50 hover:border-amber-300 hover:brightness-110"
                 }`}
-              title="Cliquez pour afficher les détails du compte à rebours de votre période d'essai Pro (14 Jours)"
+              title={t.tactics.trialBadgeTooltip}
             >
               <span className={liveTrialStatus.isExpired ? "" : "animate-pulse"}>
                 {liveTrialStatus.isExpired ? "⏳" : "⏰"}
@@ -6735,7 +6802,7 @@ export default function TacticsBoard({
                   ? "bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-500 shadow-xs"
                   : "bg-[#0d141f] hover:bg-[#152030] border-[#1f293d] hover:border-[#00E599] text-slate-200"
                   } border text-[10px] font-bold transition cursor-pointer shadow-sm group`}
-                title="Ouvrir le guide interactif et tutoriel du coach"
+                title={t.tactics.tutorialTooltip}
               >
                 <span className="text-xs group-hover:scale-110 transition-transform">🎓</span>
                 <span className={`font-semibold hidden sm:inline ${isModernSleek ? "text-slate-700 group-hover:text-emerald-800" : "text-slate-200 group-hover:text-[#00E599]"}`}>Tuto Coach</span>
@@ -6747,7 +6814,7 @@ export default function TacticsBoard({
               <div
                 className={`hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl ${isModernSleek ? "bg-white border-slate-200 text-slate-700 shadow-xs" : "bg-[#0d141f] border-[#1f293d] text-slate-300"
                   } border text-[10px] font-bold shadow-sm`}
-                title="Persistance & synchronisation Cloud actives via Firebase Firestore"
+                title={t.tactics.cloudSyncTooltip}
               >
                 <Cloud className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
                 <span className="font-semibold">Cloud Sync</span>
@@ -6761,7 +6828,7 @@ export default function TacticsBoard({
                 ? "hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 hover:text-emerald-800 shadow-xs"
                 : "hover:bg-[#1f293d] border border-[#1f293d] text-[#62728f] hover:text-[#00E599]"
                 } rounded-xl transition cursor-pointer flex items-center justify-center shrink-0`}
-              title={isRightSidebarOpen ? "Masquer le menu droit" : "Afficher le menu droit"}
+              title={isRightSidebarOpen ? (currentLang === "en" ? "Hide right panel" : "Masquer le menu droit") : (currentLang === "en" ? "Show right panel" : "Afficher le menu droit")}
             >
               {isRightSidebarOpen ? <ChevronRight className={`h-4 w-4 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} /> : <ChevronLeft className="h-4 w-4" />}
             </button>
@@ -6790,8 +6857,8 @@ export default function TacticsBoard({
                   ? "bg-white hover:bg-slate-50 border border-slate-200 shadow-xs text-slate-800"
                   : "bg-[#171f2c] hover:border-[#354563] border border-[#222d41]"
                   } p-1 sm:px-3 sm:py-1.5 rounded-xl transition cursor-pointer select-none`}
-                title="Profil & Options du compte"
-                aria-label="Menu profil utilisateur"
+                title={t.userMenu.profileTitle}
+                aria-label={t.userMenu.profileAriaLabel}
                 aria-expanded={isUserMenuOpen}
               >
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 ${isUserAdmin
@@ -6803,11 +6870,18 @@ export default function TacticsBoard({
                 <div className="text-left hidden sm:block">
                   <p className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"} leading-none flex items-center gap-1`}>
                     <span>{activeCoach?.firstName || "Coach"} {activeCoach?.lastName || "Principal"}</span>
-                    {isUserAdmin && <span className="text-[9px] bg-amber-500/20 text-amber-700 font-black px-1 rounded border border-amber-500/30">ADMIN</span>}
+                    {isUserAdmin && <span className="text-[9px] bg-amber-500/20 text-amber-700 font-black px-1 rounded border border-amber-500/30">{t.userMenu.adminBadge}</span>}
                     <ChevronDown className={`h-3 w-3 ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} />
                   </p>
                   <p className={`text-[9px] ${isModernSleek ? "text-slate-500 font-bold" : "text-[#62728f] font-black"} uppercase tracking-wider leading-none mt-1`}>
-                    {isUserAdmin ? "👑 Admin Plateforme" : (activeCoach?.role || "Coach Principal")}
+                    {isUserAdmin ? t.userMenu.platformAdmin : (currentLang === "en" ? (
+                      activeCoach?.role === "Coach Principal" ? t.userModal.roles.principal :
+                      activeCoach?.role === "Entraîneur Adjoint" ? t.userModal.roles.adjoint :
+                      activeCoach?.role === "Analyste Vidéo / Tactique" ? t.userModal.roles.analyst :
+                      activeCoach?.role === "Préparateur Physique" ? t.userModal.roles.fitness :
+                      activeCoach?.role === "Responsable Technique" ? t.userModal.roles.techDirector :
+                      (activeCoach?.role || t.userModal.roles.principal)
+                    ) : (activeCoach?.role || "Coach Principal"))}
                   </p>
                 </div>
                 <ChevronDown className={`h-3.5 w-3.5 sm:hidden ${isModernSleek ? "text-slate-500" : "text-[#62728f]"} shrink-0 transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} />
@@ -6832,7 +6906,14 @@ export default function TacticsBoard({
                         {activeCoach?.firstName || "Coach"} {activeCoach?.lastName || "Principal"}
                       </p>
                       <p className={`text-[9px] ${isModernSleek ? "text-slate-500" : "text-[#62728f]"} font-bold uppercase tracking-wider truncate`}>
-                        {isUserAdmin ? "👑 Admin Plateforme" : (activeCoach?.role || "Coach Principal")}
+                        {isUserAdmin ? t.userMenu.platformAdmin : (currentLang === "en" ? (
+                          activeCoach?.role === "Coach Principal" ? t.userModal.roles.principal :
+                          activeCoach?.role === "Entraîneur Adjoint" ? t.userModal.roles.adjoint :
+                          activeCoach?.role === "Analyste Vidéo / Tactique" ? t.userModal.roles.analyst :
+                          activeCoach?.role === "Préparateur Physique" ? t.userModal.roles.fitness :
+                          activeCoach?.role === "Responsable Technique" ? t.userModal.roles.techDirector :
+                          (activeCoach?.role || t.userModal.roles.principal)
+                        ) : (activeCoach?.role || "Coach Principal"))}
                       </p>
                     </div>
                   </div>
@@ -6847,7 +6928,7 @@ export default function TacticsBoard({
                         className="w-full text-left px-2 py-1.5 rounded-md text-xs font-black hover:opacity-80 flex items-center gap-2 transition cursor-pointer"
                       >
                         <span>👑</span>
-                        <span>Console Admin Plateforme</span>
+                        <span>{t.userMenu.adminConsole}</span>
                       </button>
                     </div>
                   )}
@@ -6865,10 +6946,10 @@ export default function TacticsBoard({
                         >
                           <span className="flex items-center gap-1.5">
                             <span>✨</span>
-                            <span>Formule {currentPlan === "pro_plus" || currentPlan === "annuel" || currentPlan === "club" ? "PRO+" : "PRO"}</span>
+                            <span>{currentPlan === "pro_plus" || currentPlan === "annuel" || currentPlan === "club" ? t.userMenu.proPlusPlan : t.userMenu.proPlan}</span>
                           </span>
                           <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded border ${isModernSleek ? "text-emerald-800 bg-emerald-100 border-emerald-300" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                            }`}>ACTIF</span>
+                            }`}>{t.userMenu.activeBadge}</span>
                         </button>
 
                         {/* Bouton de désabonnement direct dans le menu profil */}
@@ -6878,13 +6959,13 @@ export default function TacticsBoard({
                             setIsCheckoutOpen(true);
                           }}
                           className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between cursor-pointer mb-1 border-b border-rose-500/20 pb-2"
-                          title="Se désabonner de l'application et repasser en version gratuite"
+                          title={t.userMenu.unsubscribeTooltip}
                         >
                           <span className="flex items-center gap-1.5">
                             <span>🛑</span>
-                            <span>Se désabonner</span>
+                            <span>{t.userMenu.unsubscribe}</span>
                           </span>
-                          <span className="text-[9px] uppercase font-black text-rose-500 px-1.5 py-0.2 rounded bg-rose-500/10">Résilier</span>
+                          <span className="text-[9px] uppercase font-black text-rose-500 px-1.5 py-0.2 rounded bg-rose-500/10">{t.userMenu.unsubscribeConfirmTitle}</span>
                         </button>
                       </>
                     ) : hasHadPaidSubscription ? (
@@ -6898,9 +6979,9 @@ export default function TacticsBoard({
                       >
                         <span className="flex items-center gap-1.5">
                           <span>⚪</span>
-                          <span>Formule Gratuite</span>
+                          <span>{t.userMenu.freePlan}</span>
                         </span>
-                        <span className="text-[10px] font-mono text-slate-400 font-black bg-slate-500/10 px-1.5 py-0.5 rounded border border-slate-500/20">ACTIF</span>
+                        <span className="text-[10px] font-mono text-slate-400 font-black bg-slate-500/10 px-1.5 py-0.5 rounded border border-slate-500/20">{t.userMenu.activeBadge}</span>
                       </button>
                     ) : (
                       <button
@@ -6913,7 +6994,7 @@ export default function TacticsBoard({
                       >
                         <span className="flex items-center gap-1.5">
                           <span>⏰</span>
-                          <span>Temps Démo / Essai (14j)</span>
+                          <span>{t.userMenu.demoTrialTime}</span>
                         </span>
                         <span className="text-[10px] font-mono text-amber-600 font-black">{liveTrialStatus.days}j {liveTrialStatus.hours}h</span>
                       </button>
@@ -6929,7 +7010,7 @@ export default function TacticsBoard({
                         } transition flex items-center gap-1.5 cursor-pointer`}
                     >
                       <span>🎓</span>
-                      <span>Tutoriel & Guide de démarrage</span>
+                      <span>{t.userMenu.tutorial}</span>
                     </button>
                   )}
                   {onOpenLegalModal && (
@@ -6942,7 +7023,7 @@ export default function TacticsBoard({
                         } transition flex items-center gap-1.5 cursor-pointer`}
                     >
                       <span>❓</span>
-                      <span>Foire Aux Questions (FAQ)</span>
+                      <span>{t.userMenu.faq}</span>
                     </button>
                   )}
                   <button
@@ -6959,7 +7040,7 @@ export default function TacticsBoard({
                       } transition flex items-center gap-1.5 cursor-pointer`}
                   >
                     <span>✉️</span>
-                    <span>Contacter le Support (Email)</span>
+                    <span>{t.userMenu.contactSupport}</span>
                   </button>
                   {/* Option Utilisateur : Thème d'Affichage (Sombre / Clair & Épuré) */}
                   <div className={`p-2.5 rounded-xl border ${isModernSleek
@@ -6970,12 +7051,12 @@ export default function TacticsBoard({
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm">{isModernSleek ? "☀️" : "🌙"}</span>
                         <span className="text-[10px] font-black uppercase tracking-wider">
-                          {isModernSleek ? "Design Clair" : "Design Sombre"}
+                          {isModernSleek ? t.userMenu.lightDesign : t.userMenu.darkDesign}
                         </span>
                       </div>
                       <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded uppercase ${isModernSleek ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-slate-800 text-slate-400"
                         }`}>
-                        {isModernSleek ? "Actif" : "Classique"}
+                        {isModernSleek ? t.userMenu.themeActive : t.userMenu.themeClassic}
                       </span>
                     </div>
 
@@ -6985,10 +7066,10 @@ export default function TacticsBoard({
                         ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-800 shadow-2xs"
                         : "bg-[#090d14] hover:bg-[#162030] border-[#1f293d] text-slate-300 hover:text-white"
                         }`}
-                      title={isModernSleek ? "Basculer vers le mode Sombre Classique" : "Basculer vers le mode Clair & Épuré"}
+                      title={isModernSleek ? t.userMenu.switchToDark : t.userMenu.switchToLight}
                     >
                       <span className="text-[10px] font-bold">
-                        {isModernSleek ? "Passer au thème Sombre" : "Passer au thème Clair"}
+                        {isModernSleek ? t.userMenu.switchToDark : t.userMenu.switchToLight}
                       </span>
 
                       {/* Switch Pill */}
@@ -6998,6 +7079,53 @@ export default function TacticsBoard({
                       </div>
                     </button>
                   </div>
+
+                  {/* Option Utilisateur : Langue de l'Application (Français / English) */}
+                  <div className={`p-2.5 rounded-xl border ${isModernSleek
+                    ? "bg-slate-50 border-slate-200 text-slate-900"
+                    : "bg-[#121926] border-[#1f293d] text-slate-200"
+                    } my-1.5 shadow-2xs`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">🌐</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider">
+                          {t.userMenu.languageSection}
+                        </span>
+                      </div>
+                      <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded uppercase ${isModernSleek ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-slate-800 text-slate-400"
+                        }`}>
+                        {currentLang.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleLanguageSelect("fr")}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${currentLang === "fr"
+                          ? (isModernSleek ? "bg-emerald-600 text-white border-emerald-600 shadow-xs" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/40")
+                          : (isModernSleek ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700" : "bg-[#090d14] hover:bg-[#162030] border-[#1f293d] text-slate-400 hover:text-white")
+                          }`}
+                        title="Passer l'interface en Français"
+                      >
+                        <span className="text-sm">🇫🇷</span>
+                        <span className="text-[10px] font-black">Français</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleLanguageSelect("en")}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${currentLang === "en"
+                          ? (isModernSleek ? "bg-emerald-600 text-white border-emerald-600 shadow-xs" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/40")
+                          : (isModernSleek ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700" : "bg-[#090d14] hover:bg-[#162030] border-[#1f293d] text-slate-400 hover:text-white")
+                          }`}
+                        title="Switch interface to English"
+                      >
+                        <span className="text-sm">🇬🇧</span>
+                        <span className="text-[10px] font-black">English</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
@@ -7007,7 +7135,7 @@ export default function TacticsBoard({
                       } transition flex items-center gap-1.5 cursor-pointer`}
                   >
                     <span>⚙️</span>
-                    <span>Configuration Profil & Sport</span>
+                    <span>{t.userMenu.profileConfig}</span>
                   </button>
                   {onLogout && (
                     <button
@@ -7018,7 +7146,7 @@ export default function TacticsBoard({
                       className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 mt-1 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
                         } pt-2 flex items-center justify-between transition cursor-pointer`}
                     >
-                      <span>🚪 Déconnexion</span>
+                      <span>🚪 {t.userMenu.logout}</span>
                     </button>
                   )}
                 </div>
@@ -7034,7 +7162,7 @@ export default function TacticsBoard({
                 }
               }}
               className="p-1.5 sm:p-2 hover:bg-[#1f293d] border border-[#1f293d] rounded-xl text-[#62728f] hover:text-[#00E599] transition cursor-pointer hidden sm:flex items-center justify-center shrink-0"
-              title="Déconnexion (Retour à la landing page)"
+              title={t.userMenu.logoutTooltip}
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -7062,7 +7190,7 @@ export default function TacticsBoard({
 
             {/* 1. OUTILS (ICON BUTTONS) */}
             <div className="flex flex-col items-center gap-1.5 w-full">
-              <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>OUTILS</span>
+              <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>{t.tactics.toolsSection}</span>
 
               <button
                 onClick={() => { setActiveTool("select"); setDrawingTool("brush"); }}
@@ -7074,10 +7202,10 @@ export default function TacticsBoard({
                     ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
                     : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
                   }`}
-                title="Sélecteur"
+                title={t.tactics.tools.select}
               >
                 <MousePointer className="h-4 w-4" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">SÉLECT</span>
+                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.selectBtn}</span>
               </button>
 
               <button
@@ -7090,10 +7218,10 @@ export default function TacticsBoard({
                     ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
                     : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
                   }`}
-                title="Déplacer"
+                title={t.tactics.tools.move}
               >
                 <Move className="h-4 w-4" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">BOUGER</span>
+                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.moveBtn}</span>
               </button>
 
               {/* Ligne Tactique (Pleine & Pointillée sur le même bouton) */}
@@ -7110,9 +7238,9 @@ export default function TacticsBoard({
                 title={
                   activeTool === "line"
                     ? drawingTool === "shape-dashed-line"
-                      ? "Ligne Pointillée active (cliquez pour basculer en Ligne Pleine)"
-                      : "Ligne Pleine active (cliquez pour basculer en Ligne Pointillée)"
-                    : "Tracer une Ligne Tactique (Pleine ou Pointillée)"
+                      ? t.tactics.tools.lineTooltipDashedActive
+                      : t.tactics.tools.lineTooltipSolidActive
+                    : t.tactics.tools.lineTooltipDefault
                 }
               >
                 {activeTool === "line" && drawingTool === "shape-dashed-line" ? (
@@ -7127,9 +7255,9 @@ export default function TacticsBoard({
                 <span className="text-[7px] font-black uppercase tracking-tighter mt-0.5 leading-none">
                   {activeTool === "line"
                     ? drawingTool === "shape-dashed-line"
-                      ? "POINTILLÉ"
-                      : "PLEINE"
-                    : "LIGNE"}
+                      ? t.tactics.tools.dashedLine
+                      : t.tactics.tools.solidLine
+                    : t.tactics.tools.line}
                 </span>
 
                 {/* Badge visuel de type de ligne actif */}
@@ -7155,10 +7283,10 @@ export default function TacticsBoard({
                     ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
                     : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
                   }`}
-                title="Flèche de Course"
+                title={t.tactics.tools.arrow}
               >
                 <ArrowUpRight className="h-4 w-4" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">FLÈCHE</span>
+                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.arrowBtn}</span>
               </button>
 
               <button
@@ -7171,10 +7299,10 @@ export default function TacticsBoard({
                     ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
                     : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
                   }`}
-                title="Dessin Libre"
+                title={t.tactics.tools.draw}
               >
                 <Pencil className="h-4 w-4" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">DESSIN</span>
+                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.drawBtn}</span>
               </button>
 
               <button
@@ -7188,18 +7316,18 @@ export default function TacticsBoard({
                     ? "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed"
                     : "bg-[#090d14] border-[#1a2130] text-[#62728f]/40 cursor-not-allowed"
                   }`}
-                title="Effacer tous les dessins"
+                title={t.tactics.tools.clearDrawings}
               >
                 <Trash2 className={`h-4 w-4 ${drawingActions.length > 0 ? (isModernSleek ? "text-rose-600" : "text-rose-400") : ""}`} />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">RAZ</span>
+                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.clearBtn}</span>
               </button>
             </div>
 
             <div className={`w-8 h-px ${isModernSleek ? "bg-slate-200" : "bg-[#1f293d]"}`} />
 
             {/* 2. STROKE COLOR / SIZE PICKER */}
-            <div className="flex flex-col items-center gap-1 w-full" title="Couleur et épaisseur de tracé">
-              <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>TRAIT</span>
+            <div className="flex flex-col items-center gap-1 w-full" title={t.tactics.tools.strokeOptions}>
+              <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>{t.tactics.strokeSection}</span>
               <div className={`flex flex-col items-center gap-1.5 ${isModernSleek ? "bg-slate-100 border border-slate-200 shadow-2xs" : "bg-[#090d14] border-[#1a2130]"} p-1.5 rounded-xl`}>
                 {["#00E599", "#ef4444", "#3b82f6", "#1e293b", "#eab308"].map((c) => (
                   <button
@@ -7207,19 +7335,17 @@ export default function TacticsBoard({
                     onClick={() => setDrawColor(c)}
                     className={`w-4 h-4 rounded-full border transition cursor-pointer ${drawColor === c ? (isModernSleek ? "ring-2 ring-emerald-600 scale-110 shadow-sm" : "ring-2 ring-white scale-110 shadow-[0_0_8px_rgba(255,255,255,0.4)]") : "hover:scale-105 opacity-80 hover:opacity-100"}`}
                     style={{ backgroundColor: c, borderColor: isModernSleek ? "rgba(0,0,0,0.15)" : undefined }}
-                    title={`Couleur ${c}`}
+                    title={`${t.tactics.strokeSection} ${c}`}
                   />
                 ))}
               </div>
             </div>
 
-
-
             <div className={`w-8 h-px ${isModernSleek ? "bg-slate-200" : "bg-[#1f293d]"}`} />
 
             {/* 4. ACTIONS (ICON BUTTONS) */}
             <div id="tour-export-actions" className="flex flex-col items-center gap-1.5 w-full">
-              <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>EXPORT</span>
+              <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>{t.tactics.exportSection}</span>
 
               <button
                 onClick={handleOpenExportModal}
@@ -7227,7 +7353,7 @@ export default function TacticsBoard({
                   ? "bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
                   : "bg-gradient-to-r from-[#00E599]/20 to-emerald-600/20 hover:from-[#00E599]/30 hover:to-emerald-600/30 border border-[#00E599]/50 text-[#00E599] shadow-[#00e599]/10"
                   }`}
-                title="Exporter l'image PNG HD"
+                title={t.tactics.tools.exportPng}
               >
                 <Download className="h-4 w-4" />
                 <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">PNG</span>
@@ -7239,7 +7365,7 @@ export default function TacticsBoard({
                   ? "bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 shadow-2xs"
                   : "bg-gradient-to-r from-amber-500/20 via-amber-600/20 to-yellow-500/20 hover:from-amber-500/30 hover:via-amber-600/30 hover:to-yellow-500/30 border border-amber-500/50 text-amber-300 shadow-amber-500/10"
                   }`}
-                title="Vue Carte 3D (Squad Export)"
+                title={t.tactics.tools.cardView3D}
               >
                 <Sparkles className="h-4 w-4 text-amber-500" />
                 <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">3D</span>
@@ -7264,7 +7390,7 @@ export default function TacticsBoard({
                   : "bg-emerald-500/20 border-emerald-500/40 text-amber-400 hover:bg-emerald-500/30"
                 : "bg-gradient-to-r from-[#00E599] to-[#059669] border-[#00E599] text-[#0d1117] hover:brightness-110 shadow-lg shadow-[#00e599]/10"
                 }`}
-              title={isProOrAdmin ? (isUserAdmin ? "Compte Admin PRO Active" : `Plan ${activePlan.toUpperCase()} Actif`) : "Souscrire au Plan PRO"}
+              title={isProOrAdmin ? (isUserAdmin ? t.tactics.tools.proBadgeAdmin : t.tactics.tools.proBadgeActive(activePlan)) : t.tactics.tools.subscribePro}
             >
               <Award className="h-5 w-5 shrink-0" />
             </button>
@@ -7300,8 +7426,8 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                   }`}
-                title="Terrain complet"
-                aria-label="Terrain complet"
+                title={t.tactics.pitchModes.fullPitch}
+                aria-label={t.tactics.pitchModes.fullPitch}
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -7320,8 +7446,8 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                   }`}
-                title="Demi-terrain"
-                aria-label="Demi-terrain"
+                title={t.tactics.pitchModes.halfPitch}
+                aria-label={t.tactics.pitchModes.halfPitch}
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 3h16v18H4z" />
@@ -7359,8 +7485,8 @@ export default function TacticsBoard({
                       ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80 cursor-pointer"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d] cursor-pointer"
                   }`}
-                title={isLiveMatchMode ? "L'animation n'est pas disponible en mode Live Match" : (isAnimationCreatorOpen ? "Masquer le créateur d'animation" : "Activer le créateur d'animation (Vidéo)")}
-                aria-label="Créer une animation"
+                title={isLiveMatchMode ? t.tactics.pitchModes.animationLiveDisabled : (isAnimationCreatorOpen ? t.tactics.pitchModes.animationVideoActive : t.tactics.pitchModes.animationVideoInactive)}
+                aria-label={t.tactics.pitchModes.animationVideoInactive}
               >
                 <Video className="h-4 w-4 shrink-0" />
               </button>
@@ -7379,8 +7505,8 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                   }`}
-                title="Ratio Écran Large (Paysage)"
-                aria-label="Ratio Écran Large"
+                title={t.tactics.pitchModes.aspectDesktop}
+                aria-label={t.tactics.pitchModes.aspectDesktop}
               >
                 <Laptop className="h-4 w-4 shrink-0" />
               </button>
@@ -7395,8 +7521,8 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                   }`}
-                title="Ratio Écran Étroit (Portrait)"
-                aria-label="Ratio Écran Étroit"
+                title={t.tactics.pitchModes.aspectMobile}
+                aria-label={t.tactics.pitchModes.aspectMobile}
               >
                 <Smartphone className="h-4 w-4 shrink-0" />
               </button>
@@ -7415,8 +7541,8 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                   }`}
-                title={showBall ? "Masquer le ballon" : "Afficher le ballon"}
-                aria-label="Afficher ou masquer le ballon"
+                title={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
+                aria-label={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
               >
                 <CircleDot className="h-4 w-4 shrink-0" />
               </button>
@@ -7431,8 +7557,8 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                   }`}
-                title={showOpponents ? "Masquer les adversaires" : "Afficher les adversaires"}
-                aria-label="Afficher ou masquer les adversaires"
+                title={showOpponents ? t.tactics.pitchModes.opponentsHide : t.tactics.pitchModes.opponentsShow}
+                aria-label={showOpponents ? t.tactics.pitchModes.opponentsHide : t.tactics.pitchModes.opponentsShow}
               >
                 <Users className="h-4 w-4 shrink-0" />
               </button>
@@ -7447,8 +7573,8 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                   }`}
-                title={showPlayerNames ? "Masquer les noms des joueurs (garder uniquement les numéros)" : "Afficher les noms des joueurs"}
-                aria-label="Masquer ou afficher les noms des joueurs"
+                title={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
+                aria-label={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
               >
                 <Hash className="h-4 w-4 shrink-0" />
               </button>
@@ -7469,10 +7595,14 @@ export default function TacticsBoard({
                   }`}
                 title={
                   isTeamAPanelCollapsed && isTeamBPanelCollapsed
-                    ? "Déplier les panneaux d'équipes (Mon Club & Adverse)"
-                    : "Réduire les panneaux d'équipes pour agrandir le terrain"
+                    ? t.tactics.pitchModes.panelsUnfold
+                    : t.tactics.pitchModes.panelsCollapse
                 }
-                aria-label="Réduire ou déplier les panneaux d'équipes"
+                aria-label={
+                  isTeamAPanelCollapsed && isTeamBPanelCollapsed
+                    ? t.tactics.pitchModes.panelsUnfold
+                    : t.tactics.pitchModes.panelsCollapse
+                }
               >
                 <Columns className="h-4 w-4 shrink-0" />
               </button>
@@ -7481,7 +7611,7 @@ export default function TacticsBoard({
             {/* GROUP 4: Zooms (Échelle Terrain & Taille Joueurs) - Standardized h-8 Height & Icons */}
             <div className={`flex items-center gap-2 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 px-2 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]"}`}>
               {/* Pitch Zoom */}
-              <div title="Échelle du terrain" className="flex items-center gap-1">
+              <div title={t.tactics.pitchModes.pitchZoom} className="flex items-center gap-1">
                 <ZoomIn className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
                 <button
                   type="button"
@@ -7490,7 +7620,7 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                     }`}
-                  title="Réduire l'échelle du terrain"
+                  title={t.tactics.pitchModes.zoomOut}
                 >
                   -
                 </button>
@@ -7502,7 +7632,7 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                     }`}
-                  title="Agrandir l'échelle du terrain"
+                  title={t.tactics.pitchModes.zoomIn}
                 >
                   +
                 </button>
@@ -7511,7 +7641,7 @@ export default function TacticsBoard({
               <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
 
               {/* Players Scale */}
-              <div title="Taille des joueurs" className="flex items-center gap-1">
+              <div title={t.tactics.pitchModes.playerZoom} className="flex items-center gap-1">
                 <User className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
                 <button
                   type="button"
@@ -7520,7 +7650,7 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                     }`}
-                  title="Réduire la taille des joueurs"
+                  title={t.tactics.pitchModes.playerZoomOut}
                 >
                   -
                 </button>
@@ -7532,7 +7662,7 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                     }`}
-                  title="Agrandir la taille des joueurs"
+                  title={t.tactics.pitchModes.playerZoomIn}
                 >
                   +
                 </button>
@@ -7552,17 +7682,17 @@ export default function TacticsBoard({
                     ? "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
                     : "bg-gradient-to-r from-[#00E599] via-emerald-400 to-teal-300 hover:from-emerald-400 hover:to-[#00E599] text-slate-950 border border-[#00E599] shadow-md shadow-[#00E599]/25 hover:shadow-[#00E599]/40 hover:scale-[1.02] active:scale-[0.98]"
                   }`}
-                title={isPitchFullscreen ? "Quitter le mode plein écran (Échap)" : "Afficher le terrain en plein écran"}
+                title={isPitchFullscreen ? t.tactics.pitchModes.fullscreenExit : t.tactics.pitchModes.fullscreenEnter}
               >
                 {isPitchFullscreen ? (
                   <>
                     <Minimize2 className="h-4 w-4 shrink-0 stroke-[2.5]" />
-                    <span className="uppercase tracking-wider text-[10.5px] font-black">RÉDUIRE</span>
+                    <span className="uppercase tracking-wider text-[10.5px] font-black">{t.tactics.pitchModes.fullscreenExit.toUpperCase()}</span>
                   </>
                 ) : (
                   <>
                     <Maximize2 className="h-4 w-4 shrink-0 stroke-[2.5]" />
-                    <span className="uppercase tracking-wider text-[10.5px] font-black">PLEIN ÉCRAN</span>
+                    <span className="uppercase tracking-wider text-[10.5px] font-black">{t.tactics.pitchModes.fullscreenEnter.toUpperCase()}</span>
                   </>
                 )}
               </button>
@@ -7630,8 +7760,8 @@ export default function TacticsBoard({
                             ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title="Terrain complet"
-                        aria-label="Terrain complet"
+                        title={t.tactics.pitchModes.fullPitch}
+                        aria-label={t.tactics.pitchModes.fullPitch}
                       >
                         <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -7650,8 +7780,8 @@ export default function TacticsBoard({
                             ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title="Demi-terrain"
-                        aria-label="Demi-terrain"
+                        title={t.tactics.pitchModes.halfPitch}
+                        aria-label={t.tactics.pitchModes.halfPitch}
                       >
                         <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M4 3h16v18H4z" />
@@ -7689,8 +7819,8 @@ export default function TacticsBoard({
                               ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80 cursor-pointer"
                               : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d] cursor-pointer"
                           }`}
-                        title={isLiveMatchMode ? "L'animation n'est pas disponible en mode Live Match" : (isAnimationCreatorOpen ? "Masquer le créateur d'animation" : "Activer le créateur d'animation (Vidéo)")}
-                        aria-label="Créer une animation"
+                        title={isLiveMatchMode ? t.tactics.pitchModes.animationLiveDisabled : (isAnimationCreatorOpen ? t.tactics.pitchModes.animationVideoActive : t.tactics.pitchModes.animationVideoInactive)}
+                        aria-label={t.tactics.pitchModes.animationVideoInactive}
                       >
                         <Video className="h-4 w-4 shrink-0" />
                       </button>
@@ -7705,8 +7835,8 @@ export default function TacticsBoard({
                           ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title="Ratio Écran Large (Paysage)"
-                        aria-label="Ratio Écran Large"
+                        title={t.tactics.pitchModes.aspectDesktop}
+                        aria-label={t.tactics.pitchModes.aspectDesktop}
                       >
                         <Laptop className="h-4 w-4 shrink-0" />
                       </button>
@@ -7717,8 +7847,8 @@ export default function TacticsBoard({
                           ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title="Ratio Écran Étroit (Portrait)"
-                        aria-label="Ratio Écran Étroit"
+                        title={t.tactics.pitchModes.aspectMobile}
+                        aria-label={t.tactics.pitchModes.aspectMobile}
                       >
                         <Smartphone className="h-4 w-4 shrink-0" />
                       </button>
@@ -7733,8 +7863,8 @@ export default function TacticsBoard({
                           ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title={showBall ? "Masquer le ballon" : "Afficher le ballon"}
-                        aria-label="Afficher ou masquer le ballon"
+                        title={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
+                        aria-label={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
                       >
                         <CircleDot className="h-4 w-4 shrink-0" />
                       </button>
@@ -7745,8 +7875,8 @@ export default function TacticsBoard({
                           ? "bg-[#28131a] border border-rose-500/60 text-rose-400 shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title={showOpponents ? "Masquer les adversaires" : "Afficher les adversaires"}
-                        aria-label="Afficher ou masquer les adversaires"
+                        title={showOpponents ? t.tactics.pitchModes.opponentsHide : t.tactics.pitchModes.opponentsShow}
+                        aria-label={showOpponents ? t.tactics.pitchModes.opponentsHide : t.tactics.pitchModes.opponentsShow}
                       >
                         <Users className="h-4 w-4 shrink-0" />
                       </button>
@@ -7757,8 +7887,8 @@ export default function TacticsBoard({
                           ? "bg-[#382810] border border-amber-400 text-amber-300 shadow-xs font-black"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title={showPlayerNames ? "Masquer les noms des joueurs (garder uniquement les numéros)" : "Afficher les noms des joueurs"}
-                        aria-label="Masquer ou afficher les noms des joueurs"
+                        title={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
+                        aria-label={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
                       >
                         <Hash className="h-4 w-4 shrink-0" />
                       </button>
@@ -7775,10 +7905,14 @@ export default function TacticsBoard({
                           }`}
                         title={
                           isTeamAPanelCollapsed && isTeamBPanelCollapsed
-                            ? "Déplier les panneaux d'équipes (Mon Club & Adverse)"
-                            : "Réduire les panneaux d'équipes pour agrandir le terrain"
+                            ? t.tactics.pitchModes.panelsUnfold
+                            : t.tactics.pitchModes.panelsCollapse
                         }
-                        aria-label="Réduire ou déplier les panneaux d'équipes"
+                        aria-label={
+                          isTeamAPanelCollapsed && isTeamBPanelCollapsed
+                            ? t.tactics.pitchModes.panelsUnfold
+                            : t.tactics.pitchModes.panelsCollapse
+                        }
                       >
                         <Columns className="h-4 w-4 shrink-0" />
                       </button>
@@ -7796,8 +7930,8 @@ export default function TacticsBoard({
                           ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title="Sélecteur de joueur"
-                        aria-label="Sélecteur"
+                        title={t.tactics.tools.select}
+                        aria-label={t.tactics.tools.select}
                       >
                         <MousePointer className="h-4 w-4 shrink-0" />
                       </button>
@@ -7810,8 +7944,8 @@ export default function TacticsBoard({
                           ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title="Déplacer"
-                        aria-label="Déplacer"
+                        title={t.tactics.tools.move}
+                        aria-label={t.tactics.tools.move}
                       >
                         <Move className="h-4 w-4 shrink-0" />
                       </button>
@@ -7827,11 +7961,11 @@ export default function TacticsBoard({
                         title={
                           activeTool === "line"
                             ? drawingTool === "shape-dashed-line"
-                              ? "Ligne Pointillée active (cliquer pour Pleine)"
-                              : "Ligne Pleine active (cliquer pour Pointillée)"
-                            : "Tracer une ligne (pleine / pointillée)"
+                              ? t.tactics.tools.lineTooltipDashedActive
+                              : t.tactics.tools.lineTooltipSolidActive
+                            : t.tactics.tools.lineTooltipDefault
                         }
-                        aria-label="Tracer une ligne"
+                        aria-label={t.tactics.tools.line}
                       >
                         {activeTool === "line" && drawingTool === "shape-dashed-line" ? (
                           <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -7852,8 +7986,8 @@ export default function TacticsBoard({
                           ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title="Tracer une flèche de course"
-                        aria-label="Tracer une flèche"
+                        title={t.tactics.tools.arrow}
+                        aria-label={t.tactics.tools.arrow}
                       >
                         <ArrowUpRight className="h-4 w-4 shrink-0" />
                       </button>
@@ -7866,8 +8000,8 @@ export default function TacticsBoard({
                           ? "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title="Dessin libre au crayon"
-                        aria-label="Crayon"
+                        title={t.tactics.tools.draw}
+                        aria-label={t.tactics.tools.draw}
                       >
                         <Pencil className="h-4 w-4 shrink-0" />
                       </button>
@@ -7880,8 +8014,8 @@ export default function TacticsBoard({
                       type="button"
                       onClick={() => setDrawColor("#3b82f6")}
                       className="h-7 w-8 bg-[#0c1017] rounded-lg border border-[#3b82f6]/50 shadow-sm cursor-pointer flex items-center justify-center hover:bg-[#151e2d]"
-                      title="Couleur de trait : Bleu"
-                      aria-label="Couleur de trait : Bleu"
+                      title={`${t.tactics.strokeSection} : #3b82f6`}
+                      aria-label={`${t.tactics.strokeSection} : #3b82f6`}
                     >
                       <span className="w-3.5 h-3.5 rounded-full bg-[#3b82f6] border border-white/50 ring-2 ring-[#3b82f6]/50 shadow-sm" />
                     </button>
@@ -7889,9 +8023,9 @@ export default function TacticsBoard({
                     {/* Sélecteur d'épaisseur */}
                     <div className="flex items-center gap-1 h-8 bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]">
                       {[
-                        { size: 2, label: "Fin", dot: "w-1.5 h-1.5" },
-                        { size: 3, label: "Moyen", dot: "w-2.5 h-2.5" },
-                        { size: 5, label: "Épais", dot: "w-3.5 h-3.5" }
+                        { size: 2, label: t.tactics.pitchModes.strokeThin, dot: "w-1.5 h-1.5" },
+                        { size: 3, label: t.tactics.pitchModes.strokeMedium, dot: "w-2.5 h-2.5" },
+                        { size: 5, label: t.tactics.pitchModes.strokeThick, dot: "w-3.5 h-3.5" }
                       ].map(({ size, label, dot }) => (
                         <button
                           key={size}
@@ -7901,8 +8035,8 @@ export default function TacticsBoard({
                             ? "bg-[#132338] text-[#3b82f6] border border-[#3b82f6]/50 font-bold"
                             : "bg-[#0c1017] border border-[#1e293b] text-slate-400 hover:text-white hover:bg-[#151e2d]"
                             }`}
-                          title={`Épaisseur: ${label}`}
-                          aria-label={`Épaisseur: ${label}`}
+                          title={`${t.tactics.strokeSection}: ${label}`}
+                          aria-label={`${t.tactics.strokeSection}: ${label}`}
                         >
                           <span className={`${dot} rounded-full bg-current`} />
                         </button>
@@ -7918,8 +8052,8 @@ export default function TacticsBoard({
                         ? "bg-rose-950/80 hover:bg-rose-900 border-rose-800 text-rose-300 hover:text-white shadow-sm"
                         : "bg-[#0c1017] border-[#1e293b] text-slate-600 cursor-not-allowed"
                         }`}
-                      title="Effacer tous les dessins"
-                      aria-label="Effacer tous les dessins"
+                      title={t.tactics.tools.clearDrawings}
+                      aria-label={t.tactics.tools.clearDrawings}
                     >
                       <Trash2 className="w-4 h-4 shrink-0" />
                     </button>
@@ -7929,13 +8063,13 @@ export default function TacticsBoard({
                     {/* GROUP 5: Zooms (Échelle Terrain & Taille Joueurs) */}
                     <div className="flex items-center gap-2 h-8 bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]">
                       {/* Pitch Zoom */}
-                      <div title="Échelle du terrain" className="flex items-center gap-1">
+                      <div title={t.tactics.pitchModes.pitchZoom} className="flex items-center gap-1">
                         <ZoomIn className="h-4 w-4 shrink-0 text-[#718096]" />
                         <button
                           type="button"
                           onClick={() => setZoomScale(prev => Math.max(70, prev - 10))}
                           className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                          title="Réduire l'échelle du terrain"
+                          title={t.tactics.pitchModes.zoomOut}
                         >
                           -
                         </button>
@@ -7944,7 +8078,7 @@ export default function TacticsBoard({
                           type="button"
                           onClick={() => setZoomScale(prev => Math.min(150, prev + 10))}
                           className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                          title="Agrandir l'échelle du terrain"
+                          title={t.tactics.pitchModes.zoomIn}
                         >
                           +
                         </button>
@@ -7953,13 +8087,13 @@ export default function TacticsBoard({
                       <div className="h-4 w-px bg-[#1a2130]" />
 
                       {/* Players Scale */}
-                      <div title="Taille des joueurs" className="flex items-center gap-1">
+                      <div title={t.tactics.pitchModes.playerZoom} className="flex items-center gap-1">
                         <User className="h-4 w-4 shrink-0 text-[#718096]" />
                         <button
                           type="button"
                           onClick={() => setPlayerScale(prev => Math.max(20, prev - 10))}
                           className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                          title="Réduire la taille des joueurs"
+                          title={t.tactics.pitchModes.playerZoomOut}
                         >
                           -
                         </button>
@@ -7968,7 +8102,7 @@ export default function TacticsBoard({
                           type="button"
                           onClick={() => setPlayerScale(prev => Math.min(130, prev + 10))}
                           className="h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                          title="Agrandir la taille des joueurs"
+                          title={t.tactics.pitchModes.playerZoomIn}
                         >
                           +
                         </button>
@@ -7983,11 +8117,11 @@ export default function TacticsBoard({
                         type="button"
                         onClick={togglePitchFullscreen}
                         className="h-8 px-3 bg-rose-600 hover:bg-rose-500 border border-rose-400 text-white rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 font-black text-xs shadow-md shadow-rose-950/50"
-                        title="Quitter le mode plein écran (Échap)"
-                        aria-label="Quitter le plein écran"
+                        title={t.tactics.pitchModes.fullscreenExit}
+                        aria-label={t.tactics.pitchModes.fullscreenExit}
                       >
                         <Minimize2 className="h-4 w-4 shrink-0 stroke-[2.5]" />
-                        <span className="uppercase tracking-wider text-[10px]">QUITTER LE PLEIN ÉCRAN</span>
+                        <span className="uppercase tracking-wider text-[10px]">{t.tactics.pitchModes.fullscreenExit}</span>
                       </button>
                     </div>
 
@@ -8020,7 +8154,7 @@ export default function TacticsBoard({
                         <div className="absolute top-2.5 right-12 sm:right-32 z-40 flex items-center gap-1.5 bg-[#0d1117]/95 border border-[#00E599]/60 p-1.5 px-3 rounded-xl shadow-2xl backdrop-blur-md animate-fade-in pointer-events-auto">
                           <span className="text-[10px] font-black text-[#00E599] flex items-center gap-1 mr-1">
                             <Pencil className="w-3.5 h-3.5" />
-                            <span>TRACÉ SÉLECTIONNÉ</span>
+                            <span>{t.tactics.drawingOverlay.selectedStroke}</span>
                           </span>
 
                           <div className="h-4 w-px bg-[#2a364f]" />
@@ -8028,33 +8162,33 @@ export default function TacticsBoard({
                           <button
                             onClick={handleDeleteSelectedStroke}
                             className="px-2.5 py-1 bg-rose-950/90 hover:bg-rose-900 border border-rose-700/80 text-rose-200 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer shadow-md"
-                            title="Supprimer ce tracé sélectionné"
+                            title={t.tactics.drawingOverlay.deleteStrokeTooltip}
                           >
                             <Trash2 className="w-3 h-3 text-rose-400" />
-                            <span>Supprimer tracé</span>
+                            <span>{t.tactics.drawingOverlay.deleteStroke}</span>
                           </button>
 
                           <button
                             onClick={handleUndo}
                             className="px-2 py-1 bg-[#172233] hover:bg-[#202f4a] border border-[#233149] text-slate-200 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
-                            title="Annuler le dernier tracé (Ctrl+Z)"
+                            title={t.tactics.drawingOverlay.undoTooltip}
                           >
                             <RotateCcw className="w-3 h-3 text-slate-300" />
-                            <span>Annuler</span>
+                            <span>{t.tactics.drawingOverlay.undo}</span>
                           </button>
 
                           <button
                             onClick={handleClearDrawings}
                             className="px-2.5 py-1 bg-rose-950/60 hover:bg-rose-900/90 border border-rose-800/60 text-rose-300 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
-                            title="Effacer tous les tracés sur le terrain"
+                            title={t.tactics.drawingOverlay.clearAllTooltip}
                           >
-                            <span>Tout effacer</span>
+                            <span>{t.tactics.drawingOverlay.clearAll}</span>
                           </button>
 
                           <button
                             onClick={() => setSelectedStrokeIndex(null)}
                             className="ml-1 p-0.5 hover:bg-[#1f293d] text-slate-400 hover:text-white rounded-lg transition"
-                            title="Fermer le menu"
+                            title={t.tactics.drawingOverlay.closeMenu}
                           >
                             ✕
                           </button>
@@ -8076,10 +8210,10 @@ export default function TacticsBoard({
                         {/* Corner Flags Overlay */}
                         {activeSport === "football" && !(aspectRatioMode === "mobile") && (
                           <>
-                            <div className="absolute top-[3.42%] left-[2.27%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
-                            <div className="absolute top-[3.42%] right-[2.27%] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
-                            <div className="absolute bottom-[3.42%] left-[2.27%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
-                            <div className="absolute bottom-[3.42%] right-[2.27%] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title="Drapeau de corner" />
+                            <div className="absolute top-[3.42%] left-[2.27%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
+                            <div className="absolute top-[3.42%] right-[2.27%] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
+                            <div className="absolute bottom-[3.42%] left-[2.27%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
+                            <div className="absolute bottom-[3.42%] right-[2.27%] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
                           </>
                         )}
 
@@ -8202,9 +8336,9 @@ export default function TacticsBoard({
                                 title={
                                   token.type.startsWith("player")
                                     ? isLiveMatchMode
-                                      ? `Double-clic pour les options de match (${token.name})`
-                                      : `Clic pour remplacer ${token.name}`
-                                    : "Glisser pour déplacer"
+                                      ? t.tactics.playerCard.tokenHoverLive(token.name)
+                                      : t.tactics.playerCard.tokenHoverSub(token.name)
+                                    : t.tactics.playerCard.tokenHoverDrag
                                 }
                                 style={{
                                   left: `${aspectRatioMode === "mobile" ? token.y : token.x}%`,
@@ -8236,7 +8370,7 @@ export default function TacticsBoard({
                                     {hasYellowCard && (
                                       <span
                                         className="w-3.5 h-4 bg-amber-400 rounded-[1px] border border-amber-200 shadow-md flex items-center justify-center font-black text-[7px] text-amber-950"
-                                        title="Carton Jaune 🟨"
+                                        title={t.tactics.pitchBadges.yellowCard}
                                       >
                                         🟨
                                       </span>
@@ -8246,7 +8380,7 @@ export default function TacticsBoard({
                                     {playerGoals > 0 && (
                                       <span
                                         className="bg-emerald-500 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-emerald-200 flex items-center justify-center leading-none"
-                                        title={`Buteur ⚽ (${playerGoals} goal${playerGoals > 1 ? "s" : ""})`}
+                                        title={t.tactics.pitchBadges.scorer(playerGoals)}
                                       >
                                         ⚽{playerGoals > 1 ? playerGoals : ""}
                                       </span>
@@ -8256,7 +8390,7 @@ export default function TacticsBoard({
                                     {playerAssists > 0 && (
                                       <span
                                         className="bg-cyan-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
-                                        title={`Passeur décisif 👟 (${playerAssists} passe${playerAssists > 1 ? "s" : ""})`}
+                                        title={t.tactics.pitchBadges.assist(playerAssists)}
                                       >
                                         👟{playerAssists > 1 ? playerAssists : ""}
                                       </span>
@@ -8275,16 +8409,16 @@ export default function TacticsBoard({
                                                 ? "bg-red-700 text-white font-bold"
                                                 : "bg-rose-500 text-white font-bold"
                                           }`}
-                                        title={`Disponibilité: ${token.status === "excellent"
-                                          ? "En forme ⚡"
+                                        title={t.tactics.pitchBadges.fitnessTitle(token.status === "excellent"
+                                          ? t.tactics.pitchBadges.fitnessFit
                                           : token.status === "tired"
-                                            ? "Fatigué 🥱"
+                                            ? t.tactics.pitchBadges.fitnessTired
                                             : token.status === "injured"
-                                              ? "Blessé 🩹"
+                                              ? t.tactics.pitchBadges.fitnessInjured
                                               : token.status === "suspended"
-                                                ? "Suspendu 🟥"
+                                                ? t.tactics.pitchBadges.fitnessSuspended
                                                 : token.status
-                                          }`}
+                                        )}
                                       >
                                         {token.status === "excellent"
                                           ? "⚡"
@@ -8306,7 +8440,7 @@ export default function TacticsBoard({
                                       {setPieceRoles.captain === token.name && (
                                         <span
                                           className="bg-amber-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 w-4 shadow-md border border-amber-200 flex items-center justify-center leading-none"
-                                          title="Capitaine d'Équipe 👑"
+                                          title={t.tactics.pitchBadges.captain}
                                         >
                                           👑
                                         </span>
@@ -8316,7 +8450,7 @@ export default function TacticsBoard({
                                       {(setPieceRoles.cornerLeft === token.name || setPieceRoles.cornerRight === token.name) && (
                                         <span
                                           className="bg-rose-500 text-white rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-rose-300 flex items-center justify-center leading-none"
-                                          title="Tireur de Corner 🚩"
+                                          title={t.tactics.pitchBadges.cornerTaker}
                                         >
                                           {setPieceRoles.cornerLeft === token.name && setPieceRoles.cornerRight === token.name
                                             ? "CK-2"
@@ -8330,7 +8464,7 @@ export default function TacticsBoard({
                                       {(setPieceRoles.directFreeKick === token.name || setPieceRoles.offCenterFKLeft === token.name || setPieceRoles.offCenterFKRight === token.name) && (
                                         <span
                                           className="bg-cyan-400 text-slate-950 rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
-                                          title="Tireur de Coup Franc ⚡"
+                                          title={t.tactics.pitchBadges.freeKickTaker}
                                         >
                                           {setPieceRoles.directFreeKick === token.name
                                             ? "CF"
@@ -8349,7 +8483,7 @@ export default function TacticsBoard({
                                       {setPieceRoles.penaltyTaker === token.name && (
                                         <span
                                           className="bg-[#00E599] text-[#0d1117] rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-emerald-300 flex items-center justify-center leading-none"
-                                          title="Tireur de Penalty ⚽ (11m)"
+                                          title={t.tactics.pitchBadges.penaltyTaker}
                                         >
                                           PK
                                         </span>
@@ -8473,8 +8607,8 @@ export default function TacticsBoard({
                                 ? "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
                                 : "bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 border-[#1f293d]"
                             }`}
-                            title="Étape Précédente"
-                            aria-label="Étape Précédente"
+                            title={t.tactics.animation.prevStep}
+                            aria-label={t.tactics.animation.prevStep}
                           >
                             <ChevronLeft className="w-4 h-4 shrink-0" />
                           </button>
@@ -8489,8 +8623,8 @@ export default function TacticsBoard({
                                   ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/15 border border-emerald-500 font-bold"
                                   : "bg-[#00E599] hover:bg-emerald-400 text-slate-950 shadow-[#00e599]/15 border border-emerald-300"
                             }`}
-                            title={isPlaying ? "Mettre en Pause" : "Lancer la Lecture animée"}
-                            aria-label={isPlaying ? "Pause" : "Lecture"}
+                            title={isPlaying ? t.tactics.animation.pause : t.tactics.animation.play}
+                            aria-label={isPlaying ? t.tactics.animation.pause : t.tactics.animation.play}
                           >
                             {isPlaying ? <Pause className="w-4 h-4 shrink-0" /> : <Play className="w-4 h-4 shrink-0 fill-current" />}
                           </button>
@@ -8504,8 +8638,8 @@ export default function TacticsBoard({
                                 ? "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
                                 : "bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 border-[#1f293d]"
                             }`}
-                            title="Étape Suivante"
-                            aria-label="Étape Suivante"
+                            title={t.tactics.animation.nextStep}
+                            aria-label={t.tactics.animation.nextStep}
                           >
                             <ChevronRight className="w-4 h-4 shrink-0" />
                           </button>
@@ -8532,7 +8666,7 @@ export default function TacticsBoard({
                                           ? "bg-white border-slate-200 hover:border-slate-400 text-slate-600 hover:text-slate-900"
                                           : "bg-[#0c1017] border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
                                     }`}
-                                    title={`Étape ${idx + 1}`}
+                                    title={t.tactics.animation.stepNumber(idx + 1)}
                                   >
                                     <span>{idx + 1}</span>
                                   </button>
@@ -8546,7 +8680,7 @@ export default function TacticsBoard({
                                         if (currentFrameIdx >= deletedIdx && currentFrameIdx > 0) {
                                           setCurrentFrameIdx((prev) => prev - 1);
                                         }
-                                        setSleekToastMessage(`🗑️ Étape ${deletedIdx + 1} supprimée.`);
+                                        setSleekToastMessage(t.tactics.animation.stepDeletedToast(deletedIdx + 1));
                                         setTimeout(() => setSleekToastMessage(null), 2500);
                                       }}
                                       className={`ml-0.5 p-0.5 rounded transition cursor-pointer text-[9px] font-black ${
@@ -8554,7 +8688,7 @@ export default function TacticsBoard({
                                           ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                                           : "text-slate-500 hover:text-rose-400 hover:bg-rose-950/60"
                                       }`}
-                                      title={`Supprimer l'étape ${idx + 1}`}
+                                      title={t.tactics.animation.deleteStepTooltip(idx + 1)}
                                     >
                                       ✕
                                     </button>
@@ -8603,8 +8737,8 @@ export default function TacticsBoard({
                               ? "bg-purple-600 hover:bg-purple-500 text-white border border-purple-400 shadow-purple-600/15"
                               : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border border-purple-400/40"
                           }`}
-                          title="Enregistrer l'animation (Disquette)"
-                          aria-label="Sauvegarder l'animation"
+                          title={t.tactics.animation.saveAnimation}
+                          aria-label={t.tactics.animation.saveAnimation}
                         >
                           <Save className="w-4 h-4 shrink-0" />
                         </button>
@@ -8627,8 +8761,8 @@ export default function TacticsBoard({
                               ? "bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 text-cyan-700 hover:text-cyan-900"
                               : "bg-[#0c1017] hover:bg-[#121c2e] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white"
                           }`}
-                          title="Ajouter une nouvelle étape"
-                          aria-label="Nouvelle Étape"
+                          title={t.tactics.animation.newStep}
+                          aria-label={t.tactics.animation.newStep}
                         >
                           <Plus className="w-4 h-4 shrink-0" />
                         </button>
@@ -8638,14 +8772,14 @@ export default function TacticsBoard({
                           type="button"
                           onClick={() => {
                             if (keyframes.length <= 1) {
-                              setSleekToastMessage("⚠️ Vous devez conserver au moins 1 étape dans l'animation.");
+                              setSleekToastMessage(t.tactics.animation.atLeastOneStepToast);
                               setTimeout(() => setSleekToastMessage(null), 3000);
                               return;
                             }
                             const deletedIdx = currentFrameIdx;
                             setKeyframes((prev) => prev.filter((_, idx) => idx !== deletedIdx));
                             setCurrentFrameIdx((prev) => Math.max(0, prev - 1));
-                            setSleekToastMessage(`🗑️ Étape ${deletedIdx + 1} supprimée.`);
+                            setSleekToastMessage(t.tactics.animation.stepDeletedToast(deletedIdx + 1));
                             setTimeout(() => setSleekToastMessage(null), 2500);
                           }}
                           disabled={keyframes.length <= 1}
@@ -8654,8 +8788,8 @@ export default function TacticsBoard({
                               ? "bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 hover:text-rose-900"
                               : "bg-rose-950/40 hover:bg-rose-900 border border-rose-800/60 hover:border-rose-500 text-rose-300 hover:text-white"
                           }`}
-                          title="Supprimer l'étape actuelle"
-                          aria-label="Supprimer l'étape"
+                          title={t.tactics.animation.deleteCurrentStep}
+                          aria-label={t.tactics.animation.deleteCurrentStep}
                         >
                           <Trash className="w-4 h-4 shrink-0" />
                         </button>
@@ -8668,7 +8802,7 @@ export default function TacticsBoard({
                             setKeyframes([defaultTokens]);
                             setCurrentFrameIdx(0);
                             setIsPlaying(false);
-                            setSleekToastMessage("🔄 Séquences d'animation réinitialisées.");
+                            setSleekToastMessage(t.tactics.animation.resetAnimationToast);
                             setTimeout(() => setSleekToastMessage(null), 2500);
                           }}
                           className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center ${
@@ -8676,8 +8810,8 @@ export default function TacticsBoard({
                               ? "bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900"
                               : "bg-[#0c1017] hover:bg-[#1b253b] border border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
                           }`}
-                          title="Réinitialiser toute l'animation"
-                          aria-label="Réinitialiser"
+                          title={t.tactics.animation.resetAnimation}
+                          aria-label={t.tactics.animation.resetAnimation}
                         >
                           <RotateCcw className="w-4 h-4 shrink-0" />
                         </button>
@@ -8717,7 +8851,7 @@ export default function TacticsBoard({
             onDoubleClick={() => setRightSidebarWidth(isCompactUI ? 220 : 300)}
             className={`hidden xl:flex w-1.5 hover:w-2 bg-[#121926] hover:bg-[#00E599]/50 cursor-col-resize flex-shrink-0 transition-all z-20 items-center justify-center relative group select-none border-l border-[#1f293d] ${isResizingRightSidebar ? "bg-[#00E599] !w-2 shadow-lg shadow-[#00e599]/30" : ""
               }`}
-            title="Glisser avec la souris pour ajuster la largeur (Double-clic pour réinitialiser)"
+            title={t.tactics.sidebar.resizeTooltip}
           >
             {/* Visual grab bar indicator */}
             <div
@@ -8742,10 +8876,10 @@ export default function TacticsBoard({
             type="button"
             onClick={() => setIsRightSidebarOpen(true)}
             className="fixed bottom-6 right-6 z-40 bg-[#0d1117]/95 hover:bg-[#00E599] text-[#00E599] hover:text-slate-950 border border-[#00E599]/60 py-2.5 px-4 rounded-2xl shadow-2xl shadow-[#00E599]/20 transition-all duration-200 cursor-pointer flex items-center gap-2 group select-none animate-pulse hover:animate-none backdrop-blur-md"
-            title="Ouvrir le panneau droit (Schémas, Matchs & Notes)"
+            title={t.tactics.sidebar.openSidebarTooltip}
           >
             <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            <span className="text-xs font-black uppercase tracking-wider">SCHÉMAS & MATCHS</span>
+            <span className="text-xs font-black uppercase tracking-wider">{t.tactics.sidebar.openSidebarBtn}</span>
           </button>
         )}
 
@@ -8779,13 +8913,13 @@ export default function TacticsBoard({
           <div className="xl:hidden flex items-center justify-between p-2.5 border-b border-[#1f293d] bg-[#090d14] shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="text-xs">📖</span>
-              <span className="text-xs font-black uppercase tracking-wider text-[#00E599]">SCHÉMAS & MATCHS</span>
+              <span className="text-xs font-black uppercase tracking-wider text-[#00E599]">{t.tactics.sidebar.openSidebarBtn}</span>
             </div>
             <button
               type="button"
               onClick={() => setIsRightSidebarOpen(false)}
               className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2333] transition cursor-pointer"
-              title="Fermer le panneau"
+              title={t.tactics.sidebar.closeSidebarTooltip}
             >
               <X className="w-4 h-4" />
             </button>
@@ -8806,7 +8940,7 @@ export default function TacticsBoard({
                 ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800 shadow-2xs"
                 : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d]"
                 } border hover:border-amber-500/50 p-2 rounded-xl flex items-center justify-between transition cursor-pointer shadow-sm group`}
-              title="Changer d'équipe ou gérer vos équipes (PRO)"
+              title={t.tactics.sidebar.switchTeamTooltip}
             >
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-5 h-5 rounded-md bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-500 text-[10px] shrink-0">
@@ -12957,10 +13091,10 @@ export default function TacticsBoard({
                 </div>
                 <div>
                   <h3 className={`text-base font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-                    CONFIGURATION DE L&apos;UTILISATEUR
+                    {t.userModal.title}
                   </h3>
                   <p className={`text-xs font-bold ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                    Ajustez votre profil coach et votre abonnement.
+                    {t.userModal.subtitle}
                   </p>
                 </div>
               </div>
@@ -12968,6 +13102,7 @@ export default function TacticsBoard({
                 onClick={() => setIsUserConfigModalOpen(false)}
                 className={`p-1.5 rounded-xl transition cursor-pointer text-sm shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                   }`}
+                title={t.userModal.close}
               >
                 ✕
               </button>
@@ -12978,7 +13113,7 @@ export default function TacticsBoard({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
-                    Prénom *
+                    {t.userModal.firstName}
                   </label>
                   <input
                     type="text"
@@ -12991,7 +13126,7 @@ export default function TacticsBoard({
                 </div>
                 <div>
                   <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
-                    Nom *
+                    {t.userModal.lastName}
                   </label>
                   <input
                     type="text"
@@ -13007,8 +13142,8 @@ export default function TacticsBoard({
               {/* EMAIL DE CONNEXION */}
               <div>
                 <label className={`block text-[10px] font-black uppercase mb-1 flex items-center justify-between ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
-                  <span>Adresse Email de Connexion *</span>
-                  <span className="text-[#00E599] text-[9.5px] font-bold">📧 Compte Principal</span>
+                  <span>{t.userModal.email}</span>
+                  <span className="text-[#00E599] text-[9.5px] font-bold">{t.userModal.primaryAccount}</span>
                 </label>
                 <input
                   type="email"
@@ -13024,13 +13159,13 @@ export default function TacticsBoard({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
-                    Club / Équipe
+                    {t.userModal.club}
                   </label>
                   <input
                     type="text"
                     value={editClub}
                     onChange={(e) => setEditClub(e.target.value)}
-                    placeholder="ex: Olympique Lyonnais"
+                    placeholder={t.userModal.clubPlaceholder}
                     className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
                       }`}
                   />
@@ -13038,7 +13173,7 @@ export default function TacticsBoard({
 
                 <div>
                   <label className={`block text-[10px] font-black uppercase mb-1 ${isModernSleek ? "text-slate-700" : "text-[#62728f]"}`}>
-                    Fonction au sein du club
+                    {t.userModal.role}
                   </label>
                   <select
                     value={editRole}
@@ -13046,20 +13181,85 @@ export default function TacticsBoard({
                     className={`w-full rounded-lg px-3 py-2 text-xs focus:outline-none transition border font-bold cursor-pointer ${isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
                       }`}
                   >
-                    <option value="Coach Principal">Coach Principal</option>
-                    <option value="Entraîneur Adjoint">Entraîneur Adjoint</option>
-                    <option value="Analyste Vidéo / Tactique">Analyste Vidéo / Tactique</option>
-                    <option value="Préparateur Physique">Préparateur Physique</option>
-                    <option value="Responsable Technique">Responsable Technique</option>
+                    <option value="Coach Principal">{t.userModal.roles.principal}</option>
+                    <option value="Entraîneur Adjoint">{t.userModal.roles.adjoint}</option>
+                    <option value="Analyste Vidéo / Tactique">{t.userModal.roles.analyst}</option>
+                    <option value="Préparateur Physique">{t.userModal.roles.fitness}</option>
+                    <option value="Responsable Technique">{t.userModal.roles.techDirector}</option>
                   </select>
+                </div>
+              </div>
+
+              {/* CHOIX DE LA LANGUE DE L'INTERFACE (FRANÇAIS / ENGLISH) */}
+              <div className={`border p-3.5 rounded-xl space-y-2.5 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10px] font-black text-[#00E599] uppercase tracking-wider flex items-center gap-1.5">
+                    <span>🌐 {t.userModal.languageTitle}</span>
+                    <span className={`font-normal text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>{t.userModal.languageSubtitle}</span>
+                  </label>
+                  <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded uppercase ${editLanguage === "en" ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30" : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"}`}>
+                    {editLanguage === "en" ? "EN - English" : "FR - Français"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* Option Français */}
+                  <button
+                    type="button"
+                    onClick={() => setEditLanguage("fr")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${editLanguage === "fr"
+                      ? (isModernSleek ? "bg-white border-emerald-500 ring-2 ring-emerald-500/30 shadow-xs" : "bg-[#0d1117] border-[#00E599] ring-2 ring-[#00E599]/30 shadow-md")
+                      : (isModernSleek ? "bg-slate-100 hover:bg-white border-slate-200 text-slate-600" : "bg-[#090d14] hover:bg-[#121926] border-[#1f293d] text-slate-400")
+                      }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">🇫🇷</span>
+                      <div>
+                        <p className={`text-xs font-black ${editLanguage === "fr" ? (isModernSleek ? "text-emerald-900" : "text-white") : (isModernSleek ? "text-slate-700" : "text-slate-300")}`}>
+                          Français
+                        </p>
+                        <p className={`text-[9.5px] font-medium ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
+                          {t.userModal.languageFrDesc}
+                        </p>
+                      </div>
+                    </div>
+                    {editLanguage === "fr" && (
+                      <span className="text-emerald-500 text-base font-black">✓</span>
+                    )}
+                  </button>
+
+                  {/* Option English */}
+                  <button
+                    type="button"
+                    onClick={() => setEditLanguage("en")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${editLanguage === "en"
+                      ? (isModernSleek ? "bg-white border-emerald-500 ring-2 ring-emerald-500/30 shadow-xs" : "bg-[#0d1117] border-[#00E599] ring-2 ring-[#00E599]/30 shadow-md")
+                      : (isModernSleek ? "bg-slate-100 hover:bg-white border-slate-200 text-slate-600" : "bg-[#090d14] hover:bg-[#121926] border-[#1f293d] text-slate-400")
+                      }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">🇬🇧</span>
+                      <div>
+                        <p className={`text-xs font-black ${editLanguage === "en" ? (isModernSleek ? "text-emerald-900" : "text-white") : (isModernSleek ? "text-slate-700" : "text-slate-300")}`}>
+                          English
+                        </p>
+                        <p className={`text-[9.5px] font-medium ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
+                          {t.userModal.languageEnDesc}
+                        </p>
+                      </div>
+                    </div>
+                    {editLanguage === "en" && (
+                      <span className="text-emerald-500 text-base font-black">✓</span>
+                    )}
+                  </button>
                 </div>
               </div>
 
               {/* THÈME D'AFFICHAGE & DESIGN (OPTIONS UTILISATEUR) */}
               <div className={`border p-3.5 rounded-xl space-y-2 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
                 <label className="block text-[10px] font-black text-[#00E599] uppercase tracking-wider flex items-center justify-between">
-                  <span>Thème & Apparence de l&apos;Interface</span>
-                  <span className={`font-normal text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>(Mode Sombre ou Clair & Épuré)</span>
+                  <span>{t.userModal.themeTitle}</span>
+                  <span className={`font-normal text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>{t.userModal.themeSubtitle}</span>
                 </label>
                 <div className={`flex items-center justify-between border p-2.5 rounded-lg flex-wrap gap-2 ${isModernSleek ? "bg-white border-slate-200" : "bg-[#0d1117] border-[#1f293d]"
                   }`}>
@@ -13067,10 +13267,10 @@ export default function TacticsBoard({
                     <span className="text-lg">{isModernSleek ? "☀️" : "🌙"}</span>
                     <div>
                       <p className={`text-xs font-black uppercase ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-                        {isModernSleek ? "Mode Clair & Épuré (Actif)" : "Mode Sombre Classique (Actif)"}
+                        {isModernSleek ? t.userModal.lightActive : t.userModal.darkActive}
                       </p>
                       <p className={`text-[9.5px] ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                        {isModernSleek ? "Interface lumineuse et aérée avec fort contraste" : "Contraste historique sombre d'origine"}
+                        {isModernSleek ? t.userModal.lightDesc : t.userModal.darkDesc}
                       </p>
                     </div>
                   </div>
@@ -13082,7 +13282,7 @@ export default function TacticsBoard({
                       : "bg-[#121926] hover:bg-[#1a253b] text-slate-200 border-[#1f293d]"
                       }`}
                   >
-                    <span>{isModernSleek ? "Passer en Sombre" : "Passer en Clair"}</span>
+                    <span>{isModernSleek ? (currentLang === "en" ? "Switch to Dark" : "Passer en Sombre") : (currentLang === "en" ? "Switch to Light" : "Passer en Clair")}</span>
                     <div className={`w-7 h-4 rounded-full p-0.5 flex items-center ${isModernSleek ? "bg-white justify-end" : "bg-slate-700 justify-start"}`}>
                       <div className={`w-3 h-3 rounded-full ${isModernSleek ? "bg-emerald-600" : "bg-white"} shadow-sm`} />
                     </div>
@@ -13093,9 +13293,9 @@ export default function TacticsBoard({
               {/* SPORT SELECTOR */}
               <div className={`border p-3.5 rounded-xl space-y-2 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
                 <label className="block text-[10px] font-black text-[#00E599] uppercase tracking-wider flex items-center justify-between">
-                  <span>Discipline Sportive</span>
+                  <span>{t.userModal.sportTitle}</span>
                   <span className={`font-normal text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                    {isUserAdmin ? "(Vue Administrateur - Tous les sports)" : "(Disciplines Sportives Autorisées)"}
+                    {isUserAdmin ? t.userModal.sportAdminNote : t.userModal.sportUserNote}
                   </span>
                 </label>
                 <select
@@ -13105,13 +13305,12 @@ export default function TacticsBoard({
                     }`}
                 >
                   {[
-                    { id: "football", label: "⚽ FOOTBALL" },
-                    { id: "basketball", label: "🏀 BASKETBALL" },
-                    { id: "rugby", label: "🏉 RUGBY" },
-                    { id: "handball", label: "🤾 HANDBALL" }
+                    { id: "football", label: t.sports.football },
+                    { id: "basketball", label: t.sports.basketball },
+                    { id: "rugby", label: t.sports.rugby },
+                    { id: "handball", label: t.sports.handball }
                   ]
                     .filter((sport) => {
-                      // If user is non-admin, ONLY show sports configured/enabled by the administrator (not in blockedSports)
                       if (!isUserAdmin && blockedSports.includes(sport.id)) {
                         return false;
                       }
@@ -13125,7 +13324,7 @@ export default function TacticsBoard({
                           value={sport.id}
                           className={isModernSleek ? "text-slate-900 bg-white font-bold" : "text-white bg-[#0d1117] font-bold"}
                         >
-                          {sport.label} {isBlocked ? "🔒 (BLOQUÉ POUR USAGERS)" : ""}
+                          {sport.label} {isBlocked ? t.userModal.sportBlocked : ""}
                         </option>
                       );
                     })}
@@ -13138,11 +13337,11 @@ export default function TacticsBoard({
                   <div className="flex items-center gap-2">
                     <span className="text-amber-500 text-sm">💳</span>
                     <label className="text-[10px] font-black text-amber-500 uppercase tracking-wider">
-                      Gestion de l&apos;Abonnement & Facturation
+                      {t.userModal.billingTitle}
                     </label>
                   </div>
                   <span className="text-[8px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    PAIEMENT SÉCURISÉ ⚡
+                    {t.userModal.securePayment}
                   </span>
                 </div>
 
@@ -13150,13 +13349,13 @@ export default function TacticsBoard({
                   }`}>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Formule actuelle :</span>
+                      <span className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>{t.userModal.currentPlan}</span>
                       <span className="text-xs font-black text-[#00E599] uppercase bg-[#00E599]/10 px-2 py-0.5 rounded border border-[#00E599]/30">
-                        {isUserAdmin ? "👑 Licence Admin Illimitée" : `Plan ${activePlan.toUpperCase()}`}
+                        {isUserAdmin ? t.userModal.adminLicense : `Plan ${activePlan.toUpperCase()}`}
                       </span>
                     </div>
                     <p className={`text-[9.5px] mt-1 font-medium ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                      Portail sécurisé • Modification et facturation en ligne sans engagement.
+                      {t.userModal.billingNote}
                     </p>
                   </div>
 
@@ -13168,7 +13367,7 @@ export default function TacticsBoard({
                     }}
                     className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-[10px] uppercase rounded-lg shadow-md transition cursor-pointer shrink-0"
                   >
-                    Changer d&apos;Abonnement
+                    {t.userModal.changePlan}
                   </button>
                 </div>
 
@@ -13185,7 +13384,7 @@ export default function TacticsBoard({
                       : isModernSleek ? "bg-white border-slate-200 hover:border-slate-300" : "bg-[#0d1117] border-[#1f293d] hover:border-slate-700"
                       }`}
                   >
-                    <div className={`text-[9px] font-black uppercase ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Démo Gratuit</div>
+                    <div className={`text-[9px] font-black uppercase ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>{t.userModal.freeDemo}</div>
                     <div className={`text-xs font-black mt-0.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>0 €</div>
                   </button>
 
@@ -13200,7 +13399,7 @@ export default function TacticsBoard({
                       : isModernSleek ? "bg-white border-slate-200 hover:border-emerald-500/50" : "bg-[#0d1117] border-[#1f293d] hover:border-[#00E599]/50"
                       }`}
                   >
-                    <div className="text-[9px] font-black text-[#00E599] uppercase">Formule PRO</div>
+                    <div className="text-[9px] font-black text-[#00E599] uppercase">{t.userModal.proPlanCard}</div>
                     <div className={`text-xs font-black mt-0.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>9,90 €/mo</div>
                   </button>
 
@@ -13215,7 +13414,7 @@ export default function TacticsBoard({
                       : isModernSleek ? "bg-white border-slate-200 hover:border-amber-500/50" : "bg-[#0d1117] border-[#1f293d] hover:border-amber-500/50"
                       }`}
                   >
-                    <div className="text-[9px] font-black text-amber-500 uppercase">Formule PRO+</div>
+                    <div className="text-[9px] font-black text-amber-500 uppercase">{t.userModal.proPlusPlanCard}</div>
                     <div className={`text-xs font-black mt-0.5 ${isModernSleek ? "text-slate-900" : "text-white"}`}>14,90 €/mo</div>
                   </button>
                 </div>
@@ -13229,13 +13428,13 @@ export default function TacticsBoard({
                   onClick={() => setIsUserConfigModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
                 >
-                  Annuler
+                  {t.userModal.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2.5 bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#00E599]/20 transition cursor-pointer flex items-center gap-2"
                 >
-                  Enregistrer la Configuration
+                  {t.userModal.save}
                 </button>
               </div>
             </form>

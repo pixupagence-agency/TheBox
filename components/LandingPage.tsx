@@ -11,6 +11,7 @@ import SportIcon from "./SportIcon";
 import LogoIcon from "./LogoIcon";
 import { LegalTab } from "./LegalAndFaqModal";
 import LandingContactSection from "./LandingContactSection";
+import { Language, getStoredLanguage, setStoredLanguage, translations } from "@/lib/i18n";
 
 interface LandingPageProps {
   coaches: CoachProfile[];
@@ -22,6 +23,7 @@ interface LandingPageProps {
   blockedSports?: string[];
   onOpenSupportModal?: () => void;
   isAdmin?: boolean;
+  language?: Language;
 }
 
 export default function LandingPage({
@@ -33,13 +35,39 @@ export default function LandingPage({
   onOpenLegalModal,
   blockedSports = [],
   onOpenSupportModal,
-  isAdmin = false
+  isAdmin = false,
+  language: propLang
 }: LandingPageProps) {
+  const [currentLang, setCurrentLang] = React.useState<Language>(() => propLang || getStoredLanguage());
+
+  React.useEffect(() => {
+    if (propLang) setCurrentLang(propLang);
+  }, [propLang]);
+
+  React.useEffect(() => {
+    const handleLangChange = (e: any) => {
+      const newLang = e.detail?.language as Language;
+      if (newLang && newLang !== currentLang) {
+        setCurrentLang(newLang);
+      }
+    };
+    window.addEventListener("thebox_language_change", handleLangChange);
+    return () => window.removeEventListener("thebox_language_change", handleLangChange);
+  }, [currentLang]);
+
+  const handleLanguageSelect = (lang: Language) => {
+    if (lang === currentLang) return;
+    setCurrentLang(lang);
+    setStoredLanguage(lang);
+  };
+
+  const t = translations[currentLang].landing;
+
   const allSportsList = [
-    { id: "football", label: "Football", icon: "⚽", players: "11 Joueurs", formations: "4-4-2, 4-3-3, 4-2-3-1", isBlocked: blockedSports.includes("football") },
-    { id: "basketball", label: "Basketball", icon: "🏀", players: "5 Joueurs", formations: "2-3, 1-2-2, 5-Out", isBlocked: blockedSports.includes("basketball") },
-    { id: "rugby", label: "Rugby", icon: "🏉", players: "15 Joueurs", formations: "Standard, Pack Ruck", isBlocked: blockedSports.includes("rugby") },
-    { id: "handball", label: "Handball", icon: "🤾", players: "7 Joueurs", formations: "6-0, 5-1, 3-2-1", isBlocked: blockedSports.includes("handball") },
+    { id: "football", label: t.sports.footballLabel, icon: "⚽", players: t.sports.footballPlayers, formations: t.sports.footballFormations, isBlocked: blockedSports.includes("football") },
+    { id: "basketball", label: t.sports.basketballLabel, icon: "🏀", players: t.sports.basketballPlayers, formations: t.sports.basketballFormations, isBlocked: blockedSports.includes("basketball") },
+    { id: "rugby", label: t.sports.rugbyLabel, icon: "🏉", players: t.sports.rugbyPlayers, formations: t.sports.rugbyFormations, isBlocked: blockedSports.includes("rugby") },
+    { id: "handball", label: t.sports.handballLabel, icon: "🤾", players: t.sports.handballPlayers, formations: t.sports.handballFormations, isBlocked: blockedSports.includes("handball") },
   ];
 
   // Direct Stripe checkout loading state
@@ -60,11 +88,11 @@ export default function LandingPage({
       if (data.url) {
         window.location.assign(data.url);
       } else {
-        alert(data.error || "Erreur lors de la redirection vers le paiement.");
+        alert(data.error || (currentLang === "fr" ? "Erreur lors de la redirection vers le paiement." : "Error redirecting to checkout."));
         setStripeLoadingPlan(null);
       }
     } catch (e: any) {
-      alert("Erreur de connexion à la passerelle de paiement.");
+      alert(currentLang === "fr" ? "Erreur de connexion à la passerelle de paiement." : "Payment gateway connection error.");
       setStripeLoadingPlan(null);
     }
   };
@@ -75,93 +103,48 @@ export default function LandingPage({
   const useCases = [
     {
       step: "01",
-      tag: "AU BUREAU & À LA MAISON",
-      title: "Analyse & Modélisation Stratégique",
-      desc: "Préparez vos séances et vos matchs en toute sérénité. Concevez vos combinaisons tactiques, étudiez l'adversaire et synchronisez vos schémas entre grand écran et tablette tactile.",
+      tag: t.useCases.case1Tag,
+      title: t.useCases.case1Title,
+      desc: t.useCases.case1Desc,
       image: "/usecase-bureau.jpg",
       icon: Monitor,
-      highlights: [
-        "Tracés vectoriels précis & phases de jeu animées",
-        "Modélisation complète du bloc adverse & pressing",
-        "Attribution des tireurs de coups arrêtés & effectif"
-      ]
+      highlights: t.useCases.case1Highlights
     },
     {
       step: "02",
-      tag: "DANS LE VESTIAIRE",
-      title: "Causerie Tactique & Cohésion d'Équipe",
-      desc: "Projetez vos plans de jeu sur grand écran ou TV dans le vestiaire. Offrez à vos joueurs une lecture claire et dynamique des consignes pour une adhésion totale avant le coup d'envoi.",
+      tag: t.useCases.case2Tag,
+      title: t.useCases.case2Title,
+      desc: t.useCases.case2Desc,
       image: "/usecase-vestiaire.jpg",
       icon: Tv,
-      highlights: [
-        "Affichage immersif grand format pour tout le groupe",
-        "Ajustements tactiques percutants à la mi-temps",
-        "Notes de causerie & consignes individuelles claires"
-      ]
+      highlights: t.useCases.case2Highlights
     },
     {
       step: "03",
-      tag: "SUR LE BANC DE TOUCHE",
-      title: "Coaching en Direct & Mode Live Match",
-      desc: "Emportez votre tablette au bord de la pelouse le jour de match. Ajustez votre dispositif en temps réel, réalisez vos changements tactiques et enregistrez chaque fait marquant.",
+      tag: t.useCases.case3Tag,
+      title: t.useCases.case3Title,
+      desc: t.useCases.case3Desc,
       image: "/usecase-terrain.jpg",
       icon: Tablet,
-      highlights: [
-        "Mode Live Match & chronomètre officiel de rencontre",
-        "Remplacements et réorganisations instantanées",
-        "Statistiques en direct : buts, cartons, tirs & passes"
-      ]
+      highlights: t.useCases.case3Highlights
     }
   ];
 
-  const features = [
-    {
-      title: "Tableau Blanc Tactique 2D Haute Précision",
-      desc: "Tracés vectoriels précis : flèches de passe, courses en pointillés, blocs défensifs, zones de pressing et formes géométriques pour modéliser toutes vos phases de jeu.",
-      icon: Activity,
-      tag: "TABLEAU BLANC MULTI-OUTILS"
-    },
-    {
-      title: "Mode Live Match & Stats en Direct (PRO+)",
-      desc: "Chronomètre officiel en bord de terrain : enregistrez en direct les buts, passes décisives, cartons jaunes/rouges, blessures et remplacements tactiques instantanés.",
-      icon: Zap,
-      tag: "EXCLUSIVITÉ FORMULE PRO+"
-    },
-    {
-      title: "Multi-Équipes & Schémas Isolés",
-      desc: "Gérez plusieurs catégories (Seniors A, Réserve, U19). Chaque match planifié conserve ses propres schémas tactiques dédiés et son historique sans confusion.",
-      icon: Trophy,
-      tag: "MULTI-ÉQUIPES & CALENDRIER"
-    },
-    {
-      title: "Effectif, Photos & Coups Arrêtés",
-      desc: "Personnalisation complète de l'effectif, photos des joueurs, états de forme et attribution précise des tireurs de corners, penaltys, coups francs et capitaine.",
-      icon: Users,
-      tag: "EFFECTIF & COUPS ARRÊTÉS"
-    },
-    {
-      title: "Causerie Tactique & Bloc Adverse",
-      desc: "Modélisez le dispositif adverse pour construire vos plans de jeu anti-pressing, préparez vos consignes clés et motivez vos joueurs avec une préparation claire.",
-      icon: Target,
-      tag: "CAUSERIE & ANALYSE DU BLOC"
-    },
-    {
-      title: "Exportation Haute Définition & Partage Staff",
-      desc: "Sauvegardez vos compositions et exportez vos schémas tactiques en image Haute Définition (PNG HD) avec partage instantané par messagerie ou email vers votre staff.",
-      icon: Share2,
-      tag: "EXPORTS HD & PARTAGE DIRECT"
-    }
-  ];
+  const featureIcons = [Activity, Zap, Trophy, Users, Target, Share2];
+  const features = t.features.items.map((item, idx) => ({
+    ...item,
+    icon: featureIcons[idx] || Activity
+  }));
 
   return (
     <div className="min-h-screen bg-[#07090e] text-white flex flex-col font-sans selection:bg-white selection:text-[#07090e]">
       
       {/* BRAND HEADER / NAVBAR */}
       <header className="border-b border-[#1b2436] bg-[#0d1117]/90 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-2">
           
           {/* Logo Brand Emblem - Aligned strictly with the app logo */}
-          <div className="flex items-center gap-3.5 group cursor-pointer" onClick={onOpenLoginModal}>
+          <div className="flex items-center gap-3.5 group cursor-pointer shrink-0" onClick={onOpenLoginModal}>
             <div className="relative">
               <LogoIcon className="w-10 h-10 text-white flex-shrink-0 group-hover:scale-105 transition-transform duration-200" />
               <div className="absolute -inset-1 bg-white/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition duration-300 pointer-events-none" />
@@ -172,19 +155,57 @@ export default function LandingPage({
                 the box
               </h1>
               <p className="text-[8.5px] text-white/70 font-black uppercase tracking-[0.22em] leading-none mt-1">
-                zone de décision tactique
+                {t.brandTagline}
               </p>
             </div>
           </div>
 
           {/* Quick Action Navigation */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Language Switcher FR / EN */}
+            <div 
+              className="flex items-center bg-[#121926] border border-[#232f45] rounded-xl p-1 gap-1 text-xs font-bold shadow-sm"
+              role="group"
+              aria-label={t.langSwitchAria}
+            >
+              <button
+                type="button"
+                id="lang-switch-fr"
+                onClick={() => handleLanguageSelect("fr")}
+                className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer text-xs ${
+                  currentLang === "fr"
+                    ? "bg-[#00E599] text-[#07090e] font-black shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                }`}
+                title="Français"
+                aria-pressed={currentLang === "fr"}
+              >
+                <span>🇫🇷</span>
+                <span className="font-mono text-[11px]">FR</span>
+              </button>
+              <button
+                type="button"
+                id="lang-switch-en"
+                onClick={() => handleLanguageSelect("en")}
+                className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer text-xs ${
+                  currentLang === "en"
+                    ? "bg-[#00E599] text-[#07090e] font-black shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                }`}
+                title="English"
+                aria-pressed={currentLang === "en"}
+              >
+                <span>🇬🇧</span>
+                <span className="font-mono text-[11px]">EN</span>
+              </button>
+            </div>
+
             {onOpenLegalModal && (
               <button
                 onClick={() => onOpenLegalModal("faq")}
                 className="hidden sm:flex items-center justify-center h-10 w-10 rounded-xl border border-[#232f45] bg-[#0d1117]/80 hover:bg-[#121926] text-slate-300 hover:text-white transition cursor-pointer shrink-0"
-                title="FAQ & Aide"
-                aria-label="FAQ & Aide"
+                title={t.faqHelp}
+                aria-label={t.faqHelp}
               >
                 <HelpCircle className="h-4 w-4 text-[#00E599]" />
               </button>
@@ -193,26 +214,26 @@ export default function LandingPage({
             <a
               href="#contact"
               className="hidden md:flex items-center justify-center h-10 w-10 rounded-xl border border-[#232f45] bg-[#0d1117]/80 hover:bg-[#121926] text-slate-300 hover:text-white transition cursor-pointer shrink-0"
-              title="Contact"
-              aria-label="Contact"
+              title={t.contact}
+              aria-label={t.contact}
             >
               <Mail className="h-4 w-4 text-[#00E599]" />
             </a>
 
             <button
               onClick={onOpenLoginModal}
-              className="flex items-center gap-2 h-10 px-4 rounded-xl border border-[#232f45] bg-[#121926] hover:bg-[#1a253b] text-xs font-extrabold text-white transition cursor-pointer"
+              className="flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-xl border border-[#232f45] bg-[#121926] hover:bg-[#1a253b] text-xs font-extrabold text-white transition cursor-pointer shrink-0"
             >
               <LogIn className="h-3.5 w-3.5 text-[#00E599]" />
-              <span>Se Connecter</span>
+              <span>{t.login}</span>
             </button>
 
             <button
               onClick={onOpenRegisterModal}
-              className="flex items-center gap-2 h-10 px-5 rounded-xl bg-white hover:bg-slate-100 text-[#0d1117] text-xs font-black transition cursor-pointer shadow-lg shadow-white/10 hover:shadow-white/20"
+              className="flex items-center gap-2 h-10 px-4 sm:px-5 rounded-xl bg-white hover:bg-slate-100 text-[#0d1117] text-xs font-black transition cursor-pointer shadow-lg shadow-white/10 hover:shadow-white/20 shrink-0"
             >
               <UserPlus className="h-3.5 w-3.5" />
-              <span>Créer un Compte</span>
+              <span>{t.register}</span>
             </button>
           </div>
         </div>
@@ -225,12 +246,12 @@ export default function LandingPage({
         <div className="absolute inset-0 z-0 select-none overflow-hidden flex items-center justify-center">
           <img
             src="/landing-bg.jpg"
-            alt="The Box Zone de Décision Tactique"
+            alt="The Box"
             className="w-full h-full object-cover object-center transform filter brightness-105 contrast-105"
             referrerPolicy="no-referrer"
           />
 
-          {/* Official 'The Box' Tactical Logo Emblem chalked on the lawn (100% identical to navbar) */}
+          {/* Official 'The Box' Tactical Logo Emblem chalked on the lawn */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="relative flex items-center justify-center w-[320px] h-[320px] sm:w-[480px] sm:h-[480px] lg:w-[620px] lg:h-[620px] opacity-30 filter drop-shadow-[0_0_30px_rgba(0,229,153,0.35)]">
               <LogoIcon className="w-full h-full text-white" />
@@ -248,21 +269,20 @@ export default function LandingPage({
           {/* Badge */}
           <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#0d1117]/90 border border-[#00E599]/50 text-xs font-black uppercase tracking-widest text-[#00E599] mb-6 shadow-xl">
             <span className="w-2.5 h-2.5 rounded-full bg-[#00E599] animate-pulse shadow-[0_0_10px_#00E599]" />
-            <span>THE BOX • ZONE DE DÉCISION TACTIQUE</span>
+            <span>{t.hero.badge}</span>
           </div>
 
           {/* Headline */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] text-white drop-shadow-lg">
-            Pensez, Modélisez & Transmettez vos{" "}
+            {t.hero.titlePrefix}
             <span className="text-[#00E599] underline decoration-[#00E599] decoration-4 underline-offset-8">
-              Schémas Tactiques
+              {t.hero.titleHighlight}
             </span>
           </h1>
 
           {/* Subtitle */}
           <p className="mt-6 text-sm sm:text-base text-slate-200 max-w-2xl mx-auto leading-relaxed font-semibold drop-shadow">
-            Le tableau blanc tactique 2D de référence pour les entraîneurs. 
-            Préparez vos matchs et modélisez vos combinaisons sur terrain officiel avec précision.
+            {t.hero.subtitle}
           </p>
 
           {/* CTA Buttons */}
@@ -272,7 +292,7 @@ export default function LandingPage({
               className="px-8 py-4 rounded-xl bg-[#00E599] hover:bg-[#06b87d] text-[#0d1117] font-black text-sm flex items-center justify-center gap-3 transition duration-200 shadow-2xl shadow-[#00E599]/40 hover:scale-105 cursor-pointer group uppercase tracking-wider"
             >
               <LogIn className="h-4 w-4 text-[#0d1117]" />
-              <span>Accéder au Tableau Tactique</span>
+              <span>{t.hero.ctaBoard}</span>
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
 
@@ -281,7 +301,7 @@ export default function LandingPage({
               className="px-7 py-4 rounded-xl bg-[#0d1117]/95 hover:bg-[#141b29] border border-[#00E599]/40 hover:border-[#00E599] text-white font-black text-sm flex items-center justify-center gap-2.5 transition duration-200 cursor-pointer shadow-xl"
             >
               <UserPlus className="h-4 w-4 text-[#00E599]" />
-              <span>Créer un Compte Coach</span>
+              <span>{t.hero.ctaRegister}</span>
             </button>
           </div>
 
@@ -289,15 +309,15 @@ export default function LandingPage({
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs text-slate-300 font-bold border-t border-[#1f293d]/80 pt-6">
             <div className="flex items-center gap-2 bg-[#0d1117]/90 px-3.5 py-1.5 rounded-full border border-[#1f293d]">
               <Check className="w-4 h-4 text-[#00E599]" />
-              <span>Animations & Schémas Tactiques</span>
+              <span>{t.hero.highlightAnimations}</span>
             </div>
             <div className="flex items-center gap-2 bg-[#0d1117]/90 px-3.5 py-1.5 rounded-full border border-[#1f293d]">
               <Check className="w-4 h-4 text-[#00E599]" />
-              <span>Analyse & Causerie Intégrées</span>
+              <span>{t.hero.highlightAnalysis}</span>
             </div>
             <div className="flex items-center gap-2 bg-[#0d1117]/90 px-3.5 py-1.5 rounded-full border border-[#1f293d]">
               <Check className="w-4 h-4 text-[#00E599]" />
-              <span>Export Fiches HD & Playbook</span>
+              <span>{t.hero.highlightExport}</span>
             </div>
           </div>
 
@@ -305,43 +325,85 @@ export default function LandingPage({
 
       </section>
 
-      {/* SPORTS SHOWCASE SECTION (Filtered by blocked sports - Requires at least 3 active sports) */}
-      {availableSports.length >= 3 && (
-        <section className="py-16 bg-[#090d14] border-y border-[#1b2436] px-4 sm:px-6">
-          <div className="max-w-7xl mx-auto text-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#00E599]">
-              DISCIPLINES RECONNUES
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mt-2">
-              {availableSports.length} Sport{availableSports.length > 1 ? "s" : ""}, {availableSports.length} Terrain{availableSports.length > 1 ? "s" : ""} Officiel{availableSports.length > 1 ? "s" : ""}
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-lg mx-auto">
-              Accédez instantanément aux règles de jeu, dimensions de terrain et compositions tactiques homologuées.
-            </p>
+      {/* SPORTS SHOWCASE SECTION (Football enabled by default, others activable via admin) */}
+      <section className="py-16 bg-[#090d14] border-y border-[#1b2436] px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#00E599]">
+            {t.sports.tag}
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-black text-white mt-2">
+            {currentLang === "fr" 
+              ? `${allSportsList.filter(s => !s.isBlocked).length} Sport${allSportsList.filter(s => !s.isBlocked).length > 1 ? "s" : ""} Actif${allSportsList.filter(s => !s.isBlocked).length > 1 ? "s" : ""} & Terrains Officiels`
+              : `${allSportsList.filter(s => !s.isBlocked).length} Active Sport${allSportsList.filter(s => !s.isBlocked).length > 1 ? "s" : ""} & Official Pitches`}
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-xl mx-auto">
+            {currentLang === "fr"
+              ? "Le football est immédiatement disponible par défaut. Les autres disciplines (basketball, rugby, handball) sont activables en 1 clic par l'administrateur de l'application."
+              : "Football is immediately available by default. Other sports (basketball, rugby, handball) can be activated in 1 click by the application administrator."}
+          </p>
 
-            <div className={`grid grid-cols-2 sm:grid-cols-3 ${
-              availableSports.length >= 6 ? "lg:grid-cols-6" : availableSports.length === 5 ? "lg:grid-cols-5" : availableSports.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"
-            } gap-4 mt-10`}>
-              {availableSports.map((sp) => (
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+            {allSportsList.map((sp) => {
+              const isBlocked = sp.isBlocked;
+              return (
                 <button
                   key={sp.id}
-                  onClick={() => onOpenLoginModal()}
-                  className="bg-[#0d1117] border border-[#1f293d] hover:border-white hover:shadow-xl hover:shadow-[#00E599]/5 rounded-2xl p-6 text-center transition group cursor-pointer flex flex-col items-center justify-center shadow-lg relative"
+                  onClick={() => {
+                    if (isBlocked) {
+                      alert(
+                        currentLang === "fr"
+                          ? `Le sport "${sp.label}" est actuellement réservé ou en attente d'activation par l'administrateur de la plateforme.\n\nConnectez-vous avec votre compte administrateur pour l'activer instantanément.`
+                          : `The sport "${sp.label}" is currently awaiting activation by the platform administrator.\n\nLog in with your administrator account to activate it instantly.`
+                      );
+                    } else {
+                      onOpenLoginModal();
+                    }
+                  }}
+                  className={`border rounded-2xl p-6 text-center transition group cursor-pointer flex flex-col items-center justify-center shadow-lg relative ${
+                    isBlocked 
+                      ? "bg-[#0a0d13]/80 border-[#1a2233] opacity-85 hover:border-amber-500/50" 
+                      : "bg-[#0d1117] border-[#1f293d] hover:border-[#00E599] hover:shadow-xl hover:shadow-[#00E599]/10"
+                  }`}
                 >
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-[#121926] border border-[#233149] text-white flex items-center justify-center mb-4 transition-all duration-300 shadow-lg group-hover:text-[#00E599] group-hover:bg-[#162236] group-hover:border-[#00E599]/60 group-hover:scale-110">
+                  {/* Status Badge */}
+                  <div className="absolute top-3 right-3">
+                    {isBlocked ? (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                        🔒 {currentLang === "fr" ? "Sur activation" : "Admin toggle"}
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-[#00E599] border border-emerald-500/30 flex items-center gap-1 shadow-sm">
+                        🟢 {currentLang === "fr" ? "Disponible" : "Available"}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className={`w-20 h-20 sm:w-22 sm:h-22 rounded-2xl border flex items-center justify-center mb-4 transition-all duration-300 shadow-lg ${
+                    isBlocked
+                      ? "bg-[#0f1420] border-[#1c273c] text-slate-400 group-hover:text-amber-400 group-hover:border-amber-500/40"
+                      : "bg-[#121926] border-[#233149] text-white group-hover:text-[#00E599] group-hover:bg-[#162236] group-hover:border-[#00E599]/60 group-hover:scale-110"
+                  }`}>
                     <SportIcon sport={sp.id} className="w-10 h-10 sm:w-11 sm:h-11 stroke-[1.8]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-white group-hover:text-[#00E599] transition">{sp.label}</h3>
-                    <p className="text-xs font-bold text-[#00E599] mt-1">{sp.players}</p>
-                    <p className="text-[10px] text-slate-400 mt-1 line-clamp-1 font-medium">{sp.formations}</p>
+                    <h3 className={`text-sm font-black transition ${isBlocked ? "text-slate-300 group-hover:text-amber-300" : "text-white group-hover:text-[#00E599]"}`}>
+                      {sp.label}
+                    </h3>
+                    <p className={`text-xs font-bold mt-1 ${isBlocked ? "text-amber-400/80" : "text-[#00E599]"}`}>
+                      {sp.players}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-1 line-clamp-1 font-medium">
+                      {isBlocked 
+                        ? (currentLang === "fr" ? "Activable par l'admin" : "Can be activated by admin")
+                        : sp.formations}
+                    </p>
                   </div>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* USE CASES SHOWCASE SECTION (3 IMAGES DÉMONTRANT LES UTILITÉS DU COACHING) */}
       <section className="py-24 bg-gradient-to-b from-[#090d14] via-[#07090e] to-[#090d14] border-b border-[#1b2436] px-4 sm:px-6 relative overflow-hidden">
@@ -353,14 +415,14 @@ export default function LandingPage({
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#121926] border border-[#233149] text-[10px] font-black uppercase tracking-widest text-[#00E599] mb-4 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-[#00E599]" />
-              <span>L&apos;APPLICATION EN CONDITIONS RÉELLES</span>
+              <span>{t.useCases.tag}</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-              Pensé pour le Terrain, <br className="hidden sm:inline" />
-              <span className="text-[#00E599]">du Bureau au Coup de Sifflet Final</span>
+              {t.useCases.titleLine1} <br className="hidden sm:inline" />
+              <span className="text-[#00E599]">{t.useCases.titleHighlight}</span>
             </h2>
             <p className="text-xs sm:text-sm md:text-base text-slate-300 mt-4 max-w-2xl mx-auto font-medium leading-relaxed">
-              Une expérience fluide conçue pour chaque moment clé : préparez vos stratégies à froid, fédérez vos joueurs dans le vestiaire et réagissez en direct sur le banc de touche.
+              {t.useCases.subtitle}
             </p>
           </div>
 
@@ -422,7 +484,7 @@ export default function LandingPage({
                         onClick={onOpenLoginModal}
                         className="text-xs font-black text-[#00E599] hover:text-white flex items-center gap-1.5 transition cursor-pointer group-hover:translate-x-1"
                       >
-                        <span>Tester cette fonctionnalité</span>
+                        <span>{t.useCases.tryFeature}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -438,13 +500,13 @@ export default function LandingPage({
       <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
         <div className="text-center max-w-2xl mx-auto mb-14">
           <span className="text-[10px] font-black uppercase tracking-widest text-[#00E599]">
-            POUR LES STAFFS EXIGEANTS
+            {t.features.tag}
           </span>
           <h2 className="text-2xl sm:text-4xl font-black text-white mt-2">
-            Conçu pour l&apos;Excellence Tactique
+            {t.features.title}
           </h2>
           <p className="text-xs sm:text-sm text-slate-400 mt-2">
-            De la préparation stratégique à la causerie d&apos;avant-match, the box centralise vos décisions tactiques.
+            {t.features.subtitle}
           </p>
         </div>
 
@@ -483,13 +545,13 @@ export default function LandingPage({
           
           <div className="text-center max-w-2xl mx-auto mb-14">
             <span className="text-[10px] font-black uppercase tracking-widest text-[#00E599] bg-[#121926] px-3 py-1 rounded-full border border-[#233149]">
-              GRILLE TARIFAIRE & OFFRES
+              {t.pricing.tag}
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-white mt-4">
-              Des Tarifs Clairs & Sans Engagement
+              {t.pricing.title}
             </h2>
             <p className="text-xs sm:text-sm text-slate-400 mt-2 font-medium">
-              Du coach indépendant au staff professionnel, découvrez la formule adaptée à vos objectifs.
+              {t.pricing.subtitle}
             </p>
           </div>
 
@@ -498,36 +560,22 @@ export default function LandingPage({
             {/* PLAN GRATUIT */}
             <div className="bg-[#0d1117] border border-[#233149] rounded-2xl p-7 flex flex-col justify-between relative shadow-xl hover:border-[#384b6e] transition">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">DÉCOUVERTE & ESSAI</span>
-                <h3 className="text-xl font-black text-white">Version Gratuite</h3>
-                <p className="text-xs text-slate-400 mt-1 min-h-[32px]">Idéal pour découvrir le tableau tactique et préparer ses séances.</p>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">{t.pricing.freeTag}</span>
+                <h3 className="text-xl font-black text-white">{t.pricing.freeTitle}</h3>
+                <p className="text-xs text-slate-400 mt-1 min-h-[32px]">{t.pricing.freeDesc}</p>
 
                 <div className="mt-6 mb-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-white">0€</span>
-                  <span className="text-xs text-slate-400 font-semibold">/ mois</span>
+                  <span className="text-4xl font-black text-white">{t.pricing.freePrice}</span>
+                  <span className="text-xs text-slate-400 font-semibold">{t.pricing.perMonth}</span>
                 </div>
 
                 <div className="border-t border-[#1b2436] pt-5 space-y-3 mb-8">
-                  <div className="flex items-start gap-2.5 text-xs text-slate-300">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Tableau blanc tactique 2D & tracés vectoriels</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-slate-300">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Personnalisation complète de l&apos;effectif</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-slate-300">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Gestion des rôles des joueurs</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-slate-300">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Export en PNG du terrain</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-slate-300">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Visibilité du terrain complet ou à moitié, en portrait ou paysage</span>
-                  </div>
+                  {t.pricing.freeFeatures.map((feat, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
+                      <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -535,55 +583,33 @@ export default function LandingPage({
                 onClick={onOpenRegisterModal}
                 className="w-full py-3 px-4 bg-[#121926] hover:bg-[#1a253b] border border-[#233149] text-white font-extrabold text-xs rounded-xl transition cursor-pointer text-center"
               >
-                Créer un Compte Gratuit
+                {t.pricing.freeCta}
               </button>
             </div>
 
             {/* PLAN PRO (FEATURED) */}
             <div className="bg-gradient-to-b from-[#0f172a] to-[#0d1117] border-2 border-[#00E599] rounded-2xl p-7 flex flex-col justify-between relative shadow-2xl shadow-[#00E599]/10 transform md:-translate-y-2">
               <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#00E599] text-[#0d1117] text-[9.5px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-md">
-                ⭐ RECOMMANDÉ
+                {t.pricing.recommendedBadge}
               </span>
 
               <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#00E599] block mb-2">INDIVIDUEL PRO</span>
-                <h3 className="text-xl font-black text-white">Formule PRO</h3>
-                <p className="text-xs text-slate-300 mt-1 min-h-[32px]">Pour l&apos;entraîneur qui veut gérer ses équipes, matchs, schémas et causeries vocales.</p>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#00E599] block mb-2">{t.pricing.proTag}</span>
+                <h3 className="text-xl font-black text-white">{t.pricing.proTitle}</h3>
+                <p className="text-xs text-slate-300 mt-1 min-h-[32px]">{t.pricing.proDesc}</p>
 
                 <div className="mt-6 mb-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-[#00E599]">9.90€</span>
-                  <span className="text-xs text-slate-400 font-semibold">/ mois</span>
+                  <span className="text-4xl font-black text-[#00E599]">{t.pricing.proPrice}</span>
+                  <span className="text-xs text-slate-400 font-semibold">{t.pricing.perMonth}</span>
                 </div>
 
                 <div className="border-t border-[#1b2436] pt-5 space-y-3 mb-8">
-                  <div className="flex items-start gap-2.5 text-xs text-white font-medium">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Toutes les fonctionnalités Gratuite</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-white font-medium">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Gestion multi-équipes pour un seul utilisateur</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-white font-medium">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Enregistrements des schémas tactiques liés au match sélectionné</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-white font-medium">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Partage des schémas tactiques (WhatsApp & Mail)</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-white font-medium">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Enregistrements vocales et saisies de notes activés</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-white font-medium">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Gestion des matchs</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-white font-medium">
-                    <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
-                    <span>Gestion de l&apos;équipe adverse</span>
-                  </div>
+                  {t.pricing.proFeatures.map((feat, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs text-white font-medium">
+                      <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -592,7 +618,7 @@ export default function LandingPage({
                   onClick={onOpenRegisterModal}
                   className="w-full py-3.5 px-4 bg-[#00E599] hover:bg-[#06b87d] text-[#0d1117] font-black text-xs rounded-xl transition cursor-pointer text-center shadow-lg shadow-[#00E599]/20"
                 >
-                  Essai 14 Jours Offert &bull; Créer un Compte
+                  {t.pricing.proCtaTrial}
                 </button>
                 <button
                   type="button"
@@ -601,7 +627,7 @@ export default function LandingPage({
                   className="w-full py-2.5 px-3 bg-[#111927] hover:bg-[#182337] border border-[#00E599]/30 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Zap className="h-3.5 w-3.5 text-[#00E599]" />
-                  <span>{stripeLoadingPlan === "pro" ? "Redirection..." : "S'abonner à la Formule PRO (9.90€ / mois)"}</span>
+                  <span>{stripeLoadingPlan === "pro" ? t.pricing.proRedirecting : t.pricing.proCtaSubscribe}</span>
                 </button>
               </div>
             </div>
@@ -609,24 +635,22 @@ export default function LandingPage({
             {/* PLAN PRO+ */}
             <div className="bg-[#0d1117] border border-[#233149] hover:border-amber-500/50 rounded-2xl p-7 flex flex-col justify-between relative shadow-xl transition">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block mb-2">🔥 PERFORMANCE & LIVE MATCH</span>
-                <h3 className="text-xl font-black text-white">Formule PRO+</h3>
-                <p className="text-xs text-slate-400 mt-1 min-h-[32px]">Pour le suivi en direct le jour de match avec le mode live interactif.</p>
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block mb-2">{t.pricing.proPlusTag}</span>
+                <h3 className="text-xl font-black text-white">{t.pricing.proPlusTitle}</h3>
+                <p className="text-xs text-slate-400 mt-1 min-h-[32px]">{t.pricing.proPlusDesc}</p>
 
                 <div className="mt-6 mb-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-amber-400">14.90€</span>
-                  <span className="text-xs text-slate-400 font-semibold">/ mois</span>
+                  <span className="text-4xl font-black text-amber-400">{t.pricing.proPlusPrice}</span>
+                  <span className="text-xs text-slate-400 font-semibold">{t.pricing.perMonth}</span>
                 </div>
 
                 <div className="border-t border-[#1b2436] pt-5 space-y-3 mb-8">
-                  <div className="flex items-start gap-2.5 text-xs text-slate-200 font-semibold">
-                    <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                    <span>Toutes les fonctionnalités PRO</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-amber-300 font-bold bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/30">
-                    <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                    <span>Activation du mode live match possible</span>
-                  </div>
+                  {t.pricing.proPlusFeatures.map((feat, idx) => (
+                    <div key={idx} className={`flex items-start gap-2.5 text-xs ${idx === 1 ? "text-amber-300 font-bold bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/30" : "text-slate-200 font-semibold"}`}>
+                      <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -635,7 +659,7 @@ export default function LandingPage({
                   onClick={onOpenRegisterModal}
                   className="w-full py-3 px-4 bg-[#121926] hover:bg-[#1a253b] border border-amber-500/40 text-amber-300 hover:text-white font-extrabold text-xs rounded-xl transition cursor-pointer text-center"
                 >
-                  Essai 14 Jours Offert &bull; Créer un Compte
+                  {t.pricing.proPlusCtaTrial}
                 </button>
                 <button
                   type="button"
@@ -644,7 +668,7 @@ export default function LandingPage({
                   className="w-full py-2.5 px-3 bg-[#111927] hover:bg-[#182337] border border-amber-500/30 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Zap className="h-3.5 w-3.5 text-amber-400" />
-                  <span>{stripeLoadingPlan === "club" ? "Redirection..." : "S'abonner à la Formule PRO+ (14.90€ / mois)"}</span>
+                  <span>{stripeLoadingPlan === "club" ? t.pricing.proRedirecting : t.pricing.proPlusCtaSubscribe}</span>
                 </button>
               </div>
             </div>
@@ -655,7 +679,7 @@ export default function LandingPage({
       </section>
 
       {/* DEDICATED CONTACT FORM SECTION */}
-      <LandingContactSection isAdmin={isAdmin} />
+      <LandingContactSection isAdmin={isAdmin} language={currentLang} />
 
       {/* BRAND FOOTER */}
       <footer className="mt-auto border-t border-[#1b2436] bg-[#090d14] py-10 px-4 sm:px-6 text-xs text-slate-500">
@@ -668,12 +692,34 @@ export default function LandingPage({
                 the box
               </span>
               <span className="text-[8px] text-white/60 uppercase font-black tracking-widest block mt-0.5">
-                zone de décision tactique
+                {t.footer.brandTagline}
               </span>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-400">
+            {/* Footer Language switcher */}
+            <div className="flex items-center gap-1 bg-[#121824] border border-[#232f45] rounded-lg p-0.5 text-[11px] font-bold">
+              <button
+                type="button"
+                id="lang-switch-footer-fr"
+                onClick={() => handleLanguageSelect("fr")}
+                className={`px-2 py-0.5 rounded transition ${currentLang === "fr" ? "bg-[#00E599] text-[#07090e] font-black" : "text-slate-400 hover:text-white"}`}
+              >
+                FR
+              </button>
+              <button
+                type="button"
+                id="lang-switch-footer-en"
+                onClick={() => handleLanguageSelect("en")}
+                className={`px-2 py-0.5 rounded transition ${currentLang === "en" ? "bg-[#00E599] text-[#07090e] font-black" : "text-slate-400 hover:text-white"}`}
+              >
+                EN
+              </button>
+            </div>
+
+            <span className="text-slate-700">•</span>
+
             {onOpenLegalModal && (
               <>
                 <button
@@ -681,7 +727,7 @@ export default function LandingPage({
                   className="hover:text-[#00E599] transition cursor-pointer flex items-center gap-1"
                 >
                   <HelpCircle className="w-3.5 h-3.5" />
-                  <span>FAQ & Aide</span>
+                  <span>{t.footer.faqHelp}</span>
                 </button>
                 <span className="text-slate-700">•</span>
                 <button
@@ -689,7 +735,7 @@ export default function LandingPage({
                   className="hover:text-[#00E599] transition cursor-pointer flex items-center gap-1"
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  <span>CGU</span>
+                  <span>{t.footer.cgu}</span>
                 </button>
                 <span className="text-slate-700">•</span>
                 <button
@@ -697,7 +743,7 @@ export default function LandingPage({
                   className="hover:text-[#00E599] transition cursor-pointer flex items-center gap-1"
                 >
                   <Scale className="w-3.5 h-3.5" />
-                  <span>CGV</span>
+                  <span>{t.footer.cgv}</span>
                 </button>
                 <span className="text-slate-700">•</span>
               </>
@@ -707,7 +753,7 @@ export default function LandingPage({
               className="hover:text-[#00E599] transition cursor-pointer flex items-center gap-1"
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Nous Contacter</span>
+              <span>{t.footer.contactUs}</span>
             </a>
             <span className="text-slate-700">•</span>
             <button
@@ -723,12 +769,12 @@ export default function LandingPage({
               }}
               className="hover:text-white transition cursor-pointer"
             >
-              Contact Support
+              {t.footer.contactSupport}
             </button>
           </div>
 
           <p className="text-[11px] text-slate-600 font-medium">
-            &copy; {new Date().getFullYear()} the box. Tous droits réservés.
+            {t.footer.copyright(new Date().getFullYear())}
           </p>
         </div>
       </footer>

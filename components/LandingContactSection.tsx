@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Mail,
   Send,
@@ -16,30 +16,49 @@ import {
   Trophy,
   HelpCircle
 } from "lucide-react";
+import { Language, getStoredLanguage, translations } from "@/lib/i18n";
 
 const TARGET_CONTACT_EMAIL = "pixup.agence@gmail.com";
 
-const CONTACT_REASONS = [
-  { id: "info", label: "Renseignements généraux" },
-  { id: "club", label: "Offre Club / Multi-équipes" },
-  { id: "demo", label: "Demande de démonstration" },
-  { id: "partnership", label: "Partenariat / Presse" },
-  { id: "other", label: "Autre demande" },
-];
-
-const SPORTS_OPTIONS = [
-  { id: "football", label: "Football ⚽" },
-  { id: "basketball", label: "Basketball 🏀" },
-  { id: "rugby", label: "Rugby 🏉" },
-  { id: "handball", label: "Handball 🤾" },
-  { id: "multisport", label: "Multi-sports 🏆" },
-];
-
 interface LandingContactSectionProps {
   isAdmin?: boolean;
+  language?: Language;
 }
 
-export default function LandingContactSection({ isAdmin = false }: LandingContactSectionProps) {
+export default function LandingContactSection({ isAdmin = false, language: propLang }: LandingContactSectionProps) {
+  const [currentLang, setCurrentLang] = useState<Language>(() => propLang || getStoredLanguage());
+
+  useEffect(() => {
+    if (propLang) setCurrentLang(propLang);
+  }, [propLang]);
+
+  useEffect(() => {
+    const handleLangChange = (e: any) => {
+      const newLang = e.detail?.language as Language;
+      if (newLang) setCurrentLang(newLang);
+    };
+    window.addEventListener("thebox_language_change", handleLangChange);
+    return () => window.removeEventListener("thebox_language_change", handleLangChange);
+  }, []);
+
+  const t = translations[currentLang].landing.contactSection;
+
+  const contactReasons = [
+    { id: "info", label: t.reasons.info },
+    { id: "club", label: t.reasons.club },
+    { id: "demo", label: t.reasons.demo },
+    { id: "partnership", label: t.reasons.partnership },
+    { id: "other", label: t.reasons.other },
+  ];
+
+  const sportsOptions = [
+    { id: "football", label: t.sportsOptions.football },
+    { id: "basketball", label: t.sportsOptions.basketball },
+    { id: "rugby", label: t.sportsOptions.rugby },
+    { id: "handball", label: t.sportsOptions.handball },
+    { id: "multisport", label: t.sportsOptions.multisport },
+  ];
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -57,12 +76,12 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
     e.preventDefault();
 
     if (!email.trim()) {
-      setErrorMessage("Veuillez renseigner votre adresse email.");
+      setErrorMessage(t.errorsEmail);
       return;
     }
 
     if (!message.trim()) {
-      setErrorMessage("Veuillez renseigner votre message.");
+      setErrorMessage(t.errorsMessage);
       return;
     }
 
@@ -70,7 +89,7 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
     setErrorMessage(null);
 
     // Build the final subject strictly starting with [Contact]
-    const activeReasonObj = CONTACT_REASONS.find((r) => r.id === reason);
+    const activeReasonObj = contactReasons.find((r) => r.id === reason);
     const cleanSubjectInput = subjectText.trim() || activeReasonObj?.label || "Prise de contact";
 
     // Ensure [Contact] prefix
@@ -96,7 +115,7 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        throw new Error(data.error || "Une erreur est survenue lors de l'envoi.");
+        throw new Error(data.error || t.errorsGeneric);
       }
 
       setIsSuccess(true);
@@ -104,7 +123,7 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
       setSubjectText("");
     } catch (err: any) {
       console.error("Landing contact form error:", err);
-      setErrorMessage(err.message || "Impossible d'envoyer votre message pour le moment. Veuillez réessayer.");
+      setErrorMessage(err.message || t.errorsFallback);
     } finally {
       setIsSubmitting(false);
     }
@@ -123,18 +142,18 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00E599]/10 border border-[#00E599]/30 text-[#00E599] text-[11px] font-black uppercase tracking-wider mb-4">
             <Mail className="w-3.5 h-3.5" />
-            <span>Formulaire de Contact</span>
+            <span>{t.tag}</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
-            Une question ou un projet ? <br />
+            {t.title1} <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00E599] via-emerald-400 to-cyan-400">
-              Échangez avec l&apos;équipe The Box
+              {t.titleHighlight}
             </span>
           </h2>
 
           <p className="text-sm sm:text-base text-slate-400 mt-4 leading-relaxed">
-            Vous souhaitez équiper votre club, planifier une démonstration privée ou obtenir des informations techniques ? Remplissez ce formulaire et recevez une réponse directement par email.
+            {t.subtitle}
           </p>
         </div>
 
@@ -150,8 +169,8 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-white">Pourquoi nous contacter ?</h3>
-                  <p className="text-xs text-slate-400">Une écoute attentive pour vos besoins sportifs</p>
+                  <h3 className="text-base font-black text-white">{t.whyTitle}</h3>
+                  <p className="text-xs text-slate-400">{t.whySubtitle}</p>
                 </div>
               </div>
 
@@ -161,9 +180,9 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     <Clock className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">Réponse rapide garantie</h4>
+                    <h4 className="text-xs font-bold text-white">{t.guaranteeTitle}</h4>
                     <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                      Notre équipe pédagogique et technique s&apos;engage à vous répondre sous 24h ouvrées.
+                      {t.guaranteeDesc}
                     </p>
                   </div>
                 </div>
@@ -173,9 +192,9 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     <Building className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">Solutions Clubs & Académies</h4>
+                    <h4 className="text-xs font-bold text-white">{t.clubTitle}</h4>
                     <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                      Tarifs groupés, multi-licences et accompagnement pour harmoniser le projet de jeu de toutes vos équipes.
+                      {t.clubDesc}
                     </p>
                   </div>
                 </div>
@@ -185,9 +204,9 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     <Trophy className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">Démonstration personnalisée</h4>
+                    <h4 className="text-xs font-bold text-white">{t.demoTitle}</h4>
                     <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                      Découvrez en visio toutes les fonctionnalités avancées (Live Match, causerie, exports HD) avec nos experts.
+                      {t.demoDesc}
                     </p>
                   </div>
                 </div>
@@ -199,7 +218,7 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                   <ShieldCheck className="w-5 h-5 text-[#00E599]" />
                   <div>
                     <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 block">
-                      {isAdmin ? "Email de contact direct (Admin)" : "Canal officiel & sécurisé"}
+                      {isAdmin ? t.channelAdmin : t.channelSecure}
                     </span>
                     {isAdmin ? (
                       <a
@@ -210,13 +229,13 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                       </a>
                     ) : (
                       <span className="text-xs font-bold text-white">
-                        Formulaire Direct The Box
+                        {t.channelDirectBox}
                       </span>
                     )}
                   </div>
                 </div>
                 <span className="text-[10px] bg-[#00E599]/15 text-[#00E599] px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                  {isAdmin ? "Admin" : "Sécurisé"}
+                  {isAdmin ? t.badgeAdmin : t.badgeSecure}
                 </span>
               </div>
 
@@ -232,11 +251,11 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#1b2436] flex-wrap gap-2">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Mail className="w-4 h-4 text-[#00E599]" />
-                  <span>Envoi direct :</span>
+                  <span>{t.directSending}</span>
                   {isAdmin ? (
                     <strong className="text-white font-mono">{TARGET_CONTACT_EMAIL}</strong>
                   ) : (
-                    <strong className="text-white">Équipe The Box</strong>
+                    <strong className="text-white">{t.teamTheBox}</strong>
                   )}
                 </div>
               </div>
@@ -248,18 +267,18 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-white">Merci pour votre message !</h3>
+                    <h3 className="text-xl font-black text-white">{t.successTitle}</h3>
                     <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto mt-2 leading-relaxed">
-                      Votre demande a été transmise avec succès à l&apos;équipe The Box{isAdmin ? <> (<span className="text-[#00E599] font-mono font-bold">{TARGET_CONTACT_EMAIL}</span>)</> : null}.
+                      {t.successDesc}{isAdmin ? <> (<span className="text-[#00E599] font-mono font-bold">{TARGET_CONTACT_EMAIL}</span>)</> : null}
                     </p>
                     <div className="bg-[#121824] border border-[#1f293d] rounded-xl p-3.5 max-w-md mx-auto mt-4 text-left text-xs text-slate-400 space-y-1">
                       <div className="flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5 text-[#00E599]" />
-                        <span>Délai de prise en charge : moins de 24h ouvrées</span>
+                        <span>{t.guaranteeDesc}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Mail className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Réponse par email à : <strong className="text-white font-mono">{email}</strong></span>
+                        <span>{currentLang === "fr" ? "Réponse par email à :" : "Email reply to:"} <strong className="text-white font-mono">{email}</strong></span>
                       </div>
                     </div>
                   </div>
@@ -272,7 +291,7 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     }}
                     className="px-5 py-2.5 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-slate-200 font-bold text-xs transition border border-[#233149] cursor-pointer inline-flex items-center gap-2"
                   >
-                    <span>Envoyer un nouveau message</span>
+                    <span>{t.sendAnother}</span>
                   </button>
                 </div>
               ) : (
@@ -291,14 +310,14 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     <div>
                       <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Votre Nom & Prénom <span className="text-[#00E599]">*</span></span>
+                        <span>{t.fieldFullName}</span>
                       </label>
                       <input
                         type="text"
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="Ex: David Dupont"
+                        placeholder={t.placeholderFullName}
                         className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
@@ -306,14 +325,14 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     <div>
                       <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                         <Mail className="w-3.5 h-3.5 text-[#00E599]" />
-                        <span>Adresse Email <span className="text-[#00E599]">*</span></span>
+                        <span>{t.fieldEmail}</span>
                       </label>
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="coach.dupont@gmail.com"
+                        placeholder={t.placeholderEmail}
                         className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
@@ -324,13 +343,13 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     <div>
                       <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                         <Phone className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Téléphone (Optionnel)</span>
+                        <span>{t.fieldPhone}</span>
                       </label>
                       <input
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="06 12 34 56 78"
+                        placeholder={t.placeholderPhone}
                         className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
@@ -338,13 +357,13 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     <div>
                       <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                         <Building className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Club / Structure (Optionnel)</span>
+                        <span>{t.fieldClub}</span>
                       </label>
                       <input
                         type="text"
                         value={club}
                         onChange={(e) => setClub(e.target.value)}
-                        placeholder="Ex: FC Étoile, US Métro..."
+                        placeholder={t.placeholderClub}
                         className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
@@ -354,14 +373,14 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                        Sport de prédilection
+                        {t.fieldSport}
                       </label>
                       <select
                         value={sport}
                         onChange={(e) => setSport(e.target.value)}
                         className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none transition cursor-pointer"
                       >
-                        {SPORTS_OPTIONS.map((sp) => (
+                        {sportsOptions.map((sp) => (
                           <option key={sp.id} value={sp.id} className="bg-[#0d1117] text-white">
                             {sp.label}
                           </option>
@@ -371,20 +390,20 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                        Motif de contact
+                        {t.fieldReason}
                       </label>
                       <select
                         value={reason}
                         onChange={(e) => {
                           setReason(e.target.value);
-                          const found = CONTACT_REASONS.find((r) => r.id === e.target.value);
-                          if (found && (!subjectText || CONTACT_REASONS.some((r) => r.label === subjectText))) {
+                          const found = contactReasons.find((r) => r.id === e.target.value);
+                          if (found && (!subjectText || contactReasons.some((r) => r.label === subjectText))) {
                             setSubjectText(found.label);
                           }
                         }}
                         className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none transition cursor-pointer"
                       >
-                        {CONTACT_REASONS.map((r) => (
+                        {contactReasons.map((r) => (
                           <option key={r.id} value={r.id} className="bg-[#0d1117] text-white">
                             {r.label}
                           </option>
@@ -398,7 +417,7 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                     <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Objet du Message</span>
+                        <span>{t.fieldSubject}</span>
                       </span>
                     </label>
                     <div className="relative flex items-center">
@@ -412,7 +431,7 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                           const val = e.target.value.replace(/^\[Contact\]\s*/i, "");
                           setSubjectText(val);
                         }}
-                        placeholder="Ex: Renseignements pour nos équipes U17 et Seniors..."
+                        placeholder={t.placeholderSubject}
                         className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl pl-22 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
@@ -421,9 +440,9 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                   {/* Message */}
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                      <span>Votre Message <span className="text-[#00E599]">*</span></span>
+                      <span>{t.fieldMessage}</span>
                       <span className="text-[10px] text-slate-500 font-mono">
-                        {message.length} car.
+                        {message.length} {currentLang === "fr" ? "car." : "chars"}
                       </span>
                     </label>
                     <textarea
@@ -431,7 +450,7 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                       rows={5}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Décrivez votre projet, vos questions sur les fonctionnalités ou vos besoins..."
+                      placeholder={t.placeholderMessage}
                       className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none transition resize-none leading-relaxed"
                     />
                   </div>
@@ -439,7 +458,7 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                   {/* Submit Button */}
                   <div className="pt-2 flex items-center justify-between gap-4 flex-wrap">
                     <p className="text-[11px] text-slate-500">
-                      Vos données personnelles restent strictement confidentielles.
+                      {t.secureTransmission}
                     </p>
 
                     <button
@@ -450,12 +469,12 @@ export default function LandingContactSection({ isAdmin = false }: LandingContac
                       {isSubmitting ? (
                         <>
                           <div className="w-3.5 h-3.5 border-2 border-[#07090e] border-t-transparent rounded-full animate-spin" />
-                          <span>Envoi en cours...</span>
+                          <span>{t.submitting}</span>
                         </>
                       ) : (
                         <>
                           <Send className="w-3.5 h-3.5" />
-                          <span>Envoyer le Message</span>
+                          <span>{t.submitBtn}</span>
                         </>
                       )}
                     </button>

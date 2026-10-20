@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import TacticsBoard from "@/components/TacticsBoard";
 import LandingPage from "@/components/LandingPage";
-import AdminPlatform, { defaultSportsConfig, SportAccessConfig } from "@/components/AdminPlatform";
+import AdminPlatform, { defaultSportsConfig, defaultBlockedSports, SportAccessConfig } from "@/components/AdminPlatform";
 import TrialCountdownModal from "@/components/TrialCountdownModal";
 import OnboardingTutorialModal from "@/components/OnboardingTutorialModal";
 import LegalAndFaqModal, { LegalTab } from "@/components/LegalAndFaqModal";
@@ -20,6 +20,7 @@ import {
 } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { isSuperAdminEmail } from "@/lib/security";
+import { Language, getStoredLanguage, setStoredLanguage, translations } from "@/lib/i18n";
 
 export interface CoachProfile {
   id: string;
@@ -32,6 +33,7 @@ export interface CoachProfile {
   isAdmin?: boolean;
   createdAt?: string;
   trialBonusDays?: number;
+  language?: Language;
 }
 
 const defaultCoaches: CoachProfile[] = [];
@@ -51,8 +53,8 @@ export default function Home() {
   const [savedTactics, setSavedTactics] = useState<any[]>([]);
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Admin platform & Sports access control states
-  const [blockedSports, setBlockedSports] = useState<string[]>([]);
+  // Admin platform & Sports access control states - only football is enabled by default
+  const [blockedSports, setBlockedSports] = useState<string[]>(defaultBlockedSports);
   const [sportsConfig, setSportsConfig] = useState<SportAccessConfig[]>(defaultSportsConfig);
   const [isAdminPlatformOpen, setIsAdminPlatformOpen] = useState<boolean>(false);
   const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
@@ -152,31 +154,40 @@ export default function Home() {
         }
 
         const validSportIds = defaultSportsConfig.map(s => s.id);
-        const savedBlocked = localStorage.getItem("thebox_blocked_sports");
-        if (savedBlocked) {
-          try {
-            const parsed = JSON.parse(savedBlocked);
-            if (Array.isArray(parsed)) {
-              const clean = parsed.filter((id: string) => validSportIds.includes(id));
-              setBlockedSports(clean);
-              localStorage.setItem("thebox_blocked_sports", JSON.stringify(clean));
-            }
-          } catch (e) { console.error(e); }
-        }
+        const hasInitSportsV2 = localStorage.getItem("thebox_sports_default_v2");
+        if (!hasInitSportsV2) {
+          localStorage.setItem("thebox_sports_default_v2", "true");
+          setBlockedSports(defaultBlockedSports);
+          localStorage.setItem("thebox_blocked_sports", JSON.stringify(defaultBlockedSports));
+          setSportsConfig(defaultSportsConfig);
+          localStorage.setItem("thebox_sports_config", JSON.stringify(defaultSportsConfig));
+        } else {
+          const savedBlocked = localStorage.getItem("thebox_blocked_sports");
+          if (savedBlocked) {
+            try {
+              const parsed = JSON.parse(savedBlocked);
+              if (Array.isArray(parsed)) {
+                const clean = parsed.filter((id: string) => validSportIds.includes(id));
+                setBlockedSports(clean);
+                localStorage.setItem("thebox_blocked_sports", JSON.stringify(clean));
+              }
+            } catch (e) { console.error(e); }
+          }
 
-        const savedConfig = localStorage.getItem("thebox_sports_config");
-        if (savedConfig) {
-          try {
-            const parsed = JSON.parse(savedConfig);
-            if (Array.isArray(parsed)) {
-              const clean = defaultSportsConfig.map((def) => {
-                const existing = parsed.find((s: any) => s.id === def.id);
-                return existing ? { ...def, ...existing } : def;
-              });
-              setSportsConfig(clean);
-              localStorage.setItem("thebox_sports_config", JSON.stringify(clean));
-            }
-          } catch (e) { console.error(e); }
+          const savedConfig = localStorage.getItem("thebox_sports_config");
+          if (savedConfig) {
+            try {
+              const parsed = JSON.parse(savedConfig);
+              if (Array.isArray(parsed)) {
+                const clean = defaultSportsConfig.map((def) => {
+                  const existing = parsed.find((s: any) => s.id === def.id);
+                  return existing ? { ...def, ...existing } : def;
+                });
+                setSportsConfig(clean);
+                localStorage.setItem("thebox_sports_config", JSON.stringify(clean));
+              }
+            } catch (e) { console.error(e); }
+          }
         }
 
         const savedActiveId = localStorage.getItem("thebox_active_coach_id");
@@ -241,7 +252,19 @@ export default function Home() {
   }, [activeCoachId, hasLoaded]);
 
   useEffect(() => {
-    document.title = "The Box - Zone de décision tactique";
+    const lang = getStoredLanguage();
+    document.title = translations[lang].appTitle;
+    document.documentElement.lang = lang;
+
+    const handleLangChange = (e: any) => {
+      const newLang = e.detail?.language as Language;
+      if (newLang) {
+        document.title = translations[newLang].appTitle;
+        document.documentElement.lang = newLang;
+      }
+    };
+    window.addEventListener("thebox_language_change", handleLangChange);
+    return () => window.removeEventListener("thebox_language_change", handleLangChange);
   }, []);
 
   useEffect(() => {
@@ -279,6 +302,11 @@ export default function Home() {
           console.log("Remote user profile fetch skipped/fallback", e);
         }
 
+        const resolvedLang: Language = profileFromDb?.language || getStoredLanguage();
+        if (profileFromDb?.language) {
+          setStoredLanguage(profileFromDb.language);
+        }
+
         const coachData: CoachProfile = {
           id: uid,
           firstName: profileFromDb?.firstName || first,
@@ -290,6 +318,7 @@ export default function Home() {
           isAdmin: Boolean(isGoogleAdmin || profileFromDb?.isAdmin),
           createdAt: profileFromDb?.createdAt || new Date().toISOString(),
           trialBonusDays: profileFromDb?.trialBonusDays || 0,
+          language: resolvedLang,
         };
 
         const savedPlansStr = typeof window !== "undefined" ? localStorage.getItem("thebox_admin_user_plans") : null;
@@ -452,13 +481,14 @@ export default function Home() {
     }
 
     const nowIso = new Date().toISOString();
+    const resolvedSport = (!blockedSports.includes(newPrefSport) ? newPrefSport : "football");
     const newProfile: CoachProfile = {
       id: `coach_${Date.now()}`,
       firstName: newFirstName,
       lastName: newLastName,
       club: newClub,
       role: newRole,
-      preferredSport: "football",
+      preferredSport: resolvedSport,
       email: newEmail.trim() || `${newFirstName.toLowerCase()}.${newLastName.toLowerCase()}@club.com`,
       isAdmin: false,
       createdAt: nowIso,
@@ -1144,19 +1174,24 @@ export default function Home() {
                       Sport Principal
                     </label>
                     <select
-                      value="football"
-                      disabled
-                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition capitalize font-bold cursor-not-allowed opacity-95 border ${
+                      value={newPrefSport}
+                      onChange={(e) => setNewPrefSport(e.target.value)}
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition capitalize font-bold border ${
                         isModernSleek 
-                          ? "bg-slate-100 border-slate-300 text-slate-900" 
-                          : "bg-[#121824] border-[#233149] text-white"
+                          ? "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500" 
+                          : "bg-[#121824] border-[#233149] text-white focus:border-[#00E599]"
                       }`}
-                      title="Seul le football est ouvert à l'inscription. Les autres sports sont bloqués."
                     >
-                      <option value="football">⚽ Football (Ouvert à l&apos;essai)</option>
-                      <option value="basketball" disabled>🏀 Basketball (🔒 Bloqué)</option>
-                      <option value="rugby" disabled>🏉 Rugby (🔒 Bloqué)</option>
-                      <option value="handball" disabled>🤾 Handball (🔒 Bloqué)</option>
+                      <option value="football">⚽ Football {!blockedSports.includes("football") ? "(Disponible)" : "(🔒 Bloqué)"}</option>
+                      <option value="basketball" disabled={blockedSports.includes("basketball")}>
+                        🏀 Basketball {blockedSports.includes("basketball") ? "(🔒 Sur activation admin)" : "(Disponible)"}
+                      </option>
+                      <option value="rugby" disabled={blockedSports.includes("rugby")}>
+                        🏉 Rugby {blockedSports.includes("rugby") ? "(🔒 Sur activation admin)" : "(Disponible)"}
+                      </option>
+                      <option value="handball" disabled={blockedSports.includes("handball")}>
+                        🤾 Handball {blockedSports.includes("handball") ? "(🔒 Sur activation admin)" : "(Disponible)"}
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -1228,7 +1263,8 @@ export default function Home() {
                 }`}>
                   <CheckCircle className="h-4 w-4 text-[#00E599] flex-shrink-0" />
                   <p>
-                    En validant votre inscription, votre tableau tactique s&apos;activera immédiatement sur le sport : <strong className={isModernSleek ? "text-slate-900" : "text-white"}>Football</strong>.
+                    Sport sélectionné : <strong className={isModernSleek ? "text-slate-900 capitalize" : "text-white capitalize"}>{newPrefSport}</strong>
+                    {blockedSports.includes(newPrefSport) ? " (basculé automatiquement sur Football car réservé à l'admin)" : " (prêt immédiatement)"}.
                   </p>
                 </div>
 

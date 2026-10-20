@@ -41,6 +41,8 @@ export interface SportAccessConfig {
   category: string;
 }
 
+export const defaultBlockedSports: string[] = ["basketball", "rugby", "handball"];
+
 export const defaultSportsConfig: SportAccessConfig[] = [
   {
     id: "football",
@@ -54,24 +56,24 @@ export const defaultSportsConfig: SportAccessConfig[] = [
     id: "basketball",
     name: "Basketball",
     icon: "🏀",
-    isBlocked: false,
-    statusNote: "Totalement opérationnel (Lignes 3pts FIBA / NBA)",
+    isBlocked: true,
+    statusNote: "Disponible sur activation administrateur",
     category: "Indoor"
   },
   {
     id: "rugby",
     name: "Rugby",
     icon: "🏉",
-    isBlocked: false,
-    statusNote: "Totalement opérationnel (Rugby à 15 & à 7)",
+    isBlocked: true,
+    statusNote: "Disponible sur activation administrateur",
     category: "Outdoor"
   },
   {
     id: "handball",
     name: "Handball",
     icon: "🤾",
-    isBlocked: false,
-    statusNote: "Totalement opérationnel (40x20m avec zone 6m)",
+    isBlocked: true,
+    statusNote: "Disponible sur activation administrateur",
     category: "Indoor"
   }
 ];
