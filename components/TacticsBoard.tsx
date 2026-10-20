@@ -10,6 +10,7 @@ import TrialCountdownModal, { calculateTrialRemaining, TrialTimeRemaining } from
 import ShareModal, { ShareData } from "./ShareModal";
 import SubscriptionPlans from "./SubscriptionPlans";
 import { PWAInstallButton } from "./PWAInstallButton";
+import UserGuideModal from "./UserGuideModal";
 import {
   Play, Pause, Plus, Trash2, ChevronLeft, ChevronRight,
   RotateCcw, Pencil, Sparkles, Save, UserPlus, UserMinus, RefreshCw, Shield, CheckCircle, Check,
@@ -1079,6 +1080,7 @@ export default function TacticsBoard({
   // User Profile & Sport Configuration Modal State
   const [isUserConfigModalOpen, setIsUserConfigModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isUserGuideModalOpen, setIsUserGuideModalOpen] = useState(false);
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -7013,6 +7015,17 @@ export default function TacticsBoard({
                       <span>{t.userMenu.tutorial}</span>
                     </button>
                   )}
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      setIsUserGuideModalOpen(true);
+                    }}
+                    className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold ${isModernSleek ? "text-slate-700 hover:bg-slate-50 hover:text-emerald-800" : "text-slate-200 hover:bg-[#1a2333] hover:text-[#00E599]"
+                      } transition flex items-center gap-1.5 cursor-pointer`}
+                  >
+                    <span>📖</span>
+                    <span>{t.userMenu.userGuide}</span>
+                  </button>
                   {onOpenLegalModal && (
                     <button
                       onClick={() => {
@@ -13501,6 +13514,13 @@ export default function TacticsBoard({
           </div>
         </div>
       )}
+
+      {/* GUIDE UTILISATEUR MODAL */}
+      <UserGuideModal
+        isOpen={isUserGuideModalOpen}
+        onClose={() => setIsUserGuideModalOpen(false)}
+        isModernSleek={isModernSleek}
+      />
 
     </div>
   );
