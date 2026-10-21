@@ -157,7 +157,7 @@ export default function TeamRoster({ roster, setRoster, isModernSleek = false }:
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="ex: Kylian Mbappé"
+                placeholder="ex: Joueur 12"
                 className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition border ${
                   isModernSleek ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#131b29] border-[#1f293d] text-white focus:border-[#00E599]"
                 }`}

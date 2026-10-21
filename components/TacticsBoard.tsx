@@ -105,117 +105,55 @@ export interface TeamRosterPlayer {
   isStarter?: boolean;
 }
 
-export const defaultManagedTeamRosters: Record<string, TeamRosterPlayer[]> = {
-  team_1: [
-    { id: "t1_p1", name: "Marc-André ter Stegen", role: "GB", number: 1, status: "normal", isStarter: true },
-    { id: "t1_p2", name: "Jules Koundé", role: "DD", number: 23, status: "excellent", isStarter: true },
-    { id: "t1_p3", name: "Ronald Araújo", role: "DC", number: 4, status: "normal", isStarter: true },
-    { id: "t1_p4", name: "Pau Cubarsí", role: "DC", number: 2, status: "excellent", isStarter: true },
-    { id: "t1_p5", name: "Alejandro Balde", role: "DG", number: 3, status: "excellent", isStarter: true },
-    { id: "t1_p6", name: "Frenkie de Jong", role: "MDC", number: 21, status: "normal", isStarter: true },
-    { id: "t1_p7", name: "Pedri", role: "MC", number: 8, status: "excellent", isStarter: true },
-    { id: "t1_p8", name: "Dani Olmo", role: "MOC", number: 20, status: "excellent", isStarter: true },
-    { id: "t1_p9", name: "Lamine Yamal", role: "AiD", number: 19, status: "excellent", isStarter: true },
-    { id: "t1_p10", name: "Robert Lewandowski", role: "BU", number: 9, status: "excellent", isStarter: true },
-    { id: "t1_p11", name: "Raphinha", role: "AiG", number: 11, status: "excellent", isStarter: true },
-    { id: "t1_p12", name: "Gavi", role: "MC", number: 6, status: "excellent", isStarter: false },
-    { id: "t1_p13", name: "Ansu Fati", role: "AC", number: 10, status: "normal", isStarter: false },
-    { id: "t1_p14", name: "Ferran Torres", role: "AC", number: 7, status: "normal", isStarter: false },
-    { id: "t1_p15", name: "Iñigo Martínez", role: "DC", number: 5, status: "normal", isStarter: false },
-    { id: "t1_p16", name: "Fermín López", role: "MC", number: 16, status: "excellent", isStarter: false },
-    { id: "t1_p17", name: "Pablo Torre", role: "MC", number: 14, status: "normal", isStarter: false },
-    { id: "t1_p18", name: "Pau Víctor", role: "AC", number: 18, status: "normal", isStarter: false },
-    { id: "t1_p19", name: "Eric García", role: "DC", number: 24, status: "injured", isStarter: false },
-    { id: "t1_p20", name: "Héctor Fort", role: "DD", number: 32, status: "normal", isStarter: false },
-  ],
-  team_2: [
-    { id: "t2_p1", name: "Diego Kochen", role: "GB", number: 1, status: "normal", isStarter: true },
-    { id: "t2_p2", name: "Landry Farré", role: "DD", number: 2, status: "normal", isStarter: true },
-    { id: "t2_p3", name: "Alexis Olmedo", role: "DC", number: 4, status: "normal", isStarter: true },
-    { id: "t2_p4", name: "Eman Kospo", role: "DC", number: 5, status: "normal", isStarter: true },
-    { id: "t2_p5", name: "Álvaro Cortés", role: "DG", number: 3, status: "normal", isStarter: true },
-    { id: "t2_p6", name: "Marc Bernal", role: "MDC", number: 6, status: "excellent", isStarter: true },
-    { id: "t2_p7", name: "Aleix Garrido", role: "MC", number: 8, status: "normal", isStarter: true },
-    { id: "t2_p8", name: "Unai Hernández", role: "MOC", number: 10, status: "excellent", isStarter: true },
-    { id: "t2_p9", name: "Noah Darvich", role: "AiD", number: 19, status: "excellent", isStarter: true },
-    { id: "t2_p10", name: "Toni Fernández", role: "BU", number: 7, status: "excellent", isStarter: true },
-    { id: "t2_p11", name: "Dani Rodríguez", role: "AiG", number: 11, status: "normal", isStarter: true },
-    { id: "t2_p12", name: "Jan Virgili", role: "BU", number: 9, status: "normal", isStarter: false },
-    { id: "t2_p13", name: "Pau Prim", role: "MDC", number: 14, status: "normal", isStarter: false },
-    { id: "t2_p14", name: "Trilli", role: "DD", number: 12, status: "normal", isStarter: false },
-    { id: "t2_p15", name: "Edu Sánchez", role: "DG", number: 15, status: "normal", isStarter: false },
-    { id: "t2_p16", name: "Aron Yaakobishvili", role: "GB", number: 13, status: "normal", isStarter: false },
-  ],
-  team_3: [
-    { id: "t3_p1", name: "Max Bonfill", role: "GB", number: 1, status: "normal", isStarter: true },
-    { id: "t3_p2", name: "Xavi Espart", role: "DD", number: 2, status: "normal", isStarter: true },
-    { id: "t3_p3", name: "Alexander Walton", role: "DC", number: 5, status: "normal", isStarter: true },
-    { id: "t3_p4", name: "Leo Saca", role: "DC", number: 4, status: "normal", isStarter: true },
-    { id: "t3_p5", name: "Guillem Víctor", role: "DG", number: 3, status: "normal", isStarter: true },
-    { id: "t3_p6", name: "Pedro Soma", role: "MDC", number: 6, status: "normal", isStarter: true },
-    { id: "t3_p7", name: "Brian Fariñas", role: "MC", number: 8, status: "normal", isStarter: true },
-    { id: "t3_p8", name: "Ebrima Tunkara", role: "MOC", number: 10, status: "excellent", isStarter: true },
-    { id: "t3_p9", name: "Nil Calderó", role: "AiD", number: 7, status: "normal", isStarter: true },
-    { id: "t3_p10", name: "Shane Kluivert", role: "BU", number: 9, status: "excellent", isStarter: true },
-    { id: "t3_p11", name: "Juan Hernández", role: "AiG", number: 11, status: "excellent", isStarter: true },
-    { id: "t3_p12", name: "Quim Junyent", role: "MC", number: 16, status: "normal", isStarter: false },
-    { id: "t3_p13", name: "Sama Nomoko", role: "AiD", number: 17, status: "normal", isStarter: false },
-    { id: "t3_p14", name: "Jofre Torrents", role: "DG", number: 18, status: "normal", isStarter: false },
-    { id: "t3_p15", name: "Lorenzo Oertli", role: "DC", number: 12, status: "normal", isStarter: false },
-    { id: "t3_p16", name: "Gerard Valls", role: "GB", number: 13, status: "normal", isStarter: false },
-  ],
-  team_4: [
-    { id: "t4_p1", name: "Cata Coll", role: "GB", number: 1, status: "excellent", isStarter: true },
-    { id: "t4_p2", name: "Ona Batlle", role: "DD", number: 2, status: "excellent", isStarter: true },
-    { id: "t4_p3", name: "Irene Paredes", role: "DC", number: 4, status: "normal", isStarter: true },
-    { id: "t4_p4", name: "Mapi León", role: "DC", number: 5, status: "excellent", isStarter: true },
-    { id: "t4_p5", name: "Fridolina Rolfö", role: "DG", number: 16, status: "normal", isStarter: true },
-    { id: "t4_p6", name: "Patri Guijarro", role: "MDC", number: 12, status: "excellent", isStarter: true },
-    { id: "t4_p7", name: "Aitana Bonmatí", role: "MC", number: 14, status: "excellent", isStarter: true },
-    { id: "t4_p8", name: "Alexia Putellas", role: "MOC", number: 11, status: "excellent", isStarter: true },
-    { id: "t4_p9", name: "Caroline Graham Hansen", role: "AiD", number: 10, status: "excellent", isStarter: true },
-    { id: "t4_p10", name: "Ewa Pajor", role: "BU", number: 9, status: "excellent", isStarter: true },
-    { id: "t4_p11", name: "Salma Paralluelo", role: "AiG", number: 7, status: "excellent", isStarter: true },
-    { id: "t4_p12", name: "Claudia Pina", role: "AC", number: 6, status: "normal", isStarter: false },
-    { id: "t4_p13", name: "Vicky López", role: "MOC", number: 19, status: "excellent", isStarter: false },
-    { id: "t4_p14", name: "Sydney Schertenleib", role: "MC", number: 8, status: "normal", isStarter: false },
-    { id: "t4_p15", name: "Marta Torrejón", role: "DC", number: 3, status: "normal", isStarter: false },
-    { id: "t4_p16", name: "Gemma Font", role: "GB", number: 13, status: "normal", isStarter: false },
-  ]
+export const standardDefaultRoles26: { num: number; role: string; starter: boolean }[] = [
+  { num: 1, role: "GB", starter: true },
+  { num: 2, role: "DD", starter: true },
+  { num: 3, role: "DG", starter: true },
+  { num: 4, role: "DC", starter: true },
+  { num: 5, role: "DC", starter: true },
+  { num: 6, role: "MDC", starter: true },
+  { num: 7, role: "AiD", starter: true },
+  { num: 8, role: "MC", starter: true },
+  { num: 9, role: "BU", starter: true },
+  { num: 10, role: "MOC", starter: true },
+  { num: 11, role: "AiG", starter: true },
+  { num: 12, role: "DD", starter: false },
+  { num: 13, role: "DC", starter: false },
+  { num: 14, role: "DG", starter: false },
+  { num: 15, role: "MDC", starter: false },
+  { num: 16, role: "GB", starter: false },
+  { num: 17, role: "MC", starter: false },
+  { num: 18, role: "MC", starter: false },
+  { num: 19, role: "MOC", starter: false },
+  { num: 20, role: "AiD", starter: false },
+  { num: 21, role: "AiG", starter: false },
+  { num: 22, role: "BU", starter: false },
+  { num: 23, role: "AC", starter: false },
+  { num: 24, role: "DC", starter: false },
+  { num: 25, role: "MC", starter: false },
+  { num: 26, role: "GB", starter: false },
+];
+
+export const generateStandardRoster = (teamId: string): TeamRosterPlayer[] => {
+  return standardDefaultRoles26.map(({ num, role, starter }) => ({
+    id: `${teamId}_p${num}`,
+    name: `Joueur ${num}`,
+    role,
+    number: num,
+    status: "normal",
+    isStarter: starter,
+  }));
 };
 
-export const generateDefaultRosterForCustomTeam = (teamId: string, teamName: string, category: string): TeamRosterPlayer[] => {
-  const isFemale = category.toLowerCase().includes("féminin") || teamName.toLowerCase().includes("féminin");
-  const isYouth = category.toLowerCase().includes("jeune") || category.toLowerCase().includes("u19") || category.toLowerCase().includes("u17") || category.toLowerCase().includes("formation");
+export const defaultManagedTeamRosters: Record<string, TeamRosterPlayer[]> = {
+  team_1: generateStandardRoster("t1"),
+  team_2: generateStandardRoster("t2"),
+  team_3: generateStandardRoster("t3"),
+  team_4: generateStandardRoster("t4"),
+};
 
-  const prefix = isYouth ? "U-" : isFemale ? "F-" : "J-";
-  const defaultRoles = [
-    { num: 1, role: "GB", starter: true },
-    { num: 2, role: "DD", starter: true },
-    { num: 3, role: "DG", starter: true },
-    { num: 4, role: "DC", starter: true },
-    { num: 5, role: "DC", starter: true },
-    { num: 6, role: "MDC", starter: true },
-    { num: 8, role: "MC", starter: true },
-    { num: 10, role: "MOC", starter: true },
-    { num: 7, role: "AiD", starter: true },
-    { num: 9, role: "BU", starter: true },
-    { num: 11, role: "AiG", starter: true },
-    { num: 12, role: "DD", starter: false },
-    { num: 14, role: "MC", starter: false },
-    { num: 15, role: "DG", starter: false },
-    { num: 16, role: "GB", starter: false },
-    { num: 18, role: "AC", starter: false },
-  ];
-
-  return defaultRoles.map((r, idx) => ({
-    id: `${teamId}_p${idx + 1}`,
-    name: `${teamName.split(" ")[0]} ${prefix}${idx + 1}`,
-    role: r.role,
-    number: r.num,
-    status: idx === 7 || idx === 9 ? ("excellent" as const) : ("normal" as const),
-    isStarter: r.starter,
-  }));
+export const generateDefaultRosterForCustomTeam = (teamId: string, _teamName: string, _category: string): TeamRosterPlayer[] => {
+  return generateStandardRoster(teamId);
 };
 
 const defaultTeams: TeamCategory[] = [
@@ -432,98 +370,98 @@ export default function TacticsBoard({
     switch (sport) {
       case "basketball":
         return [
-          { id: "a1", type: "player_a", number: 1, name: "Meneur", role: "PG", x: 28, y: 50 },
-          { id: "a2", type: "player_a", number: 2, name: "Arrière", role: "SG", x: 38, y: 22 },
-          { id: "a3", type: "player_a", number: 3, name: "Ailier", role: "SF", x: 38, y: 78 },
-          { id: "a4", type: "player_a", number: 4, name: "Ailier Fort", role: "PF", x: 42, y: 38 },
-          { id: "a5", type: "player_a", number: 5, name: "Pivot", role: "C", x: 42, y: 62 },
-          { id: "b1", type: "player_b", number: 1, name: "Meneur Adv", role: "PG", x: 72, y: 50 },
-          { id: "b2", type: "player_b", number: 2, name: "Arrière Adv", role: "SG", x: 62, y: 22 },
-          { id: "b3", type: "player_b", number: 3, name: "Ailier Adv", role: "SF", x: 62, y: 78 },
-          { id: "b4", type: "player_b", number: 4, name: "Ailier Fort Adv", role: "PF", x: 58, y: 38 },
-          { id: "b5", type: "player_b", number: 5, name: "Pivot Adv", role: "C", x: 58, y: 62 },
+          { id: "a1", type: "player_a", number: 1, name: "Joueur 1", role: "PG", x: 28, y: 50 },
+          { id: "a2", type: "player_a", number: 2, name: "Joueur 2", role: "SG", x: 38, y: 22 },
+          { id: "a3", type: "player_a", number: 3, name: "Joueur 3", role: "SF", x: 38, y: 78 },
+          { id: "a4", type: "player_a", number: 4, name: "Joueur 4", role: "PF", x: 42, y: 38 },
+          { id: "a5", type: "player_a", number: 5, name: "Joueur 5", role: "C", x: 42, y: 62 },
+          { id: "b1", type: "player_b", number: 1, name: "Joueur 1 Adv", role: "PG", x: 72, y: 50 },
+          { id: "b2", type: "player_b", number: 2, name: "Joueur 2 Adv", role: "SG", x: 62, y: 22 },
+          { id: "b3", type: "player_b", number: 3, name: "Joueur 3 Adv", role: "SF", x: 62, y: 78 },
+          { id: "b4", type: "player_b", number: 4, name: "Joueur 4 Adv", role: "PF", x: 58, y: 38 },
+          { id: "b5", type: "player_b", number: 5, name: "Joueur 5 Adv", role: "C", x: 58, y: 62 },
           { id: "ball", type: "ball", name: "Ballon", role: "Equipement", x: 50, y: 50 },
         ];
 
       case "rugby":
         return [
-          { id: "a1", type: "player_a", number: 1, name: "Pilier G", role: "PIL", x: 40, y: 35 },
-          { id: "a2", type: "player_a", number: 2, name: "Talonneur", role: "TAL", x: 40, y: 50 },
-          { id: "a3", type: "player_a", number: 3, name: "Pilier D", role: "PIL", x: 40, y: 65 },
-          { id: "a4", type: "player_a", number: 4, name: "2e Ligne", role: "2L", x: 33, y: 40 },
-          { id: "a5", type: "player_a", number: 5, name: "2e Ligne", role: "2L", x: 33, y: 60 },
-          { id: "a6", type: "player_a", number: 6, name: "3e Ligne", role: "3L", x: 28, y: 30 },
-          { id: "a7", type: "player_a", number: 7, name: "3e Ligne", role: "3L", x: 28, y: 70 },
-          { id: "a8", type: "player_a", number: 8, name: "N°8", role: "N8", x: 25, y: 50 },
-          { id: "a9", type: "player_a", number: 9, name: "Demi Mêlée", role: "DM", x: 22, y: 45 },
-          { id: "a10", type: "player_a", number: 10, name: "Ouverture", role: "OUV", x: 20, y: 55 },
-          { id: "a11", type: "player_a", number: 11, name: "Ailier G", role: "AIL", x: 18, y: 18 },
-          { id: "a12", type: "player_a", number: 12, name: "Centre", role: "CEN", x: 18, y: 40 },
-          { id: "a13", type: "player_a", number: 13, name: "Centre", role: "CEN", x: 18, y: 60 },
-          { id: "a14", type: "player_a", number: 14, name: "Ailier D", role: "AIL", x: 18, y: 82 },
-          { id: "a15", type: "player_a", number: 15, name: "Arrière", role: "ARR", x: 8, y: 50 },
-          { id: "b1", type: "player_b", number: 1, name: "Pilier G Adv", role: "PIL", x: 60, y: 35 },
-          { id: "b2", type: "player_b", number: 2, name: "Talonneur Adv", role: "TAL", x: 60, y: 50 },
-          { id: "b3", type: "player_b", number: 3, name: "Pilier D Adv", role: "PIL", x: 60, y: 65 },
-          { id: "b4", type: "player_b", number: 4, name: "2e Ligne Adv", role: "2L", x: 67, y: 40 },
-          { id: "b5", type: "player_b", number: 5, name: "2e Ligne Adv", role: "2L", x: 67, y: 60 },
-          { id: "b6", type: "player_b", number: 6, name: "3e Ligne Adv", role: "3L", x: 72, y: 30 },
-          { id: "b7", type: "player_b", number: 7, name: "3e Ligne Adv", role: "3L", x: 72, y: 70 },
-          { id: "b8", type: "player_b", number: 8, name: "N°8 Adv", role: "N8", x: 75, y: 50 },
-          { id: "b9", type: "player_b", number: 9, name: "Demi Mêlée Adv", role: "DM", x: 78, y: 45 },
-          { id: "b10", type: "player_b", number: 10, name: "Ouverture Adv", role: "OUV", x: 80, y: 55 },
-          { id: "b11", type: "player_b", number: 11, name: "Ailier G Adv", role: "AIL", x: 82, y: 18 },
-          { id: "b12", type: "player_b", number: 12, name: "Centre Adv", role: "CEN", x: 82, y: 40 },
-          { id: "b13", type: "player_b", number: 13, name: "Centre Adv", role: "CEN", x: 82, y: 60 },
-          { id: "b14", type: "player_b", number: 14, name: "Ailier D Adv", role: "AIL", x: 82, y: 82 },
-          { id: "b15", type: "player_b", number: 15, name: "Arrière Adv", role: "ARR", x: 92, y: 50 },
+          { id: "a1", type: "player_a", number: 1, name: "Joueur 1", role: "PIL", x: 40, y: 35 },
+          { id: "a2", type: "player_a", number: 2, name: "Joueur 2", role: "TAL", x: 40, y: 50 },
+          { id: "a3", type: "player_a", number: 3, name: "Joueur 3", role: "PIL", x: 40, y: 65 },
+          { id: "a4", type: "player_a", number: 4, name: "Joueur 4", role: "2L", x: 33, y: 40 },
+          { id: "a5", type: "player_a", number: 5, name: "Joueur 5", role: "2L", x: 33, y: 60 },
+          { id: "a6", type: "player_a", number: 6, name: "Joueur 6", role: "3L", x: 28, y: 30 },
+          { id: "a7", type: "player_a", number: 7, name: "Joueur 7", role: "3L", x: 28, y: 70 },
+          { id: "a8", type: "player_a", number: 8, name: "Joueur 8", role: "N8", x: 25, y: 50 },
+          { id: "a9", type: "player_a", number: 9, name: "Joueur 9", role: "DM", x: 22, y: 45 },
+          { id: "a10", type: "player_a", number: 10, name: "Joueur 10", role: "OUV", x: 20, y: 55 },
+          { id: "a11", type: "player_a", number: 11, name: "Joueur 11", role: "AIL", x: 18, y: 18 },
+          { id: "a12", type: "player_a", number: 12, name: "Joueur 12", role: "CEN", x: 18, y: 40 },
+          { id: "a13", type: "player_a", number: 13, name: "Joueur 13", role: "CEN", x: 18, y: 60 },
+          { id: "a14", type: "player_a", number: 14, name: "Joueur 14", role: "AIL", x: 18, y: 82 },
+          { id: "a15", type: "player_a", number: 15, name: "Joueur 15", role: "ARR", x: 8, y: 50 },
+          { id: "b1", type: "player_b", number: 1, name: "Joueur 1 Adv", role: "PIL", x: 60, y: 35 },
+          { id: "b2", type: "player_b", number: 2, name: "Joueur 2 Adv", role: "TAL", x: 60, y: 50 },
+          { id: "b3", type: "player_b", number: 3, name: "Joueur 3 Adv", role: "PIL", x: 60, y: 65 },
+          { id: "b4", type: "player_b", number: 4, name: "Joueur 4 Adv", role: "2L", x: 67, y: 40 },
+          { id: "b5", type: "player_b", number: 5, name: "Joueur 5 Adv", role: "2L", x: 67, y: 60 },
+          { id: "b6", type: "player_b", number: 6, name: "Joueur 6 Adv", role: "3L", x: 72, y: 30 },
+          { id: "b7", type: "player_b", number: 7, name: "Joueur 7 Adv", role: "3L", x: 72, y: 70 },
+          { id: "b8", type: "player_b", number: 8, name: "Joueur 8 Adv", role: "N8", x: 75, y: 50 },
+          { id: "b9", type: "player_b", number: 9, name: "Joueur 9 Adv", role: "DM", x: 78, y: 45 },
+          { id: "b10", type: "player_b", number: 10, name: "Joueur 10 Adv", role: "OUV", x: 80, y: 55 },
+          { id: "b11", type: "player_b", number: 11, name: "Joueur 11 Adv", role: "AIL", x: 82, y: 18 },
+          { id: "b12", type: "player_b", number: 12, name: "Joueur 12 Adv", role: "CEN", x: 82, y: 40 },
+          { id: "b13", type: "player_b", number: 13, name: "Joueur 13 Adv", role: "CEN", x: 82, y: 60 },
+          { id: "b14", type: "player_b", number: 14, name: "Joueur 14 Adv", role: "AIL", x: 82, y: 82 },
+          { id: "b15", type: "player_b", number: 15, name: "Joueur 15 Adv", role: "ARR", x: 92, y: 50 },
           { id: "ball", type: "ball", name: "Ballon", role: "Equipement", x: 50, y: 50 },
         ];
 
       case "handball":
         return [
-          { id: "a1", type: "player_a", number: 1, name: "Gardien", role: "GB", x: 8, y: 50 },
-          { id: "a2", type: "player_a", number: 2, name: "Ailier G", role: "ALG", x: 32, y: 16 },
-          { id: "a3", type: "player_a", number: 3, name: "Arrière G", role: "ARG", x: 30, y: 34 },
-          { id: "a4", type: "player_a", number: 4, name: "Demi Centre", role: "DC", x: 28, y: 50 },
-          { id: "a5", type: "player_a", number: 5, name: "Pivot", role: "PV", x: 42, y: 50 },
-          { id: "a6", type: "player_a", number: 6, name: "Arrière D", role: "ARD", x: 30, y: 66 },
-          { id: "a7", type: "player_a", number: 7, name: "Ailier D", role: "ALD", x: 32, y: 84 },
-          { id: "b1", type: "player_b", number: 1, name: "Gardien Adv", role: "GB", x: 92, y: 50 },
-          { id: "b2", type: "player_b", number: 2, name: "Ailier G Adv", role: "ALG", x: 68, y: 16 },
-          { id: "b3", type: "player_b", number: 3, name: "Arrière G Adv", role: "ARG", x: 70, y: 34 },
-          { id: "b4", type: "player_b", number: 4, name: "Demi Centre Adv", role: "DC", x: 72, y: 50 },
-          { id: "b5", type: "player_b", number: 5, name: "Pivot Adv", role: "PV", x: 58, y: 50 },
-          { id: "b6", type: "player_b", number: 6, name: "Arrière D Adv", role: "ARD", x: 70, y: 66 },
-          { id: "b7", type: "player_b", number: 7, name: "Ailier D Adv", role: "ALD", x: 68, y: 84 },
+          { id: "a1", type: "player_a", number: 1, name: "Joueur 1", role: "GB", x: 8, y: 50 },
+          { id: "a2", type: "player_a", number: 2, name: "Joueur 2", role: "ALG", x: 32, y: 16 },
+          { id: "a3", type: "player_a", number: 3, name: "Joueur 3", role: "ARG", x: 30, y: 34 },
+          { id: "a4", type: "player_a", number: 4, name: "Joueur 4", role: "DC", x: 28, y: 50 },
+          { id: "a5", type: "player_a", number: 5, name: "Joueur 5", role: "PV", x: 42, y: 50 },
+          { id: "a6", type: "player_a", number: 6, name: "Joueur 6", role: "ARD", x: 30, y: 66 },
+          { id: "a7", type: "player_a", number: 7, name: "Joueur 7", role: "ALD", x: 32, y: 84 },
+          { id: "b1", type: "player_b", number: 1, name: "Joueur 1 Adv", role: "GB", x: 92, y: 50 },
+          { id: "b2", type: "player_b", number: 2, name: "Joueur 2 Adv", role: "ALG", x: 68, y: 16 },
+          { id: "b3", type: "player_b", number: 3, name: "Joueur 3 Adv", role: "ARG", x: 70, y: 34 },
+          { id: "b4", type: "player_b", number: 4, name: "Joueur 4 Adv", role: "DC", x: 72, y: 50 },
+          { id: "b5", type: "player_b", number: 5, name: "Joueur 5 Adv", role: "PV", x: 58, y: 50 },
+          { id: "b6", type: "player_b", number: 6, name: "Joueur 6 Adv", role: "ARD", x: 70, y: 66 },
+          { id: "b7", type: "player_b", number: 7, name: "Joueur 7 Adv", role: "ALD", x: 68, y: 84 },
           { id: "ball", type: "ball", name: "Ballon", role: "Equipement", x: 50, y: 50 },
         ];
 
       case "football":
       default:
         return [
-          { id: "a1", type: "player_a", number: 1, name: "Ter Stegen", role: "G", x: 8, y: 50 },
-          { id: "a2", type: "player_a", number: 4, name: "Araújo", role: "DC", x: 24, y: 35 },
-          { id: "a3", type: "player_a", number: 5, name: "Cubarsí", role: "DC", x: 24, y: 65 },
-          { id: "a4", type: "player_a", number: 23, name: "Koundé", role: "DD", x: 28, y: 80 },
-          { id: "a5", type: "player_a", number: 3, name: "Balde", role: "DG", x: 28, y: 20 },
-          { id: "a6", type: "player_a", number: 21, name: "De Jong", role: "MDC", x: 44, y: 50 },
-          { id: "a7", type: "player_a", number: 8, name: "Pedri", role: "MC", x: 55, y: 32 },
-          { id: "a8", type: "player_a", number: 20, name: "Dani Olmo", role: "MOC", x: 55, y: 68 },
-          { id: "a9", type: "player_a", number: 11, name: "Raphinha", role: "AiG", x: 74, y: 20 },
-          { id: "a10", type: "player_a", number: 19, name: "Lamine Yamal", role: "AiD", x: 74, y: 80 },
-          { id: "a11", type: "player_a", number: 9, name: "Lewandowski", role: "AC", x: 78, y: 50 },
-          { id: "b1", type: "player_b", number: 1, name: "Gardien Adv", role: "G", x: 92, y: 50 },
-          { id: "b2", type: "player_b", number: 4, name: "Défenseur Adv", role: "DC", x: 76, y: 35 },
-          { id: "b3", type: "player_b", number: 5, name: "Défenseur Adv", role: "DC", x: 76, y: 65 },
-          { id: "b4", type: "player_b", number: 2, name: "Latéral Adv", role: "DG", x: 72, y: 80 },
-          { id: "b5", type: "player_b", number: 3, name: "Latéral Adv", role: "DD", x: 72, y: 20 },
-          { id: "b6", type: "player_b", number: 6, name: "Milieu Adv", role: "MDC", x: 56, y: 50 },
-          { id: "b7", type: "player_b", number: 7, name: "Milieu Adv", role: "MC", x: 45, y: 32 },
-          { id: "b8", type: "player_b", number: 8, name: "Milieu Adv", role: "MOC", x: 45, y: 68 },
-          { id: "b9", type: "player_b", number: 11, name: "Attaquant Adv", role: "AiG", x: 26, y: 20 },
-          { id: "b10", type: "player_b", number: 10, name: "Attaquant Adv", role: "AiD", x: 26, y: 80 },
-          { id: "b11", type: "player_b", number: 9, name: "Buteur Adv", role: "AC", x: 22, y: 50 },
+          { id: "a1", type: "player_a", number: 1, name: "Joueur 1", role: "G", x: 8, y: 50 },
+          { id: "a2", type: "player_a", number: 2, name: "Joueur 2", role: "DD", x: 28, y: 80 },
+          { id: "a3", type: "player_a", number: 3, name: "Joueur 3", role: "DG", x: 28, y: 20 },
+          { id: "a4", type: "player_a", number: 4, name: "Joueur 4", role: "DC", x: 24, y: 35 },
+          { id: "a5", type: "player_a", number: 5, name: "Joueur 5", role: "DC", x: 24, y: 65 },
+          { id: "a6", type: "player_a", number: 6, name: "Joueur 6", role: "MDC", x: 44, y: 50 },
+          { id: "a7", type: "player_a", number: 7, name: "Joueur 7", role: "AiD", x: 74, y: 80 },
+          { id: "a8", type: "player_a", number: 8, name: "Joueur 8", role: "MC", x: 55, y: 32 },
+          { id: "a9", type: "player_a", number: 9, name: "Joueur 9", role: "AC", x: 78, y: 50 },
+          { id: "a10", type: "player_a", number: 10, name: "Joueur 10", role: "MOC", x: 55, y: 68 },
+          { id: "a11", type: "player_a", number: 11, name: "Joueur 11", role: "AiG", x: 74, y: 20 },
+          { id: "b1", type: "player_b", number: 1, name: "Joueur 1 Adv", role: "G", x: 92, y: 50 },
+          { id: "b2", type: "player_b", number: 2, name: "Joueur 2 Adv", role: "DD", x: 72, y: 20 },
+          { id: "b3", type: "player_b", number: 3, name: "Joueur 3 Adv", role: "DG", x: 72, y: 80 },
+          { id: "b4", type: "player_b", number: 4, name: "Joueur 4 Adv", role: "DC", x: 76, y: 35 },
+          { id: "b5", type: "player_b", number: 5, name: "Joueur 5 Adv", role: "DC", x: 76, y: 65 },
+          { id: "b6", type: "player_b", number: 6, name: "Joueur 6 Adv", role: "MDC", x: 56, y: 50 },
+          { id: "b7", type: "player_b", number: 7, name: "Joueur 7 Adv", role: "MC", x: 45, y: 32 },
+          { id: "b8", type: "player_b", number: 8, name: "Joueur 8 Adv", role: "MOC", x: 45, y: 68 },
+          { id: "b9", type: "player_b", number: 9, name: "Joueur 9 Adv", role: "AC", x: 22, y: 50 },
+          { id: "b10", type: "player_b", number: 10, name: "Joueur 10 Adv", role: "AiD", x: 26, y: 80 },
+          { id: "b11", type: "player_b", number: 11, name: "Joueur 11 Adv", role: "AiG", x: 26, y: 20 },
           { id: "ball", type: "ball", name: "Ballon", role: "Equipement", x: 52, y: 50 },
         ];
     }
@@ -828,7 +766,15 @@ export default function TacticsBoard({
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (parsed && typeof parsed === "object") return parsed;
+          if (parsed && typeof parsed === "object") {
+            // Auto-migrate legacy rosters that contain real player names (e.g. Lewandowski, Pedri, etc.)
+            const str = JSON.stringify(parsed);
+            if (/(Stegen|Araújo|Cubarsí|Koundé|Lewandowski|Raphinha|Pedri|Gavi|Fati|Torres|Yamal|De Jong|Mbappé|Benzema|Courtois)/i.test(str)) {
+              localStorage.removeItem("thebox_team_rosters");
+              return defaultManagedTeamRosters;
+            }
+            return parsed;
+          }
         } catch (e) { }
       }
     }
@@ -1787,44 +1733,42 @@ export default function TacticsBoard({
     }
   };
 
-  // Roster / Substitutes (16 real bench players)
+  // Roster / Substitutes (15 bench players: Joueur 12 to 26)
   const [substitutes, setSubstitutes] = useState<any[]>([
-    { id: "s1", name: "Gavi", role: "MC", number: 6, status: "excellent" },
-    { id: "s2", name: "Ferran Torres", role: "AC", number: 7, status: "normal" },
-    { id: "s3", name: "Ansu Fati", role: "AC", number: 10, status: "tired" },
-    { id: "s4", name: "Iñaki Peña", role: "G", number: 13, status: "normal" },
-    { id: "s5", name: "Pablo Torre", role: "MC", number: 14, status: "normal" },
-    { id: "s6", name: "Fermín López", role: "MC", number: 16, status: "excellent" },
-    { id: "s7", name: "Marc Casadó", role: "MDC", number: 17, status: "excellent" },
-    { id: "s8", name: "Pau Víctor", role: "AC", number: 18, status: "normal" },
-    { id: "s9", name: "Iñigo Martínez", role: "DC", number: 2, status: "normal" },
-    { id: "s10", name: "Eric García", role: "DC", number: 24, status: "injured" },
-    { id: "s11", name: "Ander Astralaga", role: "G", number: 26, status: "normal" },
-    { id: "s12", name: "Quim Junyent", role: "MC", number: 28, status: "normal" },
-    { id: "s13", name: "Guille Fernández", role: "MC", number: 30, status: "excellent" },
-    { id: "s14", name: "Héctor Fort", role: "DD", number: 32, status: "normal" },
-    { id: "s15", name: "Gerard Martín", role: "DG", number: 35, status: "normal" },
-    { id: "s16", name: "Sergi Domínguez", role: "DC", number: 36, status: "normal" }
+    { id: "s1", name: "Joueur 12", role: "DD", number: 12, status: "normal" },
+    { id: "s2", name: "Joueur 13", role: "DC", number: 13, status: "normal" },
+    { id: "s3", name: "Joueur 14", role: "DG", number: 14, status: "normal" },
+    { id: "s4", name: "Joueur 15", role: "MDC", number: 15, status: "normal" },
+    { id: "s5", name: "Joueur 16", role: "GB", number: 16, status: "normal" },
+    { id: "s6", name: "Joueur 17", role: "MC", number: 17, status: "normal" },
+    { id: "s7", name: "Joueur 18", role: "MC", number: 18, status: "normal" },
+    { id: "s8", name: "Joueur 19", role: "MOC", number: 19, status: "normal" },
+    { id: "s9", name: "Joueur 20", role: "AiD", number: 20, status: "normal" },
+    { id: "s10", name: "Joueur 21", role: "AiG", number: 21, status: "normal" },
+    { id: "s11", name: "Joueur 22", role: "BU", number: 22, status: "normal" },
+    { id: "s12", name: "Joueur 23", role: "AC", number: 23, status: "normal" },
+    { id: "s13", name: "Joueur 24", role: "DC", number: 24, status: "normal" },
+    { id: "s14", name: "Joueur 25", role: "MC", number: 25, status: "normal" },
+    { id: "s15", name: "Joueur 26", role: "GB", number: 26, status: "normal" }
   ]);
 
-  // Opponent Roster / Substitutes (16 bench players for opponent team)
+  // Opponent Roster / Substitutes (15 bench players for opponent team: Joueur 12 Adv to 26 Adv)
   const [opponentSubstitutes, setOpponentSubstitutes] = useState<any[]>([
-    { id: "opp_s1", name: "Remplaçant 1", role: "MC", number: 12, status: "normal" },
-    { id: "opp_s2", name: "Remplaçant 2", role: "AC", number: 13, status: "normal" },
-    { id: "opp_s3", name: "Remplaçant 3", role: "DC", number: 14, status: "normal" },
-    { id: "opp_s4", name: "Remplaçant 4", role: "AiD", number: 15, status: "normal" },
-    { id: "opp_s5", name: "Remplaçant 5", role: "GB", number: 16, status: "normal" },
-    { id: "opp_s6", name: "Remplaçant 6", role: "DD", number: 17, status: "normal" },
-    { id: "opp_s7", name: "Remplaçant 7", role: "DG", number: 18, status: "normal" },
-    { id: "opp_s8", name: "Remplaçant 8", role: "MDC", number: 19, status: "normal" },
-    { id: "opp_s9", name: "Remplaçant 9", role: "MOC", number: 20, status: "normal" },
-    { id: "opp_s10", name: "Remplaçant 10", role: "AiG", number: 21, status: "normal" },
-    { id: "opp_s11", name: "Remplaçant 11", role: "DC", number: 22, status: "normal" },
-    { id: "opp_s12", name: "Remplaçant 12", role: "MC", number: 23, status: "normal" },
-    { id: "opp_s13", name: "Remplaçant 13", role: "BU", number: 24, status: "normal" },
-    { id: "opp_s14", name: "Remplaçant 14", role: "G", number: 25, status: "normal" },
-    { id: "opp_s15", name: "Remplaçant 15", role: "MC", number: 26, status: "normal" },
-    { id: "opp_s16", name: "Remplaçant 16", role: "DC", number: 27, status: "normal" }
+    { id: "opp_s1", name: "Joueur 12 Adv", role: "DD", number: 12, status: "normal" },
+    { id: "opp_s2", name: "Joueur 13 Adv", role: "DC", number: 13, status: "normal" },
+    { id: "opp_s3", name: "Joueur 14 Adv", role: "DG", number: 14, status: "normal" },
+    { id: "opp_s4", name: "Joueur 15 Adv", role: "MDC", number: 15, status: "normal" },
+    { id: "opp_s5", name: "Joueur 16 Adv", role: "GB", number: 16, status: "normal" },
+    { id: "opp_s6", name: "Joueur 17 Adv", role: "MC", number: 17, status: "normal" },
+    { id: "opp_s7", name: "Joueur 18 Adv", role: "MC", number: 18, status: "normal" },
+    { id: "opp_s8", name: "Joueur 19 Adv", role: "MOC", number: 19, status: "normal" },
+    { id: "opp_s9", name: "Joueur 20 Adv", role: "AiD", number: 20, status: "normal" },
+    { id: "opp_s10", name: "Joueur 21 Adv", role: "AiG", number: 21, status: "normal" },
+    { id: "opp_s11", name: "Joueur 22 Adv", role: "BU", number: 22, status: "normal" },
+    { id: "opp_s12", name: "Joueur 23 Adv", role: "AC", number: 23, status: "normal" },
+    { id: "opp_s13", name: "Joueur 24 Adv", role: "DC", number: 24, status: "normal" },
+    { id: "opp_s14", name: "Joueur 25 Adv", role: "MC", number: 25, status: "normal" },
+    { id: "opp_s15", name: "Joueur 26 Adv", role: "GB", number: 26, status: "normal" }
   ]);
 
   // Persist substitutes per match
@@ -2548,7 +2492,7 @@ export default function TacticsBoard({
       const newTeamBPlayers: Token[] = coords.map((c, idx) => {
         const existingP = existingTeamB[idx];
         const defaultP = defaultTokens[idx] || {
-          name: `B${idx + 1}`,
+          name: `Joueur ${idx + 1} Adv`,
           role: "ADV",
           number: idx + 1
         };
@@ -2646,7 +2590,7 @@ export default function TacticsBoard({
 
       const updatedTeamB: Token[] = coordsB.map((c, idx) => {
         const existingP = teamBToPlace[idx];
-        const defaultP = defaultTokensB[idx] || { name: `B${idx + 1}`, role: "ADV", number: idx + 1 };
+        const defaultP = defaultTokensB[idx] || { name: `Joueur ${idx + 1} Adv`, role: "ADV", number: idx + 1 };
         const campX = 94 - ((100 - c.x) / 100) * 36;
         return {
           id: existingP ? existingP.id : `player_b_${idx}`,
@@ -3362,7 +3306,7 @@ export default function TacticsBoard({
       const newId = `opp_sub_${Date.now()}_${newNum}`;
       const newSub = {
         id: newId,
-        name: `Remplaçant ${newNum}`,
+        name: `Joueur ${newNum} Adv`,
         number: newNum,
         role: activeSport === "football" ? "SUB" : "Remplaçant",
         status: "normal",
@@ -3373,7 +3317,7 @@ export default function TacticsBoard({
       const newId = `sub_${Date.now()}_${newNum}`;
       const newSub = {
         id: newId,
-        name: `Nouveau Joueur ${newNum}`,
+        name: `Joueur ${newNum}`,
         number: newNum,
         role: activeSport === "football" ? "SUB" : "Remplaçant",
         status: "normal",
