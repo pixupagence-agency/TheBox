@@ -763,7 +763,7 @@ export default function LandingPage({
                   onOpenSupportModal();
                 } else {
                   window.location.href = isAdmin 
-                    ? "mailto:pixup.agence@gmail.com?subject=%5BSupport%5D%20Demande%20d'assistance"
+                    ? "mailto:support@thebox-tactique.com?subject=%5BSupport%5D%20Demande%20d'assistance"
                     : "#contact";
                 }
               }}

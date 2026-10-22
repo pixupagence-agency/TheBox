@@ -754,7 +754,7 @@ export default function SubscriptionPlans({
                   type="button"
                   onClick={() => {
                     setCardNumber("4242424242424242");
-                    setCardName("COACH PIXUP");
+                    setCardName("COACH THE BOX");
                     setExpiry("12/28");
                     setCvc("123");
                   }}

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Language, getStoredLanguage, translations } from "@/lib/i18n";
 
-const TARGET_CONTACT_EMAIL = "pixup.agence@gmail.com";
+const TARGET_CONTACT_EMAIL = "contact@thebox-tactique.com";
 
 interface LandingContactSectionProps {
   isAdmin?: boolean;

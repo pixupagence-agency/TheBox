@@ -36,5 +36,5 @@ export function getMailTransporter() {
   });
 }
 
-export const DEFAULT_FROM_EMAIL = process.env.SMTP_FROM || '"The Box" <pixup.agence@gmail.com>';
-export const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "pixup.agence@gmail.com";
+export const DEFAULT_FROM_EMAIL = process.env.SMTP_FROM || '"The Box" <contact@thebox-tactique.com>';
+export const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "contact@thebox-tactique.com";

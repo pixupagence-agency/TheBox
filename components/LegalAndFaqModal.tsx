@@ -422,7 +422,7 @@ export default function LegalAndFaqModal({
                     if (onOpenSupport) {
                       onOpenSupport();
                     } else {
-                      window.location.href = "mailto:pixup.agence@gmail.com?subject=%5BSupport%5D%20Demande%20d'assistance";
+                      window.location.href = "mailto:support@thebox-tactique.com?subject=%5BSupport%5D%20Demande%20d'assistance";
                     }
                   }}
                   className={`px-4 py-2 font-black text-xs rounded-lg transition cursor-pointer shrink-0 ${isModernSleek

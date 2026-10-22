@@ -292,7 +292,7 @@ export default function Home() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const uid = firebaseUser.uid;
-        const email = firebaseUser.email || "pixup.agence@gmail.com";
+        const email = firebaseUser.email || "";
         const displayName = firebaseUser.displayName || "Coach Principal";
         const parts = displayName.split(" ");
         const first = parts[0] || "Coach";

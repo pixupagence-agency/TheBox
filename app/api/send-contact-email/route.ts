@@ -11,7 +11,7 @@ import {
   isBotDetected 
 } from "@/lib/security";
 
-const TARGET_CONTACT_EMAIL = "pixup.agence@gmail.com";
+const TARGET_CONTACT_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "contact@thebox-tactique.com";
 
 export async function POST(req: NextRequest) {
   try {

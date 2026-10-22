@@ -30,7 +30,7 @@ interface SupportContactModalProps {
   isModernSleek?: boolean;
 }
 
-const SUPPORT_EMAIL_TARGET = "pixup.agence@gmail.com";
+const SUPPORT_EMAIL_TARGET = "support@thebox-tactique.com";
 
 const PRESET_CATEGORIES = [
   { id: "tech", label: "Problème technique / Bug", prefix: "[Support] Bug :" },

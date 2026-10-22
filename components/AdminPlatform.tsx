@@ -360,7 +360,7 @@ export default function AdminPlatform({
               </div>
               <p className={`text-xs font-medium flex items-center gap-2 mt-0.5 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                 <span>Compte connecté :</span>
-                <strong className={`font-mono ${isModernSleek ? "text-emerald-800 font-bold" : "text-[#00E599]"}`}>{activeCoach.email || "pixup.agence@gmail.com"}</strong>
+                <strong className={`font-mono ${isModernSleek ? "text-emerald-800 font-bold" : "text-[#00E599]"}`}>{activeCoach.email || "admin@thebox-tactique.com"}</strong>
               </p>
             </div>
           </div>
