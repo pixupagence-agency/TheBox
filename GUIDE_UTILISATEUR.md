@@ -83,6 +83,12 @@ Le terrain central vous permet de positionner et manipuler tous les acteurs d'un
 * **Équipe B (Adversaires)** : Pions distincts pour simuler le bloc ou le pressing adverse.
 * **Ballon de match** : Positionnable à la main sur n'importe quel point du terrain.
 
+### Représentation visuelle des joueurs (Options d'affichage) :
+Depuis la barre d'options du terrain, choisissez le style de représentation adapté à vos séances :
+* ⚪ **Pastille (Classique)** : Pastille circulaire épurée affichant le numéro ou le poste, idéale pour la clarté tactique rapide et la vision d'ensemble.
+* 👕 **Buste (Maillot)** : Silhouette de maillot athlétique aux couleurs de l'équipe avec le numéro floqué sur la poitrine, offrant une immersion visuelle proche des tableaux professionnels.
+* 👤 **Tête du joueur** : Avatar 3D stylisé sans fond par défaut distinct pour chaque équipe : joueur brun en maillot vert pour **MON ÉQUIPE** (maillot jaune éclatant pour son gardien de but) et joueur blond en maillot rouge pour **MON ADVERSAIRE** (maillot bleu roi pour son gardien), ou photo réelle détourée si personnalisée.
+
 ### Actions sur un joueur :
 * **Déplacement** : Glisser-déposer fluide à la souris ou au doigt sur écran tactile.
 * **Personnalisation (Double-clic)** : Modifiez le nom, le numéro, la photo ou le poste du joueur.

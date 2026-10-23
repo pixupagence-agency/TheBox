@@ -18,7 +18,7 @@ import {
   MousePointer, Move, ArrowUpRight, Settings, Info, FileText, Camera,
   Mic, Trash, Eye, Globe, LogOut, ChevronDown, Award, Eraser, Lock, X, User, Users,
   Search, UserCheck, Upload, ArrowLeftRight, Zap, AlertCircle, Cloud, Filter, Film,
-  Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target
+  Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target, Shirt, Circle
 } from "lucide-react";
 import { saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
 import { isSuperAdminEmail } from "@/lib/security";
@@ -197,7 +197,180 @@ const safeLocalStorageSetItem = (key: string, value: string) => {
   }
 };
 
-const compressImage = (file: File, maxWidth = 160, maxHeight = 160, quality = 0.75): Promise<string> => {
+// Suppression automatique du fond (détourage automatique par flood-fill depuis les bords)
+const autoRemoveBackgroundFromCanvas = (canvas: HTMLCanvasElement): void => {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return;
+  const width = canvas.width;
+  const height = canvas.height;
+  const imgData = ctx.getImageData(0, 0, width, height);
+  const data = imgData.data;
+
+  const totalPixels = width * height;
+  const visited = new Uint8Array(totalPixels);
+
+  // Échantillons de couleur de fond sur les coins et le bord supérieur
+  const sampleCoords = [
+    [0, 0], [1, 0], [2, 0],
+    [width - 1, 0], [width - 2, 0], [width - 3, 0],
+    [0, 1], [width - 1, 1],
+    [0, 2], [width - 1, 2],
+    [Math.floor(width / 2), 0]
+  ];
+
+  type ColorSample = { r: number; g: number; b: number; a: number };
+  const samples: ColorSample[] = [];
+
+  for (const [sx, sy] of sampleCoords) {
+    const sIdx = (sy * width + sx) * 4;
+    const sa = data[sIdx + 3];
+    if (sa > 20) {
+      samples.push({ r: data[sIdx], g: data[sIdx + 1], b: data[sIdx + 2], a: sa });
+    }
+  }
+
+  // Si tous les points de la bordure supérieure sont déjà transparents, l'image est déjà détourée
+  if (samples.length === 0) return;
+
+  const avgR = samples.reduce((acc, s) => acc + s.r, 0) / samples.length;
+  const avgG = samples.reduce((acc, s) => acc + s.g, 0) / samples.length;
+  const avgB = samples.reduce((acc, s) => acc + s.b, 0) / samples.length;
+  const isCornerNeutral = Math.abs(avgR - avgG) < 25 && Math.abs(avgG - avgB) < 25;
+
+  const isBgPixel = (r: number, g: number, b: number, a: number): boolean => {
+    if (a < 25) return true; // Déjà transparent
+
+    const maxC = Math.max(r, g, b);
+    const minC = Math.min(r, g, b);
+    const isNeutral = (maxC - minC) < 35;
+
+    // 1. Fond blanc, gris clair ou studio neutre
+    if (isNeutral && minC > 130) return true;
+
+    // 2. Si le fond du coin est neutre et que ce pixel est également neutre
+    if (isCornerNeutral && isNeutral && Math.abs(maxC - Math.max(avgR, avgG, avgB)) < 60) {
+      return true;
+    }
+
+    // 3. Proximité avec l'un des échantillons de bordure (distance Manhattan)
+    for (const s of samples) {
+      const diff = Math.abs(r - s.r) + Math.abs(g - s.g) + Math.abs(b - s.b);
+      if (diff < 58) return true;
+    }
+
+    return false;
+  };
+
+  // File BFS débutant sur les bords extérieurs
+  const queueX: number[] = [];
+  const queueY: number[] = [];
+
+  // Ligne supérieure complète
+  for (let x = 0; x < width; x++) {
+    queueX.push(x);
+    queueY.push(0);
+  }
+
+  // Bords gauche et droit jusqu'à 80% de la hauteur
+  const maxSideY = Math.floor(height * 0.8);
+  for (let y = 1; y < maxSideY; y++) {
+    queueX.push(0);
+    queueY.push(y);
+    queueX.push(width - 1);
+    queueY.push(y);
+  }
+
+  let qHead = 0;
+  while (qHead < queueX.length) {
+    const px = queueX[qHead];
+    const py = queueY[qHead];
+    qHead++;
+
+    const pIdx = py * width + px;
+    if (visited[pIdx]) continue;
+    visited[pIdx] = 1;
+
+    const dIdx = pIdx * 4;
+    const r = data[dIdx];
+    const g = data[dIdx + 1];
+    const b = data[dIdx + 2];
+    const a = data[dIdx + 3];
+
+    if (isBgPixel(r, g, b, a)) {
+      // Rendre transparent
+      data[dIdx + 3] = 0;
+
+      // Étendre aux 4 voisins
+      if (px > 0 && !visited[pIdx - 1]) {
+        queueX.push(px - 1);
+        queueY.push(py);
+      }
+      if (px < width - 1 && !visited[pIdx + 1]) {
+        queueX.push(px + 1);
+        queueY.push(py);
+      }
+      if (py > 0 && !visited[pIdx - width]) {
+        queueX.push(px);
+        queueY.push(py - 1);
+      }
+      if (py < height - 1 && !visited[pIdx + width]) {
+        queueX.push(px);
+        queueY.push(py + 1);
+      }
+    }
+  }
+
+  // Nettoyage des halos périphériques sur les contours
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const pIdx = y * width + x;
+      const dIdx = pIdx * 4;
+      if (data[dIdx + 3] > 0) {
+        const topAlpha = data[((y - 1) * width + x) * 4 + 3];
+        const botAlpha = data[((y + 1) * width + x) * 4 + 3];
+        const leftAlpha = data[(y * width + x - 1) * 4 + 3];
+        const rightAlpha = data[(y * width + x + 1) * 4 + 3];
+
+        if (topAlpha === 0 || botAlpha === 0 || leftAlpha === 0 || rightAlpha === 0) {
+          const r = data[dIdx];
+          const g = data[dIdx + 1];
+          const b = data[dIdx + 2];
+          const minC = Math.min(r, g, b);
+          const maxC = Math.max(r, g, b);
+          if ((maxC - minC) < 32 && minC > 135) {
+            data[dIdx + 3] = 0;
+          }
+        }
+      }
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+};
+
+// Traitement automatique d'une data URL pour supprimer le fond de base
+const autoRemoveBackgroundFromDataUrl = (src: string): Promise<string> => {
+  return new Promise((resolve) => {
+    if (!src || src.startsWith("data:image/svg")) return resolve(src);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return resolve(src);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      autoRemoveBackgroundFromCanvas(canvas);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(src);
+    img.src = src;
+  });
+};
+
+const compressImage = (file: File, maxWidth = 180, maxHeight = 180, _quality = 0.85): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -223,13 +396,21 @@ const compressImage = (file: File, maxWidth = 160, maxHeight = 160, quality = 0.
 
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (!ctx) {
           resolve(src);
           return;
         }
+
+        // Nettoyer complètement le canvas pour garantir la transparence
+        ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+
+        // SUPPRESSION AUTOMATIQUE DU FOND DE BASE :
+        autoRemoveBackgroundFromCanvas(canvas);
+
+        // Export systématique en PNG avec transparence intégrale
+        resolve(canvas.toDataURL("image/png"));
       };
       img.onerror = () => resolve(src);
       img.src = src;
@@ -533,6 +714,23 @@ export default function TacticsBoard({
       localStorage.setItem("thebox_show_player_names", String(showPlayerNames));
     }
   }, [showPlayerNames]);
+
+  // Choix de la représentation des joueurs : Pastille ("dot"), Buste ("jersey") ou Tête ("head")
+  const [playerRepresentation, setPlayerRepresentation] = useState<"dot" | "jersey" | "head">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("thebox_player_representation");
+      if (saved === "dot" || saved === "jersey" || saved === "head") {
+        return saved;
+      }
+    }
+    return "dot";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("thebox_player_representation", playerRepresentation);
+    }
+  }, [playerRepresentation]);
 
   // Flanking Panels Collapse States (for iPad & small screens)
   const [isTeamAPanelCollapsed, setIsTeamAPanelCollapsed] = useState<boolean>(() => {
@@ -1233,7 +1431,7 @@ export default function TacticsBoard({
       dateTime: "DIM. 25 AVRIL • 15:00"
     };
 
-  const displayClubTitle = activeMatch?.homeTeam || activeTeam?.name || "MON CLUB";
+  const displayClubTitle = activeMatch?.homeTeam || activeTeam?.name || "MON EQUIPE";
 
   // LIVE MATCH Mode State
   const [isLiveMatchMode, setIsLiveMatchMode] = useState<boolean>(false);
@@ -1511,7 +1709,7 @@ export default function TacticsBoard({
     const newM = {
       id: newId,
       teamId: targetTeamId,
-      homeTeam: targetTeam?.name || "MON CLUB",
+      homeTeam: targetTeam?.name || "MON EQUIPE",
       awayTeam: "NOUVEL ADVERSAIRE",
       competition: "CHAMPIONNAT",
       dateTime: "DIM. PROCHAIN • 15:00",
@@ -1700,7 +1898,7 @@ export default function TacticsBoard({
       const newMatchObj = {
         id: newId,
         teamId: activeTeamId,
-        homeTeam: targetTeam?.name || "MON CLUB",
+        homeTeam: targetTeam?.name || "MON EQUIPE",
         awayTeam: "ADVERSAIRE",
         competition: "CHAMPIONNAT",
         dateTime: "DIM. PROCHAIN • 15:00",
@@ -1843,6 +2041,27 @@ export default function TacticsBoard({
   }, [isPitchFullscreen, isBoardFullscreen, terrainComplet, aspectRatioMode, isLiveMatchMode]);
 
   const currentTokens = keyframes[currentFrameIdx] || [];
+
+  // Cache et nettoyage automatique systématique du fond des photos de joueurs (de base, sans bouton requis)
+  const [autoTransparentCache, setAutoTransparentCache] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    currentTokens.forEach((token) => {
+      const photo = token.photo;
+      if (photo && !photo.startsWith("data:image/svg") && !autoTransparentCache[photo]) {
+        autoRemoveBackgroundFromDataUrl(photo).then((cleaned) => {
+          if (cleaned && cleaned !== photo) {
+            setAutoTransparentCache((prev) => ({ ...prev, [photo]: cleaned }));
+            setKeyframes((prevFrames) =>
+              prevFrames.map((frame) =>
+                frame.map((tok) => (tok.id === token.id ? { ...tok, photo: cleaned } : tok))
+              )
+            );
+          }
+        });
+      }
+    });
+  }, [currentTokens, autoTransparentCache]);
 
   // Auto-scroll edit panel into view whenever a player token is selected
   useEffect(() => {
@@ -4020,7 +4239,7 @@ export default function TacticsBoard({
       setIsAnimationCreatorOpen(true);
       setSleekToastMessage(`🎬 Animation "${schema.name}" loaded (${schema.keyframes?.length || 1} étapes) !`);
     } else {
-      setSleekToastMessage(`🎯 Schéma "${schema.name}" chargé pour le match "${activeMatch?.homeTeam || 'Mon Club'} VS ${activeMatch?.awayTeam || 'Adversaire'}" !`);
+      setSleekToastMessage(`🎯 Schéma "${schema.name}" chargé pour le match "${activeMatch?.homeTeam || 'Mon Équipe'} VS ${activeMatch?.awayTeam || 'Adversaire'}" !`);
     }
     setTimeout(() => setSleekToastMessage(null), 2500);
   };
@@ -4698,7 +4917,58 @@ export default function TacticsBoard({
       ctx.beginPath();
       ctx.arc(tokX, tokY, radius, 0, 2 * Math.PI);
 
-      if (token.type === "player_a") {
+      if (playerRepresentation === "jersey" && (token.type === "player_a" || token.type === "player_b")) {
+        const isTeamB = token.type === "player_b";
+        const jerseyFill = isTeamB ? (teamBColor || "#e11d48") : (teamAColor || "#00E599");
+        const strokeColor = isTeamB ? "#ffffff" : "#0d131f";
+        const textColor = isTeamB ? "#ffffff" : "#090d14";
+
+        ctx.save();
+        ctx.translate(tokX, tokY);
+        const s = radius / 22;
+        ctx.scale(s, s);
+
+        ctx.beginPath();
+        ctx.moveTo(-7, -19);
+        ctx.bezierCurveTo(-4, -15, 4, -15, 7, -19);
+        ctx.lineTo(19, -13);
+        ctx.lineTo(21, -2);
+        ctx.lineTo(13, 1);
+        ctx.lineTo(11, -4);
+        ctx.lineTo(11, 22);
+        ctx.lineTo(-11, 22);
+        ctx.lineTo(-11, -4);
+        ctx.lineTo(-13, 1);
+        ctx.lineTo(-21, -2);
+        ctx.lineTo(-19, -13);
+        ctx.closePath();
+
+        ctx.fillStyle = jerseyFill;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = textColor;
+        ctx.font = "900 14px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(token.number ?? token.role ?? (isTeamB ? "B" : "A")), 0, 7);
+        ctx.restore();
+      } else if (playerRepresentation === "head" && (token.type === "player_a" || token.type === "player_b")) {
+        // Mode Tête du joueur : Fond transparent sans cercle extérieur
+        ctx.beginPath();
+        ctx.ellipse(tokX, tokY - 2, radius * 0.8, radius * 0.95, 0, 0, 2 * Math.PI);
+        ctx.fillStyle = "#fed7aa";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(tokX, tokY - 5, radius * 0.8, Math.PI, 0, false);
+        ctx.fillStyle = token.type === "player_b" ? "#d97706" : "#1e293b";
+        ctx.fill();
+
+        ctx.restore();
+      } else if (token.type === "player_a") {
         ctx.fillStyle = teamAColor || "#00E599";
         ctx.fill();
         ctx.strokeStyle = "#ffffff";
@@ -5229,22 +5499,25 @@ export default function TacticsBoard({
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             {/* Photo / Avatar */}
             <div className="relative shrink-0">
-              {activeToken.photo ? (
-                <img
-                  src={activeToken.photo}
-                  alt={activeToken.name}
-                  className={`w-8 h-8 rounded-full object-cover border-2 ${isHome ? "border-[#00E599]" : "border-rose-500"}`}
-                />
-              ) : (
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border-2 ${isHome
-                    ? "bg-[#00E599] text-[#0d1117] border-[#00e599]"
-                    : "bg-rose-600 text-white border-rose-400"
-                    }`}
-                >
-                  {activeToken.number || "?"}
-                </div>
-              )}
+              {(() => {
+                const isGK = activeToken.role === "G" || activeToken.role === "GK" || activeToken.role === "Gardien" || activeToken.number === 1;
+                const defaultAvatar = isGK
+                  ? isHome
+                    ? "/images/avatars/goalkeeper_yellow.png"
+                    : "/images/avatars/opponent_goalkeeper.png"
+                  : isHome
+                    ? "/images/avatars/player_green.png"
+                    : "/images/avatars/opponent_red.png";
+                const src = activeToken.photo || defaultAvatar;
+
+                return (
+                  <img
+                    src={src}
+                    alt={activeToken.name}
+                    className={`w-8 h-8 rounded-full object-cover border-2 ${isHome ? "border-[#00E599]" : "border-rose-500"}`}
+                  />
+                );
+              })()}
             </div>
 
             {/* Nom */}
@@ -5299,8 +5572,8 @@ export default function TacticsBoard({
               />
             </div>
 
-            {/* Photo URL */}
-            <div className="hidden md:flex items-center gap-1.5 bg-[#111827] border border-[#1f293d] rounded-lg px-2 py-1 flex-1 min-w-[110px] max-w-[190px]">
+            {/* Photo URL & Actions */}
+            <div className="hidden md:flex items-center gap-1.5 bg-[#111827] border border-[#1f293d] rounded-lg px-2 py-1 flex-1 min-w-[110px] max-w-[220px]">
               <span className="text-[8px] font-black text-[#62728f] uppercase shrink-0">{t.tactics.playerCard.photoLabel}</span>
               <input
                 type="text"
@@ -5309,6 +5582,21 @@ export default function TacticsBoard({
                 className="bg-transparent text-[9.5px] text-slate-300 w-full outline-none truncate"
                 placeholder="URL (https://...)"
               />
+              <label className="cursor-pointer text-[#00E599] hover:text-white" title="Charger une photo (fond automatiquement détouré)">
+                <Upload className="w-3 h-3 shrink-0" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const base64 = await compressImage(file);
+                      updateTokenField("photo", base64);
+                    }
+                  }}
+                />
+              </label>
             </div>
 
             {/* Badge Équipe */}
@@ -5824,7 +6112,7 @@ export default function TacticsBoard({
     const activeBenchList = isOpponent ? opponentSubstitutes : substitutes;
     const teamTitle = isOpponent
       ? (activeMatch.awayTeam || "ÉQUIPE ADVERSE")
-      : (activeMatch.homeTeam || "MON CLUB");
+      : (activeMatch.homeTeam || "MON EQUIPE");
 
     return (
       <div
@@ -6247,7 +6535,7 @@ export default function TacticsBoard({
                       ? isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
                       : isModernSleek ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-rose-950/80 text-rose-300 border-rose-700/60"
                   }`}>
-                    {isHome ? (activeMatch.homeTeam || "MON CLUB") : (activeMatch.awayTeam || "ADVERSAIRE")}
+                    {isHome ? (activeMatch.homeTeam || "MON EQUIPE") : (activeMatch.awayTeam || "ADVERSAIRE")}
                   </span>
                   <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-bold uppercase border ${
                     isStarter
@@ -6283,26 +6571,27 @@ export default function TacticsBoard({
             {/* Avatar & Photo avec Upload */}
             <div className="relative group shrink-0 flex flex-col items-center gap-1.5">
               <div className="relative">
-                {editingToken.photo ? (
-                  <img
-                    src={editingToken.photo}
-                    alt={editingToken.name}
-                    className={`w-20 h-20 rounded-2xl object-cover border-2 shadow-lg ${
-                      isHome ? "border-[#00E599]" : "border-rose-500"
-                    }`}
-                  />
-                ) : (
-                  <div
-                    className={`w-20 h-20 rounded-2xl flex flex-col items-center justify-center font-black text-2xl border-2 shadow-lg ${
-                      isHome
-                        ? isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#102420] text-[#00E599] border-[#00e599]/60"
-                        : isModernSleek ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-rose-950 text-rose-300 border-rose-600/60"
-                    }`}
-                  >
-                    <span>{editingToken.number || "?"}</span>
-                    <span className="text-[9px] font-bold tracking-wider uppercase opacity-80">{editingToken.role || "J"}</span>
-                  </div>
-                )}
+                {(() => {
+                  const isGK = editingToken.role === "G" || editingToken.role === "GK" || editingToken.role === "Gardien" || editingToken.number === 1;
+                  const defaultAvatar = isGK
+                    ? isHome
+                      ? "/images/avatars/goalkeeper_yellow.png"
+                      : "/images/avatars/opponent_goalkeeper.png"
+                    : isHome
+                      ? "/images/avatars/player_green.png"
+                      : "/images/avatars/opponent_red.png";
+                  const src = editingToken.photo || defaultAvatar;
+
+                  return (
+                    <img
+                      src={src}
+                      alt={editingToken.name}
+                      className={`w-20 h-20 rounded-2xl object-contain bg-slate-900/30 p-1 border-2 shadow-lg ${
+                        isHome ? "border-[#00E599]" : "border-rose-500"
+                      }`}
+                    />
+                  );
+                })()}
 
                 {/* Upload photo overlay on hover / click */}
                 <label className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white flex-col gap-1">
@@ -6597,7 +6886,7 @@ export default function TacticsBoard({
     );
   };
 
-  {/* RENDER FUNCTION: MON CLUB (PANEL A) */ }
+  {/* RENDER FUNCTION: MON EQUIPE (PANEL A) */ }
   const renderTeamAPanel = (isFullscreenMode: boolean = false) => {
     return (
       <div
@@ -6749,7 +7038,7 @@ export default function TacticsBoard({
                 {t.tactics.teamPanel.clear}
               </button>
 
-              {/* Button 1: Effectif Mon Club */}
+              {/* Button 1: Effectif Mon Équipe */}
               <button
                 onClick={() => {
                   setRolesTargetTeam("home");
@@ -6769,7 +7058,7 @@ export default function TacticsBoard({
                 </span>
               </button>
 
-              {/* Button 2: Rôles Mon Club */}
+              {/* Button 2: Rôles Mon Équipe */}
               <button
                 onClick={() => {
                   setRolesTargetTeam("home");
@@ -7999,6 +8288,63 @@ export default function TacticsBoard({
               </button>
             </div>
 
+            {/* GROUP 3.5: Représentation des Joueurs (Pastille / Buste / Tête) */}
+            <div
+              className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}
+              title={t.tactics.pitchModes.repTitle}
+            >
+              <button
+                type="button"
+                onClick={() => setPlayerRepresentation("dot")}
+                className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "dot"
+                  ? isModernSleek
+                    ? "bg-white border border-emerald-500 text-emerald-800 shadow-xs font-black"
+                    : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs font-black"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
+                title={t.tactics.pitchModes.repPastille}
+                aria-label={t.tactics.pitchModes.repPastille}
+              >
+                <Circle className="h-4 w-4 shrink-0" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPlayerRepresentation("jersey")}
+                className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "jersey"
+                  ? isModernSleek
+                    ? "bg-white border border-emerald-500 text-emerald-800 shadow-xs font-black"
+                    : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs font-black"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
+                title={t.tactics.pitchModes.repBuste}
+                aria-label={t.tactics.pitchModes.repBuste}
+              >
+                <Shirt className="h-4 w-4 shrink-0" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPlayerRepresentation("head")}
+                className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "head"
+                  ? isModernSleek
+                    ? "bg-white border border-emerald-500 text-emerald-800 shadow-xs font-black"
+                    : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs font-black"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
+                title={t.tactics.pitchModes.repTete}
+                aria-label={t.tactics.pitchModes.repTete}
+              >
+                <User className="h-4 w-4 shrink-0" />
+              </button>
+            </div>
+
             {/* GROUP 4: Zooms (Échelle Terrain & Taille Joueurs) - Standardized h-8 Height & Icons */}
             <div className={`flex items-center gap-2 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 px-2 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]"}`}>
               {/* Pitch Zoom */}
@@ -8091,10 +8437,10 @@ export default function TacticsBoard({
 
           </div>
 
-          {/* PITCH WORKSPACE WITH FLANKING PANELS (LEFT: MON CLUB + SUBS, CENTER: PITCH, RIGHT: COMPO ADVERSE) */}
+          {/* PITCH WORKSPACE WITH FLANKING PANELS (LEFT: MON EQUIPE + SUBS, CENTER: PITCH, RIGHT: COMPO ADVERSE) */}
           <div className="flex-1 flex flex-col lg:flex-row items-stretch lg:items-center justify-center gap-2 xl:gap-3.5 w-full m-auto min-h-0">
 
-            {/* 1. LEFT FLANKING PANEL: MON CLUB (USER CLUB + SUBS) */}
+            {/* 1. LEFT FLANKING PANEL: MON EQUIPE (USER CLUB + SUBS) */}
             {!isPitchFullscreen && renderTeamAPanel(false)}
 
             {/* 2. CENTER: THE PITCH ARTIFICIAL GRASS CONTAINER WITH PROPORTIONS LOCK */}
@@ -8340,6 +8686,63 @@ export default function TacticsBoard({
                         }
                       >
                         <Columns className="h-4 w-4 shrink-0" />
+                      </button>
+                    </div>
+
+                    {/* GROUP 3.5: Représentation des Joueurs (Fullscreen) */}
+                    <div
+                      className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}
+                      title={t.tactics.pitchModes.repTitle}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setPlayerRepresentation("dot")}
+                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "dot"
+                          ? isModernSleek
+                            ? "bg-white border border-emerald-500 text-emerald-800 shadow-xs font-black"
+                            : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs font-black"
+                          : isModernSleek
+                            ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
+                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title={t.tactics.pitchModes.repPastille}
+                        aria-label={t.tactics.pitchModes.repPastille}
+                      >
+                        <Circle className="h-4 w-4 shrink-0" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPlayerRepresentation("jersey")}
+                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "jersey"
+                          ? isModernSleek
+                            ? "bg-white border border-emerald-500 text-emerald-800 shadow-xs font-black"
+                            : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs font-black"
+                          : isModernSleek
+                            ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
+                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title={t.tactics.pitchModes.repBuste}
+                        aria-label={t.tactics.pitchModes.repBuste}
+                      >
+                        <Shirt className="h-4 w-4 shrink-0" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPlayerRepresentation("head")}
+                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "head"
+                          ? isModernSleek
+                            ? "bg-white border border-emerald-500 text-emerald-800 shadow-xs font-black"
+                            : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs font-black"
+                          : isModernSleek
+                            ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
+                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title={t.tactics.pitchModes.repTete}
+                        aria-label={t.tactics.pitchModes.repTete}
+                      >
+                        <User className="h-4 w-4 shrink-0" />
                       </button>
                     </div>
 
@@ -8596,7 +8999,7 @@ export default function TacticsBoard({
                   </div>
                 )}
 
-                {/* PITCH AND FLANKING SIDE PANELS ROW (IN FULLSCREEN: ROW WITH MON CLUB & MON ADVERSAIRE) */}
+                {/* PITCH AND FLANKING SIDE PANELS ROW (IN FULLSCREEN: ROW WITH MON EQUIPE & MON ADVERSAIRE) */}
                 <div className={`w-full flex-1 flex ${isPitchFullscreen ? "flex-row items-center justify-center gap-2 xl:gap-3.5 min-h-0 overflow-hidden relative my-auto px-1 sm:px-2" : "flex-col items-center justify-center"}`}>
                   {isPitchFullscreen && renderTeamAPanel(true)}
                   <div className={isPitchFullscreen ? "flex-1 flex flex-col items-center justify-center h-full min-w-0 relative" : "w-full flex flex-col items-center justify-center"}>
@@ -8739,6 +9142,8 @@ export default function TacticsBoard({
                             const playerGoals = isPlayer ? matchEvents.filter(e => e.type === "goal" && e.player === token.name).length : 0;
                             const playerAssists = isPlayer ? matchEvents.filter(e => (e.type === "assist" && e.player === token.name) || (e.type === "goal" && e.assister === token.name)).length : 0;
                             const hasYellowCard = isPlayer && ((token.yellowCards && token.yellowCards > 0) || matchEvents.some(e => e.type === "yellow" && e.player === token.name));
+                            const isJerseyMode = isPlayer && playerRepresentation === "jersey";
+                            const isHeadMode = isPlayer && playerRepresentation === "head";
 
                             // Transition style for smooth animation of player movement
                             const isCurrentlyDragging = selectedTokenId === token.id;
@@ -8812,21 +9217,92 @@ export default function TacticsBoard({
                                   transition: transitionStyle,
                                 }}
                               >
-                                {/* Circle dot with border */}
+                                {/* Representation: Pastille, Buste ou Tête */}
                                 <div
                                   className={`${token.type === "ball"
-                                    ? "w-6 h-6 sm:w-7 sm:h-7 text-[10px]"
-                                    : "w-9 h-9 sm:w-10 sm:h-10 text-xs"
-                                    } rounded-full border-2 flex items-center justify-center font-black shadow-xl ${tokenBg} transition-all relative`}
+                                    ? "w-6 h-6 sm:w-7 sm:h-7 text-[10px] rounded-full border-2 shadow-xl " + tokenBg
+                                    : isJerseyMode || isHeadMode
+                                      ? "w-9 h-10 sm:w-10 sm:h-11 flex items-center justify-center relative drop-shadow-xl"
+                                      : "w-9 h-9 sm:w-10 sm:h-10 text-xs rounded-full border-2 shadow-xl " + tokenBg
+                                    } flex items-center justify-center font-black transition-all relative`}
                                 >
-                                  {/* Inner photo/icon wrapper to keep rounded avatar without clipping badges */}
-                                  <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                                    {token.photo && showPlayerNames ? (
-                                      <img src={token.photo} alt={token.name} className="w-full h-full object-cover rounded-full" />
-                                    ) : (
-                                      iconContent
-                                    )}
-                                  </div>
+                                  {isJerseyMode ? (
+                                    /* 1. BUSTE (Maillot athlétique avec numéro sur la poitrine) */
+                                    <svg viewBox="0 0 44 48" className="w-full h-full overflow-visible" fill="none">
+                                      <path
+                                        d="M 15 4 C 18 8, 26 8, 29 4 L 41 10 L 43 21 L 35 24 L 33 19 L 33 45 C 33 46.5, 32 47.5, 30.5 47.5 L 13.5 47.5 C 12 47.5, 11 46.5, 11 45 L 11 19 L 9 24 L 1 21 L 3 10 Z"
+                                        fill={token.type === "player_b" ? (teamBColor || "#e11d48") : (teamAColor || "#00E599")}
+                                        stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"}
+                                        strokeWidth="1.8"
+                                        strokeLinejoin="round"
+                                      />
+                                      <path
+                                        d="M 11 25 L 11 46 M 33 25 L 33 46"
+                                        stroke={token.type === "player_b" ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.22)"}
+                                        strokeWidth="2"
+                                      />
+                                      <path
+                                        d="M 15 4 C 18 8, 26 8, 29 4"
+                                        fill="none"
+                                        stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"}
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                      />
+                                      <line x1="1" y1="21" x2="9" y2="24" stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"} strokeWidth="1.8" />
+                                      <line x1="35" y1="24" x2="43" y2="21" stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"} strokeWidth="1.8" />
+                                      <text
+                                        x="22"
+                                        y="33"
+                                        textAnchor="middle"
+                                        fontSize="15"
+                                        fontWeight="900"
+                                        fontFamily="system-ui, -apple-system, sans-serif"
+                                        fill={token.type === "player_b" ? "#ffffff" : "#090d14"}
+                                      >
+                                        {token.number ?? token.role ?? ""}
+                                      </text>
+                                    </svg>
+                                  ) : isHeadMode ? (
+                                    /* 2. TÊTE DU JOUEUR (Affichage 3D de base avec maillot vert pour joueurs et jaune pour gardien) */
+                                    (() => {
+                                      const isGK =
+                                        token.role === "G" ||
+                                        token.role === "GK" ||
+                                        token.role === "Gardien" ||
+                                        token.number === 1;
+                                      const isTeamB = token.type === "player_b";
+                                      const defaultHeadSrc = isGK
+                                        ? isTeamB
+                                          ? "/images/avatars/opponent_goalkeeper.png"
+                                          : "/images/avatars/goalkeeper_yellow.png"
+                                        : isTeamB
+                                          ? "/images/avatars/opponent_red.png"
+                                          : "/images/avatars/player_green.png";
+
+                                      const photoSrc = token.photo
+                                        ? (autoTransparentCache[token.photo] || token.photo)
+                                        : defaultHeadSrc;
+
+                                      return (
+                                        <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center relative bg-transparent">
+                                          <img
+                                            src={photoSrc}
+                                            alt={token.name}
+                                            className="w-full h-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] select-none pointer-events-none"
+                                          />
+                                        </div>
+                                      );
+                                    })()
+                                  ) : (
+                                    /* 3. PASTILLE (Classique) */
+                                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                                      {token.photo && showPlayerNames ? (
+                                        <img src={token.photo} alt={token.name} className="w-full h-full object-cover rounded-full" />
+                                      ) : (
+                                        iconContent
+                                      )}
+                                    </div>
+                                  )}
 
                                   {/* TOP BADGES ROW (Match stats: Yellow Cards, Goals, Assists, Fitness status) */}
                                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
@@ -11351,7 +11827,7 @@ export default function TacticsBoard({
         const assignedRolesCount = Object.values(currentRoles).filter(Boolean).length;
         const teamDisplayName = isAway
           ? (activeMatch.awayTeam || "Équipe B (Adverse)")
-          : (activeMatch.homeTeam || "Mon Club");
+          : (activeMatch.homeTeam || "Mon Équipe");
 
         return (
           <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-[150] animate-fade-in backdrop-blur-sm overflow-y-auto">
