@@ -247,6 +247,10 @@ Communiquez vos plans de jeu facilement à vos joueurs et à votre staff :
 *Capture vidéo animée : Génération de l'image PNG haute résolution et partage immédiat pour les vestiaires.*
 
 * **Export Image PNG HD** : Télécharge une image nette et propre du terrain avec vos tracés et le logo de votre club.
+* **Vue Export 3D (Studio HD)** :
+  * **Choix de la vue** : Affichage au choix en **Cartes 3D** (style Squad Card avec thèmes Or, Onyx, Argent, Émeraude) ou en **Têtes 3D** (avatars 3D stylisés détourés sans cadre avec ombre sur la pelouse et pastille tactique).
+  * **Agrandissement modulable** : Curseur pour agrandir le terrain (70% à 150%) et curseur dédié pour ajuster la taille des joueurs (60% à 160%).
+  * **Formats disponibles** : Paysage (16:9) ou Portrait (9:16 pour smartphones et stories).
 * **Partage par Messagerie / WhatsApp** : Génère un lien ou une image optimisée pour diffusion rapide dans les groupes d'équipe.
 * **Envoi d'email automatique** : Envoyez le schéma directement sur l'adresse email des joueurs ou dirigeants depuis la plateforme.
 
