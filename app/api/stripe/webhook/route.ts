@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
+import { updateCoachPlanInFirestore } from "@/lib/firebase-admin";
 import Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
@@ -41,30 +42,77 @@ export async function POST(req: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const coachId = session.client_reference_id || session.metadata?.coachId;
         const planId = session.metadata?.planId || "pro";
-        const customerEmail = session.customer_details?.email || session.customer_email;
+        const customerEmail = session.customer_details?.email || session.customer_email || session.metadata?.coachEmail;
+        const customerId = typeof session.customer === "string" ? session.customer : (session.customer as any)?.id;
+        const subscriptionId = typeof session.subscription === "string" ? session.subscription : (session.subscription as any)?.id;
 
         console.log(`✅ [Stripe Webhook] Paiement réussi pour coachId=${coachId}, email=${customerEmail}, plan=${planId}`);
-        // At this point, the coach's plan is updated to planId ("pro" or "club")
+
+        // Update coach's plan directly in Firestore
+        const result = await updateCoachPlanInFirestore({
+          coachId,
+          email: customerEmail,
+          planId,
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          stripeStatus: "active",
+        });
+
+        console.log(`📦 [Stripe Webhook -> Firestore Result]:`, result);
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        const customerId = subscription.customer as string;
+        const customerId = typeof subscription.customer === "string" ? subscription.customer : (subscription.customer as any)?.id;
+        const subscriptionId = subscription.id;
+
         console.log(`⚠️ [Stripe Webhook] Résiliation d'abonnement reçue pour customer=${customerId}`);
-        // Reset coach plan to "free"
+
+        // Reset coach plan to "free" in Firestore
+        const result = await updateCoachPlanInFirestore({
+          planId: "free",
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          stripeStatus: "canceled",
+        });
+
+        console.log(`📦 [Stripe Webhook -> Firestore Result]:`, result);
         break;
       }
 
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log(`💳 [Stripe Webhook] Renouvellement paiement réussi pour facture #${invoice.id}`);
+        const customerId = typeof invoice.customer === "string" ? invoice.customer : (invoice.customer as any)?.id;
+        const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : (invoice.subscription as any)?.id;
+        const customerEmail = invoice.customer_email;
+
+        console.log(`💳 [Stripe Webhook] Renouvellement paiement réussi pour facture #${invoice.id} (customer=${customerId})`);
+
+        if (customerId) {
+          await updateCoachPlanInFirestore({
+            email: customerEmail,
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+            stripeStatus: "active",
+            planId: "pro", // keeps active status on renewal
+          });
+        }
         break;
       }
 
       case "invoice.payment_failed": {
         const failedInvoice = event.data.object as Stripe.Invoice;
-        console.warn(`🚨 [Stripe Webhook] Échec du paiement pour facture #${failedInvoice.id}`);
+        const customerId = typeof failedInvoice.customer === "string" ? failedInvoice.customer : (failedInvoice.customer as any)?.id;
+        console.warn(`🚨 [Stripe Webhook] Échec du paiement pour facture #${failedInvoice.id} (customer=${customerId})`);
+
+        if (customerId) {
+          await updateCoachPlanInFirestore({
+            stripeCustomerId: customerId,
+            stripeStatus: "past_due",
+            planId: "free",
+          });
+        }
         break;
       }
 
@@ -78,3 +126,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erreur de traitement du webhook" }, { status: 500 });
   }
 }
+
