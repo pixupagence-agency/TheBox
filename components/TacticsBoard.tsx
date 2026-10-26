@@ -5844,9 +5844,8 @@ export default function TacticsBoard({
           {/* LIGNE ACTIONS LIVE MATCH (UNIQUEMENT QUAND LE MODE LIVE EST ACTIVÉ) */}
           {isLiveMatchMode && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className={`text-[8.5px] font-black uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1 ${
-                isModernSleek ? "text-amber-600" : "text-amber-400"
-              }`}>
+              <span className={`text-[8.5px] font-black uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1 ${isModernSleek ? "text-amber-600" : "text-amber-400"
+                }`}>
                 <Award className="w-3 h-3" />
                 <span>{t.tactics.playerCard.liveActionsHeader}</span>
               </span>
@@ -5854,11 +5853,10 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleRecordGoal(activeToken)}
-                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${
-                  isModernSleek
-                    ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800"
-                    : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/80 text-emerald-200 hover:text-white"
-                }`}
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
+                  ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800"
+                  : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/80 text-emerald-200 hover:text-white"
+                  }`}
                 title={t.tactics.playerCard.addGoalTooltip}
               >
                 <span>⚽</span>
@@ -5868,11 +5866,10 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleRecordAssist(activeToken)}
-                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${
-                  isModernSleek
-                    ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800"
-                    : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/80 text-cyan-200 hover:text-white"
-                }`}
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
+                  ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800"
+                  : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/80 text-cyan-200 hover:text-white"
+                  }`}
                 title={t.tactics.playerCard.addAssistTooltip}
               >
                 <span>👟</span>
@@ -5882,11 +5879,10 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleGiveYellowCard(activeToken)}
-                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${
-                  isModernSleek
-                    ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800"
-                    : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/80 text-amber-200 hover:text-white"
-                }`}
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
+                  ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800"
+                  : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/80 text-amber-200 hover:text-white"
+                  }`}
                 title={t.tactics.playerCard.yellowCardTooltip}
               >
                 <span>🟨</span>
@@ -5896,11 +5892,10 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleRemovePlayerFromPitch(activeToken, "red_card")}
-                className={`px-2 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm border ${
-                  isModernSleek
-                    ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800"
-                    : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/80 text-rose-200 hover:text-white"
-                }`}
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
+                  ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800"
+                  : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/80 text-rose-200 hover:text-white"
+                  }`}
                 title={t.tactics.playerCard.redCardTooltip}
               >
                 <span>🟥</span>
@@ -5973,22 +5968,20 @@ export default function TacticsBoard({
         style={{ maxWidth: pitchMaxWidth }}
       >
         <div
-          className={`rounded-2xl px-3 py-2 backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 transition-all duration-300 ${
-            isModernSleek
-              ? "bg-white/95 border border-slate-200/90 shadow-lg text-slate-800"
-              : "bg-[#0d1117]/95 border border-[#00E599]/60 shadow-[0_0_20px_rgba(0,229,153,0.12)] text-white"
-          }`}
+          className={`rounded-2xl px-3 py-2 backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 transition-all duration-300 ${isModernSleek
+            ? "bg-white/95 border border-slate-200/90 shadow-lg text-slate-800"
+            : "bg-[#0d1117]/95 border border-[#00E599]/60 shadow-[0_0_20px_rgba(0,229,153,0.12)] text-white"
+            }`}
         >
           {/* Identité joueur */}
           <div className="flex items-center gap-2 shrink-0">
             <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs border shrink-0 ${
-                isHome
-                  ? isModernSleek
-                    ? "bg-emerald-600 text-white border-emerald-500 shadow-2xs"
-                    : "bg-[#00E599] text-[#0d1117] border-[#00e599]"
-                  : "bg-rose-600 text-white border-rose-400"
-              }`}
+              className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs border shrink-0 ${isHome
+                ? isModernSleek
+                  ? "bg-emerald-600 text-white border-emerald-500 shadow-2xs"
+                  : "bg-[#00E599] text-[#0d1117] border-[#00e599]"
+                : "bg-rose-600 text-white border-rose-400"
+                }`}
             >
               {currentLiveToken.number || "?"}
             </div>
@@ -5996,30 +5989,27 @@ export default function TacticsBoard({
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <span
-                  className={`text-xs font-black truncate max-w-[130px] sm:max-w-[180px] ${
-                    isModernSleek ? "text-slate-900" : "text-white"
-                  }`}
+                  className={`text-xs font-black truncate max-w-[130px] sm:max-w-[180px] ${isModernSleek ? "text-slate-900" : "text-white"
+                    }`}
                 >
                   {currentLiveToken.name}
                 </span>
                 <span
-                  className={`text-[8px] font-black px-1.5 py-0.2 rounded border shrink-0 ${
-                    isHome
-                      ? isModernSleek
-                        ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                        : "bg-[#102420] text-[#00E599] border-[#00e599]/30"
-                      : isModernSleek
-                        ? "bg-rose-50 text-rose-800 border-rose-300"
-                        : "bg-rose-950 text-rose-300 border-rose-800"
-                  }`}
+                  className={`text-[8px] font-black px-1.5 py-0.2 rounded border shrink-0 ${isHome
+                    ? isModernSleek
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                      : "bg-[#102420] text-[#00E599] border-[#00e599]/30"
+                    : isModernSleek
+                      ? "bg-rose-50 text-rose-800 border-rose-300"
+                      : "bg-rose-950 text-rose-300 border-rose-800"
+                    }`}
                 >
                   {isHome ? t.tactics.playerCard.myClubBadge : t.tactics.playerCard.myOpponentBadge}
                 </span>
               </div>
               <div
-                className={`flex items-center gap-2 text-[9px] ${
-                  isModernSleek ? "text-slate-500 font-medium" : "text-slate-400"
-                }`}
+                className={`flex items-center gap-2 text-[9px] ${isModernSleek ? "text-slate-500 font-medium" : "text-slate-400"
+                  }`}
               >
                 <span>{currentLiveToken.role || t.tactics.liveToolbox.player}</span>
                 {currentGoals > 0 && (
@@ -6047,11 +6037,10 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => handleRecordGoal(currentLiveToken)}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
-                isModernSleek
-                  ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800 hover:text-emerald-950 shadow-2xs"
-                  : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/70 hover:border-emerald-400 text-emerald-200 hover:text-white"
-              }`}
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
+                ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800 hover:text-emerald-950 shadow-2xs"
+                : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/70 hover:border-emerald-400 text-emerald-200 hover:text-white"
+                }`}
               title={t.tactics.liveToolbox.goalTooltip}
             >
               <span>⚽</span>
@@ -6062,11 +6051,10 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => handleRecordAssist(currentLiveToken)}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
-                isModernSleek
-                  ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800 hover:text-cyan-950 shadow-2xs"
-                  : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/70 hover:border-cyan-400 text-cyan-200 hover:text-white"
-              }`}
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
+                ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800 hover:text-cyan-950 shadow-2xs"
+                : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/70 hover:border-cyan-400 text-cyan-200 hover:text-white"
+                }`}
               title={t.tactics.liveToolbox.assistTooltip}
             >
               <span>👟</span>
@@ -6085,11 +6073,10 @@ export default function TacticsBoard({
                   setLiveActionToken({ ...currentLiveToken, yellowCards: 1 });
                 }
               }}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
-                isModernSleek
-                  ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800 hover:text-amber-950 shadow-2xs"
-                  : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/70 hover:border-amber-400 text-amber-200 hover:text-white"
-              }`}
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
+                ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800 hover:text-amber-950 shadow-2xs"
+                : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/70 hover:border-amber-400 text-amber-200 hover:text-white"
+                }`}
               title={t.tactics.liveToolbox.yellowTooltip}
             >
               <span>🟨</span>
@@ -6103,11 +6090,10 @@ export default function TacticsBoard({
                 handleRemovePlayerFromPitch(currentLiveToken, "red_card");
                 setLiveActionToken(null);
               }}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
-                isModernSleek
-                  ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800 hover:text-rose-950 shadow-2xs"
-                  : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/70 hover:border-rose-400 text-rose-200 hover:text-white"
-              }`}
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
+                ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800 hover:text-rose-950 shadow-2xs"
+                : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/70 hover:border-rose-400 text-rose-200 hover:text-white"
+                }`}
               title={t.tactics.liveToolbox.redTooltip}
             >
               <span>🟥</span>
@@ -6121,11 +6107,10 @@ export default function TacticsBoard({
                 handleRemovePlayerFromPitch(currentLiveToken, "injured");
                 setLiveActionToken(null);
               }}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${
-                isModernSleek
-                  ? "bg-red-50 hover:bg-red-100 border-red-400 text-red-800 hover:text-red-950 shadow-2xs"
-                  : "bg-red-950/90 hover:bg-red-800 border border-red-500/70 hover:border-red-400 text-red-200 hover:text-white"
-              }`}
+              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
+                ? "bg-red-50 hover:bg-red-100 border-red-400 text-red-800 hover:text-red-950 shadow-2xs"
+                : "bg-red-950/90 hover:bg-red-800 border border-red-500/70 hover:border-red-400 text-red-200 hover:text-white"
+                }`}
               title={t.tactics.liveToolbox.injuryTooltip}
             >
               <span>🏥</span>
@@ -6138,11 +6123,10 @@ export default function TacticsBoard({
               onClick={() => {
                 setSubPickerToken(currentLiveToken);
               }}
-              className={`px-2 py-1.5 rounded-xl text-[10px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm border ${
-                isModernSleek
-                  ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700 hover:text-slate-900"
-                  : "bg-[#172233] hover:bg-[#202f47] border-[#2d3f5e] hover:border-[#00e599]/40 text-slate-200 hover:text-white"
-              }`}
+              className={`px-2 py-1.5 rounded-xl text-[10px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
+                ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700 hover:text-slate-900"
+                : "bg-[#172233] hover:bg-[#202f47] border-[#2d3f5e] hover:border-[#00e599]/40 text-slate-200 hover:text-white"
+                }`}
               title={t.tactics.liveToolbox.substituteTooltip}
             >
               <span>🔄</span>
@@ -6153,11 +6137,10 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => setLiveActionToken(null)}
-              className={`p-1.5 rounded-xl transition cursor-pointer shrink-0 ml-0.5 ${
-                isModernSleek
-                  ? "bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700"
-                  : "bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white"
-              }`}
+              className={`p-1.5 rounded-xl transition cursor-pointer shrink-0 ml-0.5 ${isModernSleek
+                ? "bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700"
+                : "bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white"
+                }`}
               title={t.tactics.liveToolbox.closeTooltip}
             >
               <X className="w-3.5 h-3.5" />
@@ -6572,9 +6555,8 @@ export default function TacticsBoard({
       >
         <div
           id="player-profile-modal-card"
-          className={`w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 flex flex-col gap-4 select-auto scrollbar-thin border relative overflow-hidden ${
-            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-slate-200"
-          }`}
+          className={`w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 flex flex-col gap-4 select-auto scrollbar-thin border relative overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-slate-200"
+            }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Ambient background glow accents */}
@@ -6584,11 +6566,10 @@ export default function TacticsBoard({
           {/* EN-TÊTE MODALE */}
           <div className={`flex items-center justify-between border-b pb-3 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
             <div className="flex items-center gap-2.5">
-              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
-                isHome
-                  ? isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00e599]/40 text-[#00E599]"
-                  : isModernSleek ? "bg-rose-100 border-rose-300 text-rose-800" : "bg-rose-950/60 border-rose-600/40 text-rose-400"
-              }`}>
+              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center ${isHome
+                ? isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00e599]/40 text-[#00E599]"
+                : isModernSleek ? "bg-rose-100 border-rose-300 text-rose-800" : "bg-rose-950/60 border-rose-600/40 text-rose-400"
+                }`}>
                 <User className="w-5 h-5" />
               </div>
               <div>
@@ -6602,20 +6583,18 @@ export default function TacticsBoard({
                     const label = isHome ? (activeMatch.homeTeam || "MON EQUIPE") : awayLabel;
                     if (!label) return null;
                     return (
-                      <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${
-                        isHome
-                          ? isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
-                          : isModernSleek ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-rose-950/80 text-rose-300 border-rose-700/60"
-                      }`}>
+                      <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${isHome
+                        ? isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
+                        : isModernSleek ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-rose-950/80 text-rose-300 border-rose-700/60"
+                        }`}>
                         {label}
                       </span>
                     );
                   })()}
-                  <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-bold uppercase border ${
-                    isStarter
-                      ? isModernSleek ? "bg-blue-100 text-blue-800 border-blue-200" : "bg-blue-950 text-blue-300 border-blue-800/40"
-                      : isModernSleek ? "bg-amber-100 text-amber-800 border-amber-200" : "bg-amber-950 text-amber-300 border-amber-800/40"
-                  }`}>
+                  <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-bold uppercase border ${isStarter
+                    ? isModernSleek ? "bg-blue-100 text-blue-800 border-blue-200" : "bg-blue-950 text-blue-300 border-blue-800/40"
+                    : isModernSleek ? "bg-amber-100 text-amber-800 border-amber-200" : "bg-amber-950 text-amber-300 border-amber-800/40"
+                    }`}>
                     {isStarter ? "Titulaire" : "Remplaçant"}
                   </span>
                 </div>
@@ -6629,9 +6608,8 @@ export default function TacticsBoard({
                 setEditingToken(null);
                 setQuickActionToken(null);
               }}
-              className={`p-1.5 rounded-xl transition cursor-pointer ${
-                isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-              }`}
+              className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                }`}
               title="Fermer"
             >
               <X className="w-5 h-5" />
@@ -6639,9 +6617,8 @@ export default function TacticsBoard({
           </div>
 
           {/* SECTION IDENTITÉ & PHOTO */}
-          <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center gap-4 relative z-10 ${
-            isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121926] border-[#1e293b]"
-          }`}>
+          <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center gap-4 relative z-10 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121926] border-[#1e293b]"
+            }`}>
             {/* Avatar & Photo avec Upload */}
             <div className="relative group shrink-0 flex flex-col items-center gap-1.5">
               <div className="relative">
@@ -6664,9 +6641,8 @@ export default function TacticsBoard({
                     <img
                       src={src}
                       alt={editingToken.name}
-                      className={`w-20 h-20 rounded-2xl object-contain bg-slate-900/30 p-1 border-2 shadow-lg ${
-                        isHome ? "border-[#00E599]" : "border-rose-500"
-                      }`}
+                      className={`w-20 h-20 rounded-2xl object-contain bg-slate-900/30 p-1 border-2 shadow-lg ${isHome ? "border-[#00E599]" : "border-rose-500"
+                        }`}
                     />
                   );
                 })()}
@@ -6692,9 +6668,8 @@ export default function TacticsBoard({
 
               {/* Photo actions buttons */}
               <div className="flex items-center gap-1">
-                <label className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition cursor-pointer flex items-center gap-1 ${
-                  isModernSleek ? "bg-white border-slate-300 text-slate-700 hover:bg-slate-100" : "bg-[#172233] border-[#25354e] text-slate-300 hover:text-white"
-                }`}>
+                <label className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition cursor-pointer flex items-center gap-1 ${isModernSleek ? "bg-white border-slate-300 text-slate-700 hover:bg-slate-100" : "bg-[#172233] border-[#25354e] text-slate-300 hover:text-white"
+                  }`}>
                   <Upload className="w-3 h-3" />
                   <span>Photo</span>
                   <input
@@ -6728,9 +6703,8 @@ export default function TacticsBoard({
             <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Nom */}
               <div className="sm:col-span-2">
-                <label className={`block text-[10.5px] font-black uppercase mb-1 flex items-center gap-1 ${
-                  isModernSleek ? "text-slate-600" : "text-slate-400"
-                }`}>
+                <label className={`block text-[10.5px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"
+                  }`}>
                   <User className="w-3.5 h-3.5 text-blue-400" /> Nom du joueur
                 </label>
                 <input
@@ -6738,19 +6712,17 @@ export default function TacticsBoard({
                   value={editingToken.name || ""}
                   onChange={(e) => updateField("name", e.target.value)}
                   placeholder="ex: Joueur 10"
-                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition border ${
-                    isModernSleek
-                      ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 shadow-xs"
-                      : "bg-[#0d1117] border-[#1e293b] text-white focus:border-[#00E599]"
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition border ${isModernSleek
+                    ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 shadow-xs"
+                    : "bg-[#0d1117] border-[#1e293b] text-white focus:border-[#00E599]"
+                    }`}
                 />
               </div>
 
               {/* Numéro de maillot */}
               <div>
-                <label className={`block text-[10.5px] font-black uppercase mb-1 flex items-center gap-1 ${
-                  isModernSleek ? "text-slate-600" : "text-slate-400"
-                }`}>
+                <label className={`block text-[10.5px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"
+                  }`}>
                   <span>🔢</span> Maillot
                 </label>
                 <div className="relative">
@@ -6762,11 +6734,10 @@ export default function TacticsBoard({
                       handleAssignUniqueNumber(editingToken.id, isStarter, val, isHome ? "home" : "away");
                       setEditingToken((prev) => prev ? { ...prev, number: val } : null);
                     }}
-                    className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition appearance-none cursor-pointer border ${
-                      isModernSleek
-                        ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 shadow-xs"
-                        : "bg-[#0d1117] border-[#1e293b] text-white focus:border-[#00E599]"
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition appearance-none cursor-pointer border ${isModernSleek
+                      ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 shadow-xs"
+                      : "bg-[#0d1117] border-[#1e293b] text-white focus:border-[#00E599]"
+                      }`}
                   >
                     {availableNumbers.map((n) => (
                       <option key={n} value={n} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
@@ -6774,17 +6745,15 @@ export default function TacticsBoard({
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className={`w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${
-                    isModernSleek ? "text-slate-500" : "text-slate-400"
-                  }`} />
+                  <ChevronDown className={`w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${isModernSleek ? "text-slate-500" : "text-slate-400"
+                    }`} />
                 </div>
               </div>
 
               {/* Poste / Rôle */}
               <div>
-                <label className={`block text-[10.5px] font-black uppercase mb-1 flex items-center gap-1 ${
-                  isModernSleek ? "text-slate-600" : "text-slate-400"
-                }`}>
+                <label className={`block text-[10.5px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"
+                  }`}>
                   <Shield className="w-3.5 h-3.5 text-emerald-400" /> Poste / Rôle
                 </label>
                 <input
@@ -6792,11 +6761,10 @@ export default function TacticsBoard({
                   value={editingToken.role || ""}
                   onChange={(e) => updateField("role", e.target.value)}
                   placeholder="ex: BU, MC, DC..."
-                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold uppercase focus:outline-none transition border ${
-                    isModernSleek
-                      ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 shadow-xs"
-                      : "bg-[#0d1117] border-[#1e293b] text-white focus:border-[#00E599]"
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold uppercase focus:outline-none transition border ${isModernSleek
+                    ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 shadow-xs"
+                    : "bg-[#0d1117] border-[#1e293b] text-white focus:border-[#00E599]"
+                    }`}
                 />
               </div>
 
@@ -6808,15 +6776,14 @@ export default function TacticsBoard({
                     key={pos}
                     type="button"
                     onClick={() => updateField("role", pos)}
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase transition cursor-pointer border ${
-                      editingToken.role === pos
-                        ? isModernSleek
-                          ? "bg-emerald-600 text-white border-emerald-600"
-                          : "bg-[#00E599] text-slate-950 border-[#00E599]"
-                        : isModernSleek
-                          ? "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
-                          : "bg-[#0d1117] border-[#1e293b] text-slate-400 hover:text-white hover:border-[#00e599]/40"
-                    }`}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase transition cursor-pointer border ${editingToken.role === pos
+                      ? isModernSleek
+                        ? "bg-emerald-600 text-white border-emerald-600"
+                        : "bg-[#00E599] text-slate-950 border-[#00E599]"
+                      : isModernSleek
+                        ? "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                        : "bg-[#0d1117] border-[#1e293b] text-slate-400 hover:text-white hover:border-[#00e599]/40"
+                      }`}
                   >
                     {pos}
                   </button>
@@ -6825,26 +6792,24 @@ export default function TacticsBoard({
 
               {/* Statut / État de forme */}
               <div className="sm:col-span-2">
-                <label className={`block text-[10.5px] font-black uppercase mb-1 flex items-center gap-1 ${
-                  isModernSleek ? "text-slate-600" : "text-slate-400"
-                }`}>
+                <label className={`block text-[10.5px] font-black uppercase mb-1 flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"
+                  }`}>
                   <Activity className="w-3.5 h-3.5 text-amber-400" /> État de forme & Disponibilité
                 </label>
                 <div className="relative">
                   <select
                     value={editingToken.status || "normal"}
                     onChange={(e) => updateField("status", e.target.value)}
-                    className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition appearance-none cursor-pointer border ${
-                      editingToken.status === "excellent"
-                        ? isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-emerald-950/70 border-emerald-500/50 text-emerald-300"
-                        : editingToken.status === "tired"
-                          ? isModernSleek ? "bg-amber-50 border-amber-300 text-amber-800" : "bg-amber-950/70 border-amber-500/50 text-amber-300"
-                          : editingToken.status === "injured"
-                            ? isModernSleek ? "bg-rose-50 border-rose-300 text-rose-800" : "bg-rose-950/70 border-rose-500/50 text-rose-300"
-                            : editingToken.status === "suspended"
-                              ? isModernSleek ? "bg-red-50 border-red-300 text-red-800 font-black" : "bg-red-950/80 border-red-600/60 text-red-300 font-black"
-                              : isModernSleek ? "bg-white border-slate-300 text-slate-800" : "bg-[#0d1117] border-[#1e293b] text-slate-300"
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition appearance-none cursor-pointer border ${editingToken.status === "excellent"
+                      ? isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-emerald-950/70 border-emerald-500/50 text-emerald-300"
+                      : editingToken.status === "tired"
+                        ? isModernSleek ? "bg-amber-50 border-amber-300 text-amber-800" : "bg-amber-950/70 border-amber-500/50 text-amber-300"
+                        : editingToken.status === "injured"
+                          ? isModernSleek ? "bg-rose-50 border-rose-300 text-rose-800" : "bg-rose-950/70 border-rose-500/50 text-rose-300"
+                          : editingToken.status === "suspended"
+                            ? isModernSleek ? "bg-red-50 border-red-300 text-red-800 font-black" : "bg-red-950/80 border-red-600/60 text-red-300 font-black"
+                            : isModernSleek ? "bg-white border-slate-300 text-slate-800" : "bg-[#0d1117] border-[#1e293b] text-slate-300"
+                      }`}
                   >
                     <option value="normal" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>🟢 Normal / Disponible</option>
                     <option value="excellent" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>⚡ En pleine forme</option>
@@ -6852,9 +6817,8 @@ export default function TacticsBoard({
                     <option value="injured" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>🩹 Blessé</option>
                     <option value="suspended" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>🟥 Suspendu</option>
                   </select>
-                  <ChevronDown className={`w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${
-                    isModernSleek ? "text-slate-500" : "text-slate-400"
-                  }`} />
+                  <ChevronDown className={`w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${isModernSleek ? "text-slate-500" : "text-slate-400"
+                    }`} />
                 </div>
               </div>
             </div>
@@ -6862,40 +6826,34 @@ export default function TacticsBoard({
 
           {/* SECTION STATISTIQUES DU MATCH (affichée uniquement lorsqu'un match est en cours) */}
           {isLiveMatchMode && (
-            <div className={`p-3.5 rounded-2xl border ${
-              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121926] border-[#1e293b]"
-            }`}>
+            <div className={`p-3.5 rounded-2xl border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121926] border-[#1e293b]"
+              }`}>
               <div className="flex items-center justify-between mb-2">
-                <span className={`text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                  isModernSleek ? "text-amber-700" : "text-amber-400"
-                }`}>
+                <span className={`text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isModernSleek ? "text-amber-700" : "text-amber-400"
+                  }`}>
                   <Award className="w-3.5 h-3.5" />
                   <span>Statistiques du match</span>
                 </span>
               </div>
 
               <div className="grid grid-cols-4 gap-2 text-center">
-                <div className={`p-2 rounded-xl border ${
-                  isModernSleek ? "bg-white border-emerald-200 text-emerald-800" : "bg-[#090d14] border-emerald-900/40 text-emerald-300"
-                }`}>
+                <div className={`p-2 rounded-xl border ${isModernSleek ? "bg-white border-emerald-200 text-emerald-800" : "bg-[#090d14] border-emerald-900/40 text-emerald-300"
+                  }`}>
                   <div className="text-base font-black">⚽ {playerGoals}</div>
                   <div className="text-[9px] font-bold uppercase opacity-80">Buts</div>
                 </div>
-                <div className={`p-2 rounded-xl border ${
-                  isModernSleek ? "bg-white border-cyan-200 text-cyan-800" : "bg-[#090d14] border-cyan-900/40 text-cyan-300"
-                }`}>
+                <div className={`p-2 rounded-xl border ${isModernSleek ? "bg-white border-cyan-200 text-cyan-800" : "bg-[#090d14] border-cyan-900/40 text-cyan-300"
+                  }`}>
                   <div className="text-base font-black">👟 {playerAssists}</div>
                   <div className="text-[9px] font-bold uppercase opacity-80">Passes</div>
                 </div>
-                <div className={`p-2 rounded-xl border ${
-                  isModernSleek ? "bg-white border-amber-200 text-amber-800" : "bg-[#090d14] border-amber-900/40 text-amber-300"
-                }`}>
+                <div className={`p-2 rounded-xl border ${isModernSleek ? "bg-white border-amber-200 text-amber-800" : "bg-[#090d14] border-amber-900/40 text-amber-300"
+                  }`}>
                   <div className="text-base font-black">🟨 {playerYellows}</div>
                   <div className="text-[9px] font-bold uppercase opacity-80">Cartons J.</div>
                 </div>
-                <div className={`p-2 rounded-xl border ${
-                  isModernSleek ? "bg-white border-rose-200 text-rose-800" : "bg-[#090d14] border-rose-900/40 text-rose-300"
-                }`}>
+                <div className={`p-2 rounded-xl border ${isModernSleek ? "bg-white border-rose-200 text-rose-800" : "bg-[#090d14] border-rose-900/40 text-rose-300"
+                  }`}>
                   <div className="text-base font-black">🟥 {playerReds}</div>
                   <div className="text-[9px] font-bold uppercase opacity-80">Cartons R.</div>
                 </div>
@@ -6904,9 +6862,8 @@ export default function TacticsBoard({
           )}
 
           {/* PIED DE MODALE & ACTIONS */}
-          <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t relative z-10 ${
-            isModernSleek ? "border-slate-200" : "border-[#1f293d]"
-          }`}>
+          <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+            }`}>
             <div className="flex items-center gap-2">
               {/* Bouton pour aller au remplacement */}
               <button
@@ -6915,11 +6872,10 @@ export default function TacticsBoard({
                   setSubPickerToken(editingToken);
                   setEditingToken(null);
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-md ${
-                  isModernSleek
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                    : "bg-[#00E599] hover:bg-[#00c782] text-slate-950"
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-md ${isModernSleek
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-[#00E599] hover:bg-[#00c782] text-slate-950"
+                  }`}
                 title="Remplacer ce joueur"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -6934,11 +6890,10 @@ export default function TacticsBoard({
                     handleRemovePlayerFromPitch(editingToken, "normal");
                     setEditingToken(null);
                   }}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1 ${
-                    isModernSleek
-                      ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
-                      : "bg-[#172233] hover:bg-[#22334d] border-[#263750] text-slate-300 hover:text-white"
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1 ${isModernSleek
+                    ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                    : "bg-[#172233] hover:bg-[#22334d] border-[#263750] text-slate-300 hover:text-white"
+                    }`}
                   title="Faire sortir sur le banc"
                 >
                   <span>🚪 Sortir</span>
@@ -6952,11 +6907,10 @@ export default function TacticsBoard({
                 setEditingToken(null);
                 setQuickActionToken(null);
               }}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                isModernSleek
-                  ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
-                  : "bg-[#172233] hover:bg-[#202f4a] text-slate-300 hover:text-white"
-              }`}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${isModernSleek
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                : "bg-[#172233] hover:bg-[#202f4a] text-slate-300 hover:text-white"
+                }`}
             >
               Fermer
             </button>
@@ -7625,11 +7579,11 @@ export default function TacticsBoard({
                   <p className={`text-[9px] ${isModernSleek ? "text-slate-500 font-bold" : "text-[#62728f] font-black"} uppercase tracking-wider leading-none mt-1`}>
                     {isUserAdmin ? t.userMenu.platformAdmin : (currentLang === "en" ? (
                       activeCoach?.role === "Coach Principal" ? t.userModal.roles.principal :
-                      activeCoach?.role === "Entraîneur Adjoint" ? t.userModal.roles.adjoint :
-                      activeCoach?.role === "Analyste Vidéo / Tactique" ? t.userModal.roles.analyst :
-                      activeCoach?.role === "Préparateur Physique" ? t.userModal.roles.fitness :
-                      activeCoach?.role === "Responsable Technique" ? t.userModal.roles.techDirector :
-                      (activeCoach?.role || t.userModal.roles.principal)
+                        activeCoach?.role === "Entraîneur Adjoint" ? t.userModal.roles.adjoint :
+                          activeCoach?.role === "Analyste Vidéo / Tactique" ? t.userModal.roles.analyst :
+                            activeCoach?.role === "Préparateur Physique" ? t.userModal.roles.fitness :
+                              activeCoach?.role === "Responsable Technique" ? t.userModal.roles.techDirector :
+                                (activeCoach?.role || t.userModal.roles.principal)
                     ) : (activeCoach?.role || "Coach Principal"))}
                   </p>
                 </div>
@@ -7657,11 +7611,11 @@ export default function TacticsBoard({
                       <p className={`text-[9px] ${isModernSleek ? "text-slate-500" : "text-[#62728f]"} font-bold uppercase tracking-wider truncate`}>
                         {isUserAdmin ? t.userMenu.platformAdmin : (currentLang === "en" ? (
                           activeCoach?.role === "Coach Principal" ? t.userModal.roles.principal :
-                          activeCoach?.role === "Entraîneur Adjoint" ? t.userModal.roles.adjoint :
-                          activeCoach?.role === "Analyste Vidéo / Tactique" ? t.userModal.roles.analyst :
-                          activeCoach?.role === "Préparateur Physique" ? t.userModal.roles.fitness :
-                          activeCoach?.role === "Responsable Technique" ? t.userModal.roles.techDirector :
-                          (activeCoach?.role || t.userModal.roles.principal)
+                            activeCoach?.role === "Entraîneur Adjoint" ? t.userModal.roles.adjoint :
+                              activeCoach?.role === "Analyste Vidéo / Tactique" ? t.userModal.roles.analyst :
+                                activeCoach?.role === "Préparateur Physique" ? t.userModal.roles.fitness :
+                                  activeCoach?.role === "Responsable Technique" ? t.userModal.roles.techDirector :
+                                    (activeCoach?.role || t.userModal.roles.principal)
                         ) : (activeCoach?.role || "Coach Principal"))}
                       </p>
                     </div>
@@ -8540,20 +8494,18 @@ export default function TacticsBoard({
               >
                 {/* Fullscreen Dedicated Top Controls Header with Full Tactics Tools & Animation Button */}
                 {isPitchFullscreen && (
-                  <div className={`w-full max-w-fit flex flex-wrap items-center justify-center gap-1.5 px-3 py-1.5 mb-2 rounded-2xl shadow-2xl backdrop-blur-md z-40 shrink-0 border ${
-                    isModernSleek
-                      ? "bg-white/95 border-slate-200 text-slate-800 shadow-slate-900/10"
-                      : "bg-[#0d1117]/95 border-[#1f293d] text-white shadow-2xl"
-                  }`}>
+                  <div className={`w-full max-w-fit flex flex-wrap items-center justify-center gap-1.5 px-3 py-1.5 mb-2 rounded-2xl shadow-2xl backdrop-blur-md z-40 shrink-0 border ${isModernSleek
+                    ? "bg-white/95 border-slate-200 text-slate-800 shadow-slate-900/10"
+                    : "bg-[#0d1117]/95 border-[#1f293d] text-white shadow-2xl"
+                    }`}>
 
                     {/* Mode Live Indicator & Score Pill in Top Fullscreen Bar */}
                     {isLiveMatchMode && (
                       <>
-                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-xl mr-1 shrink-0 border ${
-                          isModernSleek
-                            ? "bg-rose-50 border-rose-300 text-rose-800"
-                            : "bg-rose-950/40 border-rose-800/60 text-rose-300"
-                        }`}>
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-xl mr-1 shrink-0 border ${isModernSleek
+                          ? "bg-rose-50 border-rose-300 text-rose-800"
+                          : "bg-rose-950/40 border-rose-800/60 text-rose-300"
+                          }`}>
                           <span className="relative flex h-2 w-2 shrink-0">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-80" />
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
@@ -8944,7 +8896,7 @@ export default function TacticsBoard({
                       className={`h-7 w-8 rounded-lg shadow-xs cursor-pointer flex items-center justify-center transition ${isModernSleek
                         ? "bg-slate-100 border border-blue-400 hover:bg-slate-200"
                         : "bg-[#0c1017] border border-[#3b82f6]/50 hover:bg-[#151e2d]"
-                      }`}
+                        }`}
                       title={`${t.tactics.strokeSection} : #3b82f6`}
                       aria-label={`${t.tactics.strokeSection} : #3b82f6`}
                     >
@@ -9010,7 +8962,7 @@ export default function TacticsBoard({
                           className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                          }`}
+                            }`}
                           title={t.tactics.pitchModes.zoomOut}
                         >
                           -
@@ -9022,7 +8974,7 @@ export default function TacticsBoard({
                           className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                          }`}
+                            }`}
                           title={t.tactics.pitchModes.zoomIn}
                         >
                           +
@@ -9040,7 +8992,7 @@ export default function TacticsBoard({
                           className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                          }`}
+                            }`}
                           title={t.tactics.pitchModes.playerZoomOut}
                         >
                           -
@@ -9052,7 +9004,7 @@ export default function TacticsBoard({
                           className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
-                          }`}
+                            }`}
                           title={t.tactics.pitchModes.playerZoomIn}
                         >
                           +
@@ -9347,10 +9299,10 @@ export default function TacticsBoard({
                                     (() => {
                                       const isGK =
                                         activeSport !== "basketball" && (
-                                        token.role === "G" ||
-                                        token.role === "GK" ||
-                                        token.role === "Gardien" ||
-                                        token.number === 1);
+                                          token.role === "G" ||
+                                          token.role === "GK" ||
+                                          token.role === "Gardien" ||
+                                          token.number === 1);
                                       const isTeamB = token.type === "player_b";
                                       const defaultHeadSrc = activeSport === "basketball"
                                         ? isTeamB
@@ -9544,28 +9496,25 @@ export default function TacticsBoard({
                 {!isLiveMatchMode && isAnimationCreatorOpen && (
                   <div
                     id="animation-creator-panel"
-                    className={`mt-2.5 p-1.5 sm:p-2 rounded-2xl shadow-xl text-xs animate-fade-in shrink-0 relative z-30 transition-all duration-300 ${
-                      isModernSleek
-                        ? "bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-800 shadow-md"
-                        : "bg-[#090d14]/95 border border-[#1f293d] text-white"
-                    }`}
+                    className={`mt-2.5 p-1.5 sm:p-2 rounded-2xl shadow-xl text-xs animate-fade-in shrink-0 relative z-30 transition-all duration-300 ${isModernSleek
+                      ? "bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-800 shadow-md"
+                      : "bg-[#090d14]/95 border border-[#1f293d] text-white"
+                      }`}
                   >
 
                     {/* Main Animation Toolbar Row - Compact & Icon-only */}
                     <div
-                      className={`flex flex-wrap items-center justify-between gap-2 p-1.5 px-2.5 rounded-xl border transition-colors ${
-                        isModernSleek
-                          ? "bg-slate-50 border-slate-200"
-                          : "bg-[#121926] border-[#1f293d]/80"
-                      }`}
+                      className={`flex flex-wrap items-center justify-between gap-2 p-1.5 px-2.5 rounded-xl border transition-colors ${isModernSleek
+                        ? "bg-slate-50 border-slate-200"
+                        : "bg-[#121926] border-[#1f293d]/80"
+                        }`}
                     >
 
                       {/* Left: Section Badge & Speed Pills */}
                       <div className="flex items-center gap-2 shrink-0">
                         <span
-                          className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1 ${
-                            isModernSleek ? "text-purple-700" : "text-purple-300"
-                          }`}
+                          className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1 ${isModernSleek ? "text-purple-700" : "text-purple-300"
+                            }`}
                         >
                           <span>🎬</span>
                           <span className="hidden sm:inline">ANIMATION</span>
@@ -9575,16 +9524,14 @@ export default function TacticsBoard({
 
                         {/* Vitesse de lecture */}
                         <div
-                          className={`flex items-center gap-0.5 p-0.5 rounded-lg border ${
-                            isModernSleek
-                              ? "bg-white border-slate-200 shadow-2xs"
-                              : "bg-[#090d14] border-[#1a2130]"
-                          }`}
+                          className={`flex items-center gap-0.5 p-0.5 rounded-lg border ${isModernSleek
+                            ? "bg-white border-slate-200 shadow-2xs"
+                            : "bg-[#090d14] border-[#1a2130]"
+                            }`}
                         >
                           <span
-                            className={`text-[9px] font-black uppercase px-1 ${
-                              isModernSleek ? "text-slate-400" : "text-slate-500"
-                            }`}
+                            className={`text-[9px] font-black uppercase px-1 ${isModernSleek ? "text-slate-400" : "text-slate-500"
+                              }`}
                           >
                             ⚡
                           </span>
@@ -9594,15 +9541,14 @@ export default function TacticsBoard({
                               <button
                                 key={speed}
                                 onClick={() => setPlaybackSpeed(speed)}
-                                className={`h-6 px-1.5 text-[8.5px] font-black rounded-md transition cursor-pointer ${
-                                  active
-                                    ? isModernSleek
-                                      ? "bg-emerald-600 text-white shadow-xs"
-                                      : "bg-[#00E599] text-[#0d1117] shadow-xs"
-                                    : isModernSleek
-                                      ? "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                                      : "text-slate-400 hover:text-white"
-                                }`}
+                                className={`h-6 px-1.5 text-[8.5px] font-black rounded-md transition cursor-pointer ${active
+                                  ? isModernSleek
+                                    ? "bg-emerald-600 text-white shadow-xs"
+                                    : "bg-[#00E599] text-[#0d1117] shadow-xs"
+                                  : isModernSleek
+                                    ? "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                                    : "text-slate-400 hover:text-white"
+                                  }`}
                                 title={`Vitesse : ${speed / 1000}s par étape`}
                               >
                                 {speed / 1000}s
@@ -9617,21 +9563,19 @@ export default function TacticsBoard({
 
                         {/* Playback Controls (Prev, Play/Pause, Next) - Icon Only */}
                         <div
-                          className={`flex items-center gap-1 p-0.5 rounded-lg border shrink-0 ${
-                            isModernSleek
-                              ? "bg-white border-slate-200 shadow-2xs"
-                              : "bg-[#090d14] border-[#1a2130]"
-                          }`}
+                          className={`flex items-center gap-1 p-0.5 rounded-lg border shrink-0 ${isModernSleek
+                            ? "bg-white border-slate-200 shadow-2xs"
+                            : "bg-[#090d14] border-[#1a2130]"
+                            }`}
                         >
                           <button
                             type="button"
                             onClick={() => setCurrentFrameIdx((prev) => Math.max(0, prev - 1))}
                             disabled={currentFrameIdx === 0}
-                            className={`h-7 w-7 disabled:opacity-25 disabled:pointer-events-none rounded-md border transition cursor-pointer flex items-center justify-center ${
-                              isModernSleek
-                                ? "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
-                                : "bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 border-[#1f293d]"
-                            }`}
+                            className={`h-7 w-7 disabled:opacity-25 disabled:pointer-events-none rounded-md border transition cursor-pointer flex items-center justify-center ${isModernSleek
+                              ? "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                              : "bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 border-[#1f293d]"
+                              }`}
                             title={t.tactics.animation.prevStep}
                             aria-label={t.tactics.animation.prevStep}
                           >
@@ -9641,13 +9585,12 @@ export default function TacticsBoard({
                           <button
                             type="button"
                             onClick={() => setIsPlaying(!isPlaying)}
-                            className={`h-7 px-2.5 rounded-md transition cursor-pointer flex items-center justify-center shadow-md ${
-                              isPlaying
-                                ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20 animate-pulse border border-rose-400/50"
-                                : isModernSleek
-                                  ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/15 border border-emerald-500 font-bold"
-                                  : "bg-[#00E599] hover:bg-emerald-400 text-slate-950 shadow-[#00e599]/15 border border-emerald-300"
-                            }`}
+                            className={`h-7 px-2.5 rounded-md transition cursor-pointer flex items-center justify-center shadow-md ${isPlaying
+                              ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20 animate-pulse border border-rose-400/50"
+                              : isModernSleek
+                                ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/15 border border-emerald-500 font-bold"
+                                : "bg-[#00E599] hover:bg-emerald-400 text-slate-950 shadow-[#00e599]/15 border border-emerald-300"
+                              }`}
                             title={isPlaying ? t.tactics.animation.pause : t.tactics.animation.play}
                             aria-label={isPlaying ? t.tactics.animation.pause : t.tactics.animation.play}
                           >
@@ -9658,11 +9601,10 @@ export default function TacticsBoard({
                             type="button"
                             onClick={() => setCurrentFrameIdx((prev) => Math.min(keyframes.length - 1, prev + 1))}
                             disabled={currentFrameIdx === keyframes.length - 1}
-                            className={`h-7 w-7 disabled:opacity-25 disabled:pointer-events-none rounded-md border transition cursor-pointer flex items-center justify-center ${
-                              isModernSleek
-                                ? "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
-                                : "bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 border-[#1f293d]"
-                            }`}
+                            className={`h-7 w-7 disabled:opacity-25 disabled:pointer-events-none rounded-md border transition cursor-pointer flex items-center justify-center ${isModernSleek
+                              ? "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                              : "bg-[#0c1017] hover:bg-[#1b253b] text-slate-300 border-[#1f293d]"
+                              }`}
                             title={t.tactics.animation.nextStep}
                             aria-label={t.tactics.animation.nextStep}
                           >
@@ -9682,15 +9624,14 @@ export default function TacticsBoard({
                                   <button
                                     type="button"
                                     onClick={() => setCurrentFrameIdx(idx)}
-                                    className={`h-7 w-7 rounded-md border flex items-center justify-center transition-all cursor-pointer text-xs font-black ${
-                                      isActive
-                                        ? isModernSleek
-                                          ? "bg-emerald-50 border-emerald-500 text-emerald-800 shadow-xs"
-                                          : "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-[#00E599] shadow-xs"
-                                        : isModernSleek
-                                          ? "bg-white border-slate-200 hover:border-slate-400 text-slate-600 hover:text-slate-900"
-                                          : "bg-[#0c1017] border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
-                                    }`}
+                                    className={`h-7 w-7 rounded-md border flex items-center justify-center transition-all cursor-pointer text-xs font-black ${isActive
+                                      ? isModernSleek
+                                        ? "bg-emerald-50 border-emerald-500 text-emerald-800 shadow-xs"
+                                        : "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-[#00E599] shadow-xs"
+                                      : isModernSleek
+                                        ? "bg-white border-slate-200 hover:border-slate-400 text-slate-600 hover:text-slate-900"
+                                        : "bg-[#0c1017] border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
+                                      }`}
                                     title={t.tactics.animation.stepNumber(idx + 1)}
                                   >
                                     <span>{idx + 1}</span>
@@ -9708,11 +9649,10 @@ export default function TacticsBoard({
                                         setSleekToastMessage(t.tactics.animation.stepDeletedToast(deletedIdx + 1));
                                         setTimeout(() => setSleekToastMessage(null), 2500);
                                       }}
-                                      className={`ml-0.5 p-0.5 rounded transition cursor-pointer text-[9px] font-black ${
-                                        isModernSleek
-                                          ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                                          : "text-slate-500 hover:text-rose-400 hover:bg-rose-950/60"
-                                      }`}
+                                      className={`ml-0.5 p-0.5 rounded transition cursor-pointer text-[9px] font-black ${isModernSleek
+                                        ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                        : "text-slate-500 hover:text-rose-400 hover:bg-rose-950/60"
+                                        }`}
                                       title={t.tactics.animation.deleteStepTooltip(idx + 1)}
                                     >
                                       ✕
@@ -9722,15 +9662,14 @@ export default function TacticsBoard({
 
                                 {idx < keyframes.length - 1 && (
                                   <div
-                                    className={`w-2 h-0.5 shrink-0 ${
-                                      isActive
-                                        ? isModernSleek
-                                          ? "bg-emerald-500"
-                                          : "bg-[#00E599]"
-                                        : isModernSleek
-                                          ? "bg-slate-300"
-                                          : "bg-[#1f293d]"
-                                    }`}
+                                    className={`w-2 h-0.5 shrink-0 ${isActive
+                                      ? isModernSleek
+                                        ? "bg-emerald-500"
+                                        : "bg-[#00E599]"
+                                      : isModernSleek
+                                        ? "bg-slate-300"
+                                        : "bg-[#1f293d]"
+                                      }`}
                                   />
                                 )}
                               </div>
@@ -9742,11 +9681,10 @@ export default function TacticsBoard({
 
                       {/* Right: Operations Buttons - ICON ONLY */}
                       <div
-                        className={`flex items-center gap-1 shrink-0 p-0.5 rounded-lg border ${
-                          isModernSleek
-                            ? "bg-white border-slate-200 shadow-2xs"
-                            : "bg-[#090d14] border-[#1a2130]"
-                        }`}
+                        className={`flex items-center gap-1 shrink-0 p-0.5 rounded-lg border ${isModernSleek
+                          ? "bg-white border-slate-200 shadow-2xs"
+                          : "bg-[#090d14] border-[#1a2130]"
+                          }`}
                       >
                         {/* Sauvegarder (Disquette) */}
                         <button
@@ -9757,11 +9695,10 @@ export default function TacticsBoard({
                             setIsSaveAnimationMode(true);
                             setIsSaveModalOpen(true);
                           }}
-                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center shadow-xs ${
-                            isModernSleek
-                              ? "bg-purple-600 hover:bg-purple-500 text-white border border-purple-400 shadow-purple-600/15"
-                              : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border border-purple-400/40"
-                          }`}
+                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center shadow-xs ${isModernSleek
+                            ? "bg-purple-600 hover:bg-purple-500 text-white border border-purple-400 shadow-purple-600/15"
+                            : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border border-purple-400/40"
+                            }`}
                           title={t.tactics.animation.saveAnimation}
                           aria-label={t.tactics.animation.saveAnimation}
                         >
@@ -9781,11 +9718,10 @@ export default function TacticsBoard({
                             });
                             setCurrentFrameIdx(currentFrameIdx + 1);
                           }}
-                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center ${
-                            isModernSleek
-                              ? "bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 text-cyan-700 hover:text-cyan-900"
-                              : "bg-[#0c1017] hover:bg-[#121c2e] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white"
-                          }`}
+                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center ${isModernSleek
+                            ? "bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 text-cyan-700 hover:text-cyan-900"
+                            : "bg-[#0c1017] hover:bg-[#121c2e] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white"
+                            }`}
                           title={t.tactics.animation.newStep}
                           aria-label={t.tactics.animation.newStep}
                         >
@@ -9808,11 +9744,10 @@ export default function TacticsBoard({
                             setTimeout(() => setSleekToastMessage(null), 2500);
                           }}
                           disabled={keyframes.length <= 1}
-                          className={`h-7 w-8 disabled:opacity-20 disabled:pointer-events-none rounded-md transition cursor-pointer flex items-center justify-center ${
-                            isModernSleek
-                              ? "bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 hover:text-rose-900"
-                              : "bg-rose-950/40 hover:bg-rose-900 border border-rose-800/60 hover:border-rose-500 text-rose-300 hover:text-white"
-                          }`}
+                          className={`h-7 w-8 disabled:opacity-20 disabled:pointer-events-none rounded-md transition cursor-pointer flex items-center justify-center ${isModernSleek
+                            ? "bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 hover:text-rose-900"
+                            : "bg-rose-950/40 hover:bg-rose-900 border border-rose-800/60 hover:border-rose-500 text-rose-300 hover:text-white"
+                            }`}
                           title={t.tactics.animation.deleteCurrentStep}
                           aria-label={t.tactics.animation.deleteCurrentStep}
                         >
@@ -9830,11 +9765,10 @@ export default function TacticsBoard({
                             setSleekToastMessage(t.tactics.animation.resetAnimationToast);
                             setTimeout(() => setSleekToastMessage(null), 2500);
                           }}
-                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center ${
-                            isModernSleek
-                              ? "bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900"
-                              : "bg-[#0c1017] hover:bg-[#1b253b] border border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
-                          }`}
+                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center ${isModernSleek
+                            ? "bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900"
+                            : "bg-[#0c1017] hover:bg-[#1b253b] border border-[#1f293d] hover:border-slate-500 text-slate-400 hover:text-white"
+                            }`}
                           title={t.tactics.animation.resetAnimation}
                           aria-label={t.tactics.animation.resetAnimation}
                         >
@@ -13744,30 +13678,25 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {showSquad3DModal && (
         <div className="fixed inset-0 bg-slate-950/80 flex items-center justify-center p-3 sm:p-6 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-          <div className={`w-full max-w-6xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl relative my-auto space-y-4 max-h-[95vh] overflow-y-auto border overflow-hidden ${
-            isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0f17] border-[#1e293b] text-white"
-          }`}>
+          <div className={`w-full max-w-6xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl relative my-auto space-y-4 max-h-[95vh] overflow-y-auto border overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0f17] border-[#1e293b] text-white"
+            }`}>
 
             {/* Header */}
-            <div className={`flex items-center justify-between border-b pb-4 mb-2 relative z-10 ${
-              isModernSleek ? "border-slate-200" : "border-[#1f293d]"
-            }`}>
+            <div className={`flex items-center justify-between border-b pb-4 mb-2 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+              }`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-xs ${
-                  isModernSleek ? "bg-slate-100 border-slate-200 text-slate-800" : "bg-[#131b29] border-[#1f293d] text-[#00E599]"
-                }`}>
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-xs ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-800" : "bg-[#131b29] border-[#1f293d] text-[#00E599]"
+                  }`}>
                   <Box className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className={`text-base font-black uppercase tracking-wider flex items-center gap-2 ${
-                    isModernSleek ? "text-slate-900" : "text-white"
-                  }`}>
-                    <span>VUE EXPORT 3D</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
-                      isModernSleek
-                        ? "bg-slate-100 text-slate-600 border-slate-200"
-                        : "bg-[#131b29] text-emerald-400 border-emerald-500/30"
+                  <h3 className={`text-base font-black uppercase tracking-wider flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"
                     }`}>
+                    <span>VUE EXPORT 3D</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${isModernSleek
+                      ? "bg-slate-100 text-slate-600 border-slate-200"
+                      : "bg-[#131b29] text-emerald-400 border-emerald-500/30"
+                      }`}>
                       {squad3DPlayerStyle === "head" ? "MODE TÊTE 3D" : "MODE CARTE 3D"}
                     </span>
                   </h3>
@@ -13779,11 +13708,10 @@ export default function TacticsBoard({
 
               <button
                 onClick={() => setShowSquad3DModal(false)}
-                className={`p-2 rounded-xl transition cursor-pointer ${
-                  isModernSleek
-                    ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100"
-                    : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                }`}
+                className={`p-2 rounded-xl transition cursor-pointer ${isModernSleek
+                  ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+                  : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  }`}
                 title="Fermer"
               >
                 <X className="w-5 h-5" />
@@ -13791,9 +13719,8 @@ export default function TacticsBoard({
             </div>
 
             {/* Toolbar Controls */}
-            <div className={`relative z-10 flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl border ${
-              isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900 shadow-xs" : "bg-[#0d131f] border-[#1f293d] text-white"
-            }`}>
+            <div className={`relative z-10 flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl border ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900 shadow-xs" : "bg-[#0d131f] border-[#1f293d] text-white"
+              }`}>
 
               {/* Left Controls: Representation & Themes */}
               <div className="flex flex-wrap items-center gap-2.5">
@@ -13802,17 +13729,15 @@ export default function TacticsBoard({
                   <span className={`text-[11px] font-bold uppercase ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                     Vue :
                   </span>
-                  <div className={`flex items-center p-0.5 rounded-xl border ${
-                    isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
-                  }`}>
+                  <div className={`flex items-center p-0.5 rounded-xl border ${isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
+                    }`}>
                     <button
                       type="button"
                       onClick={() => setSquad3DPlayerStyle("head")}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                        squad3DPlayerStyle === "head"
-                          ? "bg-[#00E599] text-slate-950 shadow-sm"
-                          : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${squad3DPlayerStyle === "head"
+                        ? "bg-[#00E599] text-slate-950 shadow-sm"
+                        : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
+                        }`}
                     >
                       <User className="w-3.5 h-3.5" />
                       <span>Têtes 3D</span>
@@ -13820,11 +13745,10 @@ export default function TacticsBoard({
                     <button
                       type="button"
                       onClick={() => setSquad3DPlayerStyle("card")}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                        squad3DPlayerStyle === "card"
-                          ? "bg-[#00E599] text-slate-950 shadow-sm"
-                          : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${squad3DPlayerStyle === "card"
+                        ? "bg-[#00E599] text-slate-950 shadow-sm"
+                        : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
+                        }`}
                     >
                       <CreditCard className="w-3.5 h-3.5" />
                       <span>Cartes 3D</span>
@@ -13838,9 +13762,8 @@ export default function TacticsBoard({
                     <span className={`text-[11px] font-bold uppercase ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                       Thème :
                     </span>
-                    <div className={`flex items-center gap-1 p-0.5 rounded-xl border ${
-                      isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
-                    }`}>
+                    <div className={`flex items-center gap-1 p-0.5 rounded-xl border ${isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
+                      }`}>
                       {[
                         { id: "gold", label: "Or", dot: "bg-amber-400" },
                         { id: "black_special", label: "Onyx", dot: "bg-zinc-900 border border-amber-400/60" },
@@ -13851,11 +13774,10 @@ export default function TacticsBoard({
                           key={t.id}
                           type="button"
                           onClick={() => setCardTheme(t.id as any)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                            cardTheme === t.id
-                              ? isModernSleek ? "bg-slate-100 text-slate-900 shadow-xs border border-slate-300" : "bg-[#1f293d] text-white shadow-xs border border-[#2d3d5a]"
-                              : isModernSleek ? "text-slate-500 hover:text-slate-900" : "text-slate-400 hover:text-white"
-                          }`}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer ${cardTheme === t.id
+                            ? isModernSleek ? "bg-slate-100 text-slate-900 shadow-xs border border-slate-300" : "bg-[#1f293d] text-white shadow-xs border border-[#2d3d5a]"
+                            : isModernSleek ? "text-slate-500 hover:text-slate-900" : "text-slate-400 hover:text-white"
+                            }`}
                         >
                           <span className={`w-2 h-2 rounded-full ${t.dot}`} />
                           <span>{t.label}</span>
@@ -13870,17 +13792,15 @@ export default function TacticsBoard({
                   <span className={`text-[11px] font-bold uppercase ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                     Format :
                   </span>
-                  <div className={`flex items-center p-0.5 rounded-xl border ${
-                    isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
-                  }`}>
+                  <div className={`flex items-center p-0.5 rounded-xl border ${isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
+                    }`}>
                     <button
                       type="button"
                       onClick={() => setSquad3DOrientation("landscape")}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                        squad3DOrientation === "landscape"
-                          ? "bg-[#00E599] text-slate-950 shadow-sm"
-                          : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
-                      }`}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${squad3DOrientation === "landscape"
+                        ? "bg-[#00E599] text-slate-950 shadow-sm"
+                        : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
+                        }`}
                     >
                       <Laptop className="w-3.5 h-3.5" />
                       <span>16:9</span>
@@ -13888,11 +13808,10 @@ export default function TacticsBoard({
                     <button
                       type="button"
                       onClick={() => setSquad3DOrientation("portrait")}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                        squad3DOrientation === "portrait"
-                          ? "bg-[#00E599] text-slate-950 shadow-sm"
-                          : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
-                      }`}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${squad3DOrientation === "portrait"
+                        ? "bg-[#00E599] text-slate-950 shadow-sm"
+                        : isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
+                        }`}
                     >
                       <Smartphone className="w-3.5 h-3.5" />
                       <span>9:16</span>
@@ -13904,12 +13823,10 @@ export default function TacticsBoard({
               {/* Middle Controls: Pitch Scale & Player Scale Sliders */}
               <div className="flex flex-wrap items-center gap-2.5">
                 {/* 4. Agrandir Terrain */}
-                <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${
-                  isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
-                }`}>
-                  <span className={`text-[11px] font-bold uppercase flex items-center gap-1 ${
-                    isModernSleek ? "text-slate-600" : "text-slate-400"
+                <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
                   }`}>
+                  <span className={`text-[11px] font-bold uppercase flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"
+                    }`}>
                     <Maximize2 className="w-3.5 h-3.5 text-[#00E599]" />
                     <span>Terrain :</span>
                   </span>
@@ -13926,9 +13843,8 @@ export default function TacticsBoard({
                   {squad3DPitchScale !== 100 && (
                     <button
                       onClick={() => setSquad3DPitchScale(100)}
-                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition cursor-pointer ${
-                        isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800" : "bg-[#1f293d] hover:bg-[#2c3b55] text-slate-300"
-                      }`}
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition cursor-pointer ${isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800" : "bg-[#1f293d] hover:bg-[#2c3b55] text-slate-300"
+                        }`}
                       title="Réinitialiser"
                     >
                       100%
@@ -13937,12 +13853,10 @@ export default function TacticsBoard({
                 </div>
 
                 {/* 5. Agrandir Joueurs */}
-                <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${
-                  isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
-                }`}>
-                  <span className={`text-[11px] font-bold uppercase flex items-center gap-1 ${
-                    isModernSleek ? "text-slate-600" : "text-slate-400"
+                <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"
                   }`}>
+                  <span className={`text-[11px] font-bold uppercase flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"
+                    }`}>
                     <User className="w-3.5 h-3.5 text-[#00E599]" />
                     <span>Joueurs :</span>
                   </span>
@@ -13959,9 +13873,8 @@ export default function TacticsBoard({
                   {squad3DPlayerScale !== 100 && (
                     <button
                       onClick={() => setSquad3DPlayerScale(100)}
-                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition cursor-pointer ${
-                        isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800" : "bg-[#1f293d] hover:bg-[#2c3b55] text-slate-300"
-                      }`}
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition cursor-pointer ${isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800" : "bg-[#1f293d] hover:bg-[#2c3b55] text-slate-300"
+                        }`}
                       title="Réinitialiser"
                     >
                       100%
@@ -13974,11 +13887,10 @@ export default function TacticsBoard({
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleOpenShareSquad3D}
-                  className={`px-3 py-2 border font-bold text-xs rounded-xl flex items-center gap-2 transition cursor-pointer ${
-                    isModernSleek
-                      ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700"
-                      : "bg-[#131b29] hover:bg-[#1f293d] border-[#1f293d] text-slate-200"
-                  }`}
+                  className={`px-3 py-2 border font-bold text-xs rounded-xl flex items-center gap-2 transition cursor-pointer ${isModernSleek
+                    ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700"
+                    : "bg-[#131b29] hover:bg-[#1f293d] border-[#1f293d] text-slate-200"
+                    }`}
                   title="Partager par WhatsApp ou E-mail"
                 >
                   <Share2 className="w-4 h-4 text-emerald-400" />
@@ -13999,11 +13911,10 @@ export default function TacticsBoard({
             {/* THE EXPORTABLE 3D STAGE CONTAINER */}
             <div
               ref={squad3DRef}
-              className={`bg-[#0a0f18] text-white p-4 sm:p-6 rounded-2xl border border-[#1f293d] relative select-none flex flex-col justify-between shadow-2xl mx-auto transition-all duration-300 ${
-                squad3DOrientation === "portrait"
-                  ? "max-w-[540px] min-h-[820px] w-full"
-                  : "max-w-[960px] w-full min-h-[600px]"
-              }`}
+              className={`bg-[#0a0f18] text-white p-4 sm:p-6 rounded-2xl border border-[#1f293d] relative select-none flex flex-col justify-between shadow-2xl mx-auto transition-all duration-300 ${squad3DOrientation === "portrait"
+                ? "max-w-[540px] min-h-[820px] w-full"
+                : "max-w-[960px] w-full min-h-[600px]"
+                }`}
               style={{
                 backgroundImage: "radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.08) 0%, rgba(13, 19, 31, 0.95) 75%)"
               }}
@@ -14022,11 +13933,10 @@ export default function TacticsBoard({
               </div>
 
               {/* 3D Pitch Container */}
-              <div className={`relative z-10 my-3 w-full flex items-center justify-center transition-all ${
-                squad3DOrientation === "portrait"
-                  ? "h-[660px] sm:h-[690px]"
-                  : (squad3DPitchScale > 120 ? "h-[600px] sm:h-[640px]" : squad3DPitchScale > 100 ? "h-[540px] sm:h-[580px]" : "h-[500px]")
-              }`}>
+              <div className={`relative z-10 my-3 w-full flex items-center justify-center transition-all ${squad3DOrientation === "portrait"
+                ? "h-[660px] sm:h-[690px]"
+                : (squad3DPitchScale > 120 ? "h-[600px] sm:h-[640px]" : squad3DPitchScale > 100 ? "h-[540px] sm:h-[580px]" : "h-[500px]")
+                }`}>
 
                 {/* Perspective wrapper */}
                 <div
@@ -14303,9 +14213,8 @@ export default function TacticsBoard({
                               /* ========================================================= */
                               <div className="flex flex-col items-center select-none pointer-events-none">
                                 {/* 3D Avatar Head */}
-                                <div className={`${
-                                  squad3DOrientation === "portrait" ? "w-12 h-12 sm:w-14 sm:h-14" : "w-14 h-14 sm:w-16 sm:h-16"
-                                } relative flex items-center justify-center`}>
+                                <div className={`${squad3DOrientation === "portrait" ? "w-12 h-12 sm:w-14 sm:h-14" : "w-14 h-14 sm:w-16 sm:h-16"
+                                  } relative flex items-center justify-center`}>
                                   <img
                                     src={photoSrc}
                                     alt={p.name}
@@ -14331,17 +14240,15 @@ export default function TacticsBoard({
                               /* VUE 2 : CARTE DU JOUEUR (STYLE SQUAD CARD)               */
                               /* ========================================================= */
                               <div
-                                className={`${
-                                  squad3DOrientation === "portrait" ? "w-13 sm:w-15 p-1" : "w-15 sm:w-18 p-1.5"
-                                } rounded-xl shadow-2xl text-center border-2 flex flex-col items-center justify-between transition-all ${
-                                  cardTheme === "gold"
+                                className={`${squad3DOrientation === "portrait" ? "w-13 sm:w-15 p-1" : "w-15 sm:w-18 p-1.5"
+                                  } rounded-xl shadow-2xl text-center border-2 flex flex-col items-center justify-between transition-all ${cardTheme === "gold"
                                     ? "bg-gradient-to-b from-amber-300 via-amber-500 to-amber-700 border-amber-200 text-amber-950 shadow-amber-950/60"
                                     : cardTheme === "silver"
                                       ? "bg-gradient-to-b from-slate-200 via-slate-400 to-slate-600 border-slate-100 text-slate-950 shadow-slate-950/60"
                                       : cardTheme === "black_special"
                                         ? "bg-gradient-to-b from-zinc-800 via-zinc-950 to-black border-amber-400 text-amber-300 shadow-black/90"
                                         : "bg-gradient-to-b from-emerald-400 via-emerald-600 to-emerald-950 border-emerald-300 text-white shadow-emerald-950/60"
-                                }`}
+                                  }`}
                               >
                                 {/* Top bar: Number & Role */}
                                 <div className="w-full flex items-center justify-between px-0.5 text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-tight leading-none mb-0.5">
@@ -14354,9 +14261,8 @@ export default function TacticsBoard({
                                   <img
                                     src={photoSrc}
                                     alt={p.name}
-                                    className={`${
-                                      squad3DOrientation === "portrait" ? "w-7 h-7 sm:w-8 sm:h-8" : "w-8 h-8 sm:w-10 sm:h-10"
-                                    } rounded-full object-cover border-2 border-white/80 shadow-md bg-black/40`}
+                                    className={`${squad3DOrientation === "portrait" ? "w-7 h-7 sm:w-8 sm:h-8" : "w-8 h-8 sm:w-10 sm:h-10"
+                                      } rounded-full object-cover border-2 border-white/80 shadow-md bg-black/40`}
                                   />
                                 </div>
 
