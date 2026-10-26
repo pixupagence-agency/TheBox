@@ -5503,14 +5503,18 @@ export default function TacticsBoard({
             {/* Photo / Avatar */}
             <div className="relative shrink-0">
               {(() => {
-                const isGK = activeToken.role === "G" || activeToken.role === "GK" || activeToken.role === "Gardien" || activeToken.number === 1;
-                const defaultAvatar = isGK
+                const isGK = activeSport !== "basketball" && (activeToken.role === "G" || activeToken.role === "GK" || activeToken.role === "Gardien" || activeToken.number === 1);
+                const defaultAvatar = activeSport === "basketball"
                   ? isHome
-                    ? "/images/avatars/goalkeeper_yellow.png"
-                    : "/images/avatars/opponent_goalkeeper.png"
-                  : isHome
-                    ? "/images/avatars/player_green.png"
-                    : "/images/avatars/opponent_red.png";
+                    ? "/images/avatars/basket_player_green.png"
+                    : "/images/avatars/basket_opponent_red.png"
+                  : isGK
+                    ? isHome
+                      ? "/images/avatars/goalkeeper_yellow.png"
+                      : "/images/avatars/opponent_goalkeeper.png"
+                    : isHome
+                      ? "/images/avatars/player_green.png"
+                      : "/images/avatars/opponent_red.png";
                 const src = activeToken.photo || defaultAvatar;
 
                 return (
@@ -6575,14 +6579,18 @@ export default function TacticsBoard({
             <div className="relative group shrink-0 flex flex-col items-center gap-1.5">
               <div className="relative">
                 {(() => {
-                  const isGK = editingToken.role === "G" || editingToken.role === "GK" || editingToken.role === "Gardien" || editingToken.number === 1;
-                  const defaultAvatar = isGK
+                  const isGK = activeSport !== "basketball" && (editingToken.role === "G" || editingToken.role === "GK" || editingToken.role === "Gardien" || editingToken.number === 1);
+                  const defaultAvatar = activeSport === "basketball"
                     ? isHome
-                      ? "/images/avatars/goalkeeper_yellow.png"
-                      : "/images/avatars/opponent_goalkeeper.png"
-                    : isHome
-                      ? "/images/avatars/player_green.png"
-                      : "/images/avatars/opponent_red.png";
+                      ? "/images/avatars/basket_player_green.png"
+                      : "/images/avatars/basket_opponent_red.png"
+                    : isGK
+                      ? isHome
+                        ? "/images/avatars/goalkeeper_yellow.png"
+                        : "/images/avatars/opponent_goalkeeper.png"
+                      : isHome
+                        ? "/images/avatars/player_green.png"
+                        : "/images/avatars/opponent_red.png";
                   const src = editingToken.photo || defaultAvatar;
 
                   return (
@@ -9269,18 +9277,23 @@ export default function TacticsBoard({
                                     /* 2. TÊTE DU JOUEUR (Affichage 3D de base avec maillot vert pour joueurs et jaune pour gardien) */
                                     (() => {
                                       const isGK =
+                                        activeSport !== "basketball" && (
                                         token.role === "G" ||
                                         token.role === "GK" ||
                                         token.role === "Gardien" ||
-                                        token.number === 1;
+                                        token.number === 1);
                                       const isTeamB = token.type === "player_b";
-                                      const defaultHeadSrc = isGK
+                                      const defaultHeadSrc = activeSport === "basketball"
                                         ? isTeamB
-                                          ? "/images/avatars/opponent_goalkeeper.png"
-                                          : "/images/avatars/goalkeeper_yellow.png"
-                                        : isTeamB
-                                          ? "/images/avatars/opponent_red.png"
-                                          : "/images/avatars/player_green.png";
+                                          ? "/images/avatars/basket_opponent_red.png"
+                                          : "/images/avatars/basket_player_green.png"
+                                        : isGK
+                                          ? isTeamB
+                                            ? "/images/avatars/opponent_goalkeeper.png"
+                                            : "/images/avatars/goalkeeper_yellow.png"
+                                          : isTeamB
+                                            ? "/images/avatars/opponent_red.png"
+                                            : "/images/avatars/player_green.png";
 
                                       const photoSrc = token.photo
                                         ? (autoTransparentCache[token.photo] || token.photo)
@@ -14196,10 +14209,12 @@ export default function TacticsBoard({
                         const posX = squad3DOrientation === "portrait" ? (12 + (p.y * 0.76)) : p.x;
                         const posY = squad3DOrientation === "portrait" ? (14 + ((100 - p.x) * 0.72)) : p.y;
                         const role = p.role || "ST";
-                        const isGK = p.role === "G" || p.role === "GK" || p.role === "Gardien" || p.number === 1;
-                        const defaultHeadSrc = isGK
-                          ? "/images/avatars/goalkeeper_yellow.png"
-                          : "/images/avatars/player_green.png";
+                        const isGK = activeSport !== "basketball" && (p.role === "G" || p.role === "GK" || p.role === "Gardien" || p.number === 1);
+                        const defaultHeadSrc = activeSport === "basketball"
+                          ? "/images/avatars/basket_player_green.png"
+                          : isGK
+                            ? "/images/avatars/goalkeeper_yellow.png"
+                            : "/images/avatars/player_green.png";
                         const photoSrc = p.photo ? (autoTransparentCache[p.photo] || p.photo) : defaultHeadSrc;
 
                         return (

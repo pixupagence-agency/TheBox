@@ -86,8 +86,10 @@ Le terrain central vous permet de positionner et manipuler tous les acteurs d'un
 ### Représentation visuelle des joueurs (Options d'affichage) :
 Depuis la barre d'options du terrain, choisissez le style de représentation adapté à vos séances :
 * ⚪ **Pastille (Classique)** : Pastille circulaire épurée affichant le numéro ou le poste, idéale pour la clarté tactique rapide et la vision d'ensemble.
-* 👕 **Buste (Maillot)** : Silhouette de maillot athlétique aux couleurs de l'équipe avec le numéro floqué sur la poitrine, offrant une immersion visuelle proche des tableaux professionnels.
-* 👤 **Tête du joueur** : Avatar 3D stylisé sans fond par défaut distinct pour chaque équipe : joueur brun en maillot vert pour **MON ÉQUIPE** (maillot jaune éclatant pour son gardien de but) et joueur blond en maillot rouge pour **MON ADVERSAIRE** (maillot bleu roi pour son gardien), ou photo réelle détourée si personnalisée.
+* 👤 **Tête du joueur** : Avatar 3D stylisé sans fond par défaut distinct pour chaque équipe et chaque discipline :
+  * **Football** : joueur brun en maillot vert pour **MON ÉQUIPE** (maillot jaune éclatant pour son gardien de but) et joueur blond en maillot rouge pour **MON ADVERSAIRE** (maillot bleu roi pour son gardien).
+  * **Basketball** : joueur barbu en maillot vert #07 avec bandeau pour **MON ÉQUIPE** et joueur blond en maillot rouge #12 avec bandeau pour **MON ADVERSAIRE**.
+  * *(Ou photo réelle détourée automatiquement si vous importez votre propre cliché).*
 
 ### Actions sur un joueur :
 * **Déplacement** : Glisser-déposer fluide à la souris ou au doigt sur écran tactile.
