@@ -1357,7 +1357,11 @@ export default function TacticsBoard({
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.map((m) =>
+              m.awayTeam === "NOUVEL ADVERSAIRE" ? { ...m, awayTeam: "ADVERSAIRE" } : m
+            );
+          }
         } catch (e) { }
       }
     }
@@ -1713,7 +1717,7 @@ export default function TacticsBoard({
       id: newId,
       teamId: targetTeamId,
       homeTeam: targetTeam?.name || "MON EQUIPE",
-      awayTeam: "NOUVEL ADVERSAIRE",
+      awayTeam: "ADVERSAIRE",
       competition: "CHAMPIONNAT",
       dateTime: "DIM. PROCHAIN • 15:00",
       isFinished: false,
@@ -4493,78 +4497,127 @@ export default function TacticsBoard({
 
     // Pitch Border & Sport-Specific Line markup
     if (sportKey === "basketball") {
-      // Wood court background
-      const courtGrad = ctx.createLinearGradient(pitchX, pitchY, pitchX + pitchW, pitchY + pitchH);
-      courtGrad.addColorStop(0, "#78350f");
-      courtGrad.addColorStop(0.5, "#92400e");
-      courtGrad.addColorStop(1, "#78350f");
+      // Warm honey-orange maple wood parquet court background matching reference image
+      const courtX = pitchX + pitchW * 0.021;
+      const courtY = pitchY + pitchH * 0.033;
+      const courtW = pitchW * 0.958;
+      const courtH = pitchH * 0.934;
+
+      // Parquet floor slats background
+      const courtGrad = ctx.createLinearGradient(pitchX, pitchY, pitchX, pitchY + pitchH);
+      courtGrad.addColorStop(0, "#f49f38");
+      courtGrad.addColorStop(0.25, "#ea8323");
+      courtGrad.addColorStop(0.5, "#f0942e");
+      courtGrad.addColorStop(0.75, "#e07718");
+      courtGrad.addColorStop(1, "#f6a540");
       ctx.fillStyle = courtGrad;
       ctx.fillRect(pitchX, pitchY, pitchW, pitchH);
 
-      ctx.strokeStyle = "#fcd34d";
+      // Slat separation lines
+      ctx.strokeStyle = "rgba(180, 80, 10, 0.35)";
+      ctx.lineWidth = 1;
+      const slatCount = 14;
+      for (let s = 1; s < slatCount; s++) {
+        const sy = pitchY + (pitchH / slatCount) * s;
+        ctx.beginPath();
+        ctx.moveTo(pitchX, sy);
+        ctx.lineTo(pitchX + pitchW, sy);
+        ctx.stroke();
+      }
+
+      // Outer white boundary line
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3.5;
+      ctx.strokeRect(courtX, courtY, courtW, courtH);
+
+      // Center Line (crisp white)
+      ctx.beginPath();
+      ctx.moveTo(courtX + courtW / 2, courtY);
+      ctx.lineTo(courtX + courtW / 2, courtY + courtH);
+      ctx.stroke();
+
+      // Center Circle (full white circle)
+      ctx.beginPath();
+      ctx.arc(courtX + courtW / 2, courtY + courtH / 2, courtH * 0.25, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Key dimensions - placed fully inside the 3-point arc
+      const keyW = courtW * 0.171;
+      const keyH = courtH * 0.30;
+      const keyY = courtY + (courtH - keyH) / 2;
+
+      // Left Key (white rectangle)
+      ctx.strokeRect(courtX, keyY, keyW, keyH);
+
+      // Left Free throw circle (full white circle inside the 3-point arc)
+      const ftRadius = keyH * 0.357;
+      ctx.beginPath();
+      ctx.arc(courtX + keyW, courtY + courtH / 2, ftRadius, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Left Key Rebound Blocks (4 white blocks top, 4 bottom)
+      ctx.fillStyle = "#ffffff";
+      const blockW = keyW * 0.076;
+      const blockH = keyH * 0.08;
+      for (let b = 0; b < 4; b++) {
+        const bx = courtX + keyW * (0.26 + b * 0.17);
+        ctx.fillRect(bx, keyY - blockH, blockW, blockH);
+        ctx.fillRect(bx, keyY + keyH, blockW, blockH);
+      }
+
+      // Left 3-Point Arc (grand rond - curves well past the key)
+      ctx.beginPath();
+      ctx.arc(courtX + keyW * 0.35, courtY + courtH / 2, courtH * 0.48, -Math.PI * 0.40, Math.PI * 0.40);
+      ctx.stroke();
+
+      // Left Backboard & Hoop (all white)
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(courtX + keyW * 0.22, keyY + keyH * 0.28);
+      ctx.lineTo(courtX + keyW * 0.22, keyY + keyH * 0.72);
+      ctx.stroke();
       ctx.lineWidth = 3;
-      ctx.strokeRect(pitchX, pitchY, pitchW, pitchH);
-
-      // Center Line
       ctx.beginPath();
-      ctx.moveTo(pitchX + pitchW / 2, pitchY);
-      ctx.lineTo(pitchX + pitchW / 2, pitchY + pitchH);
+      ctx.moveTo(courtX + keyW * 0.22, courtY + courtH / 2);
+      ctx.lineTo(courtX + keyW * 0.31, courtY + courtH / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(courtX + keyW * 0.40, courtY + courtH / 2, 8, 0, 2 * Math.PI);
       ctx.stroke();
 
-      // Center Circle
+      // Right Key (white rectangle)
+      ctx.strokeRect(courtX + courtW - keyW, keyY, keyW, keyH);
+
+      // Right Free throw circle (full white circle inside the 3-point arc)
       ctx.beginPath();
-      ctx.arc(pitchX + pitchW / 2, pitchY + pitchH / 2, pitchH * 0.22, 0, 2 * Math.PI);
+      ctx.arc(courtX + courtW - keyW, courtY + courtH / 2, ftRadius, 0, 2 * Math.PI);
       ctx.stroke();
 
-      // Left Key
-      const keyW = pitchW * 0.18;
-      const keyH = pitchH * 0.36;
-      const keyY = pitchY + (pitchH - keyH) / 2;
-      ctx.strokeRect(pitchX, keyY, keyW, keyH);
+      // Right Key Rebound Blocks (4 white blocks top, 4 bottom)
+      for (let b = 0; b < 4; b++) {
+        const bx = courtX + courtW - keyW * (0.26 + b * 0.17) - blockW;
+        ctx.fillRect(bx, keyY - blockH, blockW, blockH);
+        ctx.fillRect(bx, keyY + keyH, blockW, blockH);
+      }
 
-      // Left Free throw circle
+      // Right 3-Point Arc (grand rond - curves well past the key)
       ctx.beginPath();
-      ctx.arc(pitchX + keyW, pitchY + pitchH / 2, keyH / 2, -Math.PI / 2, Math.PI / 2);
+      ctx.arc(courtX + courtW - keyW * 0.35, courtY + courtH / 2, courtH * 0.48, Math.PI * 0.60, Math.PI * 1.40);
       ctx.stroke();
 
-      // Left 3-Point Arc
+      // Right Backboard & Hoop (all white)
+      ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.arc(pitchX + keyW * 0.3, pitchY + pitchH / 2, pitchH * 0.42, -Math.PI * 0.38, Math.PI * 0.38);
+      ctx.moveTo(courtX + courtW - keyW * 0.22, keyY + keyH * 0.28);
+      ctx.lineTo(courtX + courtW - keyW * 0.22, keyY + keyH * 0.72);
       ctx.stroke();
-
-      // Right Key
-      ctx.strokeRect(pitchX + pitchW - keyW, keyY, keyW, keyH);
-
-      // Right Free throw circle
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(pitchX + pitchW - keyW, pitchY + pitchH / 2, keyH / 2, Math.PI / 2, -Math.PI / 2);
+      ctx.moveTo(courtX + courtW - keyW * 0.22, courtY + courtH / 2);
+      ctx.lineTo(courtX + courtW - keyW * 0.31, courtY + courtH / 2);
       ctx.stroke();
-
-      // Right 3-Point Arc
       ctx.beginPath();
-      ctx.arc(pitchX + pitchW - keyW * 0.3, pitchY + pitchH / 2, pitchH * 0.42, Math.PI * 0.62, Math.PI * 1.38);
-      ctx.stroke();
-
-      // Backboards & Hoops
-      ctx.strokeStyle = "#fcd34d";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(pitchX + keyW * 0.25, keyY + keyH * 0.35);
-      ctx.lineTo(pitchX + keyW * 0.25, keyY + keyH * 0.65);
-      ctx.stroke();
-      ctx.strokeStyle = "#f59e0b";
-      ctx.beginPath();
-      ctx.arc(pitchX + keyW * 0.32, pitchY + pitchH / 2, 8, 0, 2 * Math.PI);
-      ctx.stroke();
-
-      ctx.strokeStyle = "#fcd34d";
-      ctx.beginPath();
-      ctx.moveTo(pitchX + pitchW - keyW * 0.25, keyY + keyH * 0.35);
-      ctx.lineTo(pitchX + pitchW - keyW * 0.25, keyY + keyH * 0.65);
-      ctx.stroke();
-      ctx.strokeStyle = "#f59e0b";
-      ctx.beginPath();
-      ctx.arc(pitchX + pitchW - keyW * 0.32, pitchY + pitchH / 2, 8, 0, 2 * Math.PI);
+      ctx.arc(courtX + courtW - keyW * 0.40, courtY + courtH / 2, 8, 0, 2 * Math.PI);
       ctx.stroke();
 
     } else if (sportKey === "handball") {
@@ -5630,63 +5683,65 @@ export default function TacticsBoard({
           </button>
         </div>
 
-        {/* LIGNE 2 : STATS GLOBALES DU JOUEUR */}
-        <div className="flex flex-wrap items-center justify-between gap-2 bg-[#090d14] px-2.5 py-1.5 rounded-xl border border-[#1a2130]">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-[9px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1">
-              <Award className="w-3.5 h-3.5 text-amber-400" />
-              <span>{t.tactics.playerCard.globalStatsHeader}</span>
-            </span>
+        {/* LIGNE 2 : STATS GLOBALES DU JOUEUR (affichée uniquement lorsqu'un match est en cours) */}
+        {isLiveMatchMode && (
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-[#090d14] px-2.5 py-1.5 rounded-xl border border-[#1a2130]">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[9px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <Award className="w-3.5 h-3.5 text-amber-400" />
+                <span>{t.tactics.playerCard.globalStatsHeader}</span>
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {/* Buts ⚽ */}
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] ${isModernSleek ? "bg-emerald-50 border border-emerald-300 text-emerald-800" : "bg-[#102420] border border-[#00e599]/30 text-emerald-300"
+                }`}>
+                <span>⚽</span>
+                <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.goalsLabel}</span>
+                <span className={`font-black text-xs ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{playerGoals}</span>
+              </div>
+
+              {/* Passes D. 👟 */}
+              <div className="flex items-center gap-1.5 bg-[#0f2334] border border-cyan-500/30 px-2.5 py-1 rounded-lg text-cyan-300 font-bold text-[10.5px]">
+                <span>👟</span>
+                <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.assistsLabel}</span>
+                <span className="font-black text-cyan-400 text-xs">{playerAssists}</span>
+              </div>
+
+              {/* Cartons Jaunes 🟨 */}
+              <div className="flex items-center gap-1.5 bg-[#241c10] border border-amber-500/30 px-2.5 py-1 rounded-lg text-amber-300 font-bold text-[10.5px]">
+                <span>🟨</span>
+                <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.yellowsLabel}</span>
+                <span className="font-black text-amber-400 text-xs">{playerYellows}</span>
+              </div>
+
+              {/* Cartons Rouges 🟥 */}
+              <div className="flex items-center gap-1.5 bg-[#2c1318] border border-rose-500/30 px-2.5 py-1 rounded-lg text-rose-300 font-bold text-[10.5px]">
+                <span>🟥</span>
+                <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.redsLabel}</span>
+                <span className="font-black text-rose-400 text-xs">{playerReds}</span>
+              </div>
+
+              {/* État / Forme */}
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#111827] border-[#1f293d]"
+                }`}>
+                <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.fitnessLabel}</span>
+                {isInjured ? (
+                  <span className="text-amber-400 font-black flex items-center gap-1">{t.tactics.subModal.injured}</span>
+                ) : playerReds > 0 ? (
+                  <span className="text-rose-400 font-black flex items-center gap-1">{t.tactics.subModal.sentOff}</span>
+                ) : isTired ? (
+                  <span className="text-yellow-400 font-black flex items-center gap-1">{t.tactics.subModal.tired}</span>
+                ) : isExcellent ? (
+                  <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>{t.tactics.playerCard.formExcellent}</span>
+                ) : (
+                  <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{t.tactics.playerCard.formFit}</span>
+                )}
+              </div>
+            </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {/* Buts ⚽ */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] ${isModernSleek ? "bg-emerald-50 border border-emerald-300 text-emerald-800" : "bg-[#102420] border border-[#00e599]/30 text-emerald-300"
-              }`}>
-              <span>⚽</span>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.goalsLabel}</span>
-              <span className={`font-black text-xs ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{playerGoals}</span>
-            </div>
-
-            {/* Passes D. 👟 */}
-            <div className="flex items-center gap-1.5 bg-[#0f2334] border border-cyan-500/30 px-2.5 py-1 rounded-lg text-cyan-300 font-bold text-[10.5px]">
-              <span>👟</span>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.assistsLabel}</span>
-              <span className="font-black text-cyan-400 text-xs">{playerAssists}</span>
-            </div>
-
-            {/* Cartons Jaunes 🟨 */}
-            <div className="flex items-center gap-1.5 bg-[#241c10] border border-amber-500/30 px-2.5 py-1 rounded-lg text-amber-300 font-bold text-[10.5px]">
-              <span>🟨</span>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.yellowsLabel}</span>
-              <span className="font-black text-amber-400 text-xs">{playerYellows}</span>
-            </div>
-
-            {/* Cartons Rouges 🟥 */}
-            <div className="flex items-center gap-1.5 bg-[#2c1318] border border-rose-500/30 px-2.5 py-1 rounded-lg text-rose-300 font-bold text-[10.5px]">
-              <span>🟥</span>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.redsLabel}</span>
-              <span className="font-black text-rose-400 text-xs">{playerReds}</span>
-            </div>
-
-            {/* État / Forme */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#111827] border-[#1f293d]"
-              }`}>
-              <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.fitnessLabel}</span>
-              {isInjured ? (
-                <span className="text-amber-400 font-black flex items-center gap-1">{t.tactics.subModal.injured}</span>
-              ) : playerReds > 0 ? (
-                <span className="text-rose-400 font-black flex items-center gap-1">{t.tactics.subModal.sentOff}</span>
-              ) : isTired ? (
-                <span className="text-yellow-400 font-black flex items-center gap-1">{t.tactics.subModal.tired}</span>
-              ) : isExcellent ? (
-                <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>{t.tactics.playerCard.formExcellent}</span>
-              ) : (
-                <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{t.tactics.playerCard.formFit}</span>
-              )}
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* LIGNE 3 : REMPLACEMENT (MENU DÉROULANT) & ACTIONS MATCH */}
         <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/80"}`}>
@@ -6117,8 +6172,10 @@ export default function TacticsBoard({
 
     const isOpponent = subPickerToken.type === "player_b";
     const activeBenchList = isOpponent ? opponentSubstitutes : substitutes;
+    const rawAwayTeam = activeMatch.awayTeam?.trim();
+    const isDefaultAway = !rawAwayTeam || rawAwayTeam.toUpperCase() === "NOUVEL ADVERSAIRE";
     const teamTitle = isOpponent
-      ? (activeMatch.awayTeam || "ÉQUIPE ADVERSE")
+      ? (isDefaultAway ? "" : rawAwayTeam)
       : (activeMatch.homeTeam || "MON EQUIPE");
 
     return (
@@ -6153,16 +6210,18 @@ export default function TacticsBoard({
               <div>
                 <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   <span>{t.tactics.subModal.title}</span>
-                  <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${isOpponent
-                    ? isModernSleek
-                      ? "bg-rose-100 text-rose-800 border-rose-300"
-                      : "bg-rose-950/80 text-rose-300 border-rose-700/60"
-                    : isModernSleek
-                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                      : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
-                    }`}>
-                    {teamTitle}
-                  </span>
+                  {teamTitle ? (
+                    <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${isOpponent
+                      ? isModernSleek
+                        ? "bg-rose-100 text-rose-800 border-rose-300"
+                        : "bg-rose-950/80 text-rose-300 border-rose-700/60"
+                      : isModernSleek
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                        : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
+                      }`}>
+                      {teamTitle}
+                    </span>
+                  ) : null}
                 </h3>
                 <p className={`text-[10.5px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                   {isOpponent
@@ -6537,13 +6596,21 @@ export default function TacticsBoard({
                   <h3 className={`text-base font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                     FICHE DU JOUEUR
                   </h3>
-                  <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${
-                    isHome
-                      ? isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
-                      : isModernSleek ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-rose-950/80 text-rose-300 border-rose-700/60"
-                  }`}>
-                    {isHome ? (activeMatch.homeTeam || "MON EQUIPE") : (activeMatch.awayTeam || "ADVERSAIRE")}
-                  </span>
+                  {(() => {
+                    const rawAway = activeMatch.awayTeam?.trim();
+                    const awayLabel = (!rawAway || rawAway.toUpperCase() === "NOUVEL ADVERSAIRE") ? "" : rawAway;
+                    const label = isHome ? (activeMatch.homeTeam || "MON EQUIPE") : awayLabel;
+                    if (!label) return null;
+                    return (
+                      <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase ${
+                        isHome
+                          ? isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#00E599]/15 text-[#00E599] border-[#00E599]/30"
+                          : isModernSleek ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-rose-950/80 text-rose-300 border-rose-700/60"
+                      }`}>
+                        {label}
+                      </span>
+                    );
+                  })()}
                   <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-bold uppercase border ${
                     isStarter
                       ? isModernSleek ? "bg-blue-100 text-blue-800 border-blue-200" : "bg-blue-950 text-blue-300 border-blue-800/40"
@@ -6793,46 +6860,48 @@ export default function TacticsBoard({
             </div>
           </div>
 
-          {/* SECTION STATISTIQUES GLOBALES */}
-          <div className={`p-3.5 rounded-2xl border ${
-            isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121926] border-[#1e293b]"
-          }`}>
-            <div className="flex items-center justify-between mb-2">
-              <span className={`text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                isModernSleek ? "text-amber-700" : "text-amber-400"
-              }`}>
-                <Award className="w-3.5 h-3.5" />
-                <span>Statistiques du match</span>
-              </span>
-            </div>
+          {/* SECTION STATISTIQUES DU MATCH (affichée uniquement lorsqu'un match est en cours) */}
+          {isLiveMatchMode && (
+            <div className={`p-3.5 rounded-2xl border ${
+              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121926] border-[#1e293b]"
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                  isModernSleek ? "text-amber-700" : "text-amber-400"
+                }`}>
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Statistiques du match</span>
+                </span>
+              </div>
 
-            <div className="grid grid-cols-4 gap-2 text-center">
-              <div className={`p-2 rounded-xl border ${
-                isModernSleek ? "bg-white border-emerald-200 text-emerald-800" : "bg-[#090d14] border-emerald-900/40 text-emerald-300"
-              }`}>
-                <div className="text-base font-black">⚽ {playerGoals}</div>
-                <div className="text-[9px] font-bold uppercase opacity-80">Buts</div>
-              </div>
-              <div className={`p-2 rounded-xl border ${
-                isModernSleek ? "bg-white border-cyan-200 text-cyan-800" : "bg-[#090d14] border-cyan-900/40 text-cyan-300"
-              }`}>
-                <div className="text-base font-black">👟 {playerAssists}</div>
-                <div className="text-[9px] font-bold uppercase opacity-80">Passes</div>
-              </div>
-              <div className={`p-2 rounded-xl border ${
-                isModernSleek ? "bg-white border-amber-200 text-amber-800" : "bg-[#090d14] border-amber-900/40 text-amber-300"
-              }`}>
-                <div className="text-base font-black">🟨 {playerYellows}</div>
-                <div className="text-[9px] font-bold uppercase opacity-80">Cartons J.</div>
-              </div>
-              <div className={`p-2 rounded-xl border ${
-                isModernSleek ? "bg-white border-rose-200 text-rose-800" : "bg-[#090d14] border-rose-900/40 text-rose-300"
-              }`}>
-                <div className="text-base font-black">🟥 {playerReds}</div>
-                <div className="text-[9px] font-bold uppercase opacity-80">Cartons R.</div>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div className={`p-2 rounded-xl border ${
+                  isModernSleek ? "bg-white border-emerald-200 text-emerald-800" : "bg-[#090d14] border-emerald-900/40 text-emerald-300"
+                }`}>
+                  <div className="text-base font-black">⚽ {playerGoals}</div>
+                  <div className="text-[9px] font-bold uppercase opacity-80">Buts</div>
+                </div>
+                <div className={`p-2 rounded-xl border ${
+                  isModernSleek ? "bg-white border-cyan-200 text-cyan-800" : "bg-[#090d14] border-cyan-900/40 text-cyan-300"
+                }`}>
+                  <div className="text-base font-black">👟 {playerAssists}</div>
+                  <div className="text-[9px] font-bold uppercase opacity-80">Passes</div>
+                </div>
+                <div className={`p-2 rounded-xl border ${
+                  isModernSleek ? "bg-white border-amber-200 text-amber-800" : "bg-[#090d14] border-amber-900/40 text-amber-300"
+                }`}>
+                  <div className="text-base font-black">🟨 {playerYellows}</div>
+                  <div className="text-[9px] font-bold uppercase opacity-80">Cartons J.</div>
+                </div>
+                <div className={`p-2 rounded-xl border ${
+                  isModernSleek ? "bg-white border-rose-200 text-rose-800" : "bg-[#090d14] border-rose-900/40 text-rose-300"
+                }`}>
+                  <div className="text-base font-black">🟥 {playerReds}</div>
+                  <div className="text-[9px] font-bold uppercase opacity-80">Cartons R.</div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* PIED DE MODALE & ACTIONS */}
           <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t relative z-10 ${

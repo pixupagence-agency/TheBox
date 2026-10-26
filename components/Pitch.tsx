@@ -83,32 +83,95 @@ export default function Pitch({ sport, isPortrait }: PitchProps) {
 
       case "basketball":
         return (
-          <div className="absolute inset-0 w-full h-full bg-amber-900/45 overflow-hidden select-none border-4 border-amber-800" id="pitch-basketball">
-            {/* SVG Court Lines - Rotated FIBA dimensions: 15m x 28m */}
+          <div
+            className="absolute inset-0 w-full h-full overflow-hidden select-none bg-[#ea8626]"
+            id="pitch-basketball"
+          >
+            {/* SVG Court Lines - Exact match to user basketball wood court reference with all-white lines */}
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 15 28" preserveAspectRatio="none">
-              {/* Court boundary */}
-              <rect x="0.2" y="0.2" width="14.6" height="27.6" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-              
-              {/* Center Line */}
-              <line x1="0.2" y1="14" x2="14.8" y2="14" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-              {/* Center Circle */}
-              <circle cx="7.5" cy="14" r="1.8" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-              
-              {/* Top 3-point Line */}
-              <path d="M 1.25 0.2 L 1.25 2.99 A 6.75 6.75 0 0 0 13.75 2.99 L 13.75 0.2" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-              {/* Top Key */}
-              <rect x="5.05" y="0.2" width="4.9" height="5.8" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-              {/* Top board and hoop */}
-              <line x1="6.8" y1="1.2" x2="8.2" y2="1.2" stroke="#fcd34d" strokeWidth="0.15" />
-              <circle cx="7.5" cy="1.575" r="0.225" fill="none" stroke="#f59e0b" strokeWidth="0.1" />
+              <defs>
+                <pattern id="basket-parquet-portrait" width="2.0" height="14" patternUnits="userSpaceOnUse">
+                  <rect x="0" y="0" width="0.5" height="14" fill="#f6a445" />
+                  <rect x="0.5" y="0" width="0.5" height="14" fill="#e78524" />
+                  <rect x="1.0" y="0" width="0.5" height="14" fill="#f19535" />
+                  <rect x="1.5" y="0" width="0.5" height="14" fill="#df7819" />
 
-              {/* Bottom 3-point Line */}
-              <path d="M 1.25 27.8 L 1.25 25.01 A 6.75 6.75 0 0 1 13.75 25.01 L 13.75 27.8" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-              {/* Bottom Key */}
-              <rect x="5.05" y="22" width="4.9" height="5.8" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-              {/* Bottom board and hoop */}
-              <line x1="6.8" y1="26.8" x2="8.2" y2="26.8" stroke="#fcd34d" strokeWidth="0.15" />
-              <circle cx="7.5" cy="26.425" r="0.225" fill="none" stroke="#f59e0b" strokeWidth="0.1" />
+                  <line x1="0.5" y1="0" x2="0.5" y2="14" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.45" />
+                  <line x1="1.0" y1="0" x2="1.0" y2="14" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.45" />
+                  <line x1="1.5" y1="0" x2="1.5" y2="14" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.45" />
+                  <line x1="2.0" y1="0" x2="2.0" y2="14" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.45" />
+
+                  <line x1="0" y1="3.5" x2="0.5" y2="3.5" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                  <line x1="0" y1="10.5" x2="0.5" y2="10.5" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                  <line x1="0.5" y1="7.0" x2="1.0" y2="7.0" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                  <line x1="1.0" y1="1.8" x2="1.5" y2="1.8" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                  <line x1="1.0" y1="8.8" x2="1.5" y2="8.8" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                  <line x1="1.5" y1="5.2" x2="2.0" y2="5.2" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                  <line x1="1.5" y1="12.2" x2="2.0" y2="12.2" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                </pattern>
+              </defs>
+
+              {/* Full parquet floor background */}
+              <rect x="0" y="0" width="15" height="28" fill="url(#basket-parquet-portrait)" />
+
+              {/* Outer white boundary rectangle */}
+              <rect x="0.5" y="0.6" width="14.0" height="26.8" fill="none" stroke="white" strokeWidth="0.16" />
+
+              {/* Center Line (crisp white) */}
+              <line x1="0.5" y1="14" x2="14.5" y2="14" stroke="white" strokeWidth="0.16" />
+
+              {/* Center Circle (full crisp white circle) */}
+              <circle cx="7.5" cy="14" r="1.85" fill="none" stroke="white" strokeWidth="0.16" />
+
+              {/* Top Key (white rectangle - placed completely inside the 3-point arc) */}
+              <rect x="5.4" y="0.6" width="4.2" height="4.6" fill="none" stroke="white" strokeWidth="0.16" />
+              {/* Top Free Throw Line */}
+              <line x1="5.4" y1="5.2" x2="9.6" y2="5.2" stroke="white" strokeWidth="0.16" />
+              {/* Top Free Throw Circle (full white circle inside the 3-point arc) */}
+              <circle cx="7.5" cy="5.2" r="1.5" fill="none" stroke="white" strokeWidth="0.16" />
+
+              {/* Top Key Rebound Blocks (4 white teeth on left, 4 on right) */}
+              <rect x="5.15" y="1.8" width="0.25" height="0.35" fill="white" />
+              <rect x="5.15" y="2.6" width="0.25" height="0.35" fill="white" />
+              <rect x="5.15" y="3.4" width="0.25" height="0.35" fill="white" />
+              <rect x="5.15" y="4.2" width="0.25" height="0.35" fill="white" />
+              <rect x="9.6" y="1.8" width="0.25" height="0.35" fill="white" />
+              <rect x="9.6" y="2.6" width="0.25" height="0.35" fill="white" />
+              <rect x="9.6" y="3.4" width="0.25" height="0.35" fill="white" />
+              <rect x="9.6" y="4.2" width="0.25" height="0.35" fill="white" />
+
+              {/* Top 3-point Line (grand rond - curves well beyond the key and free throw circle) */}
+              <path d="M 1.2 0.6 L 1.2 4.42 A 6.75 6.75 0 0 0 13.8 4.42 L 13.8 0.6" fill="none" stroke="white" strokeWidth="0.16" />
+
+              {/* Top Backboard & Hoop */}
+              <line x1="6.4" y1="1.6" x2="8.6" y2="1.6" stroke="white" strokeWidth="0.35" strokeLinecap="square" />
+              <line x1="7.5" y1="1.6" x2="7.5" y2="2.0" stroke="white" strokeWidth="0.16" />
+              <circle cx="7.5" cy="2.45" r="0.45" fill="none" stroke="white" strokeWidth="0.18" />
+
+              {/* Bottom Key (white rectangle - placed completely inside the 3-point arc) */}
+              <rect x="5.4" y="22.8" width="4.2" height="4.6" fill="none" stroke="white" strokeWidth="0.16" />
+              {/* Bottom Free Throw Line */}
+              <line x1="5.4" y1="22.8" x2="9.6" y2="22.8" stroke="white" strokeWidth="0.16" />
+              {/* Bottom Free Throw Circle */}
+              <circle cx="7.5" cy="22.8" r="1.5" fill="none" stroke="white" strokeWidth="0.16" />
+
+              {/* Bottom Key Rebound Blocks (4 white teeth on left, 4 on right) */}
+              <rect x="5.15" y="23.45" width="0.25" height="0.35" fill="white" />
+              <rect x="5.15" y="24.25" width="0.25" height="0.35" fill="white" />
+              <rect x="5.15" y="25.05" width="0.25" height="0.35" fill="white" />
+              <rect x="5.15" y="25.85" width="0.25" height="0.35" fill="white" />
+              <rect x="9.6" y="23.45" width="0.25" height="0.35" fill="white" />
+              <rect x="9.6" y="24.25" width="0.25" height="0.35" fill="white" />
+              <rect x="9.6" y="25.05" width="0.25" height="0.35" fill="white" />
+              <rect x="9.6" y="25.85" width="0.25" height="0.35" fill="white" />
+
+              {/* Bottom 3-point Line (grand rond - curves well beyond the key and free throw circle) */}
+              <path d="M 1.2 27.4 L 1.2 23.58 A 6.75 6.75 0 0 1 13.8 23.58 L 13.8 27.4" fill="none" stroke="white" strokeWidth="0.16" />
+
+              {/* Bottom Backboard & Hoop */}
+              <line x1="6.4" y1="26.4" x2="8.6" y2="26.4" stroke="white" strokeWidth="0.35" strokeLinecap="square" />
+              <line x1="7.5" y1="26.4" x2="7.5" y2="26.0" stroke="white" strokeWidth="0.16" />
+              <circle cx="7.5" cy="25.55" r="0.45" fill="none" stroke="white" strokeWidth="0.18" />
             </svg>
           </div>
         );
@@ -220,42 +283,95 @@ export default function Pitch({ sport, isPortrait }: PitchProps) {
 
     case "basketball":
       return (
-        <div className="absolute inset-0 w-full h-full bg-amber-900/45 overflow-hidden select-none border-4 border-amber-800" id="pitch-basketball" style={{ backgroundImage: "linear-gradient(45deg, #78350f 25%, transparent 25%), linear-gradient(-45deg, #78350f 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #78350f 75%), linear-gradient(-45deg, transparent 75%, #78350f 75%)", backgroundSize: "30px 30px" }}>
-          {/* Wood grain layout panel effect */}
-          <div className="absolute inset-0 w-full h-full bg-amber-950/20 mix-blend-overlay pointer-events-none" />
-          
-          {/* SVG Court Lines - FIBA standard dimensions: 28m x 15m */}
+        <div
+          className="absolute inset-0 w-full h-full overflow-hidden select-none bg-[#ea8626]"
+          id="pitch-basketball"
+        >
+          {/* SVG Court Lines - Exact match to user basketball wood court reference with all-white lines */}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 28 15" preserveAspectRatio="none">
-            {/* Court boundary */}
-            <rect x="0.2" y="0.2" width="27.6" height="14.6" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-            
-            {/* Center Line */}
-            <line x1="14" y1="0.2" x2="14" y2="14.8" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-            {/* Center Circle (official 1.80m radius) */}
-            <circle cx="14" cy="7.5" r="1.8" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-            <circle cx="14" cy="7.5" r="0.6" fill="none" stroke="#fcd34d" strokeWidth="0.08" strokeOpacity="0.5" />
-            
-            {/* Left 3-point Line (official FIBA 6.75m from hoop basket) */}
-            <path d="M 0.2 1.25 L 2.99 1.25 A 6.75 6.75 0 0 1 2.99 13.75 L 0.2 13.75" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-            {/* Left Key (official restricted area: 4.9m wide, 5.8m deep) */}
-            <rect x="0.2" y="5.05" width="5.8" height="4.9" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-            {/* Free throw circle at the top of the key */}
-            <path d="M 6 5.7 A 1.8 1.8 0 0 1 6 9.3" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-            <path d="M 6 5.7 A 1.8 1.8 0 0 0 6 9.3" fill="none" stroke="#fcd34d" strokeWidth="0.08" strokeDasharray="0.2,0.2" strokeOpacity="0.8" />
-            {/* Left board and hoop */}
-            <line x1="1.2" y1="6.8" x2="1.2" y2="8.2" stroke="#fcd34d" strokeWidth="0.15" />
-            <circle cx="1.575" cy="7.5" r="0.225" fill="none" stroke="#f59e0b" strokeWidth="0.1" />
+            <defs>
+              <pattern id="basket-parquet-landscape" width="14" height="2.0" patternUnits="userSpaceOnUse">
+                <rect x="0" y="0" width="14" height="0.5" fill="#f6a445" />
+                <rect x="0" y="0.5" width="14" height="0.5" fill="#e78524" />
+                <rect x="0" y="1.0" width="14" height="0.5" fill="#f19535" />
+                <rect x="0" y="1.5" width="14" height="0.5" fill="#df7819" />
 
-            {/* Right 3-point Line */}
-            <path d="M 27.8 1.25 L 25.01 1.25 A 6.75 6.75 0 0 0 25.01 13.75 L 27.8 13.75" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-            {/* Right Key */}
-            <rect x="22" y="5.05" width="5.8" height="4.9" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-            {/* Free throw circle right */}
-            <path d="M 22 5.7 A 1.8 1.8 0 0 0 22 9.3" fill="none" stroke="#fcd34d" strokeWidth="0.1" strokeOpacity="0.8" />
-            <path d="M 22 5.7 A 1.8 1.8 0 0 1 22 9.3" fill="none" stroke="#fcd34d" strokeWidth="0.08" strokeDasharray="0.2,0.2" strokeOpacity="0.8" />
+                <line x1="0" y1="0.5" x2="14" y2="0.5" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.45" />
+                <line x1="0" y1="1.0" x2="14" y2="1.0" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.45" />
+                <line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.45" />
+                <line x1="0" y1="2.0" x2="14" y2="2.0" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.45" />
+
+                <line x1="3.5" y1="0" x2="3.5" y2="0.5" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                <line x1="10.5" y1="0" x2="10.5" y2="0.5" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                <line x1="7.0" y1="0.5" x2="7.0" y2="1.0" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                <line x1="1.8" y1="1.0" x2="1.8" y2="1.5" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                <line x1="8.8" y1="1.0" x2="8.8" y2="1.5" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                <line x1="5.2" y1="1.5" x2="5.2" y2="2.0" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+                <line x1="12.2" y1="1.5" x2="12.2" y2="2.0" stroke="#bf5e10" strokeWidth="0.02" strokeOpacity="0.4" />
+              </pattern>
+            </defs>
+
+            {/* Full parquet floor background */}
+            <rect x="0" y="0" width="28" height="15" fill="url(#basket-parquet-landscape)" />
+
+            {/* Outer white boundary rectangle */}
+            <rect x="0.6" y="0.5" width="26.8" height="14.0" fill="none" stroke="white" strokeWidth="0.16" />
+
+            {/* Center Line (crisp white) */}
+            <line x1="14" y1="0.5" x2="14" y2="14.5" stroke="white" strokeWidth="0.16" />
+
+            {/* Center Circle (full crisp white circle) */}
+            <circle cx="14" cy="7.5" r="1.85" fill="none" stroke="white" strokeWidth="0.16" />
+
+            {/* Left Key (white rectangle - placed completely inside the 3-point arc) */}
+            <rect x="0.6" y="5.4" width="4.6" height="4.2" fill="none" stroke="white" strokeWidth="0.16" />
+            {/* Left Free throw line */}
+            <line x1="5.2" y1="5.4" x2="5.2" y2="9.6" stroke="white" strokeWidth="0.16" />
+            {/* Left Free throw circle (full white circle inside the 3-point arc) */}
+            <circle cx="5.2" cy="7.5" r="1.5" fill="none" stroke="white" strokeWidth="0.16" />
+
+            {/* Left Key Rebound Blocks (4 white teeth on top, 4 on bottom) */}
+            <rect x="1.8" y="5.15" width="0.35" height="0.25" fill="white" />
+            <rect x="2.6" y="5.15" width="0.35" height="0.25" fill="white" />
+            <rect x="3.4" y="5.15" width="0.35" height="0.25" fill="white" />
+            <rect x="4.2" y="5.15" width="0.35" height="0.25" fill="white" />
+            <rect x="1.8" y="9.6" width="0.35" height="0.25" fill="white" />
+            <rect x="2.6" y="9.6" width="0.35" height="0.25" fill="white" />
+            <rect x="3.4" y="9.6" width="0.35" height="0.25" fill="white" />
+            <rect x="4.2" y="9.6" width="0.35" height="0.25" fill="white" />
+
+            {/* Left 3-point Line (grand rond - curves well beyond the key and free throw circle) */}
+            <path d="M 0.6 1.2 L 4.42 1.2 A 6.75 6.75 0 0 1 4.42 13.8 L 0.6 13.8" fill="none" stroke="white" strokeWidth="0.16" />
+
+            {/* Left board and hoop */}
+            <line x1="1.6" y1="6.4" x2="1.6" y2="8.6" stroke="white" strokeWidth="0.35" strokeLinecap="square" />
+            <line x1="1.6" y1="7.5" x2="2.0" y2="7.5" stroke="white" strokeWidth="0.16" />
+            <circle cx="2.45" cy="7.5" r="0.45" fill="none" stroke="white" strokeWidth="0.18" />
+
+            {/* Right Key (white rectangle - placed completely inside the 3-point arc) */}
+            <rect x="22.8" y="5.4" width="4.6" height="4.2" fill="none" stroke="white" strokeWidth="0.16" />
+            {/* Right Free throw line */}
+            <line x1="22.8" y1="5.4" x2="22.8" y2="9.6" stroke="white" strokeWidth="0.16" />
+            {/* Right Free throw circle (full white circle inside the 3-point arc) */}
+            <circle cx="22.8" cy="7.5" r="1.5" fill="none" stroke="white" strokeWidth="0.16" />
+
+            {/* Right Key Rebound Blocks (4 white teeth on top, 4 on bottom) */}
+            <rect x="23.45" y="5.15" width="0.35" height="0.25" fill="white" />
+            <rect x="24.25" y="5.15" width="0.35" height="0.25" fill="white" />
+            <rect x="25.05" y="5.15" width="0.35" height="0.25" fill="white" />
+            <rect x="25.85" y="5.15" width="0.35" height="0.25" fill="white" />
+            <rect x="23.45" y="9.6" width="0.35" height="0.25" fill="white" />
+            <rect x="24.25" y="9.6" width="0.35" height="0.25" fill="white" />
+            <rect x="25.05" y="9.6" width="0.35" height="0.25" fill="white" />
+            <rect x="25.85" y="9.6" width="0.35" height="0.25" fill="white" />
+
+            {/* Right 3-point Line (grand rond - curves well beyond the key and free throw circle) */}
+            <path d="M 27.4 1.2 L 23.58 1.2 A 6.75 6.75 0 0 0 23.58 13.8 L 27.4 13.8" fill="none" stroke="white" strokeWidth="0.16" />
+
             {/* Right board and hoop */}
-            <line x1="26.8" y1="6.8" x2="26.8" y2="8.2" stroke="#fcd34d" strokeWidth="0.15" />
-            <circle cx="26.425" cy="7.5" r="0.225" fill="none" stroke="#f59e0b" strokeWidth="0.1" />
+            <line x1="26.4" y1="6.4" x2="26.4" y2="8.6" stroke="white" strokeWidth="0.35" strokeLinecap="square" />
+            <line x1="26.4" y1="7.5" x2="26.0" y2="7.5" stroke="white" strokeWidth="0.16" />
+            <circle cx="25.55" cy="7.5" r="0.45" fill="none" stroke="white" strokeWidth="0.18" />
           </svg>
         </div>
       );
