@@ -5556,11 +5556,23 @@ export default function TacticsBoard({
             {/* Photo / Avatar */}
             <div className="relative shrink-0">
               {(() => {
-                const isGK = activeSport !== "basketball" && (activeToken.role === "G" || activeToken.role === "GK" || activeToken.role === "Gardien" || activeToken.number === 1);
+                const isGK = activeSport !== "basketball" && activeSport !== "rugby" && (activeToken.role === "G" || activeToken.role === "GK" || activeToken.role === "GB" || activeToken.role === "Gardien" || activeToken.number === 1);
                 const defaultAvatar = activeSport === "basketball"
                   ? isHome
                     ? "/images/avatars/basket_player_green.png"
                     : "/images/avatars/basket_opponent_red.png"
+                  : activeSport === "handball"
+                    ? isGK
+                      ? isHome
+                        ? "/images/avatars/handball_goalkeeper_yellow.png"
+                        : "/images/avatars/handball_opponent_goalkeeper.png"
+                      : isHome
+                        ? "/images/avatars/handball_player_green.png"
+                        : "/images/avatars/handball_opponent_red.png"
+                  : activeSport === "rugby"
+                    ? isHome
+                      ? "/images/avatars/rugby_player_green.png"
+                      : "/images/avatars/rugby_opponent_red.png"
                   : isGK
                     ? isHome
                       ? "/images/avatars/goalkeeper_yellow.png"
@@ -6623,11 +6635,23 @@ export default function TacticsBoard({
             <div className="relative group shrink-0 flex flex-col items-center gap-1.5">
               <div className="relative">
                 {(() => {
-                  const isGK = activeSport !== "basketball" && (editingToken.role === "G" || editingToken.role === "GK" || editingToken.role === "Gardien" || editingToken.number === 1);
+                  const isGK = activeSport !== "basketball" && activeSport !== "rugby" && (editingToken.role === "G" || editingToken.role === "GK" || editingToken.role === "GB" || editingToken.role === "Gardien" || editingToken.number === 1);
                   const defaultAvatar = activeSport === "basketball"
                     ? isHome
                       ? "/images/avatars/basket_player_green.png"
                       : "/images/avatars/basket_opponent_red.png"
+                    : activeSport === "handball"
+                      ? isGK
+                        ? isHome
+                          ? "/images/avatars/handball_goalkeeper_yellow.png"
+                          : "/images/avatars/handball_opponent_goalkeeper.png"
+                        : isHome
+                          ? "/images/avatars/handball_player_green.png"
+                          : "/images/avatars/handball_opponent_red.png"
+                    : activeSport === "rugby"
+                      ? isHome
+                        ? "/images/avatars/rugby_player_green.png"
+                        : "/images/avatars/rugby_opponent_red.png"
                     : isGK
                       ? isHome
                         ? "/images/avatars/goalkeeper_yellow.png"
@@ -9298,9 +9322,11 @@ export default function TacticsBoard({
                                     /* 2. TÊTE DU JOUEUR (Affichage 3D de base avec maillot vert pour joueurs et jaune pour gardien) */
                                     (() => {
                                       const isGK =
-                                        activeSport !== "basketball" && (
+                                        activeSport !== "basketball" &&
+                                        activeSport !== "rugby" && (
                                           token.role === "G" ||
                                           token.role === "GK" ||
+                                          token.role === "GB" ||
                                           token.role === "Gardien" ||
                                           token.number === 1);
                                       const isTeamB = token.type === "player_b";
@@ -9308,13 +9334,25 @@ export default function TacticsBoard({
                                         ? isTeamB
                                           ? "/images/avatars/basket_opponent_red.png"
                                           : "/images/avatars/basket_player_green.png"
-                                        : isGK
-                                          ? isTeamB
-                                            ? "/images/avatars/opponent_goalkeeper.png"
-                                            : "/images/avatars/goalkeeper_yellow.png"
-                                          : isTeamB
-                                            ? "/images/avatars/opponent_red.png"
-                                            : "/images/avatars/player_green.png";
+                                        : activeSport === "handball"
+                                          ? isGK
+                                            ? isTeamB
+                                              ? "/images/avatars/handball_opponent_goalkeeper.png"
+                                              : "/images/avatars/handball_goalkeeper_yellow.png"
+                                            : isTeamB
+                                              ? "/images/avatars/handball_opponent_red.png"
+                                              : "/images/avatars/handball_player_green.png"
+                                          : activeSport === "rugby"
+                                            ? isTeamB
+                                              ? "/images/avatars/rugby_opponent_red.png"
+                                              : "/images/avatars/rugby_player_green.png"
+                                          : isGK
+                                            ? isTeamB
+                                              ? "/images/avatars/opponent_goalkeeper.png"
+                                              : "/images/avatars/goalkeeper_yellow.png"
+                                            : isTeamB
+                                              ? "/images/avatars/opponent_red.png"
+                                              : "/images/avatars/player_green.png";
 
                                       const photoSrc = token.photo
                                         ? (autoTransparentCache[token.photo] || token.photo)
@@ -14188,12 +14226,18 @@ export default function TacticsBoard({
                         const posX = squad3DOrientation === "portrait" ? (12 + (p.y * 0.76)) : p.x;
                         const posY = squad3DOrientation === "portrait" ? (14 + ((100 - p.x) * 0.72)) : p.y;
                         const role = p.role || "ST";
-                        const isGK = activeSport !== "basketball" && (p.role === "G" || p.role === "GK" || p.role === "Gardien" || p.number === 1);
+                        const isGK = activeSport !== "basketball" && activeSport !== "rugby" && (p.role === "G" || p.role === "GK" || p.role === "GB" || p.role === "Gardien" || p.number === 1);
                         const defaultHeadSrc = activeSport === "basketball"
                           ? "/images/avatars/basket_player_green.png"
-                          : isGK
-                            ? "/images/avatars/goalkeeper_yellow.png"
-                            : "/images/avatars/player_green.png";
+                          : activeSport === "handball"
+                            ? isGK
+                              ? "/images/avatars/handball_goalkeeper_yellow.png"
+                              : "/images/avatars/handball_player_green.png"
+                            : activeSport === "rugby"
+                              ? "/images/avatars/rugby_player_green.png"
+                              : isGK
+                                ? "/images/avatars/goalkeeper_yellow.png"
+                                : "/images/avatars/player_green.png";
                         const photoSrc = p.photo ? (autoTransparentCache[p.photo] || p.photo) : defaultHeadSrc;
 
                         return (
