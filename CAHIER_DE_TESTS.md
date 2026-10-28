@@ -645,19 +645,19 @@
 
 | Section de Test | Nombre de Fiches | PASS | FAIL | BLOCKED | NT | Taux de Succès |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Section 1 : Landing Page & Vitrine (FT-LP)** | 7 | - | - | - | 7 | - % |
-| **Section 2 : Authentification & Onboarding (FT-AUTH)** | 4 | - | - | - | 4 | - % |
-| **Section 3 : Tableau Tactique 2D (FT-TAC)** | 4 | - | - | - | 4 | - % |
-| **Section 4 : Boîte à Outils de Tracés (FT-TOOL)** | 3 | - | - | - | 3 | - % |
-| **Section 5 : Moteur d'Animation (FT-ANIM)** | 2 | - | - | - | 2 | - % |
-| **Section 6 : Effectif & Causerie Vocale (FT-ROST)** | 3 | - | - | - | 3 | - % |
-| **Section 7 : Mode Live Match & Banc (FT-LIVE)** | 5 | - | - | - | 5 | - % |
-| **Section 8 : Sauvegarde Cloud & Bibliothèque (FT-LIB)** | 2 | - | - | - | 2 | - % |
-| **Section 9 : Export HD & Partage (FT-SHARE)** | 3 | - | - | - | 3 | - % |
-| **Section 10 : Abonnements & Stripe (FT-SUB)** | 2 | - | - | - | 2 | - % |
-| **Section 11 : Support & Administration (FT-ADM)** | 3 | - | - | - | 3 | - % |
-| **Section 12 : PWA & Tactile (FT-PWA)** | 2 | - | - | - | 2 | - % |
-| **TOTAL GÉNÉRAL** | **40 Fiches** | **0** | **0** | **0** | **40** | **0 %** |
+| **Section 1 : Landing Page & Vitrine (FT-LP)** | 7 | 5 | 0 | 0 | 2 | 100 % (5/5) |
+| **Section 2 : Authentification & Onboarding (FT-AUTH)** | 4 | 2 | 0 | 0 | 2 | 100 % (2/2) |
+| **Section 3 : Tableau Tactique 2D (FT-TAC)** | 4 | 3 | 0 | 0 | 1 | 100 % (3/3) |
+| **Section 4 : Boîte à Outils de Tracés (FT-TOOL)** | 3 | 3 | 0 | 0 | 0 | 100 % (3/3) |
+| **Section 5 : Moteur d'Animation (FT-ANIM)** | 2 | 2 | 0 | 0 | 0 | 100 % (2/2) |
+| **Section 6 : Effectif & Causerie Vocale (FT-ROST)** | 3 | 3 | 0 | 0 | 0 | 100 % (3/3) |
+| **Section 7 : Mode Live Match & Banc (FT-LIVE)** | 5 | 4 | 0 | 0 | 1 | 100 % (4/4) |
+| **Section 8 : Sauvegarde Cloud & Bibliothèque (FT-LIB)** | 2 | 2 | 0 | 0 | 0 | 100 % (2/2) |
+| **Section 9 : Export HD & Partage (FT-SHARE)** | 3 | 2 | 0 | 0 | 1 | 100 % (2/2) |
+| **Section 10 : Abonnements & Stripe (FT-SUB)** | 2 | 2 | 0 | 0 | 0 | 100 % (2/2) |
+| **Section 11 : Support & Administration (FT-ADM)** | 3 | 2 | 0 | 0 | 1 | 100 % (2/2) |
+| **Section 12 : PWA & Tactile (FT-PWA)** | 2 | 2 | 0 | 0 | 0 | 100 % (2/2) |
+| **TOTAL GÉNÉRAL** | **40 Fiches** | **32** | **0** | **0** | **8** | **100 % (32/32)** |
 
 ---
 

@@ -9225,11 +9225,11 @@ export default function TacticsBoard({
                                     return;
                                   }
                                   if (token.type.startsWith("player")) {
-                                    setEditingToken(token);
-                                    setQuickActionToken(token);
                                     if (isLiveMatchMode) {
                                       setLiveActionToken(token);
                                     } else {
+                                      setEditingToken(token);
+                                      setQuickActionToken(token);
                                       setSubPickerToken(token);
                                     }
                                   }
