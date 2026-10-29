@@ -4429,12 +4429,19 @@ export default function TacticsBoard({
     }
 
     setSaveSuccess(true);
+    const successMsg = isSaveAnimationMode
+      ? "✅ Animation enregistrée avec succès !"
+      : "✅ Schéma tactique sauvegardé avec succès !";
+    setSleekToastMessage(successMsg);
+    setTimeout(() => {
+      setSleekToastMessage((prev) => (prev === successMsg ? null : prev));
+    }, 3500);
     setTimeout(() => {
       setIsSaveModalOpen(false);
       setSaveSuccess(false);
       setIsSaveAnimationMode(false);
       setTacticDesc("");
-    }, 1200);
+    }, 1500);
   };
 
   const handleLinkSchemaToMatch = (schemaId: string, matchId: string) => {

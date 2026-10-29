@@ -128,7 +128,7 @@ export default function Home() {
     )
   );
 
-  const [currentSport, setCurrentSport] = useState<string>("football");
+  const [currentSport, setCurrentSport] = useState<string>("");
 
   // If user is non-admin and trying to access a blocked sport, fallback to football
   const effectiveSport = currentSport || activeCoach?.preferredSport || "football";
@@ -449,7 +449,7 @@ export default function Home() {
         return () => clearTimeout(timer);
       }
     }
-  }, [hasLoaded, isLoggedIn, activeCoachId, activeCoach, isAdmin, isFirstLogin]);
+  }, [hasLoaded, isLoggedIn, activeCoachId, activeCoach, isAdmin, isFirstLogin, activePlan]);
 
   // First connection / onboarding interactive tutorial check (skip for platform admin)
   useEffect(() => {

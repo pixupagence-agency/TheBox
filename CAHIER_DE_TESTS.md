@@ -476,8 +476,22 @@
 
 | N° Étape | Action utilisateur | Résultat attendu | Statut |
 | :---: | :--- | :--- | :---: |
-| 1 | Cliquer sur le bouton **« Terminer le Match »**. | Une modale de confirmation récapitule le score final, les buteurs et le temps de jeu. | [ ] |
-| 2 | Confirmer la clôture de la rencontre. | Le résultat est archivé dans l'historique du club (Firestore), le chronomètre est verrouillé, et un récapitulatif complet de fin de match est généré. | [ ] |
+| 1 | Cliquer sur le bouton **« Terminer le Match »**. | Une modale de confirmation récapitule le score final, les buteurs et le temps de jeu. | [x] |
+| 2 | Confirmer la clôture de la rencontre. | Le résultat est archivé dans l'historique du club (Firestore), le chronomètre est verrouillé, et un récapitulatif complet de fin de match est généré. | [x] |
+
+---
+
+### FT-LIVE-06 : Comptage des Points Spécifiques par Discipline (Rugby, Basketball, Handball)
+* **Priorité** : P1
+* **Prérequis** : Mode Live Match actif sur la discipline sélectionnée.
+* **Données de test** : Rugby (Essai +5, Transfo +2, Pénalité +3), Basketball (3 Pts +3, 2 Pts +2, LF +1), Handball (But +1).
+
+| N° Étape | Action utilisateur | Résultat attendu | Statut |
+| :---: | :--- | :--- | :---: |
+| 1 | En mode **Rugby**, sélectionner un joueur en Live Match. | La boîte à outils Live propose **🏉 Essai (+5)**, **🎯 Transfo (+2)** et **🥅 Pénalité (+3)**. L'attribution incrémente le score de 5, 2 ou 3 points respectivement. | [x] |
+| 2 | En mode **Basketball**, sélectionner un joueur en Live Match. | La boîte à outils Live propose **🎯 3 Pts (+3)**, **🏀 2 Pts (+2)** et **⭕ LF (+1)**. L'attribution incrémente le score de 3, 2 ou 1 point respectivement. | [x] |
+| 3 | En mode **Handball**, sélectionner un joueur en Live Match. | La boîte à outils Live propose **🤾 But (+1)** et incrémente le score de 1 point avec sélection optionnelle du passeur. | [x] |
+| 4 | Supprimer un événement de score dans le journal du match. | Le score de l'équipe concernée est décrémenté du nombre exact de points de l'action supprimée (ex: -5 pts pour un essai, -3 pts pour un tir à 3 points). | [x] |
 
 ---
 
@@ -662,17 +676,17 @@
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Section 1 : Landing Page & Vitrine (FT-LP)** | 7 | 5 | 0 | 0 | 2 | 100 % (5/5) |
 | **Section 2 : Authentification & Onboarding (FT-AUTH)** | 4 | 2 | 0 | 0 | 2 | 100 % (2/2) |
-| **Section 3 : Tableau Tactique 2D (FT-TAC)** | 4 | 3 | 0 | 0 | 1 | 100 % (3/3) |
+| **Section 3 : Tableau Tactique 2D (FT-TAC)** | 5 | 4 | 0 | 0 | 1 | 100 % (4/4) |
 | **Section 4 : Boîte à Outils de Tracés (FT-TOOL)** | 3 | 3 | 0 | 0 | 0 | 100 % (3/3) |
 | **Section 5 : Moteur d'Animation (FT-ANIM)** | 2 | 2 | 0 | 0 | 0 | 100 % (2/2) |
 | **Section 6 : Effectif & Causerie Vocale (FT-ROST)** | 3 | 3 | 0 | 0 | 0 | 100 % (3/3) |
-| **Section 7 : Mode Live Match & Banc (FT-LIVE)** | 5 | 4 | 0 | 0 | 1 | 100 % (4/4) |
+| **Section 7 : Mode Live Match & Banc (FT-LIVE)** | 6 | 5 | 0 | 0 | 1 | 100 % (5/5) |
 | **Section 8 : Sauvegarde Cloud & Bibliothèque (FT-LIB)** | 2 | 2 | 0 | 0 | 0 | 100 % (2/2) |
 | **Section 9 : Export HD & Partage (FT-SHARE)** | 3 | 2 | 0 | 0 | 1 | 100 % (2/2) |
 | **Section 10 : Abonnements & Stripe (FT-SUB)** | 2 | 2 | 0 | 0 | 0 | 100 % (2/2) |
 | **Section 11 : Support & Administration (FT-ADM)** | 3 | 2 | 0 | 0 | 1 | 100 % (2/2) |
 | **Section 12 : PWA & Tactile (FT-PWA)** | 2 | 2 | 0 | 0 | 0 | 100 % (2/2) |
-| **TOTAL GÉNÉRAL** | **40 Fiches** | **32** | **0** | **0** | **8** | **100 % (32/32)** |
+| **TOTAL GÉNÉRAL** | **42 Fiches** | **34** | **0** | **0** | **8** | **100 % (34/34)** |
 
 ---
 
