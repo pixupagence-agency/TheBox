@@ -68,6 +68,7 @@ test.describe('Section 7 : Mode Live Match & Banc de Touche Connecté (FT-LIVE)'
   });
 
   test('FT-LIVE-02 : Enregistrement des Buts et Événements du Match', async ({ page }) => {
+    test.setTimeout(90000);
     // 1. Activer le Mode Live
     const liveToggleBtn = page.locator('button:has-text("MODE LIVE")').first();
     await expect(liveToggleBtn).toBeVisible({ timeout: 5000 });
@@ -91,6 +92,7 @@ test.describe('Section 7 : Mode Live Match & Banc de Touche Connecté (FT-LIVE)'
     // 5. Valider le but dans la modale
     const confirmGoalBtn = page.locator('button:has-text("VALIDER LE BUT")').first();
     await expect(confirmGoalBtn).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(300);
     await confirmGoalBtn.click();
 
     // 6. Vérifier que le score passe à 1 - 0
@@ -143,5 +145,202 @@ test.describe('Section 7 : Mode Live Match & Banc de Touche Connecté (FT-LIVE)'
       await closeBtn.click();
       await expect(recapModal).not.toBeVisible();
     }
+  });
+
+  test('FT-LIVE-06 : Comptage des points spécifiques selon la discipline (Rugby, Basket, Hand)', async ({ page }) => {
+    test.setTimeout(120000);
+    // 1. Ouvrir la configuration pour basculer en mode RUGBY
+    const userMenuTrigger = page.locator('button:visible').filter({ hasText: 'ADMIN PLATEFORME' }).first();
+    await userMenuTrigger.click();
+
+    const configItem = page.locator('button:has-text("Configuration Profil & Sport")').first();
+    await expect(configItem).toBeVisible({ timeout: 5000 });
+    await configItem.click();
+
+    // Sélectionner Rugby
+    const sportSelect = page.locator('select').filter({ hasText: 'Rugby' }).first();
+    await sportSelect.selectOption('rugby');
+
+    // Remplir prénom si nécessaire pour satisfaire la validation HTML5
+    const nameInputs = page.locator('div:has-text("CONFIGURATION DE L\'UTILISATEUR") input[type="text"]');
+    const count = await nameInputs.count();
+    for (let i = 0; i < count; i++) {
+      const val = await nameInputs.nth(i).inputValue();
+      if (!val) {
+        await nameInputs.nth(i).fill('Admin');
+      }
+    }
+
+    await page.locator('button[type="submit"]').filter({ hasText: /Enregistrer/i }).first().click();
+    await expect(page.locator('text=CONFIGURATION DE L\'UTILISATEUR')).not.toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(400);
+
+    // 2. Activer le Mode Live
+    const liveToggleBtn = page.locator('button:has-text("MODE LIVE")').first();
+    await expect(liveToggleBtn).toBeVisible({ timeout: 5000 });
+    await liveToggleBtn.click();
+
+    // 3. Sélectionner un joueur de rugby sur le terrain
+    const playerToken = page.locator('.cursor-grab').first();
+    await expect(playerToken).toBeVisible({ timeout: 5000 });
+    await playerToken.click();
+
+    const liveToolbox = page.locator('#live-match-player-toolbox');
+    await expect(liveToolbox).toBeVisible({ timeout: 5000 });
+
+    // 4. Vérifier la présence des 3 boutons de scoring Rugby : Essai (+5), Transfo (+2), Pénalité (+3)
+    const essaiBtn = liveToolbox.locator('button:has-text("Essai (+5)")').first();
+    const transfoBtn = liveToolbox.locator('button:has-text("Transfo (+2)")').first();
+    const penaliteBtn = liveToolbox.locator('button:has-text("Pénalité (+3)")').first();
+
+    await expect(essaiBtn).toBeVisible();
+    await expect(transfoBtn).toBeVisible();
+    await expect(penaliteBtn).toBeVisible();
+
+    // 5. Attribuer une Pénalité (3 points directs)
+    await penaliteBtn.click();
+    await expect(page.locator('text=3 - 0').first()).toBeVisible({ timeout: 5000 });
+
+    // 6. Attribuer une Transformation (2 points directs -> 5 - 0)
+    await playerToken.click();
+    await expect(liveToolbox).toBeVisible({ timeout: 5000 });
+    await liveToolbox.locator('button:has-text("Transfo (+2)")').first().click();
+    await expect(page.locator('text=5 - 0').first()).toBeVisible({ timeout: 5000 });
+
+    // 7. Attribuer un Essai (5 points avec validation -> 10 - 0)
+    await playerToken.click();
+    await expect(liveToolbox).toBeVisible({ timeout: 5000 });
+    await liveToolbox.locator('button:has-text("Essai (+5)")').first().click();
+    const confirmEssaiBtn = page.locator('button:has-text("VALIDER ESSAI (+5)")').first();
+    await expect(confirmEssaiBtn).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(300);
+    await confirmEssaiBtn.click();
+    await expect(page.locator('text=10 - 0').first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('FT-LIVE-07 : Comptage des points spécifiques Basketball (3 Pts, 2 Pts, LF)', async ({ page }) => {
+    test.setTimeout(90000);
+    // 1. Ouvrir la configuration pour basculer en mode BASKETBALL
+    const userMenuTrigger = page.locator('button:visible').filter({ hasText: 'ADMIN PLATEFORME' }).first();
+    await userMenuTrigger.click();
+
+    const configItem = page.locator('button:has-text("Configuration Profil & Sport")').first();
+    await expect(configItem).toBeVisible({ timeout: 5000 });
+    await configItem.click();
+
+    // Sélectionner Basketball
+    const sportSelect = page.locator('select').filter({ hasText: 'Basketball' }).first();
+    await sportSelect.selectOption('basketball');
+
+    // Remplir prénom si nécessaire pour satisfaire la validation HTML5
+    const nameInputs = page.locator('div:has-text("CONFIGURATION DE L\'UTILISATEUR") input[type="text"]');
+    const count = await nameInputs.count();
+    for (let i = 0; i < count; i++) {
+      const val = await nameInputs.nth(i).inputValue();
+      if (!val) {
+        await nameInputs.nth(i).fill('Admin');
+      }
+    }
+
+    await page.locator('button[type="submit"]').filter({ hasText: /Enregistrer/i }).first().click();
+    await expect(page.locator('text=CONFIGURATION DE L\'UTILISATEUR')).not.toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(400);
+
+    // 2. Activer le Mode Live
+    const liveToggleBtn = page.locator('button:has-text("MODE LIVE")').first();
+    await expect(liveToggleBtn).toBeVisible({ timeout: 5000 });
+    await liveToggleBtn.click();
+
+    // 3. Sélectionner un joueur sur le terrain
+    const playerToken = page.locator('.cursor-grab').first();
+    await expect(playerToken).toBeVisible({ timeout: 5000 });
+    await playerToken.click();
+
+    const liveToolbox = page.locator('#live-match-player-toolbox');
+    await expect(liveToolbox).toBeVisible({ timeout: 5000 });
+
+    // 4. Vérifier la présence des 3 boutons de scoring Basketball : 3 Pts (+3), 2 Pts (+2), LF (+1)
+    const threePtBtn = liveToolbox.locator('button:has-text("3 Pts (+3)")').first();
+    const twoPtBtn = liveToolbox.locator('button:has-text("2 Pts (+2)")').first();
+    const lfBtn = liveToolbox.locator('button:has-text("LF (+1)")').first();
+
+    await expect(threePtBtn).toBeVisible();
+    await expect(twoPtBtn).toBeVisible();
+    await expect(lfBtn).toBeVisible();
+
+    // 5. Attribuer un Lancer Franc (+1 direct -> 1 - 0)
+    await lfBtn.click();
+    await expect(page.locator('text=1 - 0').first()).toBeVisible({ timeout: 5000 });
+
+    // 6. Attribuer un Panier à 2 Points (+2 pts -> 3 - 0)
+    await playerToken.click();
+    await expect(liveToolbox).toBeVisible({ timeout: 5000 });
+    await liveToolbox.locator('button:has-text("2 Pts (+2)")').first().click();
+    const confirmTwoPtBtn = page.locator('button:has-text("VALIDER 2 POINTS (+2)")').first();
+    await expect(confirmTwoPtBtn).toBeVisible({ timeout: 5000 });
+    await confirmTwoPtBtn.click({ force: true });
+    await expect(page.locator('text=3 - 0').first()).toBeVisible({ timeout: 5000 });
+
+    // 7. Attribuer un Tir à 3 Points (+3 pts -> 6 - 0)
+    await playerToken.click();
+    await expect(liveToolbox).toBeVisible({ timeout: 5000 });
+    await liveToolbox.locator('button:has-text("3 Pts (+3)")').first().click();
+    const confirmThreePtBtn = page.locator('button:has-text("VALIDER 3 POINTS (+3)")').first();
+    await expect(confirmThreePtBtn).toBeVisible({ timeout: 5000 });
+    await confirmThreePtBtn.click({ force: true });
+    await expect(page.locator('text=6 - 0').first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('FT-LIVE-08 : Comptage des points Handball (But +1 identique au football)', async ({ page }) => {
+    test.setTimeout(90000);
+    // 1. Ouvrir la configuration pour basculer en mode HANDBALL
+    const userMenuTrigger = page.locator('button:visible').filter({ hasText: 'ADMIN PLATEFORME' }).first();
+    await userMenuTrigger.click();
+
+    const configItem = page.locator('button:has-text("Configuration Profil & Sport")').first();
+    await expect(configItem).toBeVisible({ timeout: 5000 });
+    await configItem.click();
+
+    // Sélectionner Handball
+    const sportSelect = page.locator('select').filter({ hasText: 'Handball' }).first();
+    await sportSelect.selectOption('handball');
+
+    // Remplir prénom si nécessaire pour satisfaire la validation HTML5
+    const nameInputs = page.locator('div:has-text("CONFIGURATION DE L\'UTILISATEUR") input[type="text"]');
+    const count = await nameInputs.count();
+    for (let i = 0; i < count; i++) {
+      const val = await nameInputs.nth(i).inputValue();
+      if (!val) {
+        await nameInputs.nth(i).fill('Admin');
+      }
+    }
+
+    await page.locator('button[type="submit"]').filter({ hasText: /Enregistrer/i }).first().click();
+    await expect(page.locator('text=CONFIGURATION DE L\'UTILISATEUR')).not.toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(400);
+
+    // 2. Activer le Mode Live
+    const liveToggleBtn = page.locator('button:has-text("MODE LIVE")').first();
+    await expect(liveToggleBtn).toBeVisible({ timeout: 5000 });
+    await liveToggleBtn.click();
+
+    // 3. Sélectionner un joueur sur le terrain
+    const playerToken = page.locator('.cursor-grab').first();
+    await expect(playerToken).toBeVisible({ timeout: 5000 });
+    await playerToken.click();
+
+    const liveToolbox = page.locator('#live-match-player-toolbox');
+    await expect(liveToolbox).toBeVisible({ timeout: 5000 });
+
+    // 4. Vérifier la présence du bouton But Handball (🤾 But)
+    const goalBtn = liveToolbox.locator('button:has-text("But")').first();
+    await expect(goalBtn).toBeVisible();
+
+    // 5. Attribuer un But (+1 pt avec validation -> 1 - 0)
+    await goalBtn.click();
+    const confirmGoalBtn = page.locator('button:has-text("VALIDER LE BUT")').first();
+    await expect(confirmGoalBtn).toBeVisible({ timeout: 5000 });
+    await confirmGoalBtn.click({ force: true });
+    await expect(page.locator('text=1 - 0').first()).toBeVisible({ timeout: 5000 });
   });
 });

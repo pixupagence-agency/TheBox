@@ -84,4 +84,64 @@ test.describe('Section 3 : Tableau Tactique 2D & Manipulation des Éléments (FT
       await expect(page.locator('svg[viewBox="0 0 44 48"]').first()).toBeVisible();
     }
   });
+
+  test('FT-TAC-04 : Adaptation de la Représentation du Ballon selon le Sport (Football, Rugby, Basket, Hand)', async ({ page }) => {
+    // 1. En football par défaut : vérifier la présence du ballon de football sur le terrain
+    const footballBall = page.locator('[data-testid="ball-football"]');
+    await expect(footballBall).toBeVisible({ timeout: 10000 });
+
+    // 2. Vérifier le bouton de masquage / affichage du ballon dans la barre d'outils
+    const hideBallBtn = page.locator('button[title*="ballon"]').first();
+    await expect(hideBallBtn).toBeVisible();
+    await hideBallBtn.click();
+
+    // Le ballon est masqué
+    await expect(footballBall).not.toBeVisible();
+
+    // Réafficher le ballon
+    await hideBallBtn.click();
+    await expect(footballBall).toBeVisible();
+
+    // 3. Basculer vers Rugby via le menu utilisateur
+    const userMenuTrigger = page.locator('button:visible').filter({ hasText: /COACH DÉMO|DEMO|ADMIN/i }).first();
+    if (await userMenuTrigger.isVisible()) {
+      await userMenuTrigger.click();
+      const configItem = page.locator('button:has-text("Configuration Profil & Sport")').first();
+      if (await configItem.isVisible()) {
+        await configItem.click();
+
+        const sportSelect = page.locator('select').filter({ hasText: 'Rugby' }).first();
+        await sportSelect.selectOption('rugby');
+
+        await page.locator('button[type="submit"]').filter({ hasText: /Enregistrer/i }).first().click();
+        await page.waitForTimeout(400);
+
+        // Vérification de la représentation ballon de rugby (ovale)
+        const rugbyBall = page.locator('[data-testid="ball-rugby"]');
+        await expect(rugbyBall).toBeVisible({ timeout: 10000 });
+
+        // 4. Basculer vers Basketball
+        await userMenuTrigger.click();
+        await configItem.click();
+        await sportSelect.selectOption('basketball');
+        await page.locator('button[type="submit"]').filter({ hasText: /Enregistrer/i }).first().click();
+        await page.waitForTimeout(400);
+
+        // Vérification de la représentation ballon de basketball
+        const basketBall = page.locator('[data-testid="ball-basketball"]');
+        await expect(basketBall).toBeVisible({ timeout: 10000 });
+
+        // 5. Basculer vers Handball
+        await userMenuTrigger.click();
+        await configItem.click();
+        await sportSelect.selectOption('handball');
+        await page.locator('button[type="submit"]').filter({ hasText: /Enregistrer/i }).first().click();
+        await page.waitForTimeout(400);
+
+        // Vérification de la représentation ballon de handball
+        const handballBall = page.locator('[data-testid="ball-handball"]');
+        await expect(handballBall).toBeVisible({ timeout: 10000 });
+      }
+    }
+  });
 });

@@ -128,9 +128,12 @@ export default function Home() {
     )
   );
 
+  const [currentSport, setCurrentSport] = useState<string>("football");
+
   // If user is non-admin and trying to access a blocked sport, fallback to football
-  const isSelectedSportBlocked = !isAdmin && blockedSports.includes(activeCoach?.preferredSport);
-  const activeSport = isSelectedSportBlocked ? "football" : (activeCoach?.preferredSport || "football");
+  const effectiveSport = currentSport || activeCoach?.preferredSport || "football";
+  const isSelectedSportBlocked = !isAdmin && blockedSports.includes(effectiveSport);
+  const activeSport = isSelectedSportBlocked ? "football" : effectiveSport;
 
   const setActiveSport = (sport: string) => {
     if (!isAdmin && blockedSports.includes(sport)) {
@@ -139,9 +142,14 @@ export default function Home() {
       alert(`Le sport "${sport.toUpperCase()}" est actuellement restreint aux utilisateurs standard.\n\nRaison : ${note}\n\nEn tant qu'administrateur The Box, connectez-vous pour débloquer ou accéder à ce sport.`);
       return;
     }
-    setCoaches((prev) => 
-      prev.map((c) => (c.id === activeCoachId ? { ...c, preferredSport: sport } : c))
-    );
+    setCurrentSport(sport);
+    setCoaches((prev) => {
+      const targetId = activeCoachId || activeCoach?.id;
+      if (!targetId || prev.length === 0) {
+        return [{ ...activeCoach, preferredSport: sport }];
+      }
+      return prev.map((c) => (c.id === targetId ? { ...c, preferredSport: sport } : c));
+    });
   };
 
   // On mount, load from localStorage

@@ -273,6 +273,21 @@
 
 ---
 
+### FT-TAC-05 : Représentation du Ballon Adaptée au Sport (Football, Rugby, Basketball, Handball)
+* **Priorité** : P1
+* **Prérequis** : Tableau tactique ouvert.
+* **Données de test** : Sport sélectionné (Football, Rugby, Basketball, Handball).
+
+| N° Étape | Action utilisateur | Résultat attendu | Statut |
+| :---: | :--- | :--- | :---: |
+| 1 | Observer le ballon sur le terrain en mode **Football**. | Le ballon officiel de football (Telstar avec pentagones noirs et reflets 3D) s'affiche sur la pelouse (`data-testid="ball-football"`). Le bouton d'affichage de la barre d'outils affiche l'icône ⚽. | [x] |
+| 2 | Basculer en mode **Rugby** via la configuration de profil. | Le ballon sur le terrain adopte automatiquement la forme ovale allongée (prolate spheroid) avec découpe Gilbert et coutures réalistes (`data-testid="ball-rugby"`). Le bouton de la barre d'outils affiche 🏉. | [x] |
+| 3 | Basculer en mode **Basketball**. | Le ballon sur le terrain prend l'apparence officielle d'un ballon de basket orange texturé avec rainures noires caractéristiques (`data-testid="ball-basketball"`). Le bouton de la barre d'outils affiche 🏀. | [x] |
+| 4 | Basculer en mode **Handball**. | Le ballon sur le terrain affiche le ballon officiel IHF bicolore bleu royal et jaune vif avec panneaux texturés résine (`data-testid="ball-handball"`). Le bouton de la barre d'outils affiche 🤾. | [x] |
+| 5 | Actionner le bouton de masquage du ballon. | Le ballon disparaît du terrain. En cliquant à nouveau, le ballon réapparaît dans la bonne représentation de la discipline active. | [x] |
+
+---
+
 ## Section 4 : Boîte à Outils de Tracés & Schématisation (FT-TOOL)
 
 ### FT-TOOL-01 : Flèches de Course, Passes & Courbes

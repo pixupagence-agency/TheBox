@@ -74,6 +74,192 @@ const getSportRatioNum = (sport: string): number => {
   return 110 / 73; // football standard FIFA ratio with 2.5m perimeter (~1.5068, matches 110x73 viewBox exactly)
 };
 
+export interface SportScoreAction {
+  id: string;
+  label: string;
+  shortLabel: string;
+  points: number;
+  icon: string;
+  requiresAssisterModal?: boolean;
+}
+
+export const getSportScoreActions = (sport: string): SportScoreAction[] => {
+  switch (sport) {
+    case "rugby":
+      return [
+        { id: "essai", label: "Essai", shortLabel: "Essai (+5)", points: 5, icon: "🏉", requiresAssisterModal: true },
+        { id: "transformation", label: "Transformation", shortLabel: "Transfo (+2)", points: 2, icon: "🎯", requiresAssisterModal: false },
+        { id: "penalite", label: "Pénalité", shortLabel: "Pénalité (+3)", points: 3, icon: "🥅", requiresAssisterModal: false },
+      ];
+    case "basketball":
+      return [
+        { id: "basket_3", label: "3 Points", shortLabel: "3 Pts (+3)", points: 3, icon: "🎯", requiresAssisterModal: true },
+        { id: "basket_2", label: "2 Points", shortLabel: "2 Pts (+2)", points: 2, icon: "🏀", requiresAssisterModal: true },
+        { id: "basket_1", label: "Lancer Franc", shortLabel: "LF (+1)", points: 1, icon: "⭕", requiresAssisterModal: false },
+      ];
+    case "handball":
+      return [
+        { id: "goal", label: "But", shortLabel: "But", points: 1, icon: "🤾", requiresAssisterModal: true },
+      ];
+    case "football":
+    default:
+      return [
+        { id: "goal", label: "But", shortLabel: "But", points: 1, icon: "⚽", requiresAssisterModal: true },
+      ];
+  }
+};
+
+export interface SportBallInfo {
+  name: string;
+  emoji: string;
+  hoverTitle: string;
+}
+
+export const getSportBallInfo = (sport?: string): SportBallInfo => {
+  switch (sport) {
+    case "basketball":
+      return {
+        name: "Ballon de basketball",
+        emoji: "🏀",
+        hoverTitle: "Ballon de basketball (Glisser pour déplacer)",
+      };
+    case "rugby":
+      return {
+        name: "Ballon de rugby",
+        emoji: "🏉",
+        hoverTitle: "Ballon de rugby (Glisser pour déplacer)",
+      };
+    case "handball":
+      return {
+        name: "Ballon de handball",
+        emoji: "🤾",
+        hoverTitle: "Ballon de handball (Glisser pour déplacer)",
+      };
+    case "football":
+    default:
+      return {
+        name: "Ballon de football",
+        emoji: "⚽",
+        hoverTitle: "Ballon de football (Glisser pour déplacer)",
+      };
+  }
+};
+
+export function PitchBallGraphic({ sport, className = "" }: { sport?: string; className?: string }) {
+  switch (sport) {
+    case "basketball":
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          className={`w-full h-full drop-shadow-md select-none pointer-events-none ${className}`}
+          data-testid="ball-basketball"
+        >
+          <defs>
+            <radialGradient id="basketGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#fb923c" />
+              <stop offset="55%" stopColor="#ea580c" />
+              <stop offset="100%" stopColor="#9a3412" />
+            </radialGradient>
+          </defs>
+          <circle cx="16" cy="16" r="14.5" fill="url(#basketGrad)" stroke="#7c2d12" strokeWidth="1.2" />
+          <line x1="1.5" y1="16" x2="30.5" y2="16" stroke="#1c1917" strokeWidth="1.4" strokeLinecap="round" />
+          <line x1="16" y1="1.5" x2="16" y2="30.5" stroke="#1c1917" strokeWidth="1.4" strokeLinecap="round" />
+          <path d="M 5.5 5.5 Q 13.5 16 5.5 26.5" fill="none" stroke="#1c1917" strokeWidth="1.3" strokeLinecap="round" />
+          <path d="M 26.5 5.5 Q 18.5 16 26.5 26.5" fill="none" stroke="#1c1917" strokeWidth="1.3" strokeLinecap="round" />
+          <ellipse cx="11" cy="9" rx="3.5" ry="2" fill="#ffedd5" opacity="0.45" transform="rotate(-20 11 9)" />
+        </svg>
+      );
+
+    case "rugby":
+      return (
+        <svg
+          viewBox="0 0 40 26"
+          className={`w-full h-full drop-shadow-md select-none pointer-events-none ${className}`}
+          data-testid="ball-rugby"
+        >
+          <defs>
+            <radialGradient id="rugbyGrad" cx="40%" cy="35%" r="60%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="70%" stopColor="#f1f5f9" />
+              <stop offset="100%" stopColor="#cbd5e1" />
+            </radialGradient>
+          </defs>
+          <g transform="rotate(-15 20 13)">
+            <ellipse cx="20" cy="13" rx="18" ry="11" fill="url(#rugbyGrad)" stroke="#334155" strokeWidth="1.2" />
+            <path d="M 3.5 13 C 10 4, 30 4, 36.5 13" fill="none" stroke="#0284c7" strokeWidth="2.2" strokeLinecap="round" />
+            <path d="M 3.5 13 C 10 22, 30 22, 36.5 13" fill="none" stroke="#0284c7" strokeWidth="2.2" strokeLinecap="round" />
+            <path d="M 9 13 C 13 8, 27 8, 31 13" fill="none" stroke="#0ea5e9" strokeWidth="0.8" strokeDasharray="1.5,1.5" />
+            <path d="M 9 13 C 13 18, 27 18, 31 13" fill="none" stroke="#0ea5e9" strokeWidth="0.8" strokeDasharray="1.5,1.5" />
+            <line x1="14" y1="13" x2="26" y2="13" stroke="#475569" strokeWidth="1" />
+            <line x1="16" y1="10.5" x2="16" y2="15.5" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
+            <line x1="20" y1="9.5" x2="20" y2="16.5" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
+            <line x1="24" y1="10.5" x2="24" y2="15.5" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
+          </g>
+        </svg>
+      );
+
+    case "handball":
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          className={`w-full h-full drop-shadow-md select-none pointer-events-none ${className}`}
+          data-testid="ball-handball"
+        >
+          <defs>
+            <radialGradient id="handGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#38bdf8" />
+              <stop offset="50%" stopColor="#0284c7" />
+              <stop offset="100%" stopColor="#0369a1" />
+            </radialGradient>
+          </defs>
+          <circle cx="16" cy="16" r="14.5" fill="url(#handGrad)" stroke="#0c4a6e" strokeWidth="1.2" />
+          <polygon points="16,11 20.8,14.5 19,20 13,20 11.2,14.5" fill="#facc15" stroke="#ca8a04" strokeWidth="0.8" />
+          <path d="M 16 1.5 A 14.5 14.5 0 0 1 27 7 L 20.8 14.5 L 16 11 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="0.6" opacity="0.9" />
+          <path d="M 27 25 A 14.5 14.5 0 0 1 16 30.5 L 19 20 L 25 18 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="0.6" opacity="0.9" />
+          <path d="M 5 25 A 14.5 14.5 0 0 1 5 7 L 11.2 14.5 L 13 20 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="0.6" opacity="0.9" />
+          <line x1="16" y1="11" x2="16" y2="1.5" stroke="#082f49" strokeWidth="1" />
+          <line x1="20.8" y1="14.5" x2="29" y2="12" stroke="#082f49" strokeWidth="1" />
+          <line x1="19" y1="20" x2="25" y2="28" stroke="#082f49" strokeWidth="1" />
+          <line x1="13" y1="20" x2="7" y2="28" stroke="#082f49" strokeWidth="1" />
+          <line x1="11.2" y1="14.5" x2="3" y2="12" stroke="#082f49" strokeWidth="1" />
+          <ellipse cx="11" cy="9" rx="3" ry="1.8" fill="#ffffff" opacity="0.4" transform="rotate(-25 11 9)" />
+        </svg>
+      );
+
+    case "football":
+    default:
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          className={`w-full h-full drop-shadow-md select-none pointer-events-none ${className}`}
+          data-testid="ball-football"
+        >
+          <defs>
+            <radialGradient id="footGrad" cx="35%" cy="30%" r="70%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="70%" stopColor="#f1f5f9" />
+              <stop offset="100%" stopColor="#cbd5e1" />
+            </radialGradient>
+          </defs>
+          <circle cx="16" cy="16" r="14.5" fill="url(#footGrad)" stroke="#334155" strokeWidth="1.2" />
+          <polygon points="16,11 20.8,14.5 19,20 13,20 11.2,14.5" fill="#0f172a" stroke="#0f172a" strokeWidth="0.5" />
+          <line x1="16" y1="11" x2="16" y2="1.5" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="20.8" y1="14.5" x2="29" y2="11.5" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="19" y1="20" x2="24.5" y2="27.5" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="13" y1="20" x2="7.5" y2="27.5" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="11.2" y1="14.5" x2="3" y2="11.5" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
+          <polygon points="13.5,1.5 18.5,1.5 16,3.8" fill="#0f172a" />
+          <polygon points="29.5,8 30.5,15 27.5,12" fill="#0f172a" />
+          <polygon points="26.5,28.5 21,30.5 24,26.5" fill="#0f172a" />
+          <polygon points="5.5,28.5 11,30.5 8,26.5" fill="#0f172a" />
+          <polygon points="2.5,8 1.5,15 4.5,12" fill="#0f172a" />
+          <ellipse cx="11" cy="9" rx="3.5" ry="2" fill="#ffffff" opacity="0.6" transform="rotate(-30 11 9)" />
+        </svg>
+      );
+  }
+}
+
+
 interface CoachProfile {
   id: string;
   lastName: string;
@@ -1240,14 +1426,21 @@ export default function TacticsBoard({
   const [editLanguage, setEditLanguage] = useState<Language>(currentLang);
 
   const handleOpenUserConfig = () => {
+    const fallbackEmail = typeof window !== "undefined" ? localStorage.getItem("thebox_user_email") || "coach@thebox.com" : "coach@thebox.com";
     if (activeCoach) {
-      setEditFirstName(activeCoach.firstName || "");
-      setEditLastName(activeCoach.lastName || "");
-      setEditEmail(activeCoach.email || "");
+      setEditFirstName(activeCoach.firstName || "Coach");
+      setEditLastName(activeCoach.lastName || "Principal");
+      setEditEmail(activeCoach.email || fallbackEmail);
       setEditClub(activeCoach.club || "");
       setEditRole(activeCoach.role || "Coach Principal");
       setEditSport(activeSport || activeCoach.preferredSport || "football");
       setEditLanguage(activeCoach.language || currentLang);
+    } else {
+      setEditFirstName((prev) => prev || "Coach");
+      setEditLastName((prev) => prev || "Principal");
+      setEditEmail((prev) => prev || fallbackEmail);
+      setEditSport(activeSport || "football");
+      setEditLanguage(currentLang);
     }
     setIsUserConfigModalOpen(true);
   };
@@ -1499,6 +1692,9 @@ export default function TacticsBoard({
     team: "home" | "away";
     note?: string;
     assister?: string;
+    points?: number;
+    icon?: string;
+    subType?: string;
   }>>(() => {
     if (typeof window !== "undefined") {
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
@@ -1510,8 +1706,9 @@ export default function TacticsBoard({
     return [];
   });
 
-  // State for Goal Assist Selection Modal
+  // State for Goal / Point Assist Selection Modal
   const [pendingGoalToken, setPendingGoalToken] = useState<Token | null>(null);
+  const [pendingScoreAction, setPendingScoreAction] = useState<SportScoreAction | null>(null);
   const [selectedPasseurName, setSelectedPasseurName] = useState<string>("");
 
   // Persist match events per match
@@ -1630,6 +1827,15 @@ export default function TacticsBoard({
   };
 
   const handleDeleteMatchEvent = (eventId: string) => {
+    const target = matchEvents.find((e) => e.id === eventId);
+    if (target && target.type === "goal") {
+      const pts = target.points || 1;
+      if (target.team === "home") {
+        setHomeScore((prev) => Math.max(0, prev - pts));
+      } else {
+        setAwayScore((prev) => Math.max(0, prev - pts));
+      }
+    }
     setMatchEvents((prev) => prev.filter((e) => e.id !== eventId));
   };
 
@@ -3875,26 +4081,34 @@ export default function TacticsBoard({
     }
   };
 
-  // Record Goal in Live Match (opens assist selector or records with explicit assister)
-  const handleRecordGoal = (targetToken: Token, explicitAssister?: string) => {
+  // Record Goal or Sport-specific Point (opens assist selector or records directly depending on action)
+  const handleRecordScore = (targetToken: Token, action: SportScoreAction, explicitAssister?: string) => {
     if (!isLiveMatchMode) {
-      alert("L'attribution de but est disponible uniquement en MODE LIVE MATCH.");
+      alert("L'attribution de points est disponible uniquement en MODE LIVE MATCH.");
       return;
     }
-    if (explicitAssister !== undefined) {
-      confirmGoalRecord(targetToken, explicitAssister);
+    if (explicitAssister !== undefined || !action.requiresAssisterModal) {
+      confirmGoalRecord(targetToken, explicitAssister, action);
     } else {
+      setPendingScoreAction(action);
       setPendingGoalToken(targetToken);
       setSelectedPasseurName("");
     }
   };
 
-  const confirmGoalRecord = (scorerToken: Token, passeurName?: string) => {
+  const handleRecordGoal = (targetToken: Token, explicitAssister?: string) => {
+    const defaultAction = getSportScoreActions(activeSport)[0];
+    handleRecordScore(targetToken, defaultAction, explicitAssister);
+  };
+
+  const confirmGoalRecord = (scorerToken: Token, passeurName?: string, customAction?: SportScoreAction) => {
+    const action = customAction || pendingScoreAction || getSportScoreActions(activeSport)[0];
+    const pts = action.points || 1;
     const isHome = scorerToken.type === "player_a";
     if (isHome) {
-      setHomeScore((prev) => prev + 1);
+      setHomeScore((prev) => prev + pts);
     } else {
-      setAwayScore((prev) => prev + 1);
+      setAwayScore((prev) => prev + pts);
     }
 
     const timeFormatted = `${Math.floor(liveTimerSeconds / 60)}'`;
@@ -3910,17 +4124,24 @@ export default function TacticsBoard({
         number: scorerToken.number,
         team: isHome ? "home" : "away",
         assister: cleanPasseur,
-        note: cleanPasseur ? `Passeur : ${cleanPasseur}` : `BUT ! ⚽`
+        points: pts,
+        icon: action.icon,
+        subType: action.id,
+        note: cleanPasseur 
+          ? `${action.label} (+${pts} pts) • Passeur : ${cleanPasseur}` 
+          : `${action.label} (+${pts} pts)`
       },
       ...prev
     ]);
 
     setPendingGoalToken(null);
+    setPendingScoreAction(null);
     setSelectedPasseurName("");
+    setLiveActionToken(null);
     setSleekToastMessage(
       cleanPasseur
-        ? `⚽ BUT de ${scorerToken.name} (Passeur : ${cleanPasseur}) !`
-        : `⚽ BUT de ${scorerToken.name} !`
+        ? `${action.icon} ${action.label.toUpperCase()} (+${pts} pts) de ${scorerToken.name} (Passeur : ${cleanPasseur}) !`
+        : `${action.icon} ${action.label.toUpperCase()} (+${pts} pts) de ${scorerToken.name} !`
     );
     setTimeout(() => setSleekToastMessage(null), 3000);
   };
@@ -5051,18 +5272,55 @@ export default function TacticsBoard({
         ctx.textBaseline = "middle";
         ctx.fillText(String(token.number ?? token.role ?? "B"), tokX, tokY);
       } else if (token.type === "ball") {
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-        ctx.strokeStyle = "#334155";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.restore();
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "700 16px system-ui, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("⚽", tokX, tokY);
+        if (activeSport === "basketball") {
+          ctx.fillStyle = "#ea580c";
+          ctx.fill();
+          ctx.strokeStyle = "#1c1917";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+          ctx.fillStyle = "#1c1917";
+          ctx.font = "700 16px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("🏀", tokX, tokY);
+        } else if (activeSport === "rugby") {
+          ctx.fillStyle = "#ffffff";
+          ctx.fill();
+          ctx.strokeStyle = "#0284c7";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "700 16px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("🏉", tokX, tokY);
+        } else if (activeSport === "handball") {
+          ctx.fillStyle = "#0284c7";
+          ctx.fill();
+          ctx.strokeStyle = "#eab308";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "700 16px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("🤾", tokX, tokY);
+        } else {
+          ctx.fillStyle = "#ffffff";
+          ctx.fill();
+          ctx.strokeStyle = "#334155";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "700 16px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("⚽", tokX, tokY);
+        }
       } else {
         ctx.fillStyle = "#f59e0b";
         ctx.fill();
@@ -5306,10 +5564,18 @@ export default function TacticsBoard({
     msg += `⏱️ *Temps de jeu :* ${formatLiveTime(liveTimerSeconds)}\n\n`;
 
     if (goalsEvts.length > 0) {
-      msg += `⚽ *Buteurs :*\n`;
+      const headerTitle = activeSport === "rugby"
+        ? "🏉 *Points & Marqueurs :*"
+        : activeSport === "basketball"
+          ? "🏀 *Paniers & Points :*"
+          : activeSport === "handball"
+            ? "🤾 *Buteurs :*"
+            : "⚽ *Buteurs :*";
+      msg += `${headerTitle}\n`;
       goalsEvts.forEach((g) => {
-        const passeurStr = g.assister ? ` (${g.assister})` : "";
-        msg += `  • ${g.player}${passeurStr} ${g.time ? `(${g.period ? `${g.period} ` : ''}${g.time})` : ""}\n`;
+        const passeurStr = g.assister ? ` (Passe : ${g.assister})` : "";
+        const noteStr = g.note ? ` [${g.note}]` : "";
+        msg += `  • ${g.player}${noteStr}${passeurStr} ${g.time ? `(${g.period ? `${g.period} ` : ''}${g.time})` : ""}\n`;
       });
       msg += `\n`;
     }
@@ -5968,6 +6234,7 @@ export default function TacticsBoard({
     const currentLiveToken = currentTokens.find((t) => t.id === liveActionToken.id) || liveActionToken;
     const isHome = currentLiveToken.type === "player_a";
     const currentGoals = matchEvents.filter((e) => e.type === "goal" && e.player === currentLiveToken.name).length;
+    const currentPoints = matchEvents.filter((e) => e.type === "goal" && e.player === currentLiveToken.name).reduce((sum, e) => sum + (e.points || 1), 0);
     const currentAssists = matchEvents.filter((e) => (e.type === "assist" && e.player === currentLiveToken.name) || (e.type === "goal" && e.assister === currentLiveToken.name)).length;
     const currentYellows = (currentLiveToken.yellowCards && currentLiveToken.yellowCards > 0)
       ? currentLiveToken.yellowCards
@@ -6026,7 +6293,8 @@ export default function TacticsBoard({
                 <span>{currentLiveToken.role || t.tactics.liveToolbox.player}</span>
                 {currentGoals > 0 && (
                   <span className={`font-black flex items-center gap-0.5 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>
-                    ⚽ x{currentGoals}
+                    {activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"}{" "}
+                    {activeSport === "rugby" || activeSport === "basketball" ? `${currentPoints} pts` : `x${currentGoals}`}
                   </span>
                 )}
                 {currentAssists > 0 && (
@@ -6045,19 +6313,22 @@ export default function TacticsBoard({
 
           {/* Options de match en direct */}
           <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
-            {/* buteur (b) */}
-            <button
-              type="button"
-              onClick={() => handleRecordGoal(currentLiveToken)}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
-                ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800 hover:text-emerald-950 shadow-2xs"
-                : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/70 hover:border-emerald-400 text-emerald-200 hover:text-white"
-                }`}
-              title={t.tactics.liveToolbox.goalTooltip}
-            >
-              <span>⚽</span>
-              <span>{t.tactics.liveToolbox.goalBtn}</span>
-            </button>
+            {/* Boutons de points selon le sport (Rugby, Basket, Hand, Foot) */}
+            {getSportScoreActions(activeSport).map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                onClick={() => handleRecordScore(currentLiveToken, action)}
+                className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
+                  ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800 hover:text-emerald-950 shadow-2xs"
+                  : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/70 hover:border-emerald-400 text-emerald-200 hover:text-white"
+                  }`}
+                title={`Attribuer ${action.label} (+${action.points} point${action.points > 1 ? "s" : ""}) à ${currentLiveToken.name}`}
+              >
+                <span>{action.icon}</span>
+                <span>{action.shortLabel}</span>
+              </button>
+            ))}
 
             {/* passeur (p) */}
             <button
@@ -8271,7 +8542,7 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => setShowBall(!showBall)}
-                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${showBall
+                className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 ${showBall
                   ? isModernSleek
                     ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                     : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -8279,10 +8550,15 @@ export default function TacticsBoard({
                     ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                   }`}
-                title={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
+                title={showBall
+                  ? (activeSport === "rugby" ? "Masquer le ballon de rugby" : activeSport === "basketball" ? "Masquer le ballon de basketball" : activeSport === "handball" ? "Masquer le ballon de handball" : t.tactics.pitchModes.ballHide)
+                  : (activeSport === "rugby" ? "Afficher le ballon de rugby" : activeSport === "basketball" ? "Afficher le ballon de basketball" : activeSport === "handball" ? "Afficher le ballon de handball" : t.tactics.pitchModes.ballShow)
+                }
                 aria-label={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
               >
-                <CircleDot className="h-4 w-4 shrink-0" />
+                <span className="text-sm leading-none shrink-0" aria-hidden="true">
+                  {getSportBallInfo(activeSport).emoji}
+                </span>
               </button>
               <button
                 type="button"
@@ -8670,7 +8946,7 @@ export default function TacticsBoard({
                       <button
                         type="button"
                         onClick={() => setShowBall(!showBall)}
-                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${showBall
+                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 ${showBall
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -8678,10 +8954,15 @@ export default function TacticsBoard({
                             ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                           }`}
-                        title={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
+                        title={showBall
+                          ? (activeSport === "rugby" ? "Masquer le ballon de rugby" : activeSport === "basketball" ? "Masquer le ballon de basketball" : activeSport === "handball" ? "Masquer le ballon de handball" : t.tactics.pitchModes.ballHide)
+                          : (activeSport === "rugby" ? "Afficher le ballon de rugby" : activeSport === "basketball" ? "Afficher le ballon de basketball" : activeSport === "handball" ? "Afficher le ballon de handball" : t.tactics.pitchModes.ballShow)
+                        }
                         aria-label={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
                       >
-                        <CircleDot className="h-4 w-4 shrink-0" />
+                        <span className="text-sm leading-none shrink-0" aria-hidden="true">
+                          {getSportBallInfo(activeSport).emoji}
+                        </span>
                       </button>
                       <button
                         type="button"
@@ -9189,8 +9470,8 @@ export default function TacticsBoard({
                               tokenBg = "bg-slate-200 border-slate-400 text-slate-900";
                               iconContent = "🏁";
                             } else if (token.type === "ball") {
-                              tokenBg = "bg-white border-slate-500 shadow-xl text-slate-900";
-                              iconContent = activeSport === "rugby" ? "🏉" : "⚽";
+                              tokenBg = "bg-transparent";
+                              iconContent = getSportBallInfo(activeSport).emoji;
                             }
 
                             const isSelected = selectedTokenId === token.id;
@@ -9263,7 +9544,9 @@ export default function TacticsBoard({
                                     ? isLiveMatchMode
                                       ? t.tactics.playerCard.tokenHoverLive(token.name)
                                       : t.tactics.playerCard.tokenHoverSub(token.name)
-                                    : t.tactics.playerCard.tokenHoverDrag
+                                    : token.type === "ball"
+                                      ? getSportBallInfo(activeSport).hoverTitle
+                                      : t.tactics.playerCard.tokenHoverDrag
                                 }
                                 style={{
                                   left: `${aspectRatioMode === "mobile" ? token.y : token.x}%`,
@@ -9273,15 +9556,27 @@ export default function TacticsBoard({
                                   transition: transitionStyle,
                                 }}
                               >
-                                {/* Representation: Pastille, Buste ou Tête */}
-                                <div
-                                  className={`${token.type === "ball"
-                                    ? "w-6 h-6 sm:w-7 sm:h-7 text-[10px] rounded-full border-2 shadow-xl " + tokenBg
-                                    : isJerseyMode || isHeadMode
-                                      ? "w-9 h-10 sm:w-10 sm:h-11 flex items-center justify-center relative drop-shadow-xl"
-                                      : "w-9 h-9 sm:w-10 sm:h-10 text-xs rounded-full border-2 shadow-xl " + tokenBg
-                                    } flex items-center justify-center font-black transition-all relative`}
-                                >
+                                {/* Representation: Ballon spécifique au sport, Buste, Tête ou Pastille */}
+                                {token.type === "ball" ? (
+                                  <div
+                                    className={`${
+                                      activeSport === "rugby"
+                                        ? "w-8 h-6 sm:w-9 sm:h-7"
+                                        : "w-6 h-6 sm:w-7 sm:h-7"
+                                    } flex items-center justify-center relative transition-transform ${
+                                      isSelected ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-110" : ""
+                                    }`}
+                                  >
+                                    <PitchBallGraphic sport={activeSport} />
+                                  </div>
+                                ) : (
+                                  <div
+                                    className={`${
+                                      isJerseyMode || isHeadMode
+                                        ? "w-9 h-10 sm:w-10 sm:h-11 flex items-center justify-center relative drop-shadow-xl"
+                                        : "w-9 h-9 sm:w-10 sm:h-10 text-xs rounded-full border-2 shadow-xl " + tokenBg
+                                      } flex items-center justify-center font-black transition-all relative`}
+                                  >
                                   {isJerseyMode ? (
                                     /* 1. BUSTE (Maillot athlétique avec numéro sur la poitrine) */
                                     <svg viewBox="0 0 44 48" className="w-full h-full overflow-visible" fill="none">
@@ -9391,13 +9686,13 @@ export default function TacticsBoard({
                                       </span>
                                     )}
 
-                                    {/* Goal Scorer ⚽ */}
+                                    {/* Goal Scorer / Point Scorer */}
                                     {playerGoals > 0 && (
                                       <span
                                         className="bg-emerald-500 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-emerald-200 flex items-center justify-center leading-none"
                                         title={t.tactics.pitchBadges.scorer(playerGoals)}
                                       >
-                                        ⚽{playerGoals > 1 ? playerGoals : ""}
+                                        {activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"}{playerGoals > 1 ? playerGoals : ""}
                                       </span>
                                     )}
 
@@ -9506,6 +9801,7 @@ export default function TacticsBoard({
                                     </div>
                                   )}
                                 </div>
+                              )}
 
                                 {/* Name Label JUST BELOW the token pastille */}
                                 {token.type.startsWith("player") && showPlayerNames && (
@@ -10355,7 +10651,7 @@ export default function TacticsBoard({
                           {isLiveTimerRunning ? "PAUSE" : "START"}
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); setLiveTimerSeconds(0); }}
+                          onClick={(e) => { e.stopPropagation(); setIsLiveTimerRunning(false); setLiveTimerSeconds(0); }}
                           className="px-1.5 py-0.5 rounded bg-[#1f293d] hover:bg-[#2e3d5b] text-slate-300 text-[8px] font-black transition cursor-pointer"
                           title="Réinitialiser le chrono"
                         >
@@ -10397,12 +10693,16 @@ export default function TacticsBoard({
                           .map((evt) => (
                             <div key={evt.id} className="text-[8.5px] font-bold flex items-center justify-between text-slate-200 hover:bg-[#131b29] p-0.5 rounded transition group">
                               <span className="flex items-center gap-1 truncate min-w-0">
-                                <span className="text-[10px]">{evt.type === "goal" ? "⚽" : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}</span>
+                                <span className="text-[10px]">
+                                  {evt.type === "goal" 
+                                    ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽")) 
+                                    : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}
+                                </span>
                                 <span className="text-white font-extrabold truncate max-w-[130px]">
                                   {evt.player}
-                                  {evt.type === "goal" && evt.assister ? (
+                                  {evt.type === "goal" ? (
                                     <span className="text-[#00E599] font-bold text-[8px] ml-0.5">
-                                      ({evt.assister})
+                                      ({evt.points && evt.points > 1 ? `+${evt.points} pts` : "1 pt"}{evt.assister ? ` • ${evt.assister}` : ""})
                                     </span>
                                   ) : null}
                                 </span>
@@ -10593,40 +10893,42 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {/* SELECTION DU PASSEUR DECISIF MODAL */}
       {/* ========================================================= */}
-      {pendingGoalToken && (
-        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-          <div className={`max-w-md w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto flex flex-col border overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
-            }`}>
-            {/* Ambient background glow accents */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Header bar */}
-            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+      {pendingGoalToken && (() => {
+        const currentAction = pendingScoreAction || getSportScoreActions(activeSport)[0];
+        return (
+          <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
+            <div className={`max-w-md w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto flex flex-col border overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
               }`}>
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl border ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
-                  }`}>
-                  <span className="text-xl">⚽</span>
+              {/* Ambient background glow accents */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              {/* Header bar */}
+              <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+                }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl border ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
+                    }`}>
+                    <span className="text-xl">{currentAction.icon}</span>
+                  </div>
+                  <div>
+                    <h3 className={`text-sm sm:text-base font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-white"}`}>
+                      {currentAction.label === "But" ? "Nouveau But !" : `Nouveau : ${currentAction.label} (+${currentAction.points} pts)`}
+                    </h3>
+                    <p className="text-[11px] text-emerald-600 dark:text-[#00E599] font-bold mt-0.5">
+                      {activeSport === "rugby" ? "Marqueur" : activeSport === "basketball" ? "Buteur / Panier" : "Buteur"} : #{pendingGoalToken.number || "?"} {pendingGoalToken.name}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className={`text-sm sm:text-base font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-                    Nouveau But !
-                  </h3>
-                  <p className="text-[11px] text-emerald-600 dark:text-[#00E599] font-bold mt-0.5">
-                    Buteur : #{pendingGoalToken.number || "?"} {pendingGoalToken.name}
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => { setPendingGoalToken(null); setPendingScoreAction(null); }}
+                  className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                    }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setPendingGoalToken(null)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                  }`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
             <div className="p-5 sm:p-6 space-y-4 relative z-10">
               <div>
@@ -10690,23 +10992,28 @@ export default function TacticsBoard({
               <div className={`flex items-center justify-between gap-3 pt-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
                 <button
                   type="button"
-                  onClick={() => setPendingGoalToken(null)}
+                  onClick={() => { setPendingGoalToken(null); setPendingScoreAction(null); }}
                   className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="button"
-                  onClick={() => confirmGoalRecord(pendingGoalToken, selectedPasseurName)}
+                  onClick={() => confirmGoalRecord(pendingGoalToken, selectedPasseurName, currentAction)}
                   className="px-5 py-2.5 bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs rounded-xl transition cursor-pointer shadow-lg shadow-[#00e599]/20 flex items-center justify-center gap-1.5"
                 >
-                  <span>⚽ VALIDER LE BUT</span>
+                  <span>
+                    {currentAction.label === "But"
+                      ? "⚽ VALIDER LE BUT"
+                      : `${currentAction.icon} VALIDER ${currentAction.label.toUpperCase()} (+${currentAction.points})`}
+                  </span>
                 </button>
               </div>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ========================================================= */}
       {/* 6. EDIT UPCOMING MATCHES & MANAGEMENT OVERLAY POPUP */}
@@ -11197,13 +11504,17 @@ export default function TacticsBoard({
                       <div key={evt.id} className={`text-xs font-bold flex items-center justify-between px-2.5 py-1.5 rounded-lg border ${isModernSleek ? "text-slate-800 bg-white border-slate-200" : "text-slate-200 bg-[#0f172a] border-[#1f293d]"
                         }`}>
                         <span className="flex items-center gap-2 truncate">
-                          <span>{evt.type === "goal" ? "⚽" : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}</span>
+                          <span>
+                            {evt.type === "goal" 
+                              ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽")) 
+                              : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}
+                          </span>
                           <span className={`font-extrabold flex items-center gap-1 ${isModernSleek ? "text-slate-900" : "text-white"
                             }`}>
                             {evt.player}
-                            {evt.type === "goal" && evt.assister ? (
+                            {evt.type === "goal" ? (
                               <span className="text-[#00E599] font-bold text-xs">
-                                ({evt.assister})
+                                ({evt.points && evt.points > 1 ? `+${evt.points} pts` : "1 pt"}{evt.assister ? ` • ${evt.assister}` : ""})
                               </span>
                             ) : null}
                           </span>
