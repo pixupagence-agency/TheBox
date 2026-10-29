@@ -259,35 +259,29 @@ test.describe('Section 7 : Mode Live Match & Banc de Touche Connecté (FT-LIVE)'
     const liveToolbox = page.locator('#live-match-player-toolbox');
     await expect(liveToolbox).toBeVisible({ timeout: 5000 });
 
-    // 4. Vérifier la présence des 3 boutons de scoring Basketball : 3 Pts (+3), 2 Pts (+2), LF (+1)
-    const threePtBtn = liveToolbox.locator('button:has-text("3 Pts (+3)")').first();
-    const twoPtBtn = liveToolbox.locator('button:has-text("2 Pts (+2)")').first();
-    const lfBtn = liveToolbox.locator('button:has-text("LF (+1)")').first();
+    // 4. Vérifier la présence des 3 boutons de scoring Basketball : 3 points (+3), 2 points (+2), Lancer franc (+1)
+    const threePtBtn = liveToolbox.locator('button:has-text("3 points (+3)")').first();
+    const twoPtBtn = liveToolbox.locator('button:has-text("2 points (+2)")').first();
+    const lfBtn = liveToolbox.locator('button:has-text("Lancer franc (+1)")').first();
 
     await expect(threePtBtn).toBeVisible();
     await expect(twoPtBtn).toBeVisible();
     await expect(lfBtn).toBeVisible();
 
-    // 5. Attribuer un Lancer Franc (+1 direct -> 1 - 0)
+    // 5. Attribuer un Lancer franc (+1 direct -> 1 - 0)
     await lfBtn.click();
     await expect(page.locator('text=1 - 0').first()).toBeVisible({ timeout: 5000 });
 
-    // 6. Attribuer un Panier à 2 Points (+2 pts -> 3 - 0)
+    // 6. Attribuer un Panier à 2 points (+2 direct -> 3 - 0)
     await playerToken.click();
     await expect(liveToolbox).toBeVisible({ timeout: 5000 });
-    await liveToolbox.locator('button:has-text("2 Pts (+2)")').first().click();
-    const confirmTwoPtBtn = page.locator('button:has-text("VALIDER 2 POINTS (+2)")').first();
-    await expect(confirmTwoPtBtn).toBeVisible({ timeout: 5000 });
-    await confirmTwoPtBtn.click({ force: true });
+    await liveToolbox.locator('button:has-text("2 points (+2)")').first().click();
     await expect(page.locator('text=3 - 0').first()).toBeVisible({ timeout: 5000 });
 
-    // 7. Attribuer un Tir à 3 Points (+3 pts -> 6 - 0)
+    // 7. Attribuer un Tir à 3 points (+3 direct -> 6 - 0)
     await playerToken.click();
     await expect(liveToolbox).toBeVisible({ timeout: 5000 });
-    await liveToolbox.locator('button:has-text("3 Pts (+3)")').first().click();
-    const confirmThreePtBtn = page.locator('button:has-text("VALIDER 3 POINTS (+3)")').first();
-    await expect(confirmThreePtBtn).toBeVisible({ timeout: 5000 });
-    await confirmThreePtBtn.click({ force: true });
+    await liveToolbox.locator('button:has-text("3 points (+3)")').first().click();
     await expect(page.locator('text=6 - 0').first()).toBeVisible({ timeout: 5000 });
   });
 

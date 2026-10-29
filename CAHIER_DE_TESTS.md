@@ -489,7 +489,7 @@
 | N° Étape | Action utilisateur | Résultat attendu | Statut |
 | :---: | :--- | :--- | :---: |
 | 1 | En mode **Rugby**, sélectionner un joueur en Live Match. | La boîte à outils Live propose **🏉 Essai (+5)**, **🎯 Transfo (+2)** et **🥅 Pénalité (+3)**. L'attribution incrémente le score de 5, 2 ou 3 points respectivement. | [x] |
-| 2 | En mode **Basketball**, sélectionner un joueur en Live Match. | La boîte à outils Live propose **🎯 3 Pts (+3)**, **🏀 2 Pts (+2)** et **⭕ LF (+1)**. L'attribution incrémente le score de 3, 2 ou 1 point respectivement. | [x] |
+| 2 | En mode **Basketball**, sélectionner un joueur ou utiliser le panneau Live Match. | Les boutons **🎯 3 points (+3)**, **🏀 2 points (+2)** et **⭕ Lancer franc (+1)** sont disponibles et incrémentent immédiatement le score de 3, 2 ou 1 point respectivement. | [x] |
 | 3 | En mode **Handball**, sélectionner un joueur en Live Match. | La boîte à outils Live propose **🤾 But (+1)** et incrémente le score de 1 point avec sélection optionnelle du passeur. | [x] |
 | 4 | Supprimer un événement de score dans le journal du match. | Le score de l'équipe concernée est décrémenté du nombre exact de points de l'action supprimée (ex: -5 pts pour un essai, -3 pts pour un tir à 3 points). | [x] |
 

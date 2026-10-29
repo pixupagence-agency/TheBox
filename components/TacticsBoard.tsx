@@ -93,9 +93,9 @@ export const getSportScoreActions = (sport: string): SportScoreAction[] => {
       ];
     case "basketball":
       return [
-        { id: "basket_3", label: "3 Points", shortLabel: "3 Pts (+3)", points: 3, icon: "🎯", requiresAssisterModal: true },
-        { id: "basket_2", label: "2 Points", shortLabel: "2 Pts (+2)", points: 2, icon: "🏀", requiresAssisterModal: true },
-        { id: "basket_1", label: "Lancer Franc", shortLabel: "LF (+1)", points: 1, icon: "⭕", requiresAssisterModal: false },
+        { id: "basket_3", label: "3 points", shortLabel: "3 points (+3)", points: 3, icon: "🎯", requiresAssisterModal: false },
+        { id: "basket_2", label: "2 points", shortLabel: "2 points (+2)", points: 2, icon: "🏀", requiresAssisterModal: false },
+        { id: "basket_1", label: "Lancer franc", shortLabel: "Lancer franc (+1)", points: 1, icon: "⭕", requiresAssisterModal: false },
       ];
     case "handball":
       return [
@@ -6135,18 +6135,21 @@ export default function TacticsBoard({
                 <span>{t.tactics.playerCard.liveActionsHeader}</span>
               </span>
 
-              <button
-                type="button"
-                onClick={() => handleRecordGoal(activeToken)}
-                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
-                  ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800"
-                  : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/80 text-emerald-200 hover:text-white"
-                  }`}
-                title={t.tactics.playerCard.addGoalTooltip}
-              >
-                <span>⚽</span>
-                <span>{t.tactics.playerCard.addGoalBtn}</span>
-              </button>
+              {getSportScoreActions(activeSport).map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  onClick={() => handleRecordScore(activeToken, action)}
+                  className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
+                    ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800"
+                    : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/80 text-emerald-200 hover:text-white"
+                    }`}
+                  title={`Attribuer ${action.label} (+${action.points} sur le score) à ${activeToken.name}`}
+                >
+                  <span>{action.icon}</span>
+                  <span>{action.shortLabel}</span>
+                </button>
+              ))}
 
               <button
                 type="button"
@@ -10439,7 +10442,7 @@ export default function TacticsBoard({
                     </span>
                   ) : (
                     <span className={`${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} text-[9px] font-black uppercase flex items-center gap-1`}>
-                      ⚽ MATCH
+                      {getSportBallInfo(activeSport).emoji} MATCH
                     </span>
                   )}
                   <span className="text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
@@ -10609,6 +10612,73 @@ export default function TacticsBoard({
                 {/* Chrono, Period & Events section */}
                 {isLiveMatchMode ? (
                   <div className="mt-2 pt-1.5 border-t border-rose-900/40 flex flex-col items-center gap-1.5">
+                    {/* Boutons rapides de points en mode BASKETBALL (3 points +3, 2 points +2, Lancer franc +1) */}
+                    {activeSport === "basketball" && (
+                      <div className="w-full bg-[#080d14] p-1.5 rounded-lg border border-emerald-500/30 space-y-1.5">
+                        <div className="text-[7.5px] font-black uppercase tracking-wider text-[#00E599] text-center">
+                          🏀 Noter les points ({activeMatch.homeTeam})
+                        </div>
+                        <div className="grid grid-cols-3 gap-1 w-full">
+                          {getSportScoreActions("basketball").map((action) => (
+                            <button
+                              key={`quick-home-${action.id}`}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const targetToken =
+                                  (liveActionToken && liveActionToken.type === "player_a" ? liveActionToken : null) ||
+                                  currentTokens.find((tk) => tk.type === "player_a") || {
+                                    id: "home_team_basket",
+                                    type: "player_a" as const,
+                                    x: 50,
+                                    y: 50,
+                                    name: activeMatch.homeTeam,
+                                    number: "",
+                                  };
+                                handleRecordScore(targetToken, action);
+                              }}
+                              className="py-1 px-1 rounded bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/60 text-emerald-200 hover:text-white text-[8px] font-black transition cursor-pointer flex flex-col items-center justify-center leading-tight shadow-xs"
+                              title={`Ajouter ${action.label} (+${action.points} sur le score)`}
+                            >
+                              <span>{action.icon} {action.label}</span>
+                              <span className="text-[#00E599] text-[7.5px]">+{action.points}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between gap-1 pt-1 border-t border-[#1f293d]">
+                          <span className="text-[7px] font-bold text-rose-400 uppercase truncate max-w-[75px]">
+                            Adv. ({activeMatch.awayTeam}) :
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {getSportScoreActions("basketball").map((action) => (
+                              <button
+                                key={`quick-away-${action.id}`}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const targetToken =
+                                    (liveActionToken && liveActionToken.type === "player_b" ? liveActionToken : null) ||
+                                    currentTokens.find((tk) => tk.type === "player_b") || {
+                                      id: "away_team_basket",
+                                      type: "player_b" as const,
+                                      x: 50,
+                                      y: 50,
+                                      name: activeMatch.awayTeam,
+                                      number: "",
+                                    };
+                                  handleRecordScore(targetToken, action);
+                                }}
+                                className="px-1.5 py-0.5 rounded bg-rose-950/80 hover:bg-rose-800 border border-rose-500/40 text-rose-200 hover:text-white text-[7.5px] font-black transition cursor-pointer"
+                                title={`Adversaire : ${action.label} (+${action.points} sur le score)`}
+                              >
+                                +{action.points}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Period Selector Buttons (1MT | PAUSE | 2MT | FIN) */}
                     <div className="flex items-center justify-between gap-1 w-full bg-[#080d14] p-1 rounded-lg border border-[#1f293d]">
                       {(["1MT", "MI-TEMPS", "2MT", "FIN"] as const).map((periodKey) => (
