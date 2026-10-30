@@ -40,21 +40,28 @@ test.describe('Section 6 : Gestion de l\'Effectif, Formations & Causerie Vocale 
     expect(await tokens.count()).toBeGreaterThan(5);
   });
 
-  test('FT-ROST-02 : Panneau d\'Effectif & Rôles', async ({ page }) => {
-    // 1. Ouvrir le panneau d'effectif
-    const rosterBtn = page.locator('button:has-text("Effectif")').first();
-    if (await rosterBtn.isVisible()) {
-      await rosterBtn.click();
-      // La modale d'effectif et rôles s'affiche
-      const rosterModal = page.locator('text=EFFECTIF & RÔLES').first();
-      await expect(rosterModal).toBeVisible();
-      // Fermeture par le bouton Fermer ou Échap
-      const closeBtn = page.locator('button[title="Fermer"]').last();
-      if (await closeBtn.isVisible()) {
-        await closeBtn.click();
-      } else {
-        await page.keyboard.press('Escape');
-      }
+  test('FT-ROST-02 : Panneau d\'Effectif & Rôles (Affichage des têtes de joueurs par défaut)', async ({ page }) => {
+    // 1. Ouvrir le panneau d'effectif ("Rôles" / "Effectif")
+    const rosterBtn = page.locator('button:has-text("Rôles"), button:has-text("Effectif")').first();
+    await expect(rosterBtn).toBeVisible();
+    await rosterBtn.click();
+
+    // 2. La modale d'effectif et rôles s'affiche
+    const rosterModalTitle = page.locator('h3:has-text("EFFECTIF & RÔLES")').first();
+    await expect(rosterModalTitle).toBeVisible();
+
+    // 3. Vérifier que la tête du joueur par défaut s'affiche sur chaque joueur (titulaires + remplaçants)
+    const defaultAvatars = page.locator('img[src*="/images/avatars/"]');
+    const avatarCount = await defaultAvatars.count();
+    expect(avatarCount).toBeGreaterThanOrEqual(11);
+    await expect(defaultAvatars.first()).toBeVisible();
+
+    // 4. Fermeture par le bouton Fermer
+    const closeBtn = page.locator('button[title="Fermer"]').last();
+    if (await closeBtn.isVisible()) {
+      await closeBtn.click();
+    } else {
+      await page.keyboard.press('Escape');
     }
   });
 

@@ -484,11 +484,11 @@
 ### FT-LIVE-06 : Comptage des Points Spécifiques par Discipline (Rugby, Basketball, Handball)
 * **Priorité** : P1
 * **Prérequis** : Mode Live Match actif sur la discipline sélectionnée.
-* **Données de test** : Rugby (Essai +5, Transfo +2, Pénalité +3), Basketball (3 Pts +3, 2 Pts +2, LF +1), Handball (But +1).
+* **Données de test** : Rugby (Drop +3, Essai +5, Transformation +2), Basketball (3 points +3, 2 points +2, Lancer franc +1), Handball (But +1).
 
 | N° Étape | Action utilisateur | Résultat attendu | Statut |
 | :---: | :--- | :--- | :---: |
-| 1 | En mode **Rugby**, sélectionner un joueur en Live Match. | La boîte à outils Live propose **🏉 Essai (+5)**, **🎯 Transfo (+2)** et **🥅 Pénalité (+3)**. L'attribution incrémente le score de 5, 2 ou 3 points respectivement. | [x] |
+| 1 | En mode **Rugby**, sélectionner un joueur ou utiliser le panneau Live Match. | Les boutons **🥅 Drop (+3)**, **🏉 Essai (+5)** et **🎯 Transformation (+2)** sont disponibles et incrémentent immédiatement le score de 3, 5 ou 2 points respectivement. | [x] |
 | 2 | En mode **Basketball**, sélectionner un joueur ou utiliser le panneau Live Match. | Les boutons **🎯 3 points (+3)**, **🏀 2 points (+2)** et **⭕ Lancer franc (+1)** sont disponibles et incrémentent immédiatement le score de 3, 2 ou 1 point respectivement. | [x] |
 | 3 | En mode **Handball**, sélectionner un joueur en Live Match. | La boîte à outils Live propose **🤾 But (+1)** et incrémente le score de 1 point avec sélection optionnelle du passeur. | [x] |
 | 4 | Supprimer un événement de score dans le journal du match. | Le score de l'équipe concernée est décrémenté du nombre exact de points de l'action supprimée (ex: -5 pts pour un essai, -3 pts pour un tir à 3 points). | [x] |

@@ -14,7 +14,9 @@ async function connectAsProCoach(page: any) {
   await loginBtn.click();
 
   const loginForm = page.locator('form').filter({ hasText: /OU AVEC IDENTIFIANTS/i });
-  if (!(await loginForm.isVisible({ timeout: 2000 }).catch(() => false))) {
+  try {
+    await expect(loginForm).toBeVisible({ timeout: 2500 });
+  } catch {
     await loginBtn.click();
   }
   await expect(loginForm).toBeVisible({ timeout: 10000 });
@@ -188,33 +190,29 @@ test.describe('Section 7 : Mode Live Match & Banc de Touche Connecté (FT-LIVE)'
     const liveToolbox = page.locator('#live-match-player-toolbox');
     await expect(liveToolbox).toBeVisible({ timeout: 5000 });
 
-    // 4. Vérifier la présence des 3 boutons de scoring Rugby : Essai (+5), Transfo (+2), Pénalité (+3)
+    // 4. Vérifier la présence des 3 boutons de scoring Rugby : Drop (+3), Essai (+5), Transformation (+2)
+    const dropBtn = liveToolbox.locator('button:has-text("Drop (+3)")').first();
     const essaiBtn = liveToolbox.locator('button:has-text("Essai (+5)")').first();
-    const transfoBtn = liveToolbox.locator('button:has-text("Transfo (+2)")').first();
-    const penaliteBtn = liveToolbox.locator('button:has-text("Pénalité (+3)")').first();
+    const transfoBtn = liveToolbox.locator('button:has-text("Transformation (+2)")').first();
 
+    await expect(dropBtn).toBeVisible();
     await expect(essaiBtn).toBeVisible();
     await expect(transfoBtn).toBeVisible();
-    await expect(penaliteBtn).toBeVisible();
 
-    // 5. Attribuer une Pénalité (3 points directs)
-    await penaliteBtn.click();
+    // 5. Attribuer un Drop (+3 points directs -> 3 - 0)
+    await dropBtn.click();
     await expect(page.locator('text=3 - 0').first()).toBeVisible({ timeout: 5000 });
 
-    // 6. Attribuer une Transformation (2 points directs -> 5 - 0)
-    await playerToken.click();
-    await expect(liveToolbox).toBeVisible({ timeout: 5000 });
-    await liveToolbox.locator('button:has-text("Transfo (+2)")').first().click();
-    await expect(page.locator('text=5 - 0').first()).toBeVisible({ timeout: 5000 });
-
-    // 7. Attribuer un Essai (5 points avec validation -> 10 - 0)
+    // 6. Attribuer un Essai (+5 points directs -> 8 - 0)
     await playerToken.click();
     await expect(liveToolbox).toBeVisible({ timeout: 5000 });
     await liveToolbox.locator('button:has-text("Essai (+5)")').first().click();
-    const confirmEssaiBtn = page.locator('button:has-text("VALIDER ESSAI (+5)")').first();
-    await expect(confirmEssaiBtn).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(300);
-    await confirmEssaiBtn.click();
+    await expect(page.locator('text=8 - 0').first()).toBeVisible({ timeout: 5000 });
+
+    // 7. Attribuer une Transformation (+2 points directs -> 10 - 0)
+    await playerToken.click();
+    await expect(liveToolbox).toBeVisible({ timeout: 5000 });
+    await liveToolbox.locator('button:has-text("Transformation (+2)")').first().click();
     await expect(page.locator('text=10 - 0').first()).toBeVisible({ timeout: 5000 });
   });
 

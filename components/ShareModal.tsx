@@ -582,7 +582,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-lg transition cursor-pointer ${
+            className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${
               isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
             }`}
             title="Fermer"
@@ -850,22 +850,22 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                   />
 
                   {/* Floating Action Overlay on Top of Image */}
-                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/15 shadow-xl">
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/80 backdrop-blur-md p-1.5 rounded-xl border border-white/15 shadow-xl">
                     <button
                       onClick={handleDownloadImage}
-                      className="p-1.5 text-slate-200 hover:text-[#00E599] transition cursor-pointer text-[11px] font-bold flex items-center gap-1 hover:bg-white/5 rounded-lg"
+                      className="h-8 px-2.5 text-slate-200 hover:text-[#00E599] transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-white/10 rounded-lg"
                       title="Télécharger l'image PNG haute définition"
                     >
-                      <Download className="w-3.5 h-3.5 text-[#00E599]" />
+                      <Download className="w-3.5 h-3.5 text-[#00E599] shrink-0" />
                       <span>{downloadedImage ? "Téléchargée !" : "Télécharger PNG"}</span>
                     </button>
-                    <span className="text-slate-600">|</span>
+                    <span className="h-4 w-px bg-white/15" />
                     <button
                       onClick={handleCopyImageToClipboard}
-                      className="p-1.5 text-slate-200 hover:text-[#00E599] transition cursor-pointer text-[11px] font-bold flex items-center gap-1 hover:bg-white/5 rounded-lg"
+                      className="h-8 px-2.5 text-slate-200 hover:text-[#00E599] transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-white/10 rounded-lg"
                       title="Copier l'image directement dans le presse-papier"
                     >
-                      {copiedImage ? <Check className="w-3.5 h-3.5 text-[#00E599]" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
+                      {copiedImage ? <Check className="w-3.5 h-3.5 text-[#00E599] shrink-0" /> : <Copy className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                       <span>{copiedImage ? "Image copiée !" : "Copier l'image"}</span>
                     </button>
                   </div>
@@ -1024,14 +1024,14 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               <button
                 onClick={handleShareWhatsApp}
                 disabled={isSharingImage}
-                className="flex items-center justify-center gap-3 p-3 bg-[#25D366] hover:bg-[#20bd5a] text-[#07130a] font-black text-xs uppercase rounded-xl transition shadow-lg shadow-emerald-500/20 cursor-pointer group active:scale-[0.98] disabled:opacity-50"
+                className="h-14 px-4 flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20bd5a] text-[#07130a] font-black text-xs uppercase rounded-xl transition shadow-lg shadow-emerald-500/20 cursor-pointer group active:scale-[0.98] disabled:opacity-50"
               >
-                <div className="w-7 h-7 rounded-full bg-black/10 flex items-center justify-center text-black">
+                <div className="w-7 h-7 rounded-full bg-black/10 flex items-center justify-center text-black shrink-0">
                   <MessageCircle className="w-4 h-4 fill-current" />
                 </div>
                 <div className="text-left leading-tight">
-                  <span className="block text-[12.5px]">Partager sur WhatsApp</span>
-                  <span className="block text-[9.5px] opacity-80 font-bold lowercase">
+                  <span className="block text-[12.5px] whitespace-nowrap">Partager sur WhatsApp</span>
+                  <span className="block text-[9.5px] opacity-80 font-bold lowercase whitespace-nowrap">
                     {includeSchemas ? "Message + image HD" : "Message texte formaté"}
                   </span>
                 </div>
@@ -1040,14 +1040,14 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               {/* Email Button */}
               <button
                 onClick={handleShareEmail}
-                className="flex items-center justify-center gap-3 p-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase rounded-xl transition shadow-lg shadow-blue-600/20 cursor-pointer group active:scale-[0.98]"
+                className="h-14 px-4 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase rounded-xl transition shadow-lg shadow-blue-600/20 cursor-pointer group active:scale-[0.98]"
               >
-                <div className="w-7 h-7 rounded-full bg-black/20 flex items-center justify-center text-white">
+                <div className="w-7 h-7 rounded-full bg-black/20 flex items-center justify-center text-white shrink-0">
                   <Mail className="w-4 h-4" />
                 </div>
                 <div className="text-left leading-tight">
-                  <span className="block text-[12.5px]">M&apos;envoyer par E-mail</span>
-                  <span className="block text-[9.5px] opacity-80 font-bold lowercase">
+                  <span className="block text-[12.5px] whitespace-nowrap">M&apos;envoyer par E-mail</span>
+                  <span className="block text-[9.5px] opacity-80 font-bold lowercase whitespace-nowrap">
                     {includeSchemas ? "Schéma HD + briefing pour transfert" : "Briefing pour transfert"}
                   </span>
                 </div>
@@ -1058,24 +1058,24 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
               <button
                 onClick={handleCopySummary}
-                className={`flex-1 w-full py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                className={`flex-1 w-full h-10 px-3.5 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-2 whitespace-nowrap transition cursor-pointer ${
                   copiedText 
                     ? "bg-emerald-950/80 border-[#00E599] text-[#00E599]" 
                     : isModernSleek ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-300"
                 }`}
               >
-                {copiedText ? <Check className="w-4 h-4 text-[#00E599]" /> : <Copy className="w-4 h-4" />}
+                {copiedText ? <Check className="w-4 h-4 text-[#00E599] shrink-0" /> : <Copy className="w-4 h-4 shrink-0" />}
                 <span>{copiedText ? "Texte copié !" : "Copier le texte du message"}</span>
               </button>
 
               {includeSchemas && (
                 <button
                   onClick={handleDownloadImage}
-                  className={`flex-1 w-full py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                  className={`flex-1 w-full h-10 px-3.5 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-2 whitespace-nowrap transition cursor-pointer ${
                     isModernSleek ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-200"
                   }`}
                 >
-                  <Download className="w-4 h-4 text-[#00E599]" />
+                  <Download className="w-4 h-4 text-[#00E599] shrink-0" />
                   <span>{downloadedImage ? "Image téléchargée !" : "Télécharger l'image PNG HD"}</span>
                 </button>
               )}
@@ -1084,21 +1084,36 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
         </div>
 
         {/* Modal Footer */}
-        <div className={`flex items-center justify-between px-5 py-3 border-t text-[10px] font-bold ${
-          isModernSleek ? "bg-slate-100 border-slate-200 text-slate-600" : "bg-[#090d14] border-[#1f293d] text-slate-500"
+        <div className={`flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-t text-[11px] font-bold ${
+          isModernSleek ? "bg-slate-100 border-slate-200 text-slate-600" : "bg-[#090d14] border-[#1f293d] text-slate-400"
         }`}>
           <span className="flex items-center gap-1.5 text-[#00E599]">
-            <Shield className="w-3.5 h-3.5" />
+            <Shield className="w-3.5 h-3.5 shrink-0" />
             <span>Staff Technique • {clubLabel}</span>
           </span>
-          <button
-            onClick={onClose}
-            className={`px-4 py-1.5 font-black uppercase text-[10px] rounded-lg border transition cursor-pointer ${
-              isModernSleek ? "bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] text-slate-300"
-            }`}
-          >
-            Fermer
-          </button>
+          <div className="flex items-center gap-2 ml-auto">
+            {includeSchemas && (
+              <button
+                onClick={handleDownloadImage}
+                className={`h-10 px-3.5 font-black uppercase text-xs rounded-xl border inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer ${
+                  isModernSleek
+                    ? "bg-white hover:bg-slate-50 border-slate-300 text-slate-800 shadow-xs"
+                    : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-[#00E599]"
+                }`}
+              >
+                <Download className="w-3.5 h-3.5 shrink-0 text-[#00E599]" />
+                <span>Exporter PNG</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className={`h-10 px-5 font-black uppercase text-xs rounded-xl border inline-flex items-center justify-center whitespace-nowrap transition cursor-pointer ${
+                isModernSleek ? "bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] text-slate-300"
+              }`}
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1150,7 +1165,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               </div>
               <button
                 onClick={() => setIsEmailPreviewOpen(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${
+                className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${
                   isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1f293d]"
                 }`}
                 title="Fermer l'aperçu"
@@ -1293,13 +1308,13 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                   </div>
                   <button
                     onClick={handleDownloadImage}
-                    className={`px-2.5 py-1.5 font-black text-[10px] uppercase rounded-lg transition cursor-pointer flex items-center gap-1 shrink-0 ${
+                    className={`h-8 px-3 font-black text-[10px] uppercase rounded-lg transition cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${
                       isModernSleek
                         ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
                         : "bg-[#00E599] hover:bg-[#00c583] text-[#07130a]"
                     }`}
                   >
-                    <Download className="w-3 h-3" />
+                    <Download className="w-3.5 h-3.5 shrink-0" />
                     <span>{downloadedImage ? "Téléchargée !" : "Télécharger PNG"}</span>
                   </button>
                 </div>
@@ -1317,24 +1332,24 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             </div>
 
             {/* Email Modal Footer Actions */}
-            <div className={`p-4 border-t flex flex-col sm:flex-row items-center gap-2.5 ${
+            <div className={`p-4 border-t flex flex-col sm:flex-row items-center gap-2 ${
               isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
             }`}>
               {/* PRIMARY CTA: SEND DIRECTLY TO COACH'S EMAIL */}
               <button
                 onClick={handleSendEmailToUser}
                 disabled={isSendingEmail || !recipientEmail}
-                className="flex-1 w-full py-3 px-4 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 transition cursor-pointer shadow-lg bg-gradient-to-r from-emerald-500 to-[#00E599] hover:from-emerald-400 hover:to-[#00c583] text-[#07130a] shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50"
+                className="flex-1 w-full h-10 px-4 rounded-xl font-black text-xs uppercase inline-flex items-center justify-center gap-2 whitespace-nowrap transition cursor-pointer shadow-lg bg-gradient-to-r from-emerald-500 to-[#00E599] hover:from-emerald-400 hover:to-[#00c583] text-[#07130a] shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50"
               >
                 {isSendingEmail ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-black" />
-                    <span>ENVOI EN COURS VERS VOTRE BOÎTE...</span>
+                    <Loader2 className="w-4 h-4 animate-spin text-black shrink-0" />
+                    <span>ENVOI EN COURS...</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4 text-black" />
-                    <span>M&apos;ENVOYER LE SCHÉMA PAR E-MAIL</span>
+                    <Send className="w-4 h-4 text-black shrink-0" />
+                    <span>M&apos;ENVOYER PAR E-MAIL</span>
                   </>
                 )}
               </button>
@@ -1342,7 +1357,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               {/* SECONDARY CTA: COPY ALL EMAIL BODY */}
               <button
                 onClick={handleCopyEmailBody}
-                className={`w-full sm:w-auto py-3 px-4 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 transition cursor-pointer border ${
+                className={`w-full sm:w-auto h-10 px-3.5 rounded-xl font-black text-xs uppercase inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer border ${
                   isModernSleek
                     ? "bg-white hover:bg-slate-50 border-slate-300 hover:border-slate-400 text-slate-700 shadow-xs"
                     : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] hover:border-slate-500 text-slate-200 hover:text-white"
@@ -1351,12 +1366,12 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               >
                 {copiedEmailBody ? (
                   <>
-                    <Check className="w-4 h-4 stroke-[3] text-[#00E599]" />
+                    <Check className="w-4 h-4 stroke-[3] text-[#00E599] shrink-0" />
                     <span>Copié !</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-4 h-4 shrink-0" />
                     <span>Copier texte</span>
                   </>
                 )}
@@ -1365,24 +1380,24 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               {/* TERTIARY CTA: OPEN MAILTO */}
               <button
                 onClick={handleLaunchNativeMailto}
-                className={`w-full sm:w-auto py-3 px-3 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-1.5 transition cursor-pointer border border-transparent ${
+                className={`w-full sm:w-auto h-10 px-3.5 rounded-xl font-bold text-xs uppercase inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer border ${
                   isModernSleek
-                    ? "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#1a2333] hover:border-[#1f293d]"
+                    ? "bg-white hover:bg-slate-50 border-slate-300 text-slate-700 hover:text-slate-900 shadow-xs"
+                    : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] text-slate-300 hover:text-white"
                 }`}
                 title="Ouvrir votre logiciel e-mail par défaut"
               >
-                <Mail className="w-3.5 h-3.5" />
+                <Mail className="w-3.5 h-3.5 shrink-0" />
                 <span>Messagerie</span>
               </button>
 
               {/* Close/Back button */}
               <button
                 onClick={() => setIsEmailPreviewOpen(false)}
-                className={`w-full sm:w-auto py-3 px-4 rounded-xl font-bold text-xs uppercase transition cursor-pointer ${
+                className={`w-full sm:w-auto h-10 px-4 rounded-xl font-bold text-xs uppercase inline-flex items-center justify-center whitespace-nowrap transition cursor-pointer border ${
                   isModernSleek
-                    ? "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#1a2333]"
+                    ? "bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-800"
+                    : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] text-slate-300 hover:text-white"
                 }`}
               >
                 Fermer

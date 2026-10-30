@@ -176,22 +176,175 @@ export default function Pitch({ sport, isPortrait }: PitchProps) {
           </div>
         );
 
+      case "rugby":
+        return (
+          <div className="absolute inset-0 w-full h-full bg-emerald-900 overflow-hidden select-none" id="pitch-rugby">
+            {/* Subtle field stripes - horizontal bands in portrait */}
+            <div className="absolute inset-0 flex flex-col h-full w-full opacity-10 pointer-events-none">
+              {Array.from({ length: 10 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`flex-1 w-full ${idx % 2 === 0 ? "bg-emerald-950" : "bg-transparent"}`}
+                />
+              ))}
+            </div>
+
+            {/* SVG Rugby Field Portrait - 70m x 144m */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 70 144" preserveAspectRatio="none">
+              {/* Goal-to-Goal touchline boundary (100m playfield, 22m try zones at each end) */}
+              <rect x="0.5" y="22" width="69" height="100" fill="none" stroke="white" strokeWidth="0.25" strokeOpacity="0.8" />
+              <rect x="0.5" y="0.5" width="69" height="143" fill="none" stroke="white" strokeWidth="0.25" strokeOpacity="0.6" />
+
+              {/* Try Lines (Top/Bottom) */}
+              <line x1="0.5" y1="22" x2="69.5" y2="22" stroke="white" strokeWidth="0.35" />
+              <line x1="0.5" y1="122" x2="69.5" y2="122" stroke="white" strokeWidth="0.35" />
+              <text x="35" y="6.5" fill="white" fillOpacity="0.22" fontSize="4" fontWeight="bold" textAnchor="middle">EN-BUT / TRY ZONE</text>
+              <text x="35" y="139.5" fill="white" fillOpacity="0.22" fontSize="4" fontWeight="bold" textAnchor="middle">EN-BUT / TRY ZONE</text>
+
+              {/* Halfway line (50m mark) */}
+              <line x1="0.5" y1="72" x2="69.5" y2="72" stroke="white" strokeWidth="0.35" />
+
+              {/* 22m lines */}
+              <line x1="0.5" y1="44" x2="69.5" y2="44" stroke="white" strokeWidth="0.25" strokeOpacity="0.8" />
+              <line x1="0.5" y1="100" x2="69.5" y2="100" stroke="white" strokeWidth="0.25" strokeOpacity="0.8" />
+
+              {/* 10m dashed lines */}
+              <line x1="0.5" y1="62" x2="69.5" y2="62" stroke="white" strokeWidth="0.2" strokeDasharray="1.5,1.5" strokeOpacity="0.7" />
+              <line x1="0.5" y1="82" x2="69.5" y2="82" stroke="white" strokeWidth="0.2" strokeDasharray="1.5,1.5" strokeOpacity="0.7" />
+
+              {/* 5m touchline dash marks */}
+              <line x1="5" y1="22" x2="5" y2="122" stroke="white" strokeWidth="0.15" strokeDasharray="0.5,2.5" strokeOpacity="0.5" />
+              <line x1="65" y1="22" x2="65" y2="122" stroke="white" strokeWidth="0.15" strokeDasharray="0.5,2.5" strokeOpacity="0.5" />
+
+              {/* TOP RUGBY H-POSTS (on y=22 try line, extending upward to y=10.5) */}
+              <g>
+                {/* Subtle shadow */}
+                <line x1="31.8" y1="22" x2="32.05" y2="10.5" stroke="rgba(0,0,0,0.35)" strokeWidth="0.55" strokeLinecap="round" />
+                <line x1="38.2" y1="22" x2="37.95" y2="10.5" stroke="rgba(0,0,0,0.35)" strokeWidth="0.55" strokeLinecap="round" />
+                <line x1="31.85" y1="18.8" x2="38.15" y2="18.8" stroke="rgba(0,0,0,0.35)" strokeWidth="0.48" />
+                {/* Two tall white uprights (perches) tapering slightly upward */}
+                <line x1="31.8" y1="22" x2="32.05" y2="10.5" stroke="white" strokeWidth="0.42" strokeLinecap="round" />
+                <line x1="38.2" y1="22" x2="37.95" y2="10.5" stroke="white" strokeWidth="0.42" strokeLinecap="round" />
+                {/* Horizontal crossbar (barre transversale) forming the H */}
+                <line x1="31.85" y1="18.8" x2="38.15" y2="18.8" stroke="white" strokeWidth="0.38" />
+                {/* Center dark marker on crossbar */}
+                <line x1="34.65" y1="18.8" x2="35.35" y2="18.8" stroke="#1e293b" strokeWidth="0.4" />
+                {/* Blue protective foam pads at the base of the posts */}
+                <rect x="31.25" y="19.5" width="1.1" height="2.6" rx="0.2" fill="#2563eb" stroke="#1e3a8a" strokeWidth="0.12" />
+                <rect x="37.65" y="19.5" width="1.1" height="2.6" rx="0.2" fill="#2563eb" stroke="#1e3a8a" strokeWidth="0.12" />
+              </g>
+
+              {/* BOTTOM RUGBY H-POSTS (on y=122 try line, extending downward to y=133.5) */}
+              <g>
+                {/* Subtle shadow */}
+                <line x1="31.8" y1="122" x2="32.05" y2="133.5" stroke="rgba(0,0,0,0.35)" strokeWidth="0.55" strokeLinecap="round" />
+                <line x1="38.2" y1="122" x2="37.95" y2="133.5" stroke="rgba(0,0,0,0.35)" strokeWidth="0.55" strokeLinecap="round" />
+                <line x1="31.85" y1="125.2" x2="38.15" y2="125.2" stroke="rgba(0,0,0,0.35)" strokeWidth="0.48" />
+                {/* Two tall white uprights (perches) tapering slightly */}
+                <line x1="31.8" y1="122" x2="32.05" y2="133.5" stroke="white" strokeWidth="0.42" strokeLinecap="round" />
+                <line x1="38.2" y1="122" x2="37.95" y2="133.5" stroke="white" strokeWidth="0.42" strokeLinecap="round" />
+                {/* Horizontal crossbar (barre transversale) forming the H */}
+                <line x1="31.85" y1="125.2" x2="38.15" y2="125.2" stroke="white" strokeWidth="0.38" />
+                {/* Center dark marker on crossbar */}
+                <line x1="34.65" y1="125.2" x2="35.35" y2="125.2" stroke="#1e293b" strokeWidth="0.4" />
+                {/* Blue protective foam pads at the base of the posts */}
+                <rect x="31.25" y="121.9" width="1.1" height="2.6" rx="0.2" fill="#2563eb" stroke="#1e3a8a" strokeWidth="0.12" />
+                <rect x="37.65" y="121.9" width="1.1" height="2.6" rx="0.2" fill="#2563eb" stroke="#1e3a8a" strokeWidth="0.12" />
+              </g>
+            </svg>
+          </div>
+        );
+
       case "handball":
         return (
           <div className="absolute inset-0 w-full h-full bg-slate-800 overflow-hidden select-none border-4 border-slate-700" id="pitch-handball">
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 20 40" preserveAspectRatio="none">
-              <rect x="0.2" y="0.2" width="19.6" height="39.6" fill="none" stroke="#e2e8f0" strokeWidth="0.12" />
-              <line x1="0.2" y1="20" x2="19.8" y2="20" stroke="#e2e8f0" strokeWidth="0.12" />
-              <circle cx="10" cy="20" r="0.4" fill="#e2e8f0" />
-              
-              {/* Top 6m zone */}
-              <path d="M 4 0.2 A 6 6 0 0 1 10 6 A 6 6 0 0 1 16 0.2" fill="none" stroke="#f43f5e" strokeWidth="0.15" strokeOpacity="0.9" />
-              
-              {/* Bottom 6m zone */}
-              <path d="M 4 39.8 A 6 6 0 0 0 10 34 A 6 6 0 0 0 16 39.8" fill="none" stroke="#f43f5e" strokeWidth="0.15" strokeOpacity="0.9" />
-              
-              <circle cx="10" cy="7" r="0.15" fill="#e2e8f0" />
-              <circle cx="10" cy="33" r="0.15" fill="#e2e8f0" />
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 22 43" preserveAspectRatio="none">
+              <defs>
+                <pattern id="handball-net-portrait" width="0.35" height="0.35" patternUnits="userSpaceOnUse">
+                  <path d="M 0 0 L 0.35 0.35 M 0.35 0 L 0 0.35" stroke="white" strokeWidth="0.04" strokeOpacity="0.45" />
+                </pattern>
+              </defs>
+
+              {/* Outer court boundary (20m x 40m with 1m side margin & 1.5m goal margin) */}
+              <rect x="1.0" y="1.5" width="20.0" height="40.0" fill="none" stroke="#e2e8f0" strokeWidth="0.14" />
+
+              {/* Halfway line & center circle */}
+              <line x1="1.0" y1="21.5" x2="21.0" y2="21.5" stroke="#e2e8f0" strokeWidth="0.14" />
+              <circle cx="11.0" cy="21.5" r="0.35" fill="#e2e8f0" />
+
+              {/* TOP 6m Goal Area (official 3m flat center + 6m quarter circles from goalposts at x=9.5 and x=12.5) */}
+              <path
+                d="M 3.5 1.5 A 6 6 0 0 0 9.5 7.5 L 12.5 7.5 A 6 6 0 0 0 18.5 1.5 Z"
+                fill="rgba(56, 189, 248, 0.1)"
+                stroke="#f43f5e"
+                strokeWidth="0.16"
+                strokeOpacity="0.95"
+              />
+              {/* TOP 9m dashed free-throw line */}
+              <path
+                d="M 1.0 4.56 A 9 9 0 0 0 9.5 10.5 L 12.5 10.5 A 9 9 0 0 0 21.0 4.56"
+                fill="none"
+                stroke="#e2e8f0"
+                strokeWidth="0.11"
+                strokeDasharray="0.35,0.35"
+                strokeOpacity="0.8"
+              />
+              {/* TOP 4m goalkeeper line & 7m penalty mark */}
+              <line x1="10.75" y1="5.5" x2="11.25" y2="5.5" stroke="#e2e8f0" strokeWidth="0.14" />
+              <line x1="10.5" y1="8.5" x2="11.5" y2="8.5" stroke="#e2e8f0" strokeWidth="0.16" />
+
+              {/* BOTTOM 6m Goal Area */}
+              <path
+                d="M 3.5 41.5 A 6 6 0 0 1 9.5 35.5 L 12.5 35.5 A 6 6 0 0 1 18.5 41.5 Z"
+                fill="rgba(56, 189, 248, 0.1)"
+                stroke="#f43f5e"
+                strokeWidth="0.16"
+                strokeOpacity="0.95"
+              />
+              {/* BOTTOM 9m dashed free-throw line */}
+              <path
+                d="M 1.0 38.44 A 9 9 0 0 1 9.5 32.5 L 12.5 32.5 A 9 9 0 0 1 21.0 38.44"
+                fill="none"
+                stroke="#e2e8f0"
+                strokeWidth="0.11"
+                strokeDasharray="0.35,0.35"
+                strokeOpacity="0.8"
+              />
+              {/* BOTTOM 4m goalkeeper line & 7m penalty mark */}
+              <line x1="10.75" y1="37.5" x2="11.25" y2="37.5" stroke="#e2e8f0" strokeWidth="0.14" />
+              <line x1="10.5" y1="34.5" x2="11.5" y2="34.5" stroke="#e2e8f0" strokeWidth="0.16" />
+
+              {/* TOP HANDBALL GOAL (3m wide: x=9.5..12.5, extending behind y=1.5 to y=0.25) */}
+              <g>
+                {/* Trapezoidal net body & mesh */}
+                <polygon points="9.5,1.5 9.68,0.25 12.32,0.25 12.5,1.5" fill="rgba(255,255,255,0.08)" />
+                <polygon points="9.5,1.5 9.68,0.25 12.32,0.25 12.5,1.5" fill="url(#handball-net-portrait)" stroke="#cbd5e1" strokeWidth="0.1" />
+                {/* Inner top net support bar & diagonal tension cords */}
+                <polyline points="9.5,1.5 9.62,0.65 12.38,0.65 12.5,1.5" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="0.08" />
+                <line x1="9.62" y1="0.65" x2="9.68" y2="0.25" stroke="rgba(255,255,255,0.45)" strokeWidth="0.07" />
+                <line x1="12.38" y1="0.65" x2="12.32" y2="0.25" stroke="rgba(255,255,255,0.45)" strokeWidth="0.07" />
+                {/* Iconic IHF Bicolor Red & White Goal Crossbar & Posts */}
+                <line x1="9.42" y1="1.5" x2="12.58" y2="1.5" stroke="#ffffff" strokeWidth="0.24" strokeLinecap="square" />
+                <line x1="9.42" y1="1.5" x2="12.58" y2="1.5" stroke="#ef4444" strokeWidth="0.24" strokeDasharray="0.32,0.32" strokeLinecap="butt" />
+                <rect x="9.38" y="1.38" width="0.24" height="0.24" fill="#ef4444" stroke="#ffffff" strokeWidth="0.04" />
+                <rect x="12.38" y="1.38" width="0.24" height="0.24" fill="#ef4444" stroke="#ffffff" strokeWidth="0.04" />
+              </g>
+
+              {/* BOTTOM HANDBALL GOAL (3m wide: x=9.5..12.5, extending behind y=41.5 to y=42.75) */}
+              <g>
+                {/* Trapezoidal net body & mesh */}
+                <polygon points="9.5,41.5 9.68,42.75 12.32,42.75 12.5,41.5" fill="rgba(255,255,255,0.08)" />
+                <polygon points="9.5,41.5 9.68,42.75 12.32,42.75 12.5,41.5" fill="url(#handball-net-portrait)" stroke="#cbd5e1" strokeWidth="0.1" />
+                {/* Inner top net support bar & diagonal tension cords */}
+                <polyline points="9.5,41.5 9.62,42.35 12.38,42.35 12.5,41.5" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="0.08" />
+                <line x1="9.62" y1="42.35" x2="9.68" y2="42.75" stroke="rgba(255,255,255,0.45)" strokeWidth="0.07" />
+                <line x1="12.38" y1="42.35" x2="12.32" y2="42.75" stroke="rgba(255,255,255,0.45)" strokeWidth="0.07" />
+                {/* Iconic IHF Bicolor Red & White Goal Crossbar & Posts */}
+                <line x1="9.42" y1="41.5" x2="12.58" y2="41.5" stroke="#ffffff" strokeWidth="0.24" strokeLinecap="square" />
+                <line x1="9.42" y1="41.5" x2="12.58" y2="41.5" stroke="#ef4444" strokeWidth="0.24" strokeDasharray="0.32,0.32" strokeLinecap="butt" />
+                <rect x="9.38" y="41.38" width="0.24" height="0.24" fill="#ef4444" stroke="#ffffff" strokeWidth="0.04" />
+                <rect x="12.38" y="41.38" width="0.24" height="0.24" fill="#ef4444" stroke="#ffffff" strokeWidth="0.04" />
+              </g>
             </svg>
           </div>
         );
@@ -398,8 +551,8 @@ export default function Pitch({ sport, isPortrait }: PitchProps) {
             {/* Try Zones (Left/Right margins) */}
             <line x1="22" y1="0.5" x2="22" y2="69.5" stroke="white" strokeWidth="0.35" />
             <line x1="122" y1="0.5" x2="122" y2="69.5" stroke="white" strokeWidth="0.35" />
-            <text x="11" y="37" fill="white" fillOpacity="0.25" fontSize="4.5" fontWeight="bold" textAnchor="middle" transform="rotate(-90 11 37)">EN-BUT / TRY ZONE</text>
-            <text x="133" y="37" fill="white" fillOpacity="0.25" fontSize="4.5" fontWeight="bold" textAnchor="middle" transform="rotate(90 133 37)">EN-BUT / TRY ZONE</text>
+            <text x="6.5" y="35" fill="white" fillOpacity="0.22" fontSize="4.2" fontWeight="bold" textAnchor="middle" transform="rotate(-90 6.5 35)">EN-BUT / TRY ZONE</text>
+            <text x="137.5" y="35" fill="white" fillOpacity="0.22" fontSize="4.2" fontWeight="bold" textAnchor="middle" transform="rotate(90 137.5 35)">EN-BUT / TRY ZONE</text>
 
             {/* Halfway line (50m mark) */}
             <line x1="72" y1="0.5" x2="72" y2="69.5" stroke="white" strokeWidth="0.35" />
@@ -416,9 +569,41 @@ export default function Pitch({ sport, isPortrait }: PitchProps) {
             <line x1="22" y1="5" x2="122" y2="5" stroke="white" strokeWidth="0.15" strokeDasharray="0.5,2.5" strokeOpacity="0.5" />
             <line x1="22" y1="65" x2="122" y2="65" stroke="white" strokeWidth="0.15" strokeDasharray="0.5,2.5" strokeOpacity="0.5" />
 
-            {/* Rugby Goal posts on try lines */}
-            <path d="M 22 32.2 L 20 32.2 L 20 37.8 L 22 37.8 M 20 33 L 20 37" fill="none" stroke="white" strokeWidth="0.6" />
-            <path d="M 122 32.2 L 124 32.2 L 124 37.8 L 122 37.8 M 124 33 L 124 37" fill="none" stroke="white" strokeWidth="0.6" />
+            {/* LEFT RUGBY H-POSTS (on x=22 try line, extending into left in-goal to x=10.5) */}
+            <g>
+              {/* Subtle drop shadow */}
+              <line x1="22" y1="31.8" x2="10.5" y2="32.05" stroke="rgba(0,0,0,0.35)" strokeWidth="0.55" strokeLinecap="round" />
+              <line x1="22" y1="38.2" x2="10.5" y2="37.95" stroke="rgba(0,0,0,0.35)" strokeWidth="0.55" strokeLinecap="round" />
+              <line x1="18.8" y1="31.85" x2="18.8" y2="38.15" stroke="rgba(0,0,0,0.35)" strokeWidth="0.48" />
+              {/* Two tall white uprights (perches) tapering slightly toward the top */}
+              <line x1="22" y1="31.8" x2="10.5" y2="32.05" stroke="white" strokeWidth="0.42" strokeLinecap="round" />
+              <line x1="22" y1="38.2" x2="10.5" y2="37.95" stroke="white" strokeWidth="0.42" strokeLinecap="round" />
+              {/* Crossbar (barre transversale) at ~1/4 height forming the H */}
+              <line x1="18.8" y1="31.85" x2="18.8" y2="38.15" stroke="white" strokeWidth="0.38" />
+              {/* Center dark marker on crossbar */}
+              <line x1="18.8" y1="34.65" x2="18.8" y2="35.35" stroke="#1e293b" strokeWidth="0.4" />
+              {/* Blue protective foam pads at the base of the posts on the try line */}
+              <rect x="19.5" y="31.25" width="2.6" height="1.1" rx="0.2" fill="#2563eb" stroke="#1e3a8a" strokeWidth="0.12" />
+              <rect x="19.5" y="37.65" width="2.6" height="1.1" rx="0.2" fill="#2563eb" stroke="#1e3a8a" strokeWidth="0.12" />
+            </g>
+
+            {/* RIGHT RUGBY H-POSTS (on x=122 try line, extending into right in-goal to x=133.5) */}
+            <g>
+              {/* Subtle drop shadow */}
+              <line x1="122" y1="31.8" x2="133.5" y2="32.05" stroke="rgba(0,0,0,0.35)" strokeWidth="0.55" strokeLinecap="round" />
+              <line x1="122" y1="38.2" x2="133.5" y2="37.95" stroke="rgba(0,0,0,0.35)" strokeWidth="0.55" strokeLinecap="round" />
+              <line x1="125.2" y1="31.85" x2="125.2" y2="38.15" stroke="rgba(0,0,0,0.35)" strokeWidth="0.48" />
+              {/* Two tall white uprights (perches) tapering slightly toward the top */}
+              <line x1="122" y1="31.8" x2="133.5" y2="32.05" stroke="white" strokeWidth="0.42" strokeLinecap="round" />
+              <line x1="122" y1="38.2" x2="133.5" y2="37.95" stroke="white" strokeWidth="0.42" strokeLinecap="round" />
+              {/* Crossbar (barre transversale) at ~1/4 height forming the H */}
+              <line x1="125.2" y1="31.85" x2="125.2" y2="38.15" stroke="white" strokeWidth="0.38" />
+              {/* Center dark marker on crossbar */}
+              <line x1="125.2" y1="34.65" x2="125.2" y2="35.35" stroke="#1e293b" strokeWidth="0.4" />
+              {/* Blue protective foam pads at the base of the posts on the try line */}
+              <rect x="121.9" y="31.25" width="2.6" height="1.1" rx="0.2" fill="#2563eb" stroke="#1e3a8a" strokeWidth="0.12" />
+              <rect x="121.9" y="37.65" width="2.6" height="1.1" rx="0.2" fill="#2563eb" stroke="#1e3a8a" strokeWidth="0.12" />
+            </g>
           </svg>
         </div>
       );
@@ -426,32 +611,94 @@ export default function Pitch({ sport, isPortrait }: PitchProps) {
     case "handball":
       return (
         <div className="absolute inset-0 w-full h-full bg-slate-800 overflow-hidden select-none border-4 border-slate-700" id="pitch-handball">
-          {/* SVG Handball Court - Standard court dimensions: 40m x 20m */}
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 40 20" preserveAspectRatio="none">
-            {/* Outer boundary */}
-            <rect x="0.2" y="0.2" width="39.6" height="19.6" fill="none" stroke="#e2e8f0" strokeWidth="0.12" />
+          {/* SVG Handball Court - Standard 40m x 20m court with 1.5m goal run-off margin (43m x 22m viewBox) */}
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 43 22" preserveAspectRatio="none">
+            <defs>
+              <pattern id="handball-net-landscape" width="0.35" height="0.35" patternUnits="userSpaceOnUse">
+                <path d="M 0 0 L 0.35 0.35 M 0.35 0 L 0 0.35" stroke="white" strokeWidth="0.04" strokeOpacity="0.45" />
+              </pattern>
+            </defs>
+
+            {/* Outer boundary (40m x 20m playfield inside 43m x 22m viewBox) */}
+            <rect x="1.5" y="1.0" width="40.0" height="20.0" fill="none" stroke="#e2e8f0" strokeWidth="0.14" />
             
-            {/* Halfway line */}
-            <line x1="20" y1="0.2" x2="20" y2="19.8" stroke="#e2e8f0" strokeWidth="0.12" />
-            <circle cx="20" cy="10" r="0.4" fill="#e2e8f0" />
+            {/* Halfway line & center spot */}
+            <line x1="21.5" y1="1.0" x2="21.5" y2="21.0" stroke="#e2e8f0" strokeWidth="0.14" />
+            <circle cx="21.5" cy="11.0" r="0.35" fill="#e2e8f0" />
 
-            {/* Left 6m zone (D-Zone) (official 6m semi-circles centered at goals) */}
-            <path d="M 0.2 4 A 6 6 0 0 1 6 10 A 6 6 0 0 1 0.2 16" fill="none" stroke="#f43f5e" strokeWidth="0.15" strokeOpacity="0.9" />
-            {/* Left 9m free throw line (dashed, official 9m radius centered at goal) */}
-            <path d="M 0.2 1 A 9 9 0 0 1 9 10 A 9 9 0 0 1 0.2 19" fill="none" stroke="#e2e8f0" strokeWidth="0.1" strokeDasharray="0.3,0.3" strokeOpacity="0.8" />
+            {/* Left 6m Goal Area (official 3m flat center + 6m quarter-circles from goalposts at y=9.5 and y=12.5) */}
+            <path
+              d="M 1.5 3.5 A 6 6 0 0 1 7.5 9.5 L 7.5 12.5 A 6 6 0 0 1 1.5 18.5 Z"
+              fill="rgba(56, 189, 248, 0.1)"
+              stroke="#f43f5e"
+              strokeWidth="0.16"
+              strokeOpacity="0.95"
+            />
+            {/* Left 9m free-throw line (dashed, official 9m radius from goalposts + 3m flat center) */}
+            <path
+              d="M 4.56 1.0 A 9 9 0 0 1 10.5 9.5 L 10.5 12.5 A 9 9 0 0 1 4.56 21.0"
+              fill="none"
+              stroke="#e2e8f0"
+              strokeWidth="0.11"
+              strokeDasharray="0.35,0.35"
+              strokeOpacity="0.8"
+            />
+            {/* Left 4m goalkeeper line & 7m penalty line */}
+            <line x1="5.5" y1="10.75" x2="5.5" y2="11.25" stroke="#e2e8f0" strokeWidth="0.14" />
+            <line x1="8.5" y1="10.5" x2="8.5" y2="11.5" stroke="#e2e8f0" strokeWidth="0.16" />
 
-            {/* Right 6m zone (D-Zone) */}
-            <path d="M 39.8 4 A 6 6 0 0 0 34 10 A 6 6 0 0 0 39.8 16" fill="none" stroke="#f43f5e" strokeWidth="0.15" strokeOpacity="0.9" />
-            {/* Right 9m free throw line */}
-            <path d="M 39.8 1 A 9 9 0 0 0 31 10 A 9 9 0 0 0 39.8 19" fill="none" stroke="#e2e8f0" strokeWidth="0.1" strokeDasharray="0.3,0.3" strokeOpacity="0.8" />
+            {/* Right 6m Goal Area */}
+            <path
+              d="M 41.5 3.5 A 6 6 0 0 0 35.5 9.5 L 35.5 12.5 A 6 6 0 0 0 41.5 18.5 Z"
+              fill="rgba(56, 189, 248, 0.1)"
+              stroke="#f43f5e"
+              strokeWidth="0.16"
+              strokeOpacity="0.95"
+            />
+            {/* Right 9m free-throw line */}
+            <path
+              d="M 38.44 1.0 A 9 9 0 0 0 32.5 9.5 L 32.5 12.5 A 9 9 0 0 0 38.44 21.0"
+              fill="none"
+              stroke="#e2e8f0"
+              strokeWidth="0.11"
+              strokeDasharray="0.35,0.35"
+              strokeOpacity="0.8"
+            />
+            {/* Right 4m goalkeeper line & 7m penalty line */}
+            <line x1="37.5" y1="10.75" x2="37.5" y2="11.25" stroke="#e2e8f0" strokeWidth="0.14" />
+            <line x1="34.5" y1="10.5" x2="34.5" y2="11.5" stroke="#e2e8f0" strokeWidth="0.16" />
 
-            {/* Penalty spots (official 7m from goal line) */}
-            <circle cx="7" cy="10" r="0.15" fill="#e2e8f0" />
-            <circle cx="33" cy="10" r="0.15" fill="#e2e8f0" />
-            
-            {/* Goals (3m wide) */}
-            <rect x="0.1" y="8.5" width="0.6" height="3" fill="none" stroke="#e2e8f0" strokeWidth="0.2" />
-            <rect x="39.3" y="8.5" width="0.6" height="3" fill="none" stroke="#e2e8f0" strokeWidth="0.2" />
+            {/* LEFT HANDBALL GOAL (3m wide: y=9.5..12.5, extending outside goal line x=1.5 to x=0.25) */}
+            <g>
+              {/* Trapezoidal net body & mesh */}
+              <polygon points="1.5,9.5 0.25,9.68 0.25,12.32 1.5,12.5" fill="rgba(255,255,255,0.08)" />
+              <polygon points="1.5,9.5 0.25,9.68 0.25,12.32 1.5,12.5" fill="url(#handball-net-landscape)" stroke="#cbd5e1" strokeWidth="0.1" />
+              {/* Inner top net support bar & diagonal tension cords */}
+              <polyline points="1.5,9.5 0.65,9.62 0.65,12.38 1.5,12.5" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="0.08" />
+              <line x1="0.65" y1="9.62" x2="0.25" y2="9.68" stroke="rgba(255,255,255,0.45)" strokeWidth="0.07" />
+              <line x1="0.65" y1="12.38" x2="0.25" y2="12.32" stroke="rgba(255,255,255,0.45)" strokeWidth="0.07" />
+              {/* Iconic IHF Bicolor Red & White Goal Crossbar & Posts */}
+              <line x1="1.5" y1="9.42" x2="1.5" y2="12.58" stroke="#ffffff" strokeWidth="0.24" strokeLinecap="square" />
+              <line x1="1.5" y1="9.42" x2="1.5" y2="12.58" stroke="#ef4444" strokeWidth="0.24" strokeDasharray="0.32,0.32" strokeLinecap="butt" />
+              <rect x="1.38" y="9.38" width="0.24" height="0.24" fill="#ef4444" stroke="#ffffff" strokeWidth="0.04" />
+              <rect x="1.38" y="12.38" width="0.24" height="0.24" fill="#ef4444" stroke="#ffffff" strokeWidth="0.04" />
+            </g>
+
+            {/* RIGHT HANDBALL GOAL (3m wide: y=9.5..12.5, extending outside goal line x=41.5 to x=42.75) */}
+            <g>
+              {/* Trapezoidal net body & mesh */}
+              <polygon points="41.5,9.5 42.75,9.68 42.75,12.32 41.5,12.5" fill="rgba(255,255,255,0.08)" />
+              <polygon points="41.5,9.5 42.75,9.68 42.75,12.32 41.5,12.5" fill="url(#handball-net-landscape)" stroke="#cbd5e1" strokeWidth="0.1" />
+              {/* Inner top net support bar & diagonal tension cords */}
+              <polyline points="41.5,9.5 42.35,9.62 42.35,12.38 41.5,12.5" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="0.08" />
+              <line x1="42.35" y1="9.62" x2="42.75" y2="9.68" stroke="rgba(255,255,255,0.45)" strokeWidth="0.07" />
+              <line x1="42.35" y1="12.38" x2="42.75" y2="12.32" stroke="rgba(255,255,255,0.45)" strokeWidth="0.07" />
+              {/* Iconic IHF Bicolor Red & White Goal Crossbar & Posts */}
+              <line x1="41.5" y1="9.42" x2="41.5" y2="12.58" stroke="#ffffff" strokeWidth="0.24" strokeLinecap="square" />
+              <line x1="41.5" y1="9.42" x2="41.5" y2="12.58" stroke="#ef4444" strokeWidth="0.24" strokeDasharray="0.32,0.32" strokeLinecap="butt" />
+              <rect x="41.38" y="9.38" width="0.24" height="0.24" fill="#ef4444" stroke="#ffffff" strokeWidth="0.04" />
+              <rect x="41.38" y="12.38" width="0.24" height="0.24" fill="#ef4444" stroke="#ffffff" strokeWidth="0.04" />
+            </g>
           </svg>
         </div>
       );

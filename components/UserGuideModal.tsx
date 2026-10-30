@@ -204,7 +204,7 @@ export default function UserGuideModal({
               <button
                 type="button"
                 onClick={() => setViewMode("reader")}
-                className={`px-4 py-2 rounded-lg text-xs font-black flex items-center gap-2 transition cursor-pointer ${
+                className={`h-8 px-4 rounded-lg text-xs font-black inline-flex items-center justify-center gap-2 transition cursor-pointer whitespace-nowrap ${
                   viewMode === "reader"
                     ? "bg-[#00E599] text-[#07090e] shadow-sm shadow-[#00E599]/20"
                     : isModernSleek
@@ -212,20 +212,20 @@ export default function UserGuideModal({
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                <Eye className="w-4 h-4" />
+                <Eye className="w-4 h-4 shrink-0" />
                 <span>Mode Lecture</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setViewMode("editor")}
-                className={`px-4 py-2 rounded-lg text-xs font-black flex items-center gap-2 transition cursor-pointer ${
+                className={`h-8 px-4 rounded-lg text-xs font-black inline-flex items-center justify-center gap-2 transition cursor-pointer whitespace-nowrap ${
                   viewMode === "editor"
                     ? "bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 shadow-sm"
                     : "text-amber-400 hover:text-amber-300"
                 }`}
               >
-                <Edit3 className="w-4 h-4" />
+                <Edit3 className="w-4 h-4 shrink-0" />
                 <span>Mode Édition</span>
               </button>
             </div>
@@ -233,7 +233,7 @@ export default function UserGuideModal({
             <button
               type="button"
               onClick={onClose}
-              className={`p-2 rounded-xl transition cursor-pointer ${
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${
                 isModernSleek
                   ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200"
                   : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
@@ -464,7 +464,7 @@ export default function UserGuideModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-[#00E599] text-[#07090e] font-black hover:bg-[#05c482] transition cursor-pointer shadow-md shadow-[#00E599]/20"
+              className="h-10 px-5 inline-flex items-center justify-center rounded-xl bg-[#00E599] text-[#07090e] font-black hover:bg-[#05c482] transition cursor-pointer shadow-md shadow-[#00E599]/20 whitespace-nowrap"
             >
               Fermer le guide
             </button>

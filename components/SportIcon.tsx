@@ -110,23 +110,26 @@ export default function SportIcon({
             className={className}
             style={styleProps}
           >
-            {/* Handball Ball */}
-            <circle cx="11" cy="12" r="8.5" strokeWidth="1.8" />
-            
-            {/* Panel Lines for Resin Grip Ball */}
-            <path d="M 11 3.5 C 14 6.5 14 10.5 11 13.5 C 8 16.5 8 19.5 11 20.5" strokeWidth="1.5" />
-            <path d="M 2.5 12 C 5.5 9 9.5 9 12.5 12 C 15.5 15 18.5 15 19.5 12" strokeWidth="1.5" />
-            <path d="M 5 6 C 8 9 14 15 17 18" strokeWidth="1.3" strokeDasharray="1.5 2" />
+            {/* Handball sphere */}
+            <circle cx="12" cy="12" r="9.5" strokeWidth="1.8" />
 
-            {/* Stippling Dots for Resin Texture */}
-            <circle cx="8" cy="8" r="0.8" fill="currentColor" />
-            <circle cx="14" cy="9" r="0.8" fill="currentColor" />
-            <circle cx="7" cy="15" r="0.8" fill="currentColor" />
-            <circle cx="13" cy="16" r="0.8" fill="currentColor" />
-            <circle cx="11" cy="12" r="1" fill="currentColor" />
+            {/* Central grip pentagon with inner chevron */}
+            <polygon points="12,7.8 15.8,10.5 14.3,15 9.7,15 8.2,10.5" fill="currentColor" fillOpacity="0.22" strokeWidth="1.6" />
+            <polygon points="12,9.4 14.3,11 13.4,13.7 10.6,13.7 9.7,11" strokeWidth="1.1" />
 
-            {/* Dynamic Throw Arc */}
-            <path d="M 18.5 4 C 21.5 7 22.5 11 20.5 15" strokeWidth="1.8" />
+            {/* Symmetrical 32-panel seams */}
+            <line x1="12" y1="7.8" x2="12" y2="4.2" strokeWidth="1.5" />
+            <line x1="15.8" y1="10.5" x2="19.2" y2="9.3" strokeWidth="1.5" />
+            <line x1="14.3" y1="15" x2="16.8" y2="18.3" strokeWidth="1.5" />
+            <line x1="9.7" y1="15" x2="7.2" y2="18.3" strokeWidth="1.5" />
+            <line x1="8.2" y1="10.5" x2="4.8" y2="9.3" strokeWidth="1.5" />
+
+            {/* Outer panel forks */}
+            <path d="M 8.8 3.1 L 12 4.2 L 15.2 3.1" strokeWidth="1.4" />
+            <path d="M 20.4 6.6 L 19.2 9.3 L 21.3 11.8" strokeWidth="1.4" />
+            <path d="M 20.1 17.5 L 16.8 18.3 L 15.8 20.8" strokeWidth="1.4" />
+            <path d="M 8.2 20.8 L 7.2 18.3 L 3.9 17.5" strokeWidth="1.4" />
+            <path d="M 2.7 11.8 L 4.8 9.3 L 3.6 6.6" strokeWidth="1.4" />
           </svg>
         );
 

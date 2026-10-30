@@ -87,9 +87,9 @@ export const getSportScoreActions = (sport: string): SportScoreAction[] => {
   switch (sport) {
     case "rugby":
       return [
-        { id: "essai", label: "Essai", shortLabel: "Essai (+5)", points: 5, icon: "🏉", requiresAssisterModal: true },
-        { id: "transformation", label: "Transformation", shortLabel: "Transfo (+2)", points: 2, icon: "🎯", requiresAssisterModal: false },
-        { id: "penalite", label: "Pénalité", shortLabel: "Pénalité (+3)", points: 3, icon: "🥅", requiresAssisterModal: false },
+        { id: "drop", label: "Drop", shortLabel: "Drop (+3)", points: 3, icon: "🥅", requiresAssisterModal: false },
+        { id: "essai", label: "Essai", shortLabel: "Essai (+5)", points: 5, icon: "🏉", requiresAssisterModal: false },
+        { id: "transformation", label: "Transformation", shortLabel: "Transformation (+2)", points: 2, icon: "🎯", requiresAssisterModal: false },
       ];
     case "basketball":
       return [
@@ -206,23 +206,94 @@ export function PitchBallGraphic({ sport, className = "" }: { sport?: string; cl
           data-testid="ball-handball"
         >
           <defs>
-            <radialGradient id="handGrad" cx="35%" cy="35%" r="65%">
-              <stop offset="0%" stopColor="#38bdf8" />
-              <stop offset="50%" stopColor="#0284c7" />
-              <stop offset="100%" stopColor="#0369a1" />
+            <radialGradient id="handGrad" cx="35%" cy="30%" r="70%">
+              <stop offset="0%" stopColor="#60a5fa" />
+              <stop offset="50%" stopColor="#2563eb" />
+              <stop offset="100%" stopColor="#1e3a8a" />
             </radialGradient>
+            <radialGradient id="handCenterGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#fde047" />
+              <stop offset="70%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#d97706" />
+            </radialGradient>
+            <clipPath id="handClip">
+              <circle cx="16" cy="16" r="14.5" />
+            </clipPath>
           </defs>
-          <circle cx="16" cy="16" r="14.5" fill="url(#handGrad)" stroke="#0c4a6e" strokeWidth="1.2" />
-          <polygon points="16,11 20.8,14.5 19,20 13,20 11.2,14.5" fill="#facc15" stroke="#ca8a04" strokeWidth="0.8" />
-          <path d="M 16 1.5 A 14.5 14.5 0 0 1 27 7 L 20.8 14.5 L 16 11 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="0.6" opacity="0.9" />
-          <path d="M 27 25 A 14.5 14.5 0 0 1 16 30.5 L 19 20 L 25 18 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="0.6" opacity="0.9" />
-          <path d="M 5 25 A 14.5 14.5 0 0 1 5 7 L 11.2 14.5 L 13 20 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="0.6" opacity="0.9" />
-          <line x1="16" y1="11" x2="16" y2="1.5" stroke="#082f49" strokeWidth="1" />
-          <line x1="20.8" y1="14.5" x2="29" y2="12" stroke="#082f49" strokeWidth="1" />
-          <line x1="19" y1="20" x2="25" y2="28" stroke="#082f49" strokeWidth="1" />
-          <line x1="13" y1="20" x2="7" y2="28" stroke="#082f49" strokeWidth="1" />
-          <line x1="11.2" y1="14.5" x2="3" y2="12" stroke="#082f49" strokeWidth="1" />
-          <ellipse cx="11" cy="9" rx="3" ry="1.8" fill="#ffffff" opacity="0.4" transform="rotate(-25 11 9)" />
+
+          {/* Base 3D sphere */}
+          <circle cx="16" cy="16" r="14.5" fill="url(#handGrad)" />
+
+          {/* Symmetrical 32-panel Handball geometry clipped to sphere */}
+          <g clipPath="url(#handClip)">
+            {/* White/Silver hexagonal accent ring panels (alternating Select/IHF style) */}
+            <polygon
+              points="16,10.8 20.95,14.39 26.08,12.72 20.5,5.8 16,5.4"
+              fill="#f8fafc"
+              fillOpacity="0.92"
+            />
+            <polygon
+              points="19.06,20.21 12.94,20.21 9.77,24.58 16,27.8 22.23,24.58"
+              fill="#f8fafc"
+              fillOpacity="0.92"
+            />
+            <polygon
+              points="11.05,14.39 16,10.8 16,5.4 11.5,5.8 5.92,12.72"
+              fill="#38bdf8"
+              fillOpacity="0.45"
+            />
+
+            {/* Outer 5 pentagonal grip panels (Vibrant Gold/Amber IHF style) */}
+            <polygon points="16,5.4 11.5,1.2 20.5,1.2" fill="url(#handCenterGrad)" />
+            <polygon points="26.08,12.72 29.5,7.4 31.2,16.4" fill="url(#handCenterGrad)" />
+            <polygon points="22.23,24.58 28.4,23.8 21.6,30.6" fill="url(#handCenterGrad)" />
+            <polygon points="9.77,24.58 10.4,30.6 3.6,23.8" fill="url(#handCenterGrad)" />
+            <polygon points="5.92,12.72 0.8,16.4 2.5,7.4" fill="url(#handCenterGrad)" />
+
+            {/* Central pentagon (Vibrant Gold/Amber with white inner grip chevron) */}
+            <polygon
+              points="16,10.8 20.95,14.39 19.06,20.21 12.94,20.21 11.05,14.39"
+              fill="url(#handCenterGrad)"
+            />
+            <polygon
+              points="16,12.4 19.4,14.9 18.1,18.9 13.9,18.9 12.6,14.9"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="0.7"
+              strokeOpacity="0.85"
+            />
+
+            {/* Crisp stitched panel seams */}
+            <g stroke="#0f172a" strokeWidth="1.15" strokeLinejoin="round" strokeLinecap="round" fill="none">
+              {/* Central pentagon */}
+              <polygon points="16,10.8 20.95,14.39 19.06,20.21 12.94,20.21 11.05,14.39" />
+              {/* 5 radial seams */}
+              <line x1="16" y1="10.8" x2="16" y2="5.4" />
+              <line x1="20.95" y1="14.39" x2="26.08" y2="12.72" />
+              <line x1="19.06" y1="20.21" x2="22.23" y2="24.58" />
+              <line x1="12.94" y1="20.21" x2="9.77" y2="24.58" />
+              <line x1="11.05" y1="14.39" x2="5.92" y2="12.72" />
+              {/* Outer pentagon forks */}
+              <polyline points="11.5,1.2 16,5.4 20.5,1.2" />
+              <polyline points="29.5,7.4 26.08,12.72 31.2,16.4" />
+              <polyline points="28.4,23.8 22.23,24.58 21.6,30.6" />
+              <polyline points="10.4,30.6 9.77,24.58 3.6,23.8" />
+              <polyline points="0.8,16.4 5.92,12.72 2.5,7.4" />
+              {/* Connecting hexagon perimeter seams */}
+              <line x1="20.5" y1="5.8" x2="26.08" y2="12.72" />
+              <line x1="16" y1="5.4" x2="20.5" y2="5.8" />
+              <line x1="11.5" y1="5.8" x2="5.92" y2="12.72" />
+              <line x1="16" y1="5.4" x2="11.5" y2="5.8" />
+              <line x1="22.23" y1="24.58" x2="16" y2="27.8" />
+              <line x1="9.77" y1="24.58" x2="16" y2="27.8" />
+            </g>
+
+            {/* Top-left 3D specular shine */}
+            <ellipse cx="11" cy="8.5" rx="4.2" ry="2.2" fill="#ffffff" opacity="0.42" transform="rotate(-28 11 8.5)" />
+          </g>
+
+          {/* Outer rim stroke */}
+          <circle cx="16" cy="16" r="14.5" fill="none" stroke="#0f172a" strokeWidth="1.25" />
         </svg>
       );
 
@@ -874,6 +945,8 @@ export default function TacticsBoard({
   const [terrainComplet, setTerrainComplet] = useState<boolean>(true);
   const [isAnimationCreatorOpen, setIsAnimationCreatorOpen] = useState<boolean>(false);
   const [zoomScale, setZoomScale] = useState<number>(100);
+  const [pitchPan, setPitchPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isPanningPitch, setIsPanningPitch] = useState<boolean>(false);
   const [playerScale, setPlayerScale] = useState<number>(100);
   const [aspectRatioMode, setAspectRatioMode] = useState<"desktop" | "mobile">("desktop");
   const [isBoardFullscreen, setIsBoardFullscreen] = useState(false);
@@ -1064,6 +1137,9 @@ export default function TacticsBoard({
     return "";
   });
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
+  const [isSchemasSectionCollapsed, setIsSchemasSectionCollapsed] = useState(false);
+  const [isMatchSectionCollapsed, setIsMatchSectionCollapsed] = useState(false);
+  const [isNotesSectionCollapsed, setIsNotesSectionCollapsed] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -2231,8 +2307,9 @@ export default function TacticsBoard({
   };
 
   useEffect(() => {
-    // Réinitialiser automatiquement l'échelle du terrain et des joueurs à 100% lors du changement de mode (plein écran ou normal, vue terrain, ratio, mode live)
+    // Réinitialiser automatiquement l'échelle et la position du terrain et des joueurs à 100% lors du changement de mode (plein écran ou normal, vue terrain, ratio, mode live)
     setZoomScale(100);
+    setPitchPan({ x: 0, y: 0 });
     setPlayerScale(100);
 
     const handleFullscreenChange = () => {
@@ -2465,6 +2542,53 @@ export default function TacticsBoard({
     };
   }, [drawingActions, keyframes, currentFrameIdx]);
 
+  // Free pan/drag of the pitch when zoomed or when using the "move" tool
+  const handlePitchPanStart = (startEvent: React.MouseEvent | React.TouchEvent) => {
+    const isMiddleMouse = "button" in startEvent && startEvent.button === 1;
+    if (!isMiddleMouse && activeTool !== "select" && activeTool !== "move") return;
+    if (!isMiddleMouse && zoomScale === 100 && activeTool !== "move") return;
+    if ("button" in startEvent && startEvent.button !== 0 && startEvent.button !== 1) return;
+
+    const startX = "touches" in startEvent ? startEvent.touches[0].clientX : startEvent.clientX;
+    const startY = "touches" in startEvent ? startEvent.touches[0].clientY : startEvent.clientY;
+    const originPanX = pitchPan.x;
+    const originPanY = pitchPan.y;
+
+    let panStarted = false;
+
+    const moveHandler = (moveEvent: MouseEvent | TouchEvent) => {
+      const clientX = "touches" in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const clientY = "touches" in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+
+      if (!panStarted && Math.hypot(dx, dy) > 2) {
+        panStarted = true;
+        setIsPanningPitch(true);
+      }
+
+      if (panStarted) {
+        setPitchPan({
+          x: Math.round(originPanX + dx),
+          y: Math.round(originPanY + dy),
+        });
+      }
+    };
+
+    const upHandler = () => {
+      setIsPanningPitch(false);
+      window.removeEventListener("mousemove", moveHandler);
+      window.removeEventListener("mouseup", upHandler);
+      window.removeEventListener("touchmove", moveHandler);
+      window.removeEventListener("touchend", upHandler);
+    };
+
+    window.addEventListener("mousemove", moveHandler);
+    window.addEventListener("mouseup", upHandler);
+    window.addEventListener("touchmove", moveHandler, { passive: true });
+    window.addEventListener("touchend", upHandler);
+  };
+
   // Drag and Drop relative calculation with Single Click Quick Action detection
   const handleTokenStartDrag = (tokenId: string, startEvent: React.MouseEvent | React.TouchEvent) => {
     if (activeTool !== "select" && activeTool !== "move") return;
@@ -2616,6 +2740,7 @@ export default function TacticsBoard({
     if (activeTool === "select") {
       const hitIndex = findStrokeIndexAtCoords(coords, drawingActions);
       if (hitIndex !== null) {
+        e.stopPropagation();
         setSelectedStrokeIndex(hitIndex);
         return;
       }
@@ -2636,6 +2761,7 @@ export default function TacticsBoard({
       return;
     }
 
+    e.stopPropagation();
     setIsDrawing(true);
     setCurrentActionPoints([coords]);
   };
@@ -4127,8 +4253,8 @@ export default function TacticsBoard({
         points: pts,
         icon: action.icon,
         subType: action.id,
-        note: cleanPasseur 
-          ? `${action.label} (+${pts} pts) • Passeur : ${cleanPasseur}` 
+        note: cleanPasseur
+          ? `${action.label} (+${pts} pts) • Passeur : ${cleanPasseur}`
           : `${action.label} (+${pts} pts)`
       },
       ...prev
@@ -5842,17 +5968,17 @@ export default function TacticsBoard({
                       : isHome
                         ? "/images/avatars/handball_player_green.png"
                         : "/images/avatars/handball_opponent_red.png"
-                  : activeSport === "rugby"
-                    ? isHome
-                      ? "/images/avatars/rugby_player_green.png"
-                      : "/images/avatars/rugby_opponent_red.png"
-                  : isGK
-                    ? isHome
-                      ? "/images/avatars/goalkeeper_yellow.png"
-                      : "/images/avatars/opponent_goalkeeper.png"
-                    : isHome
-                      ? "/images/avatars/player_green.png"
-                      : "/images/avatars/opponent_red.png";
+                    : activeSport === "rugby"
+                      ? isHome
+                        ? "/images/avatars/rugby_player_green.png"
+                        : "/images/avatars/rugby_opponent_red.png"
+                      : isGK
+                        ? isHome
+                          ? "/images/avatars/goalkeeper_yellow.png"
+                          : "/images/avatars/opponent_goalkeeper.png"
+                        : isHome
+                          ? "/images/avatars/player_green.png"
+                          : "/images/avatars/opponent_red.png";
                 const src = activeToken.photo || defaultAvatar;
 
                 return (
@@ -5946,9 +6072,11 @@ export default function TacticsBoard({
 
             {/* Badge Équipe */}
             <span
-              className={`text-[8px] px-2 py-1 rounded font-black uppercase border shrink-0 ${isHome
-                ? "bg-[#102420] text-[#00E599] border-[#00e599]/30"
-                : "bg-rose-950 text-rose-300 border-rose-800"
+              className={`text-[8px] px-2 py-1 rounded font-black uppercase border shrink-0 ${isModernSleek
+                ? "bg-slate-100 text-slate-700 border-slate-200"
+                : isHome
+                  ? "bg-[#102420] text-[#00E599] border-[#00e599]/30"
+                  : "bg-rose-950 text-rose-300 border-rose-800"
                 }`}
             >
               {isHome ? t.tactics.playerCard.myClubBadge : t.tactics.playerCard.myOpponentBadge}
@@ -5961,7 +6089,10 @@ export default function TacticsBoard({
               setEditingToken(null);
               setQuickActionToken(null);
             }}
-            className="p-1.5 bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white rounded-lg transition cursor-pointer shrink-0"
+            className={`p-1.5 rounded-lg transition cursor-pointer shrink-0 ${isModernSleek
+              ? "bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 border border-slate-200"
+              : "bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white"
+              }`}
             title={t.tactics.playerCard.close}
           >
             <X className="w-3.5 h-3.5" />
@@ -5970,58 +6101,72 @@ export default function TacticsBoard({
 
         {/* LIGNE 2 : STATS GLOBALES DU JOUEUR (affichée uniquement lorsqu'un match est en cours) */}
         {isLiveMatchMode && (
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-[#090d14] px-2.5 py-1.5 rounded-xl border border-[#1a2130]">
+          <div className={`flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border ${isModernSleek
+            ? "bg-slate-50 border-slate-200 text-slate-700"
+            : "bg-[#090d14] border-[#1a2130]"
+            }`}>
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[9px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                <Award className="w-3.5 h-3.5 text-amber-400" />
+              <span className={`text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-amber-400"}`}>
+                <Award className={`w-3.5 h-3.5 ${isModernSleek ? "text-slate-500" : "text-amber-400"}`} />
                 <span>{t.tactics.playerCard.globalStatsHeader}</span>
               </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              {/* Buts ⚽ */}
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] ${isModernSleek ? "bg-emerald-50 border border-emerald-300 text-emerald-800" : "bg-[#102420] border border-[#00e599]/30 text-emerald-300"
+              {/* Buts / Points */}
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] border ${isModernSleek
+                ? "bg-white border-slate-200 text-slate-700"
+                : "bg-[#102420] border-[#00e599]/30 text-emerald-300"
                 }`}>
-                <span>⚽</span>
+                <span>{getSportBallInfo(activeSport).emoji}</span>
                 <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.goalsLabel}</span>
-                <span className={`font-black text-xs ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{playerGoals}</span>
+                <span className={`font-black text-xs ${isModernSleek ? "text-slate-900" : "text-[#00E599]"}`}>{playerGoals}</span>
               </div>
 
               {/* Passes D. 👟 */}
-              <div className="flex items-center gap-1.5 bg-[#0f2334] border border-cyan-500/30 px-2.5 py-1 rounded-lg text-cyan-300 font-bold text-[10.5px]">
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] border ${isModernSleek
+                ? "bg-white border-slate-200 text-slate-700"
+                : "bg-[#0f2334] border-cyan-500/30 text-cyan-300"
+                }`}>
                 <span>👟</span>
                 <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.assistsLabel}</span>
-                <span className="font-black text-cyan-400 text-xs">{playerAssists}</span>
+                <span className={`font-black text-xs ${isModernSleek ? "text-slate-900" : "text-cyan-400"}`}>{playerAssists}</span>
               </div>
 
               {/* Cartons Jaunes 🟨 */}
-              <div className="flex items-center gap-1.5 bg-[#241c10] border border-amber-500/30 px-2.5 py-1 rounded-lg text-amber-300 font-bold text-[10.5px]">
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] border ${isModernSleek
+                ? "bg-white border-slate-200 text-slate-700"
+                : "bg-[#241c10] border-amber-500/30 text-amber-300"
+                }`}>
                 <span>🟨</span>
                 <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.yellowsLabel}</span>
-                <span className="font-black text-amber-400 text-xs">{playerYellows}</span>
+                <span className={`font-black text-xs ${isModernSleek ? "text-slate-900" : "text-amber-400"}`}>{playerYellows}</span>
               </div>
 
               {/* Cartons Rouges 🟥 */}
-              <div className="flex items-center gap-1.5 bg-[#2c1318] border border-rose-500/30 px-2.5 py-1 rounded-lg text-rose-300 font-bold text-[10.5px]">
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10.5px] border ${isModernSleek
+                ? "bg-white border-slate-200 text-slate-700"
+                : "bg-[#2c1318] border-rose-500/30 text-rose-300"
+                }`}>
                 <span>🟥</span>
                 <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.redsLabel}</span>
-                <span className="font-black text-rose-400 text-xs">{playerReds}</span>
+                <span className={`font-black text-xs ${isModernSleek ? "text-slate-900" : "text-rose-400"}`}>{playerReds}</span>
               </div>
 
               {/* État / Forme */}
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#111827] border-[#1f293d]"
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] border ${isModernSleek ? "bg-white border-slate-200" : "bg-[#111827] border-[#1f293d]"
                 }`}>
                 <span className="text-[8.5px] uppercase font-black text-slate-400">{t.tactics.playerCard.fitnessLabel}</span>
                 {isInjured ? (
-                  <span className="text-amber-400 font-black flex items-center gap-1">{t.tactics.subModal.injured}</span>
+                  <span className="text-slate-700 font-black flex items-center gap-1">{t.tactics.subModal.injured}</span>
                 ) : playerReds > 0 ? (
-                  <span className="text-rose-400 font-black flex items-center gap-1">{t.tactics.subModal.sentOff}</span>
+                  <span className="text-slate-700 font-black flex items-center gap-1">{t.tactics.subModal.sentOff}</span>
                 ) : isTired ? (
-                  <span className="text-yellow-400 font-black flex items-center gap-1">{t.tactics.subModal.tired}</span>
+                  <span className="text-slate-700 font-black flex items-center gap-1">{t.tactics.subModal.tired}</span>
                 ) : isExcellent ? (
-                  <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>{t.tactics.playerCard.formExcellent}</span>
+                  <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-slate-900" : "text-emerald-400"}`}>{t.tactics.playerCard.formExcellent}</span>
                 ) : (
-                  <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{t.tactics.playerCard.formFit}</span>
+                  <span className={`font-black flex items-center gap-1 ${isModernSleek ? "text-slate-900" : "text-[#00E599]"}`}>{t.tactics.playerCard.formFit}</span>
                 )}
               </div>
             </div>
@@ -6032,9 +6177,9 @@ export default function TacticsBoard({
         <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/80"}`}>
           {/* Section Remplacement avec Menu Déroulant */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs shrink-0 shadow-sm border ${isModernSleek ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-[#102420] border-[#00E599]/40 text-[#00E599]"
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs shrink-0 border ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-700" : "bg-[#102420] border-[#00E599]/40 text-[#00E599]"
               }`}>
-              <RefreshCw className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isModernSleek ? "text-slate-600" : "text-[#00E599]"}`} />
               <span className="text-[9.5px] uppercase tracking-wider">{t.tactics.playerCard.replacementHeader}</span>
             </div>
 
@@ -6058,8 +6203,8 @@ export default function TacticsBoard({
                       e.target.value = "";
                     }
                   }}
-                  className={`border-2 text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer shadow-lg transition-all pr-8 appearance-none ${isModernSleek
-                    ? "bg-white border-emerald-600 text-slate-900 focus:border-emerald-700"
+                  className={`border text-xs font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer shadow-xs transition-all pr-8 appearance-none ${isModernSleek
+                    ? "bg-white border-slate-300 text-slate-900 focus:border-slate-500"
                     : "bg-[#111827] border-[#00E599]/60 hover:border-[#00E599] focus:border-[#00E599] text-white"
                     }`}
                   title={t.tactics.playerCard.selectSubTooltip}
@@ -6076,7 +6221,7 @@ export default function TacticsBoard({
                         key={sub.id}
                         value={sub.id}
                         disabled={isCurrentlyOnPitch}
-                        className={`bg-[#0d1117] ${isCurrentlyOnPitch ? "text-slate-500" : "text-white"}`}
+                        className={isModernSleek ? "bg-white text-slate-900" : `bg-[#0d1117] ${isCurrentlyOnPitch ? "text-slate-500" : "text-white"}`}
                       >
                         {isCurrentlyOnPitch ? "⚠️ " : "🔄 "}
                         N°{sub.number || "?"} - {sub.name} ({sub.role || "SUB"})
@@ -6087,7 +6232,7 @@ export default function TacticsBoard({
                     );
                   })}
                 </select>
-                <div className="absolute right-2.5 pointer-events-none text-[#00E599] text-[10px]">
+                <div className={`absolute right-2.5 pointer-events-none text-[10px] ${isModernSleek ? "text-slate-500" : "text-[#00E599]"}`}>
                   ▼
                 </div>
               </div>
@@ -6097,7 +6242,10 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => setSubPickerToken(activeToken)}
-              className="px-2.5 py-1.5 bg-[#172233] hover:bg-[#202f4a] border border-[#263750] text-slate-200 hover:text-white font-bold text-[10px] rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+              className={`px-2.5 py-1.5 border font-bold text-[10px] rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-2xs ${isModernSleek
+                ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900"
+                : "bg-[#172233] hover:bg-[#202f4a] border-[#263750] text-slate-200 hover:text-white"
+                }`}
               title={t.tactics.playerCard.benchSubModalTooltip}
             >
               <span>📋</span>
@@ -6108,7 +6256,10 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => handleRemovePlayerFromPitch(activeToken, "normal")}
-              className="px-2.5 py-1.5 bg-[#172233] hover:bg-[#22334d] border border-[#263750] text-slate-300 hover:text-white rounded-xl text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
+              className={`px-2.5 py-1.5 border rounded-xl text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-2xs ${isModernSleek
+                ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900"
+                : "bg-[#172233] hover:bg-[#22334d] border-[#263750] text-slate-300 hover:text-white"
+                }`}
               title={t.tactics.playerCard.subOutTooltip}
             >
               <span>🚪</span>
@@ -6118,7 +6269,10 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => handleRemovePlayerFromPitch(activeToken, "injured")}
-              className="px-2.5 py-1.5 bg-amber-950/80 hover:bg-amber-800 border border-amber-600/80 text-amber-200 hover:text-white rounded-xl text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
+              className={`px-2.5 py-1.5 border rounded-xl text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-2xs ${isModernSleek
+                ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900"
+                : "bg-amber-950/80 hover:bg-amber-800 border-amber-600/80 text-amber-200 hover:text-white"
+                }`}
               title={t.tactics.playerCard.injuryTooltip}
             >
               <span>🏥</span>
@@ -6129,7 +6283,7 @@ export default function TacticsBoard({
           {/* LIGNE ACTIONS LIVE MATCH (UNIQUEMENT QUAND LE MODE LIVE EST ACTIVÉ) */}
           {isLiveMatchMode && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className={`text-[8.5px] font-black uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1 ${isModernSleek ? "text-amber-600" : "text-amber-400"
+              <span className={`text-[8.5px] font-black uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1 ${isModernSleek ? "text-slate-500" : "text-amber-400"
                 }`}>
                 <Award className="w-3 h-3" />
                 <span>{t.tactics.playerCard.liveActionsHeader}</span>
@@ -6140,8 +6294,8 @@ export default function TacticsBoard({
                   key={action.id}
                   type="button"
                   onClick={() => handleRecordScore(activeToken, action)}
-                  className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
-                    ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800"
+                  className={`px-2 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-2xs border ${isModernSleek
+                    ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-800 hover:text-slate-950"
                     : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/80 text-emerald-200 hover:text-white"
                     }`}
                   title={`Attribuer ${action.label} (+${action.points} sur le score) à ${activeToken.name}`}
@@ -6154,8 +6308,8 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleRecordAssist(activeToken)}
-                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
-                  ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800"
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-2xs border ${isModernSleek
+                  ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900"
                   : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/80 text-cyan-200 hover:text-white"
                   }`}
                 title={t.tactics.playerCard.addAssistTooltip}
@@ -6167,8 +6321,8 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleGiveYellowCard(activeToken)}
-                className={`px-2 py-1 rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
-                  ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800"
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-2xs border ${isModernSleek
+                  ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900"
                   : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/80 text-amber-200 hover:text-white"
                   }`}
                 title={t.tactics.playerCard.yellowCardTooltip}
@@ -6180,8 +6334,8 @@ export default function TacticsBoard({
               <button
                 type="button"
                 onClick={() => handleRemovePlayerFromPitch(activeToken, "red_card")}
-                className={`px-2 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
-                  ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800"
+                className={`px-2 py-1 rounded-lg text-[9.5px] font-bold transition cursor-pointer flex items-center gap-1 shadow-2xs border ${isModernSleek
+                  ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900"
                   : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/80 text-rose-200 hover:text-white"
                   }`}
                 title={t.tactics.playerCard.redCardTooltip}
@@ -6253,23 +6407,23 @@ export default function TacticsBoard({
     return (
       <div
         id="live-match-player-toolbox"
-        className="w-full mx-auto mt-2 transition-all duration-300 ease-in-out z-40 shrink-0 select-none animate-fade-in"
+        className="relative w-full mx-auto mt-2 transition-all duration-300 ease-in-out z-40 shrink-0 select-none animate-fade-in"
         style={{ maxWidth: pitchMaxWidth }}
       >
         <div
-          className={`rounded-2xl px-3 py-2 backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 transition-all duration-300 ${isModernSleek
-            ? "bg-white/95 border border-slate-200/90 shadow-lg text-slate-800"
-            : "bg-[#0d1117]/95 border border-[#00E599]/60 shadow-[0_0_20px_rgba(0,229,153,0.12)] text-white"
+          className={`rounded-2xl px-3.5 py-2.5 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 transition-all duration-300 ${isModernSleek
+            ? "bg-white/95 border border-slate-200 shadow-sm text-slate-800"
+            : "bg-[#0d1117]/95 border border-[#1f293d] shadow-lg text-white"
             }`}
         >
           {/* Identité joueur */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
             <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs border shrink-0 ${isHome
-                ? isModernSleek
-                  ? "bg-emerald-600 text-white border-emerald-500 shadow-2xs"
-                  : "bg-[#00E599] text-[#0d1117] border-[#00e599]"
-                : "bg-rose-600 text-white border-rose-400"
+              className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm border shrink-0 ${isModernSleek
+                ? "bg-slate-100 text-slate-800 border-slate-300"
+                : isHome
+                  ? "bg-[#00E599] text-[#0d1117] border-[#00e599]"
+                  : "bg-rose-600 text-white border-rose-400"
                 }`}
             >
               {currentLiveToken.number || "?"}
@@ -6278,18 +6432,16 @@ export default function TacticsBoard({
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <span
-                  className={`text-xs font-black truncate max-w-[130px] sm:max-w-[180px] ${isModernSleek ? "text-slate-900" : "text-white"
+                  className={`text-sm font-black truncate max-w-[140px] sm:max-w-[200px] ${isModernSleek ? "text-slate-900" : "text-white"
                     }`}
                 >
                   {currentLiveToken.name}
                 </span>
                 <span
-                  className={`text-[8px] font-black px-1.5 py-0.2 rounded border shrink-0 ${isHome
-                    ? isModernSleek
-                      ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                      : "bg-[#102420] text-[#00E599] border-[#00e599]/30"
-                    : isModernSleek
-                      ? "bg-rose-50 text-rose-800 border-rose-300"
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${isModernSleek
+                    ? "bg-slate-100 text-slate-600 border-slate-200"
+                    : isHome
+                      ? "bg-[#102420] text-[#00E599] border-[#00e599]/30"
                       : "bg-rose-950 text-rose-300 border-rose-800"
                     }`}
                 >
@@ -6297,23 +6449,23 @@ export default function TacticsBoard({
                 </span>
               </div>
               <div
-                className={`flex items-center gap-2 text-[9px] ${isModernSleek ? "text-slate-500 font-medium" : "text-slate-400"
+                className={`flex items-center gap-2 text-[10.5px] ${isModernSleek ? "text-slate-500 font-medium" : "text-slate-400"
                   }`}
               >
                 <span>{currentLiveToken.role || t.tactics.liveToolbox.player}</span>
                 {currentGoals > 0 && (
-                  <span className={`font-black flex items-center gap-0.5 ${isModernSleek ? "text-emerald-800" : "text-emerald-400"}`}>
+                  <span className={`font-bold flex items-center gap-0.5 ${isModernSleek ? "text-slate-700" : "text-emerald-400"}`}>
                     {activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"}{" "}
                     {activeSport === "rugby" || activeSport === "basketball" ? `${currentPoints} pts` : `x${currentGoals}`}
                   </span>
                 )}
                 {currentAssists > 0 && (
-                  <span className={`font-black flex items-center gap-0.5 ${isModernSleek ? "text-cyan-800" : "text-cyan-300"}`}>
+                  <span className={`font-bold flex items-center gap-0.5 ${isModernSleek ? "text-slate-700" : "text-cyan-300"}`}>
                     👟 x{currentAssists}
                   </span>
                 )}
                 {currentYellows > 0 && (
-                  <span className={`font-black flex items-center gap-0.5 ${isModernSleek ? "text-amber-800" : "text-amber-400"}`}>
+                  <span className={`font-bold flex items-center gap-0.5 ${isModernSleek ? "text-slate-700" : "text-amber-400"}`}>
                     🟨 (1/2)
                   </span>
                 )}
@@ -6322,16 +6474,16 @@ export default function TacticsBoard({
           </div>
 
           {/* Options de match en direct */}
-          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {/* Boutons de points selon le sport (Rugby, Basket, Hand, Foot) */}
             {getSportScoreActions(activeSport).map((action) => (
               <button
                 key={action.id}
                 type="button"
                 onClick={() => handleRecordScore(currentLiveToken, action)}
-                className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
-                  ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-400 text-emerald-800 hover:text-emerald-950 shadow-2xs"
-                  : "bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/70 hover:border-emerald-400 text-emerald-200 hover:text-white"
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95 border ${isModernSleek
+                  ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800 hover:text-slate-950 shadow-2xs"
+                  : "bg-[#161f2e] hover:bg-[#1e293b] border-[#26354d] text-slate-200 hover:text-white"
                   }`}
                 title={`Attribuer ${action.label} (+${action.points} point${action.points > 1 ? "s" : ""}) à ${currentLiveToken.name}`}
               >
@@ -6344,9 +6496,9 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => handleRecordAssist(currentLiveToken)}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
-                ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-400 text-cyan-800 hover:text-cyan-950 shadow-2xs"
-                : "bg-cyan-950/90 hover:bg-cyan-800 border border-cyan-500/70 hover:border-cyan-400 text-cyan-200 hover:text-white"
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95 border ${isModernSleek
+                ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs"
+                : "bg-[#161f2e] hover:bg-[#1e293b] border-[#26354d] text-slate-200 hover:text-white"
                 }`}
               title={t.tactics.liveToolbox.assistTooltip}
             >
@@ -6366,9 +6518,9 @@ export default function TacticsBoard({
                   setLiveActionToken({ ...currentLiveToken, yellowCards: 1 });
                 }
               }}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
-                ? "bg-amber-50 hover:bg-amber-100 border-amber-400 text-amber-800 hover:text-amber-950 shadow-2xs"
-                : "bg-amber-950/90 hover:bg-amber-800 border border-amber-500/70 hover:border-amber-400 text-amber-200 hover:text-white"
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95 border ${isModernSleek
+                ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs"
+                : "bg-[#161f2e] hover:bg-[#1e293b] border-[#26354d] text-slate-200 hover:text-white"
                 }`}
               title={t.tactics.liveToolbox.yellowTooltip}
             >
@@ -6383,9 +6535,9 @@ export default function TacticsBoard({
                 handleRemovePlayerFromPitch(currentLiveToken, "red_card");
                 setLiveActionToken(null);
               }}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
-                ? "bg-rose-50 hover:bg-rose-100 border-rose-400 text-rose-800 hover:text-rose-950 shadow-2xs"
-                : "bg-rose-950/90 hover:bg-rose-800 border border-rose-600/70 hover:border-rose-400 text-rose-200 hover:text-white"
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95 border ${isModernSleek
+                ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs"
+                : "bg-[#161f2e] hover:bg-[#1e293b] border-[#26354d] text-slate-200 hover:text-white"
                 }`}
               title={t.tactics.liveToolbox.redTooltip}
             >
@@ -6400,9 +6552,9 @@ export default function TacticsBoard({
                 handleRemovePlayerFromPitch(currentLiveToken, "injured");
                 setLiveActionToken(null);
               }}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 border ${isModernSleek
-                ? "bg-red-50 hover:bg-red-100 border-red-400 text-red-800 hover:text-red-950 shadow-2xs"
-                : "bg-red-950/90 hover:bg-red-800 border border-red-500/70 hover:border-red-400 text-red-200 hover:text-white"
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95 border ${isModernSleek
+                ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs"
+                : "bg-[#161f2e] hover:bg-[#1e293b] border-[#26354d] text-slate-200 hover:text-white"
                 }`}
               title={t.tactics.liveToolbox.injuryTooltip}
             >
@@ -6416,9 +6568,9 @@ export default function TacticsBoard({
               onClick={() => {
                 setSubPickerToken(currentLiveToken);
               }}
-              className={`px-2 py-1.5 rounded-xl text-[10px] font-bold transition cursor-pointer flex items-center gap-1 shadow-sm border ${isModernSleek
-                ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700 hover:text-slate-900"
-                : "bg-[#172233] hover:bg-[#202f47] border-[#2d3f5e] hover:border-[#00e599]/40 text-slate-200 hover:text-white"
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 border ${isModernSleek
+                ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs"
+                : "bg-[#161f2e] hover:bg-[#1e293b] border-[#26354d] text-slate-200 hover:text-white"
                 }`}
               title={t.tactics.liveToolbox.substituteTooltip}
             >
@@ -6430,13 +6582,13 @@ export default function TacticsBoard({
             <button
               type="button"
               onClick={() => setLiveActionToken(null)}
-              className={`p-1.5 rounded-xl transition cursor-pointer shrink-0 ml-0.5 ${isModernSleek
-                ? "bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700"
-                : "bg-[#172233] hover:bg-rose-900/80 text-slate-300 hover:text-white"
+              className={`p-1.5 rounded-xl transition cursor-pointer shrink-0 ml-0.5 border ${isModernSleek
+                ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-800"
+                : "bg-[#172233] hover:bg-slate-800 border-transparent text-slate-300 hover:text-white"
                 }`}
               title={t.tactics.liveToolbox.closeTooltip}
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -6509,7 +6661,7 @@ export default function TacticsBoard({
             <button
               id="btn-close-sub-modal"
               onClick={() => setSubPickerToken(null)}
-              className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+              className={`w-8 h-8 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                 }`}
               title={t.tactics.subModal.close}
             >
@@ -6764,7 +6916,7 @@ export default function TacticsBoard({
           </div>
 
           {/* PIED DE MODALE */}
-          <div className={`flex items-center justify-between pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+          <div className={`flex items-center justify-between gap-2 pt-2.5 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
             }`}>
             <button
               type="button"
@@ -6774,10 +6926,10 @@ export default function TacticsBoard({
                 setQuickActionToken(subPickerToken);
                 setSubPickerToken(null);
               }}
-              className={`text-[11px] font-bold underline cursor-pointer flex items-center gap-1.5 transition ${isModernSleek ? "text-blue-600 hover:text-blue-800" : "text-cyan-400 hover:text-cyan-300"
+              className={`h-9 px-3 rounded-xl text-xs font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap border transition ${isModernSleek ? "bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700" : "bg-cyan-950/40 hover:bg-cyan-900/60 border-cyan-800/50 text-cyan-300"
                 }`}
             >
-              <User className="w-3.5 h-3.5" />
+              <User className="w-3.5 h-3.5 shrink-0" />
               <span>{t.tactics.subModal.openFullCard}</span>
             </button>
 
@@ -6785,9 +6937,9 @@ export default function TacticsBoard({
               type="button"
               id="btn-cancel-sub-modal"
               onClick={() => setSubPickerToken(null)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${isModernSleek
-                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
-                : "bg-[#172233] hover:bg-[#202f4a] text-slate-300 hover:text-white"
+              className={`h-9 px-4 rounded-xl text-xs font-bold inline-flex items-center justify-center whitespace-nowrap transition cursor-pointer border ${isModernSleek
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                : "bg-[#172233] hover:bg-[#202f4a] border-[#263750] text-slate-300 hover:text-white"
                 }`}
             >
               {t.userModal.cancel}
@@ -6901,7 +7053,7 @@ export default function TacticsBoard({
                 setEditingToken(null);
                 setQuickActionToken(null);
               }}
-              className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+              className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                 }`}
               title="Fermer"
             >
@@ -6929,17 +7081,17 @@ export default function TacticsBoard({
                         : isHome
                           ? "/images/avatars/handball_player_green.png"
                           : "/images/avatars/handball_opponent_red.png"
-                    : activeSport === "rugby"
-                      ? isHome
-                        ? "/images/avatars/rugby_player_green.png"
-                        : "/images/avatars/rugby_opponent_red.png"
-                    : isGK
-                      ? isHome
-                        ? "/images/avatars/goalkeeper_yellow.png"
-                        : "/images/avatars/opponent_goalkeeper.png"
-                      : isHome
-                        ? "/images/avatars/player_green.png"
-                        : "/images/avatars/opponent_red.png";
+                      : activeSport === "rugby"
+                        ? isHome
+                          ? "/images/avatars/rugby_player_green.png"
+                          : "/images/avatars/rugby_opponent_red.png"
+                        : isGK
+                          ? isHome
+                            ? "/images/avatars/goalkeeper_yellow.png"
+                            : "/images/avatars/opponent_goalkeeper.png"
+                          : isHome
+                            ? "/images/avatars/player_green.png"
+                            : "/images/avatars/opponent_red.png";
                   const src = editingToken.photo || defaultAvatar;
 
                   return (
@@ -7177,13 +7329,13 @@ export default function TacticsBoard({
                   setSubPickerToken(editingToken);
                   setEditingToken(null);
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-md ${isModernSleek
+                className={`h-9 px-3.5 rounded-xl text-xs font-black transition cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-md ${isModernSleek
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                   : "bg-[#00E599] hover:bg-[#00c782] text-slate-950"
                   }`}
                 title="Remplacer ce joueur"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className="w-3.5 h-3.5 shrink-0" />
                 <span>Remplacer ce joueur</span>
               </button>
 
@@ -7195,7 +7347,7 @@ export default function TacticsBoard({
                     handleRemovePlayerFromPitch(editingToken, "normal");
                     setEditingToken(null);
                   }}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1 ${isModernSleek
+                  className={`h-9 px-3 rounded-xl text-xs font-bold border transition cursor-pointer inline-flex items-center justify-center gap-1 whitespace-nowrap ${isModernSleek
                     ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
                     : "bg-[#172233] hover:bg-[#22334d] border-[#263750] text-slate-300 hover:text-white"
                     }`}
@@ -7212,9 +7364,9 @@ export default function TacticsBoard({
                 setEditingToken(null);
                 setQuickActionToken(null);
               }}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${isModernSleek
-                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
-                : "bg-[#172233] hover:bg-[#202f4a] text-slate-300 hover:text-white"
+              className={`h-9 px-4 rounded-xl text-xs font-bold inline-flex items-center justify-center whitespace-nowrap transition cursor-pointer border ${isModernSleek
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                : "bg-[#172233] hover:bg-[#202f4a] border-[#263750] text-slate-300 hover:text-white"
                 }`}
             >
               Fermer
@@ -7230,14 +7382,14 @@ export default function TacticsBoard({
     return (
       <div
         className={`${isFullscreenMode
-          ? `shrink-0 flex flex-col justify-start z-30 transition-all duration-200 ${isTeamAPanelCollapsed
+          ? `relative shrink-0 flex flex-col justify-start z-30 transition-all duration-200 ${isTeamAPanelCollapsed
             ? "w-9 xl:w-10 p-1.5"
             : "w-36 xl:w-44 p-2.5 gap-2"
           } max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-thin ${isModernSleek
             ? "bg-white/95 border-2 border-emerald-500/40 rounded-2xl shadow-2xl text-slate-800 backdrop-blur-md"
             : "bg-[#0d1117]/95 border border-[#00E599]/40 hover:border-[#00E599]/60 rounded-2xl shadow-2xl backdrop-blur-md text-white"
           }`
-          : `w-full ${isTeamAPanelCollapsed
+          : `relative z-30 w-full ${isTeamAPanelCollapsed
             ? "lg:w-9 xl:w-10 p-1.5"
             : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-36 xl:w-40 p-2 lg:p-2.5 gap-1.5 lg:gap-2")
           } shrink-0 flex flex-col justify-start ${isCompactUI ? "p-1.5 gap-1 text-[85%]" : ""} ${isModernSleek
@@ -7430,14 +7582,14 @@ export default function TacticsBoard({
     return (
       <div
         className={`${isFullscreenMode
-          ? `shrink-0 flex flex-col justify-start z-30 transition-all duration-200 ${isTeamBPanelCollapsed
+          ? `relative shrink-0 flex flex-col justify-start z-30 transition-all duration-200 ${isTeamBPanelCollapsed
             ? "w-9 xl:w-10 p-1.5"
             : "w-36 xl:w-44 p-2.5 gap-2"
           } max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-thin ${isModernSleek
             ? "bg-white/95 border-2 border-rose-500/40 rounded-2xl shadow-2xl text-slate-800 backdrop-blur-md"
             : "bg-[#0d1117]/95 border border-rose-900/50 hover:border-rose-700/70 rounded-2xl shadow-2xl backdrop-blur-md text-white"
           }`
-          : `w-full ${isTeamBPanelCollapsed
+          : `relative z-30 w-full ${isTeamBPanelCollapsed
             ? "lg:w-9 xl:w-10 p-1.5"
             : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-36 xl:w-40 p-2 lg:p-2.5 gap-1.5 lg:gap-2")
           } shrink-0 flex flex-col justify-start ${isCompactUI ? "p-1.5 gap-1 text-[85%]" : ""} ${isModernSleek
@@ -8202,7 +8354,7 @@ export default function TacticsBoard({
           className={`${isLeftSidebarOpen ? (isModernSleek ? "w-18 opacity-100" : "w-16 opacity-100") : "w-0 opacity-0 overflow-hidden pointer-events-none"} ${isModernSleek
             ? "bg-white/95 backdrop-blur-xl border-r border-slate-200/90 shadow-sm text-slate-800"
             : "border-r border-[#1f293d] bg-[#0d1117]"
-            } flex flex-col justify-between flex-shrink-0 transition-all duration-300 relative`}
+            } flex flex-col justify-between flex-shrink-0 transition-all duration-300 relative z-30`}
         >
 
           <div className="flex-1 overflow-y-auto p-2.5 space-y-4 scrollbar-thin flex flex-col items-center">
@@ -8420,12 +8572,12 @@ export default function TacticsBoard({
         {/* ========================================================= */}
         {/* CENTER PANEL: PITCH VIEWPORT & CONTROLLERS & FORMATIONS */}
         {/* ========================================================= */}
-        <main className={`flex-1 flex flex-col ${isModernSleek ? "bg-[#f1f5f9]" : "bg-[#07090e]"} ${isCompactUI ? "p-1.5 sm:p-2" : "p-1.5 sm:p-2.5 lg:p-3 xl:p-4"} overflow-y-auto scrollbar-thin transition-all duration-200`}>
+        <main className={`flex-1 flex flex-col ${isModernSleek ? "bg-[#f1f5f9]" : "bg-[#07090e]"} ${isCompactUI ? "p-1.5 sm:p-2" : "p-1.5 sm:p-2.5 lg:p-3 xl:p-4"} overflow-y-auto overflow-x-hidden scrollbar-thin transition-all duration-200`}>
 
           {/* Pitch Area Main Toolbar */}
           <div
             id="tour-pitch-controllers"
-            className={`flex flex-wrap items-center justify-between ${isCompactUI ? "py-1.5 px-3 gap-1.5 mb-2 text-[90%]" : "py-2 px-4 gap-2 mb-3"
+            className={`relative z-30 flex flex-wrap items-center justify-between ${isCompactUI ? "py-1.5 px-3 gap-1.5 mb-2 text-[90%]" : "py-2 px-4 gap-2 mb-3"
               } ${isModernSleek
                 ? "bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-sm text-slate-800"
                 : "bg-[#0d1117] border border-[#1f293d] rounded-xl shadow-lg"
@@ -8696,7 +8848,13 @@ export default function TacticsBoard({
                 <ZoomIn className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
                 <button
                   type="button"
-                  onClick={() => setZoomScale(prev => Math.max(70, prev - 10))}
+                  onClick={() =>
+                    setZoomScale((prev) => {
+                      const next = Math.max(70, prev - 10);
+                      if (next === 100) setPitchPan({ x: 0, y: 0 });
+                      return next;
+                    })
+                  }
                   className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
                     ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
@@ -8705,10 +8863,26 @@ export default function TacticsBoard({
                 >
                   -
                 </button>
-                <span className={`text-[10px] font-black ${isModernSleek ? "text-slate-900" : "text-white"} w-7 text-center font-mono`}>{zoomScale}%</span>
                 <button
                   type="button"
-                  onClick={() => setZoomScale(prev => Math.min(150, prev + 10))}
+                  onClick={() => {
+                    setZoomScale(100);
+                    setPitchPan({ x: 0, y: 0 });
+                  }}
+                  className={`text-[10px] font-black ${isModernSleek ? "text-slate-900 hover:text-emerald-700" : "text-white hover:text-[#00E599]"} w-7 text-center font-mono cursor-pointer transition`}
+                  title="Réinitialiser le zoom et centrer le terrain (100%)"
+                >
+                  {zoomScale}%
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setZoomScale((prev) => {
+                      const next = Math.min(150, prev + 10);
+                      if (next === 100) setPitchPan({ x: 0, y: 0 });
+                      return next;
+                    })
+                  }
                   className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
                     ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-emerald-800"
                     : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
@@ -9273,7 +9447,13 @@ export default function TacticsBoard({
                         <ZoomIn className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
                         <button
                           type="button"
-                          onClick={() => setZoomScale(prev => Math.max(70, prev - 10))}
+                          onClick={() =>
+                            setZoomScale((prev) => {
+                              const next = Math.max(70, prev - 10);
+                              if (next === 100) setPitchPan({ x: 0, y: 0 });
+                              return next;
+                            })
+                          }
                           className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
@@ -9282,10 +9462,26 @@ export default function TacticsBoard({
                         >
                           -
                         </button>
-                        <span className={`text-[10px] font-black w-7 text-center font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{zoomScale}%</span>
                         <button
                           type="button"
-                          onClick={() => setZoomScale(prev => Math.min(150, prev + 10))}
+                          onClick={() => {
+                            setZoomScale(100);
+                            setPitchPan({ x: 0, y: 0 });
+                          }}
+                          className={`text-[10px] font-black w-7 text-center font-mono cursor-pointer transition ${isModernSleek ? "text-slate-900 hover:text-emerald-700" : "text-white hover:text-[#00E599]"}`}
+                          title="Réinitialiser le zoom et centrer le terrain (100%)"
+                        >
+                          {zoomScale}%
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setZoomScale((prev) => {
+                              const next = Math.min(150, prev + 10);
+                              if (next === 100) setPitchPan({ x: 0, y: 0 });
+                              return next;
+                            })
+                          }
                           className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
@@ -9347,23 +9543,31 @@ export default function TacticsBoard({
                 )}
 
                 {/* PITCH AND FLANKING SIDE PANELS ROW (IN FULLSCREEN: ROW WITH MON EQUIPE & MON ADVERSAIRE) */}
-                <div className={`w-full flex-1 flex ${isPitchFullscreen ? "flex-row items-center justify-center gap-2 xl:gap-3.5 min-h-0 overflow-hidden relative my-auto px-1 sm:px-2" : "flex-col items-center justify-center"}`}>
+                <div className={`w-full flex-1 flex ${isPitchFullscreen ? "flex-row items-center justify-center gap-2 xl:gap-3.5 min-h-0 relative my-auto px-1 sm:px-2" : "flex-col items-center justify-center"}`}>
                   {isPitchFullscreen && renderTeamAPanel(true)}
-                  <div className={isPitchFullscreen ? "flex-1 flex flex-col items-center justify-center h-full min-w-0 relative" : "w-full flex flex-col items-center justify-center"}>
+                  <div className={isPitchFullscreen ? "flex-1 flex flex-col items-center justify-center h-full min-w-0 relative z-0" : "w-full flex flex-col items-center justify-center relative z-0"}>
                     {/* Visual Pitch Box */}
                     <div
-                      className={`relative w-full mx-auto my-auto shrink-0 rounded-3xl overflow-hidden ${isModernSleek
+                      onMouseDown={handlePitchPanStart}
+                      onTouchStart={handlePitchPanStart}
+                      className={`relative z-0 w-full mx-auto my-auto shrink-0 rounded-3xl overflow-hidden select-none ${isModernSleek
                         ? "border-4 border-slate-300 ring-8 ring-white/90 shadow-2xl bg-[#032e22]"
                         : "border-4 border-[#1f293d] shadow-2xl bg-[#032e22]"
-                        } transition-all duration-300 ease-in-out`}
+                        } ${isPanningPitch
+                          ? "cursor-grabbing transition-none"
+                          : (zoomScale !== 100 || activeTool === "move") && (activeTool === "select" || activeTool === "move")
+                            ? "cursor-grab transition-transform duration-200 ease-out"
+                            : "transition-all duration-300 ease-in-out"
+                        }`}
                       style={{
                         aspectRatio: `${currentPitchRatio}`,
                         maxWidth: pitchMaxWidth,
                         maxHeight: pitchMaxHeight,
-                        transform: zoomScale !== 100 ? `scale(${zoomScale / 100})` : undefined,
+                        transform:
+                          zoomScale !== 100 || pitchPan.x !== 0 || pitchPan.y !== 0
+                            ? `translate3d(${pitchPan.x}px, ${pitchPan.y}px, 0) scale(${zoomScale / 100})`
+                            : undefined,
                         transformOrigin: "center center",
-                        marginTop: zoomScale > 100 ? `${(zoomScale - 100) * 3.8}px` : undefined,
-                        marginBottom: zoomScale > 100 ? `${(zoomScale - 100) * 4.5}px` : undefined,
                       }}
                     >
 
@@ -9569,249 +9773,246 @@ export default function TacticsBoard({
                                 {/* Representation: Ballon spécifique au sport, Buste, Tête ou Pastille */}
                                 {token.type === "ball" ? (
                                   <div
-                                    className={`${
-                                      activeSport === "rugby"
+                                    className={`${activeSport === "rugby"
                                         ? "w-8 h-6 sm:w-9 sm:h-7"
                                         : "w-6 h-6 sm:w-7 sm:h-7"
-                                    } flex items-center justify-center relative transition-transform ${
-                                      isSelected ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-110" : ""
-                                    }`}
+                                      } flex items-center justify-center relative transition-transform ${isSelected ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-110" : ""
+                                      }`}
                                   >
                                     <PitchBallGraphic sport={activeSport} />
                                   </div>
                                 ) : (
                                   <div
-                                    className={`${
-                                      isJerseyMode || isHeadMode
+                                    className={`${isJerseyMode || isHeadMode
                                         ? "w-9 h-10 sm:w-10 sm:h-11 flex items-center justify-center relative drop-shadow-xl"
                                         : "w-9 h-9 sm:w-10 sm:h-10 text-xs rounded-full border-2 shadow-xl " + tokenBg
                                       } flex items-center justify-center font-black transition-all relative`}
                                   >
-                                  {isJerseyMode ? (
-                                    /* 1. BUSTE (Maillot athlétique avec numéro sur la poitrine) */
-                                    <svg viewBox="0 0 44 48" className="w-full h-full overflow-visible" fill="none">
-                                      <path
-                                        d="M 15 4 C 18 8, 26 8, 29 4 L 41 10 L 43 21 L 35 24 L 33 19 L 33 45 C 33 46.5, 32 47.5, 30.5 47.5 L 13.5 47.5 C 12 47.5, 11 46.5, 11 45 L 11 19 L 9 24 L 1 21 L 3 10 Z"
-                                        fill={token.type === "player_b" ? (teamBColor || "#e11d48") : (teamAColor || "#00E599")}
-                                        stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"}
-                                        strokeWidth="1.8"
-                                        strokeLinejoin="round"
-                                      />
-                                      <path
-                                        d="M 11 25 L 11 46 M 33 25 L 33 46"
-                                        stroke={token.type === "player_b" ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.22)"}
-                                        strokeWidth="2"
-                                      />
-                                      <path
-                                        d="M 15 4 C 18 8, 26 8, 29 4"
-                                        fill="none"
-                                        stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"}
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                      />
-                                      <line x1="1" y1="21" x2="9" y2="24" stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"} strokeWidth="1.8" />
-                                      <line x1="35" y1="24" x2="43" y2="21" stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"} strokeWidth="1.8" />
-                                      <text
-                                        x="22"
-                                        y="33"
-                                        textAnchor="middle"
-                                        fontSize="15"
-                                        fontWeight="900"
-                                        fontFamily="system-ui, -apple-system, sans-serif"
-                                        fill={token.type === "player_b" ? "#ffffff" : "#090d14"}
-                                      >
-                                        {token.number ?? token.role ?? ""}
-                                      </text>
-                                    </svg>
-                                  ) : isHeadMode ? (
-                                    /* 2. TÊTE DU JOUEUR (Affichage 3D de base avec maillot vert pour joueurs et jaune pour gardien) */
-                                    (() => {
-                                      const isGK =
-                                        activeSport !== "basketball" &&
-                                        activeSport !== "rugby" && (
-                                          token.role === "G" ||
-                                          token.role === "GK" ||
-                                          token.role === "GB" ||
-                                          token.role === "Gardien" ||
-                                          token.number === 1);
-                                      const isTeamB = token.type === "player_b";
-                                      const defaultHeadSrc = activeSport === "basketball"
-                                        ? isTeamB
-                                          ? "/images/avatars/basket_opponent_red.png"
-                                          : "/images/avatars/basket_player_green.png"
-                                        : activeSport === "handball"
-                                          ? isGK
-                                            ? isTeamB
-                                              ? "/images/avatars/handball_opponent_goalkeeper.png"
-                                              : "/images/avatars/handball_goalkeeper_yellow.png"
-                                            : isTeamB
-                                              ? "/images/avatars/handball_opponent_red.png"
-                                              : "/images/avatars/handball_player_green.png"
-                                          : activeSport === "rugby"
-                                            ? isTeamB
-                                              ? "/images/avatars/rugby_opponent_red.png"
-                                              : "/images/avatars/rugby_player_green.png"
-                                          : isGK
-                                            ? isTeamB
-                                              ? "/images/avatars/opponent_goalkeeper.png"
-                                              : "/images/avatars/goalkeeper_yellow.png"
-                                            : isTeamB
-                                              ? "/images/avatars/opponent_red.png"
-                                              : "/images/avatars/player_green.png";
+                                    {isJerseyMode ? (
+                                      /* 1. BUSTE (Maillot athlétique avec numéro sur la poitrine) */
+                                      <svg viewBox="0 0 44 48" className="w-full h-full overflow-visible" fill="none">
+                                        <path
+                                          d="M 15 4 C 18 8, 26 8, 29 4 L 41 10 L 43 21 L 35 24 L 33 19 L 33 45 C 33 46.5, 32 47.5, 30.5 47.5 L 13.5 47.5 C 12 47.5, 11 46.5, 11 45 L 11 19 L 9 24 L 1 21 L 3 10 Z"
+                                          fill={token.type === "player_b" ? (teamBColor || "#e11d48") : (teamAColor || "#00E599")}
+                                          stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"}
+                                          strokeWidth="1.8"
+                                          strokeLinejoin="round"
+                                        />
+                                        <path
+                                          d="M 11 25 L 11 46 M 33 25 L 33 46"
+                                          stroke={token.type === "player_b" ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.22)"}
+                                          strokeWidth="2"
+                                        />
+                                        <path
+                                          d="M 15 4 C 18 8, 26 8, 29 4"
+                                          fill="none"
+                                          stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"}
+                                          strokeWidth="2.5"
+                                          strokeLinecap="round"
+                                        />
+                                        <line x1="1" y1="21" x2="9" y2="24" stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"} strokeWidth="1.8" />
+                                        <line x1="35" y1="24" x2="43" y2="21" stroke={token.type === "player_b" ? "#ffffff" : "#0d131f"} strokeWidth="1.8" />
+                                        <text
+                                          x="22"
+                                          y="33"
+                                          textAnchor="middle"
+                                          fontSize="15"
+                                          fontWeight="900"
+                                          fontFamily="system-ui, -apple-system, sans-serif"
+                                          fill={token.type === "player_b" ? "#ffffff" : "#090d14"}
+                                        >
+                                          {token.number ?? token.role ?? ""}
+                                        </text>
+                                      </svg>
+                                    ) : isHeadMode ? (
+                                      /* 2. TÊTE DU JOUEUR (Affichage 3D de base avec maillot vert pour joueurs et jaune pour gardien) */
+                                      (() => {
+                                        const isGK =
+                                          activeSport !== "basketball" &&
+                                          activeSport !== "rugby" && (
+                                            token.role === "G" ||
+                                            token.role === "GK" ||
+                                            token.role === "GB" ||
+                                            token.role === "Gardien" ||
+                                            token.number === 1);
+                                        const isTeamB = token.type === "player_b";
+                                        const defaultHeadSrc = activeSport === "basketball"
+                                          ? isTeamB
+                                            ? "/images/avatars/basket_opponent_red.png"
+                                            : "/images/avatars/basket_player_green.png"
+                                          : activeSport === "handball"
+                                            ? isGK
+                                              ? isTeamB
+                                                ? "/images/avatars/handball_opponent_goalkeeper.png"
+                                                : "/images/avatars/handball_goalkeeper_yellow.png"
+                                              : isTeamB
+                                                ? "/images/avatars/handball_opponent_red.png"
+                                                : "/images/avatars/handball_player_green.png"
+                                            : activeSport === "rugby"
+                                              ? isTeamB
+                                                ? "/images/avatars/rugby_opponent_red.png"
+                                                : "/images/avatars/rugby_player_green.png"
+                                              : isGK
+                                                ? isTeamB
+                                                  ? "/images/avatars/opponent_goalkeeper.png"
+                                                  : "/images/avatars/goalkeeper_yellow.png"
+                                                : isTeamB
+                                                  ? "/images/avatars/opponent_red.png"
+                                                  : "/images/avatars/player_green.png";
 
-                                      const photoSrc = token.photo
-                                        ? (autoTransparentCache[token.photo] || token.photo)
-                                        : defaultHeadSrc;
+                                        const photoSrc = token.photo
+                                          ? (autoTransparentCache[token.photo] || token.photo)
+                                          : defaultHeadSrc;
 
-                                      return (
-                                        <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center relative bg-transparent">
-                                          <img
-                                            src={photoSrc}
-                                            alt={token.name}
-                                            className="w-full h-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] select-none pointer-events-none"
-                                          />
-                                        </div>
-                                      );
-                                    })()
-                                  ) : (
-                                    /* 3. PASTILLE (Classique) */
-                                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                                      {token.photo && showPlayerNames ? (
-                                        <img src={token.photo} alt={token.name} className="w-full h-full object-cover rounded-full" />
-                                      ) : (
-                                        iconContent
+                                        return (
+                                          <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center relative bg-transparent">
+                                            <img
+                                              src={photoSrc}
+                                              alt={token.name}
+                                              className="w-full h-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] select-none pointer-events-none"
+                                            />
+                                          </div>
+                                        );
+                                      })()
+                                    ) : (
+                                      /* 3. PASTILLE (Classique) */
+                                      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                                        {token.photo && showPlayerNames ? (
+                                          <img src={token.photo} alt={token.name} className="w-full h-full object-cover rounded-full" />
+                                        ) : (
+                                          iconContent
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* TOP BADGES ROW (Match stats: Yellow Cards, Goals, Assists, Fitness status) */}
+                                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
+                                      {/* Yellow Card 🟨 */}
+                                      {hasYellowCard && (
+                                        <span
+                                          className="w-3.5 h-4 bg-amber-400 rounded-[1px] border border-amber-200 shadow-md flex items-center justify-center font-black text-[7px] text-amber-950"
+                                          title={t.tactics.pitchBadges.yellowCard}
+                                        >
+                                          🟨
+                                        </span>
+                                      )}
+
+                                      {/* Goal Scorer / Point Scorer */}
+                                      {playerGoals > 0 && (
+                                        <span
+                                          className="bg-emerald-500 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-emerald-200 flex items-center justify-center leading-none"
+                                          title={t.tactics.pitchBadges.scorer(playerGoals)}
+                                        >
+                                          {activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"}{playerGoals > 1 ? playerGoals : ""}
+                                        </span>
+                                      )}
+
+                                      {/* Assist 👟 */}
+                                      {playerAssists > 0 && (
+                                        <span
+                                          className="bg-cyan-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
+                                          title={t.tactics.pitchBadges.assist(playerAssists)}
+                                        >
+                                          👟{playerAssists > 1 ? playerAssists : ""}
+                                        </span>
+                                      )}
+
+                                      {/* Fitness / Availability Status Badge */}
+                                      {token.status && token.status !== "normal" && (
+                                        <span
+                                          className={`w-3.5 h-3.5 rounded-full border border-black shadow-md flex items-center justify-center text-[7.5px] leading-none shrink-0 ${token.status === "excellent"
+                                            ? "bg-emerald-500 text-white font-bold"
+                                            : token.status === "tired"
+                                              ? "bg-amber-500 text-slate-950 font-bold"
+                                              : token.status === "injured"
+                                                ? "bg-rose-600 text-white font-bold"
+                                                : token.status === "suspended"
+                                                  ? "bg-red-700 text-white font-bold"
+                                                  : "bg-rose-500 text-white font-bold"
+                                            }`}
+                                          title={t.tactics.pitchBadges.fitnessTitle(token.status === "excellent"
+                                            ? t.tactics.pitchBadges.fitnessFit
+                                            : token.status === "tired"
+                                              ? t.tactics.pitchBadges.fitnessTired
+                                              : token.status === "injured"
+                                                ? t.tactics.pitchBadges.fitnessInjured
+                                                : token.status === "suspended"
+                                                  ? t.tactics.pitchBadges.fitnessSuspended
+                                                  : token.status
+                                          )}
+                                        >
+                                          {token.status === "excellent"
+                                            ? "⚡"
+                                            : token.status === "tired"
+                                              ? "🥱"
+                                              : token.status === "injured"
+                                                ? "🩹"
+                                                : token.status === "suspended"
+                                                  ? "🟥"
+                                                  : "•"}
+                                        </span>
                                       )}
                                     </div>
-                                  )}
 
-                                  {/* TOP BADGES ROW (Match stats: Yellow Cards, Goals, Assists, Fitness status) */}
-                                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
-                                    {/* Yellow Card 🟨 */}
-                                    {hasYellowCard && (
-                                      <span
-                                        className="w-3.5 h-4 bg-amber-400 rounded-[1px] border border-amber-200 shadow-md flex items-center justify-center font-black text-[7px] text-amber-950"
-                                        title={t.tactics.pitchBadges.yellowCard}
-                                      >
-                                        🟨
-                                      </span>
-                                    )}
-
-                                    {/* Goal Scorer / Point Scorer */}
-                                    {playerGoals > 0 && (
-                                      <span
-                                        className="bg-emerald-500 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-emerald-200 flex items-center justify-center leading-none"
-                                        title={t.tactics.pitchBadges.scorer(playerGoals)}
-                                      >
-                                        {activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"}{playerGoals > 1 ? playerGoals : ""}
-                                      </span>
-                                    )}
-
-                                    {/* Assist 👟 */}
-                                    {playerAssists > 0 && (
-                                      <span
-                                        className="bg-cyan-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 min-w-[16px] px-1 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
-                                        title={t.tactics.pitchBadges.assist(playerAssists)}
-                                      >
-                                        👟{playerAssists > 1 ? playerAssists : ""}
-                                      </span>
-                                    )}
-
-                                    {/* Fitness / Availability Status Badge */}
-                                    {token.status && token.status !== "normal" && (
-                                      <span
-                                        className={`w-3.5 h-3.5 rounded-full border border-black shadow-md flex items-center justify-center text-[7.5px] leading-none shrink-0 ${token.status === "excellent"
-                                          ? "bg-emerald-500 text-white font-bold"
-                                          : token.status === "tired"
-                                            ? "bg-amber-500 text-slate-950 font-bold"
-                                            : token.status === "injured"
-                                              ? "bg-rose-600 text-white font-bold"
-                                              : token.status === "suspended"
-                                                ? "bg-red-700 text-white font-bold"
-                                                : "bg-rose-500 text-white font-bold"
-                                          }`}
-                                        title={t.tactics.pitchBadges.fitnessTitle(token.status === "excellent"
-                                          ? t.tactics.pitchBadges.fitnessFit
-                                          : token.status === "tired"
-                                            ? t.tactics.pitchBadges.fitnessTired
-                                            : token.status === "injured"
-                                              ? t.tactics.pitchBadges.fitnessInjured
-                                              : token.status === "suspended"
-                                                ? t.tactics.pitchBadges.fitnessSuspended
-                                                : token.status
+                                    {/* LEFT BADGES (Set-Piece Roles: Captain, Corner, Free Kick) */}
+                                    {token.type === "player_a" && (
+                                      <div className="absolute -left-3.5 top-1/2 -translate-y-1/2 flex flex-col items-end justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
+                                        {/* Captain 👑 */}
+                                        {setPieceRoles.captain === token.name && (
+                                          <span
+                                            className="bg-amber-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 w-4 shadow-md border border-amber-200 flex items-center justify-center leading-none"
+                                            title={t.tactics.pitchBadges.captain}
+                                          >
+                                            👑
+                                          </span>
                                         )}
-                                      >
-                                        {token.status === "excellent"
-                                          ? "⚡"
-                                          : token.status === "tired"
-                                            ? "🥱"
-                                            : token.status === "injured"
-                                              ? "🩹"
-                                              : token.status === "suspended"
-                                                ? "🟥"
-                                                : "•"}
-                                      </span>
+
+                                        {/* Tireur de Corner 🚩 */}
+                                        {(setPieceRoles.cornerLeft === token.name || setPieceRoles.cornerRight === token.name) && (
+                                          <span
+                                            className="bg-rose-500 text-white rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-rose-300 flex items-center justify-center leading-none"
+                                            title={t.tactics.pitchBadges.cornerTaker}
+                                          >
+                                            {setPieceRoles.cornerLeft === token.name && setPieceRoles.cornerRight === token.name
+                                              ? "CK-2"
+                                              : setPieceRoles.cornerLeft === token.name
+                                                ? "CK-G"
+                                                : "CK-D"}
+                                          </span>
+                                        )}
+
+                                        {/* Coup Franc Direct / Excentré */}
+                                        {(setPieceRoles.directFreeKick === token.name || setPieceRoles.offCenterFKLeft === token.name || setPieceRoles.offCenterFKRight === token.name) && (
+                                          <span
+                                            className="bg-cyan-400 text-slate-950 rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
+                                            title={t.tactics.pitchBadges.freeKickTaker}
+                                          >
+                                            {setPieceRoles.directFreeKick === token.name
+                                              ? "CF"
+                                              : setPieceRoles.offCenterFKLeft === token.name
+                                                ? "CF-G"
+                                                : "CF-D"}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* RIGHT BADGES (Set-Piece Roles: Penalty Taker PK) */}
+                                    {token.type === "player_a" && (
+                                      <div className="absolute -right-3.5 top-1/2 -translate-y-1/2 flex flex-col items-start justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
+                                        {/* Tireur Penalty ⚽ (PK) */}
+                                        {setPieceRoles.penaltyTaker === token.name && (
+                                          <span
+                                            className="bg-[#00E599] text-[#0d1117] rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-emerald-300 flex items-center justify-center leading-none"
+                                            title={t.tactics.pitchBadges.penaltyTaker}
+                                          >
+                                            PK
+                                          </span>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
-
-                                  {/* LEFT BADGES (Set-Piece Roles: Captain, Corner, Free Kick) */}
-                                  {token.type === "player_a" && (
-                                    <div className="absolute -left-3.5 top-1/2 -translate-y-1/2 flex flex-col items-end justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
-                                      {/* Captain 👑 */}
-                                      {setPieceRoles.captain === token.name && (
-                                        <span
-                                          className="bg-amber-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 w-4 shadow-md border border-amber-200 flex items-center justify-center leading-none"
-                                          title={t.tactics.pitchBadges.captain}
-                                        >
-                                          👑
-                                        </span>
-                                      )}
-
-                                      {/* Tireur de Corner 🚩 */}
-                                      {(setPieceRoles.cornerLeft === token.name || setPieceRoles.cornerRight === token.name) && (
-                                        <span
-                                          className="bg-rose-500 text-white rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-rose-300 flex items-center justify-center leading-none"
-                                          title={t.tactics.pitchBadges.cornerTaker}
-                                        >
-                                          {setPieceRoles.cornerLeft === token.name && setPieceRoles.cornerRight === token.name
-                                            ? "CK-2"
-                                            : setPieceRoles.cornerLeft === token.name
-                                              ? "CK-G"
-                                              : "CK-D"}
-                                        </span>
-                                      )}
-
-                                      {/* Coup Franc Direct / Excentré */}
-                                      {(setPieceRoles.directFreeKick === token.name || setPieceRoles.offCenterFKLeft === token.name || setPieceRoles.offCenterFKRight === token.name) && (
-                                        <span
-                                          className="bg-cyan-400 text-slate-950 rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
-                                          title={t.tactics.pitchBadges.freeKickTaker}
-                                        >
-                                          {setPieceRoles.directFreeKick === token.name
-                                            ? "CF"
-                                            : setPieceRoles.offCenterFKLeft === token.name
-                                              ? "CF-G"
-                                              : "CF-D"}
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {/* RIGHT BADGES (Set-Piece Roles: Penalty Taker PK) */}
-                                  {token.type === "player_a" && (
-                                    <div className="absolute -right-3.5 top-1/2 -translate-y-1/2 flex flex-col items-start justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
-                                      {/* Tireur Penalty ⚽ (PK) */}
-                                      {setPieceRoles.penaltyTaker === token.name && (
-                                        <span
-                                          className="bg-[#00E599] text-[#0d1117] rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-emerald-300 flex items-center justify-center leading-none"
-                                          title={t.tactics.pitchBadges.penaltyTaker}
-                                        >
-                                          PK
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+                                )}
 
                                 {/* Name Label JUST BELOW the token pastille */}
                                 {token.type.startsWith("player") && showPlayerNames && (
@@ -10212,7 +10413,7 @@ export default function TacticsBoard({
             } ${isModernSleek
               ? "bg-white border-l border-slate-200/90 shadow-sm text-slate-800"
               : "bg-[#0d1117] border-l border-[#1f293d]"
-            } flex flex-col justify-between flex-shrink-0 fixed xl:relative inset-y-0 right-0 z-50 xl:z-auto shadow-2xl xl:shadow-none h-full max-w-[92vw] sm:max-w-[500px] ${isResizingRightSidebar ? "transition-none select-none" : "transition-[width,opacity] duration-300"
+            } flex flex-col justify-between flex-shrink-0 fixed xl:relative inset-y-0 right-0 z-50 xl:z-30 shadow-2xl xl:shadow-none h-full max-w-[92vw] sm:max-w-[500px] ${isResizingRightSidebar ? "transition-none select-none" : "transition-[width,opacity] duration-300"
             }`}
         >
           {/* Mobile / Tablet / iPad Drawer Header with Close Button */}
@@ -10267,10 +10468,13 @@ export default function TacticsBoard({
               )}
             </button>
 
-            {/* SCHÉMAS section (with save, share buttons) */}
-            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "bg-[#090d14] border border-[#1a2130]"} rounded-xl p-2`}>
-              <div className={`flex items-center justify-between mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}>
-                <p className={`text-[9px] ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f] font-black"} uppercase tracking-wider flex items-center gap-1`}>
+            {/* SCHÉMAS section (with save, share, and collapse buttons) */}
+            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "bg-[#090d14] border border-[#1a2130]"} rounded-xl p-2 shrink-0`}>
+              <div className={`flex items-center justify-between ${isSchemasSectionCollapsed ? "" : `mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}`}>
+                <p
+                  onClick={() => setIsSchemasSectionCollapsed(!isSchemasSectionCollapsed)}
+                  className={`text-[9.5px] ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f] font-black"} uppercase tracking-wider flex items-center gap-1 cursor-pointer select-none`}
+                >
                   <span>📖 SCHÉMAS</span>
                   <span className="text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
                     <Award className="w-2 h-2" /> PRO
@@ -10286,162 +10490,182 @@ export default function TacticsBoard({
                       }
                       handleOpenShareSchema();
                     }}
-                    className={`p-1 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-emerald-800" : "hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer`}
+                    className={`h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer shrink-0`}
                     title="Partager le schéma actuel (PRO)"
                   >
-                    <Share2 className="h-3 w-3" />
+                    <Share2 className="h-3 w-3 shrink-0" />
                   </button>
                   <button
                     onClick={handleTriggerSaveModal}
-                    className={`p-1 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-emerald-800 hover:text-emerald-900" : "hover:bg-[#1a2333] border-[#1a2130] text-[#00E599] hover:text-brand-cream"} border rounded transition cursor-pointer`}
+                    className={`h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-emerald-800 hover:text-emerald-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#00E599] hover:text-brand-cream"} border rounded transition cursor-pointer shrink-0`}
                     title="Enregistrer sous (PRO)"
                   >
-                    <Save className="h-3 w-3" />
+                    <Save className="h-3 w-3 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsSchemasSectionCollapsed(!isSchemasSectionCollapsed)}
+                    className={`h-6 px-1.5 rounded border text-[8.5px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
+                      ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900"
+                      : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-white"
+                      }`}
+                    title={isSchemasSectionCollapsed ? "Déplier la section Schémas" : "Réduire la section Schémas"}
+                    aria-label={isSchemasSectionCollapsed ? "Déplier la section Schémas" : "Réduire la section Schémas"}
+                  >
+                    <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isSchemasSectionCollapsed ? "-rotate-90" : ""}`} />
+                    <span>{isSchemasSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
                   </button>
                 </div>
               </div>
 
-              {/* En-tête Match actuel */}
-              <div className={`flex items-center justify-between px-2 py-1 mb-1.5 rounded-lg border text-[8.5px] font-black uppercase tracking-tight ${isModernSleek
-                ? "bg-slate-100 border-slate-200 text-slate-700"
-                : "bg-[#080d14] border-[#1f293d] text-slate-300"
-                }`}>
-                <span className="flex items-center gap-1 truncate">
-                  <span>⚽</span>
-                  <span className="truncate">{activeMatch ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}` : "Ce Match"}</span>
-                </span>
-                <span className={`px-1.5 py-0.2 rounded text-[7.5px] font-extrabold shrink-0 ${isModernSleek ? "bg-emerald-100 text-emerald-800" : "bg-[#00E599]/20 text-[#00E599]"
-                  }`}>
-                  {savedTactics.filter(sc => (sc.matchId || "match_1") === activeMatchId).length}
-                </span>
-              </div>
+              {!isSchemasSectionCollapsed && (
+                <>
+                  {/* En-tête Match actuel */}
+                  <div className={`flex items-center justify-between px-2 py-1 mb-1.5 rounded-lg border text-[8.5px] font-black uppercase tracking-tight ${isModernSleek
+                    ? "bg-slate-100 border-slate-200 text-slate-700"
+                    : "bg-[#080d14] border-[#1f293d] text-slate-300"
+                    }`}>
+                    <span className="flex items-center gap-1 truncate">
+                      <span>⚽</span>
+                      <span className="truncate">{activeMatch ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}` : "Ce Match"}</span>
+                    </span>
+                    <span className={`px-1.5 py-0.2 rounded text-[7.5px] font-extrabold shrink-0 ${isModernSleek ? "bg-emerald-100 text-emerald-800" : "bg-[#00E599]/20 text-[#00E599]"
+                      }`}>
+                      {savedTactics.filter(sc => (sc.matchId || "match_1") === activeMatchId).length}
+                    </span>
+                  </div>
 
-              {/* Saved Playbooks scroll list */}
-              <div className="space-y-1.5 max-h-56 overflow-y-auto scrollbar-thin">
-                {(() => {
-                  const matchSchemas = savedTactics.filter(sc => (sc.matchId || "match_1") === activeMatchId);
+                  {/* Saved Playbooks scroll list */}
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto scrollbar-thin">
+                    {(() => {
+                      const matchSchemas = savedTactics.filter(sc => (sc.matchId || "match_1") === activeMatchId);
 
-                  if (matchSchemas.length === 0) {
-                    return (
-                      <div className={`border border-dashed ${isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-[#62728f]"} rounded-lg p-3 text-center text-[8.5px] font-bold uppercase tracking-wider`}>
-                        AUCUN SCHÉMA POUR CE MATCH
-                      </div>
-                    );
-                  }
+                      if (matchSchemas.length === 0) {
+                        return (
+                          <div className={`border border-dashed ${isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-[#62728f]"} rounded-lg p-3 text-center text-[8.5px] font-bold uppercase tracking-wider`}>
+                            AUCUN SCHÉMA POUR CE MATCH
+                          </div>
+                        );
+                      }
 
-                  return matchSchemas.map((sc) => {
-                    const isAnim = Boolean(sc.isAnimation || (sc.keyframes && sc.keyframes.length > 1));
+                      return matchSchemas.map((sc) => {
+                        const isAnim = Boolean(sc.isAnimation || (sc.keyframes && sc.keyframes.length > 1));
 
-                    return (
-                      <div
-                        key={sc.id}
-                        onClick={() => handleLoadSchema(sc)}
-                        className={`group ${isAnim
-                          ? isModernSleek
-                            ? "bg-purple-50/90 border-purple-300 hover:border-purple-600 shadow-2xs"
-                            : "bg-gradient-to-r from-[#170b22] to-[#0f091c] border-purple-500/50 hover:border-purple-400 shadow-md shadow-purple-950/40"
-                          : isModernSleek
-                            ? "bg-white border-slate-200 hover:border-emerald-400 shadow-2xs"
-                            : "bg-[#0d1117] border-[#1a2130] hover:border-[#00e599]/30"
-                          } border p-1.5 rounded-lg flex items-center justify-between cursor-pointer transition gap-1.5`}
-                      >
-                        <div className="text-left min-w-0 flex-1">
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <p className={`text-[9.5px] font-black ${isAnim
-                              ? isModernSleek ? "text-purple-900 group-hover:text-purple-700" : "text-purple-200 group-hover:text-purple-300"
-                              : isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-[#00E599]"
-                              } truncate leading-tight transition flex items-center gap-1`}>
-                              {isAnim && <span className="text-[10px]">🎬</span>}
-                              <span>{sc.name}</span>
-                            </p>
+                        return (
+                          <div
+                            key={sc.id}
+                            onClick={() => handleLoadSchema(sc)}
+                            className={`group ${isAnim
+                              ? isModernSleek
+                                ? "bg-purple-50/90 border-purple-300 hover:border-purple-600 shadow-2xs"
+                                : "bg-gradient-to-r from-[#170b22] to-[#0f091c] border-purple-500/50 hover:border-purple-400 shadow-md shadow-purple-950/40"
+                              : isModernSleek
+                                ? "bg-white border-slate-200 hover:border-emerald-400 shadow-2xs"
+                                : "bg-[#0d1117] border-[#1a2130] hover:border-[#00e599]/30"
+                              } border p-1.5 rounded-lg flex items-center justify-between cursor-pointer transition gap-1.5`}
+                          >
+                            <div className="text-left min-w-0 flex-1">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <p className={`text-[9.5px] font-black ${isAnim
+                                  ? isModernSleek ? "text-purple-900 group-hover:text-purple-700" : "text-purple-200 group-hover:text-purple-300"
+                                  : isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-[#00E599]"
+                                  } truncate leading-tight transition flex items-center gap-1`}>
+                                  {isAnim && <span className="text-[10px]">🎬</span>}
+                                  <span>{sc.name}</span>
+                                </p>
 
-                            {isAnim && (
-                              <span className="text-[6.5px] bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black px-1.5 py-0.2 rounded-xs uppercase tracking-wider shrink-0 shadow-2xs">
-                                ANIMATION
+                                {isAnim && (
+                                  <span className="text-[6.5px] bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black px-1.5 py-0.2 rounded-xs uppercase tracking-wider shrink-0 shadow-2xs">
+                                    ANIMATION
+                                  </span>
+                                )}
+
+                              </div>
+                              <span className={`text-[7.5px] ${isAnim ? (isModernSleek ? "text-purple-600 font-extrabold" : "text-purple-300/80 font-bold") : (isModernSleek ? "text-slate-400 font-bold" : "text-[#62728f] font-bold")} block mt-0.5`}>
+                                {sc.date} {sc.keyframes ? `• ${sc.keyframes.length} étape${sc.keyframes.length > 1 ? "s" : ""}` : ""}
                               </span>
+                            </div>
+
+                            {confirmDeleteSchemaId === sc.id ? (
+                              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSchema(sc.id);
+                                    setConfirmDeleteSchemaId(null);
+                                  }}
+                                  className="px-1.5 py-0.5 bg-rose-600 hover:bg-rose-500 text-white font-black text-[8px] rounded transition shadow-md cursor-pointer"
+                                  title="Confirmer la suppression"
+                                >
+                                  Supprimer
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmDeleteSchemaId(null);
+                                  }}
+                                  className="px-1 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[8px] rounded transition cursor-pointer"
+                                  title="Annuler"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 shrink-0">
+
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    if (!isProOrAdmin) {
+                                      setSleekToastMessage("🔒 Le partage de schémas tactiques est réservé aux formules PRO & PRO+.");
+                                      setIsCheckoutOpen(true);
+                                      return;
+                                    }
+                                    handleOpenShareSchema(sc);
+                                  }}
+                                  className={`p-1 ${isModernSleek ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#131b29] hover:bg-[#1f2b40] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
+                                  title="Partager ce schéma (PRO)"
+                                >
+                                  <Share2 className="h-3 w-3" />
+                                </button>
+
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    setConfirmDeleteSchemaId(sc.id);
+                                  }}
+                                  className={`p-1 ${isModernSleek ? "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600 hover:text-rose-800" : "bg-rose-950/60 hover:bg-rose-900 border-rose-800/80 text-rose-300 hover:text-white"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
+                                  title="Supprimer ce schéma"
+                                >
+                                  <Trash className="h-3 w-3" />
+                                </button>
+                              </div>
                             )}
-
                           </div>
-                          <span className={`text-[7.5px] ${isAnim ? (isModernSleek ? "text-purple-600 font-extrabold" : "text-purple-300/80 font-bold") : (isModernSleek ? "text-slate-400 font-bold" : "text-[#62728f] font-bold")} block mt-0.5`}>
-                            {sc.date} {sc.keyframes ? `• ${sc.keyframes.length} étape${sc.keyframes.length > 1 ? "s" : ""}` : ""}
-                          </span>
-                        </div>
-
-                        {confirmDeleteSchemaId === sc.id ? (
-                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteSchema(sc.id);
-                                setConfirmDeleteSchemaId(null);
-                              }}
-                              className="px-1.5 py-0.5 bg-rose-600 hover:bg-rose-500 text-white font-black text-[8px] rounded transition shadow-md cursor-pointer"
-                              title="Confirmer la suppression"
-                            >
-                              Supprimer
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setConfirmDeleteSchemaId(null);
-                              }}
-                              className="px-1 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[8px] rounded transition cursor-pointer"
-                              title="Annuler"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 shrink-0">
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                if (!isProOrAdmin) {
-                                  setSleekToastMessage("🔒 Le partage de schémas tactiques est réservé aux formules PRO & PRO+.");
-                                  setIsCheckoutOpen(true);
-                                  return;
-                                }
-                                handleOpenShareSchema(sc);
-                              }}
-                              className={`p-1 ${isModernSleek ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#131b29] hover:bg-[#1f2b40] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
-                              title="Partager ce schéma (PRO)"
-                            >
-                              <Share2 className="h-3 w-3" />
-                            </button>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                setConfirmDeleteSchemaId(sc.id);
-                              }}
-                              className={`p-1 ${isModernSleek ? "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600 hover:text-rose-800" : "bg-rose-950/60 hover:bg-rose-900 border-rose-800/80 text-rose-300 hover:text-white"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
-                              title="Supprimer ce schéma"
-                            >
-                              <Trash className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* MATCH CARD (MATCH À VENIR / MATCH EN COURS) */}
-            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "bg-[#090d14] border border-[#1a2130]"} rounded-xl p-2`}>
-              <div className={`flex items-center justify-between mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}>
-                <div className="flex items-center gap-1.5">
+            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "bg-[#090d14] border border-[#1a2130]"} rounded-xl p-2.5 shrink-0`}>
+              <div className={`flex items-center justify-between ${isMatchSectionCollapsed ? "" : `mb-2 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1.5`}`}>
+                <div
+                  onClick={() => setIsMatchSectionCollapsed(!isMatchSectionCollapsed)}
+                  className="flex items-center gap-1.5 cursor-pointer select-none"
+                >
                   {isLiveMatchMode ? (
-                    <span className="text-rose-500 text-[9px] font-black flex items-center gap-1 uppercase">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
-                      🔴 LIVE
+                    <span className={`${isModernSleek ? "text-slate-900" : "text-slate-200"} text-[10px] font-black flex items-center gap-1.5 uppercase`}>
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                      MATCH EN DIRECT
                     </span>
                   ) : (
-                    <span className={`${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} text-[9px] font-black uppercase flex items-center gap-1`}>
+                    <span className={`${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} text-[9.5px] font-black uppercase flex items-center gap-1`}>
                       {getSportBallInfo(activeSport).emoji} MATCH
                     </span>
                   )}
@@ -10449,7 +10673,7 @@ export default function TacticsBoard({
                     <Award className="w-2 h-2" /> PRO
                   </span>
                 </div>
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-1">
                   <button
                     onClick={() => {
                       if (!isProOrAdmin) {
@@ -10459,441 +10683,510 @@ export default function TacticsBoard({
                       }
                       setIsMatchEditOpen(true);
                     }}
-                    className={`relative p-0.5 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-emerald-800" : "hover:bg-[#1a2333] border-[#1a2130] text-[#00E599]"} border rounded transition cursor-pointer`}
+                    className={`relative h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#00E599]"} border rounded transition cursor-pointer shrink-0`}
                     title="Gérer ou ajouter des matchs"
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-3 w-3 shrink-0" />
                   </button>
                   <button
                     onClick={handlePrevMatch}
                     disabled={filteredMatches.findIndex(m => m.id === activeMatchId) <= 0}
-                    className={`p-0.5 ${isModernSleek ? "text-slate-500 hover:text-slate-900" : "text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer`}
+                    className={`h-6 w-6 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
                     title="Match précédent"
                   >
-                    <ChevronLeft className="h-3 w-3" />
+                    <ChevronLeft className="h-3 w-3 shrink-0" />
                   </button>
                   <button
                     onClick={handleNextMatch}
                     disabled={filteredMatches.findIndex(m => m.id === activeMatchId) >= filteredMatches.length - 1 || filteredMatches.length === 0}
-                    className={`p-0.5 ${isModernSleek ? "text-slate-500 hover:text-slate-900" : "text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer`}
+                    className={`h-6 w-6 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
                     title="Match suivant"
                   >
-                    <ChevronRight className="h-3 w-3" />
+                    <ChevronRight className="h-3 w-3 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMatchSectionCollapsed(!isMatchSectionCollapsed)}
+                    className={`h-6 px-1.5 rounded border text-[8.5px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
+                      ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900"
+                      : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-white"
+                      }`}
+                    title={isMatchSectionCollapsed ? "Déplier la section Match" : "Réduire la section Match"}
+                    aria-label={isMatchSectionCollapsed ? "Déplier la section Match" : "Réduire la section Match"}
+                  >
+                    <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isMatchSectionCollapsed ? "-rotate-90" : ""}`} />
+                    <span>{isMatchSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Match details & Live controls card */}
-              <div
-                className={`${isModernSleek ? "bg-white border-slate-200 text-slate-800 shadow-2xs" : "bg-[#0d1117]"
-                  } border rounded-lg p-2 text-center relative overflow-hidden transition ${isLiveMatchMode
-                    ? "border-rose-600/70 shadow-lg shadow-rose-950/40 ring-1 ring-rose-500/30"
-                    : isModernSleek ? "hover:border-slate-300 group cursor-pointer" : "border-[#1f293d] group cursor-pointer hover:border-[#354563]"
-                  }`}
-              >
-                <div className="flex items-center justify-between gap-1">
-                  {/* Home Team */}
-                  <div className="flex flex-col items-center flex-1 min-w-0">
-                    <span className="text-[10px] mb-0.5">🛡️</span>
-                    <span className={`text-[9px] font-black ${isModernSleek ? "text-slate-900" : "text-white"} truncate max-w-[60px] uppercase`}>
-                      {activeMatch.homeTeam}
-                    </span>
-                    {isLiveMatchMode && (
-                      <div className="flex items-center gap-0.5 mt-1">
+              {!isMatchSectionCollapsed && (
+                /* Match details & Live controls card */
+                <div
+                  className={`${isModernSleek ? "bg-white border-slate-200 text-slate-800 shadow-2xs" : "bg-[#0d1117] border-[#1f293d] text-white"
+                    } border rounded-xl ${isLiveMatchMode ? "p-3" : "p-2.5"} text-center relative overflow-hidden transition ${!isLiveMatchMode
+                      ? isModernSleek ? "hover:border-slate-300 group cursor-pointer" : "group cursor-pointer hover:border-[#354563]"
+                      : ""
+                    }`}
+                >
+                  <div className="flex items-center justify-between gap-1.5">
+                    {/* Home Team */}
+                    <div className="flex flex-col items-center flex-1 min-w-0">
+                      <span className={`${isLiveMatchMode ? "text-xs" : "text-[10px]"} mb-0.5`}>🛡️</span>
+                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[9px] max-w-[65px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                        {activeMatch.homeTeam}
+                      </span>
+                      {isLiveMatchMode && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setHomeScore(Math.max(0, homeScore - 1)); }}
+                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title="Diminuer le score domicile"
+                          >
+                            -
+                          </button>
+                          <span className={`text-sm font-black px-0.5 font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{homeScore}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setHomeScore(homeScore + 1); }}
+                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title="Augmenter le score domicile"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Score or VS center column with MODE LIVE button */}
+                    <div className="flex flex-col items-center justify-center gap-1.5 shrink-0">
+                      {activeMatch?.isFinished || currentPeriod === "FIN" ? (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setHomeScore(Math.max(0, homeScore - 1)); }}
-                          className="w-4 h-4 rounded bg-[#102420] text-[#00E599] text-[9px] font-black hover:bg-[#1a3830] transition cursor-pointer flex items-center justify-center border border-[#00e599]/30"
-                          title="Diminuer le score domicile"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSleekToastMessage("🔒 Match terminé : Le mode Live est désactivé.");
+                            setTimeout(() => setSleekToastMessage(null), 3500);
+                            setIsMatchFinishedModalOpen(true);
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-[9px] font-black transition cursor-pointer flex items-center gap-1 border shadow-2xs ${isModernSleek
+                            ? "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                            : "bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800"
+                            }`}
+                          title="Match terminé - Cliquez pour ouvrir le bilan du match"
                         >
-                          -
+                          <span>🏁 MATCH TERMINÉ</span>
                         </button>
-                        <span className="text-xs font-black text-[#00E599] px-0.5 font-mono">{homeScore}</span>
+                      ) : (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setHomeScore(homeScore + 1); }}
-                          className="w-4 h-4 rounded bg-[#102420] text-[#00E599] text-[9px] font-black hover:bg-[#1a3830] transition cursor-pointer flex items-center justify-center border border-[#00e599]/30"
-                          title="Augmenter le score domicile"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isLiveMatchMode && !isProPlusOrAdmin) {
+                              setIsLiveMatchUpgradeModalOpen(true);
+                              return;
+                            }
+                            const nextState = !isLiveMatchMode;
+                            setIsLiveMatchMode(nextState);
+                            if (nextState) {
+                              setIsLiveTimerRunning(true);
+                              setIsSchemasSectionCollapsed(true);
+                              setIsNotesSectionCollapsed(true);
+                              setIsMatchSectionCollapsed(false);
+                            } else {
+                              setIsLiveTimerRunning(false);
+                              setLiveActionToken(null);
+                              setIsSchemasSectionCollapsed(false);
+                              setIsNotesSectionCollapsed(false);
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-[9px] font-black transition cursor-pointer flex items-center gap-1.5 border shadow-2xs ${isLiveMatchMode
+                            ? isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-white border-[#26354d]"
+                            : isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#131d2b] hover:bg-[#1a283b] text-slate-200 border-[#26354d]"
+                            }`}
+                          title={isLiveMatchMode ? "Désactiver le mode Live Match" : (!isProPlusOrAdmin ? "Mode Live Match (Exclusivité PRO+)" : "Lancer le mode Live Match")}
                         >
-                          +
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                          <span>{isLiveMatchMode ? "LIVE" : "MODE LIVE"}</span>
+                          {!isProPlusOrAdmin && (
+                            <span className="text-[7px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm ml-0.5">PRO+</span>
+                          )}
                         </button>
-                      </div>
-                    )}
+                      )}
+
+                      {isLiveMatchMode ? (
+                        <div className="text-center">
+                          <div className={`text-lg font-black font-mono px-3 py-1 rounded-xl border ${isModernSleek
+                            ? "bg-slate-50 text-slate-900 border-slate-200 shadow-2xs"
+                            : "bg-[#111827] text-white border-[#26354d]"
+                            }`}>
+                            {homeScore} - {awayScore}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className={`text-[9px] ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} font-black uppercase`}>VS</span>
+                      )}
+                    </div>
+
+                    {/* Away Team */}
+                    <div className="flex flex-col items-center flex-1 min-w-0">
+                      <span className={`${isLiveMatchMode ? "text-xs" : "text-[10px]"} mb-0.5`}>🛡️</span>
+                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[9px] max-w-[65px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                        {activeMatch.awayTeam}
+                      </span>
+                      {isLiveMatchMode && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setAwayScore(Math.max(0, awayScore - 1)); }}
+                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title="Diminuer le score extérieur"
+                          >
+                            -
+                          </button>
+                          <span className={`text-sm font-black px-0.5 font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{awayScore}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setAwayScore(awayScore + 1); }}
+                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title="Augmenter le score extérieur"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Score or VS center column with MODE LIVE button */}
-                  <div className="flex flex-col items-center justify-center gap-1 shrink-0">
-                    {activeMatch?.isFinished || currentPeriod === "FIN" ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSleekToastMessage("🔒 Match terminé : Le mode Live est désactivé.");
-                          setTimeout(() => setSleekToastMessage(null), 3500);
-                          setIsMatchFinishedModalOpen(true);
-                        }}
-                        className={`px-2 py-0.5 rounded-full text-[8px] font-black transition cursor-pointer flex items-center gap-1 border shadow-sm ${isModernSleek
-                          ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
-                          : "bg-slate-900/90 text-emerald-400 border-emerald-500/50 hover:bg-slate-800"
-                          }`}
-                        title="Match terminé - Cliquez pour ouvrir le bilan du match"
-                      >
-                        <span>🏁 MATCH TERMINÉ</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!isLiveMatchMode && !isProPlusOrAdmin) {
-                            setIsLiveMatchUpgradeModalOpen(true);
-                            return;
-                          }
-                          const nextState = !isLiveMatchMode;
-                          setIsLiveMatchMode(nextState);
-                          if (nextState) {
-                            setIsLiveTimerRunning(true);
-                          } else {
-                            setIsLiveTimerRunning(false);
-                            setLiveActionToken(null);
-                          }
-                        }}
-                        className={`px-1.5 py-0.5 rounded-full text-[8px] font-black transition cursor-pointer flex items-center gap-0.5 border shadow-sm ${isLiveMatchMode
-                          ? "bg-rose-600 hover:bg-rose-700 text-white border-rose-400 shadow-rose-900/50"
-                          : isModernSleek
-                            ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300"
-                            : "bg-[#131d2b] hover:bg-[#1a283b] text-[#00E599] border-[#00E599]/40 hover:border-[#00E599]"
-                          }`}
-                        title={isLiveMatchMode ? "Désactiver le mode Live Match" : (!isProPlusOrAdmin ? "Mode Live Match (Exclusivité PRO+)" : "Lancer le mode Live Match")}
-                      >
-                        <span className={isLiveMatchMode ? "animate-pulse text-rose-200 text-[9px]" : "text-[9px]"}>🔴</span>
-                        <span>{isLiveMatchMode ? "LIVE" : "MODE LIVE"}</span>
-                        {!isProPlusOrAdmin && (
-                          <span className="text-[7px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm ml-0.5">PRO+</span>
-                        )}
-                      </button>
-                    )}
-
-                    {isLiveMatchMode ? (
-                      <div className="text-center">
-                        <div className="text-sm font-black text-white font-mono bg-[#111827] px-2 py-0.5 rounded-md border border-rose-500/40">
-                          {homeScore} - {awayScore}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className={`text-[9px] ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} font-black uppercase`}>VS</span>
-                    )}
-                  </div>
-
-                  {/* Away Team */}
-                  <div className="flex flex-col items-center flex-1 min-w-0">
-                    <span className="text-[10px] mb-0.5">🛡️</span>
-                    <span className={`text-[9px] font-black ${isModernSleek ? "text-slate-900" : "text-white"} truncate max-w-[60px] uppercase`}>
-                      {activeMatch.awayTeam}
-                    </span>
-                    {isLiveMatchMode && (
-                      <div className="flex items-center gap-0.5 mt-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setAwayScore(Math.max(0, awayScore - 1)); }}
-                          className="w-4 h-4 rounded bg-rose-950/80 text-rose-300 text-[9px] font-black hover:bg-rose-900 transition cursor-pointer flex items-center justify-center border border-rose-500/30"
-                          title="Diminuer le score extérieur"
-                        >
-                          -
-                        </button>
-                        <span className="text-xs font-black text-rose-400 px-0.5 font-mono">{awayScore}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setAwayScore(awayScore + 1); }}
-                          className="w-4 h-4 rounded bg-rose-950/80 text-rose-300 text-[9px] font-black hover:bg-rose-900 transition cursor-pointer flex items-center justify-center border border-rose-500/30"
-                          title="Augmenter le score extérieur"
-                        >
-                          +
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Chrono, Period & Events section */}
-                {isLiveMatchMode ? (
-                  <div className="mt-2 pt-1.5 border-t border-rose-900/40 flex flex-col items-center gap-1.5">
-                    {/* Boutons rapides de points en mode BASKETBALL (3 points +3, 2 points +2, Lancer franc +1) */}
-                    {activeSport === "basketball" && (
-                      <div className="w-full bg-[#080d14] p-1.5 rounded-lg border border-emerald-500/30 space-y-1.5">
-                        <div className="text-[7.5px] font-black uppercase tracking-wider text-[#00E599] text-center">
-                          🏀 Noter les points ({activeMatch.homeTeam})
-                        </div>
-                        <div className="grid grid-cols-3 gap-1 w-full">
-                          {getSportScoreActions("basketball").map((action) => (
-                            <button
-                              key={`quick-home-${action.id}`}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const targetToken =
-                                  (liveActionToken && liveActionToken.type === "player_a" ? liveActionToken : null) ||
-                                  currentTokens.find((tk) => tk.type === "player_a") || {
-                                    id: "home_team_basket",
-                                    type: "player_a" as const,
-                                    x: 50,
-                                    y: 50,
-                                    name: activeMatch.homeTeam,
-                                    number: "",
-                                  };
-                                handleRecordScore(targetToken, action);
-                              }}
-                              className="py-1 px-1 rounded bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500/60 text-emerald-200 hover:text-white text-[8px] font-black transition cursor-pointer flex flex-col items-center justify-center leading-tight shadow-xs"
-                              title={`Ajouter ${action.label} (+${action.points} sur le score)`}
-                            >
-                              <span>{action.icon} {action.label}</span>
-                              <span className="text-[#00E599] text-[7.5px]">+{action.points}</span>
-                            </button>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between gap-1 pt-1 border-t border-[#1f293d]">
-                          <span className="text-[7px] font-bold text-rose-400 uppercase truncate max-w-[75px]">
-                            Adv. ({activeMatch.awayTeam}) :
-                          </span>
-                          <div className="flex items-center gap-1">
-                            {getSportScoreActions("basketball").map((action) => (
+                  {/* Chrono, Period & Events section */}
+                  {isLiveMatchMode ? (
+                    <div className={`mt-3 pt-2.5 border-t flex flex-col items-center gap-2 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+                      {/* Boutons rapides de points en mode BASKETBALL et RUGBY */}
+                      {(activeSport === "basketball" || activeSport === "rugby") && (
+                        <div className={`w-full p-2 rounded-xl border space-y-2 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
+                          <div className={`text-[9px] font-extrabold uppercase tracking-wider text-center ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                            {getSportBallInfo(activeSport).emoji} Noter les points ({activeMatch.homeTeam})
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5 w-full">
+                            {getSportScoreActions(activeSport).map((action) => (
                               <button
-                                key={`quick-away-${action.id}`}
+                                key={`quick-home-${action.id}`}
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const targetToken =
-                                    (liveActionToken && liveActionToken.type === "player_b" ? liveActionToken : null) ||
-                                    currentTokens.find((tk) => tk.type === "player_b") || {
-                                      id: "away_team_basket",
-                                      type: "player_b" as const,
+                                  const targetToken: Token =
+                                    (liveActionToken && liveActionToken.type === "player_a" ? liveActionToken : null) ||
+                                    currentTokens.find((tk) => tk.type === "player_a") || {
+                                      id: `home_team_${activeSport}`,
+                                      type: "player_a",
                                       x: 50,
                                       y: 50,
-                                      name: activeMatch.awayTeam,
-                                      number: "",
+                                      name: activeMatch.homeTeam,
+                                      role: "Équipe",
                                     };
                                   handleRecordScore(targetToken, action);
                                 }}
-                                className="px-1.5 py-0.5 rounded bg-rose-950/80 hover:bg-rose-800 border border-rose-500/40 text-rose-200 hover:text-white text-[7.5px] font-black transition cursor-pointer"
-                                title={`Adversaire : ${action.label} (+${action.points} sur le score)`}
+                                className={`py-1.5 px-1 rounded-lg border text-[9.5px] font-bold transition cursor-pointer flex flex-col items-center justify-center leading-snug shadow-2xs ${isModernSleek
+                                  ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-800"
+                                  : "bg-[#111827] hover:bg-[#1a2333] border-[#26354d] text-slate-200"
+                                  }`}
+                                title={`Ajouter ${action.label} (+${action.points} sur le score)`}
                               >
-                                +{action.points}
+                                <span>{action.icon} {action.label}</span>
+                                <span className={`text-[9px] font-black ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>+{action.points}</span>
                               </button>
                             ))}
                           </div>
+                          <div className={`flex items-center justify-between gap-1.5 pt-1.5 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+                            <span className={`text-[8.5px] font-bold uppercase truncate max-w-[90px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                              Adv. ({activeMatch.awayTeam}) :
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {getSportScoreActions(activeSport).map((action) => (
+                                <button
+                                  key={`quick-away-${action.id}`}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const targetToken: Token =
+                                      (liveActionToken && liveActionToken.type === "player_b" ? liveActionToken : null) ||
+                                      currentTokens.find((tk) => tk.type === "player_b") || {
+                                        id: `away_team_${activeSport}`,
+                                        type: "player_b",
+                                        x: 50,
+                                        y: 50,
+                                        name: activeMatch.awayTeam,
+                                        role: "Équipe",
+                                      };
+                                    handleRecordScore(targetToken, action);
+                                  }}
+                                  className={`px-2 py-1 rounded-md border text-[9px] font-bold transition cursor-pointer ${isModernSleek
+                                    ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700"
+                                    : "bg-[#111827] hover:bg-[#1a2333] border-[#26354d] text-slate-300"
+                                    }`}
+                                  title={`Adversaire : ${action.label} (+${action.points} sur le score)`}
+                                >
+                                  +{action.points}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Period Selector Buttons (1MT | PAUSE | 2MT | FIN) */}
-                    <div className="flex items-center justify-between gap-1 w-full bg-[#080d14] p-1 rounded-lg border border-[#1f293d]">
-                      {(["1MT", "MI-TEMPS", "2MT", "FIN"] as const).map((periodKey) => (
-                        <button
-                          key={periodKey}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (periodKey === "FIN") {
-                              handleFinishLiveMatch();
-                            } else {
-                              setCurrentPeriod(periodKey);
-                              if (periodKey === "MI-TEMPS") {
-                                setIsLiveTimerRunning(false);
-                              } else if (!isLiveTimerRunning) {
-                                setIsLiveTimerRunning(true);
-                              }
-                            }
-                          }}
-                          className={`flex-1 py-1 rounded text-[7.5px] font-black transition cursor-pointer text-center uppercase tracking-tight ${currentPeriod === periodKey
-                            ? periodKey === "FIN"
-                              ? "bg-rose-600 text-white shadow-sm"
-                              : periodKey === "MI-TEMPS"
-                                ? "bg-amber-400 text-slate-950 font-extrabold"
-                                : "bg-[#00E599] text-slate-950 font-extrabold"
-                            : "bg-[#111827] text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                            }`}
-                        >
-                          {periodKey === "MI-TEMPS" ? "PAUSE" : periodKey}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Timer Bar */}
-                    <div className="flex items-center justify-between gap-1 w-full bg-black/60 p-1.5 rounded-lg border border-rose-900/40">
-                      <span className="text-xs font-mono font-black text-amber-400 bg-black px-1.5 py-0.5 rounded border border-amber-500/30">
-                        ⏱️ {formatLiveTime(liveTimerSeconds)}
-                      </span>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setIsLiveTimerRunning(!isLiveTimerRunning); }}
-                          className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase transition cursor-pointer ${isLiveTimerRunning
-                            ? "bg-amber-500 hover:bg-amber-400 text-slate-950"
-                            : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                            }`}
-                        >
-                          {isLiveTimerRunning ? "PAUSE" : "START"}
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setIsLiveTimerRunning(false); setLiveTimerSeconds(0); }}
-                          className="px-1.5 py-0.5 rounded bg-[#1f293d] hover:bg-[#2e3d5b] text-slate-300 text-[8px] font-black transition cursor-pointer"
-                          title="Réinitialiser le chrono"
-                        >
-                          🔄
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Manual Match Finish Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFinishLiveMatch();
-                      }}
-                      className="w-full py-1.5 px-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition cursor-pointer border border-rose-400/50 shadow-md shadow-rose-950/50 flex items-center justify-center gap-1"
-                      title="Enregistrer les résultats et terminer officiellement le match"
-                    >
-                      <span>🏁 TERMINER LE MATCH</span>
-                    </button>
-
-                    {/* Match Events Feed Log */}
-                    {matchEvents.filter((evt) => evt.type !== "assist").length > 0 && (
-                      <div className="mt-1 w-full bg-black/60 p-1.5 rounded-lg border border-[#1f293d] max-h-32 overflow-y-auto text-left space-y-1 scrollbar-thin">
-                        <div className="text-[7.5px] text-[#00E599] font-black uppercase tracking-wider flex items-center justify-between border-b border-[#1f293d] pb-0.5">
-                          <span>ÉVÉNEMENTS ({matchEvents.filter((evt) => evt.type !== "assist").length}) :</span>
+                      {/* Period Selector Buttons (1MT | PAUSE | 2MT | FIN) */}
+                      <div className={`flex items-center justify-between gap-1 w-full p-1 rounded-xl border ${isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#080d14] border-[#1f293d]"}`}>
+                        {(["1MT", "MI-TEMPS", "2MT", "FIN"] as const).map((periodKey) => (
                           <button
-                            onClick={() => {
-                              if (confirm("Effacer tout l'historique des événements de ce match ?")) {
-                                setMatchEvents([]);
+                            key={periodKey}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (periodKey === "FIN") {
+                                handleFinishLiveMatch();
+                              } else {
+                                setCurrentPeriod(periodKey);
+                                if (periodKey === "MI-TEMPS") {
+                                  setIsLiveTimerRunning(false);
+                                } else if (!isLiveTimerRunning) {
+                                  setIsLiveTimerRunning(true);
+                                }
                               }
                             }}
-                            className="text-[7px] text-slate-500 hover:text-rose-400 font-bold transition cursor-pointer"
+                            className={`flex-1 py-1.5 rounded-lg text-[9.5px] font-black transition cursor-pointer text-center uppercase tracking-tight ${currentPeriod === periodKey
+                              ? isModernSleek
+                                ? "bg-white text-slate-900 border border-slate-300 shadow-2xs"
+                                : "bg-[#1e293b] text-white border border-slate-600"
+                              : isModernSleek
+                                ? "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                                : "bg-[#111827] text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                              }`}
                           >
-                            Effacer
+                            {periodKey === "MI-TEMPS" ? "PAUSE" : periodKey}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Timer Bar */}
+                      <div className={`flex items-center justify-between gap-1.5 w-full p-2 rounded-xl border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
+                        <span className={`text-sm font-mono font-black px-2.5 py-1 rounded-lg border ${isModernSleek ? "bg-white text-slate-900 border-slate-200 shadow-2xs" : "bg-[#111827] text-slate-200 border-[#26354d]"}`}>
+                          ⏱️ {formatLiveTime(liveTimerSeconds)}
+                        </span>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setIsLiveTimerRunning(!isLiveTimerRunning); }}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition cursor-pointer border ${isModernSleek
+                              ? "bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-2xs"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-200 border-[#26354d]"
+                              }`}
+                          >
+                            {isLiveTimerRunning ? "PAUSE" : "START"}
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setIsLiveTimerRunning(false); setLiveTimerSeconds(0); }}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition cursor-pointer border ${isModernSleek
+                              ? "bg-white hover:bg-slate-100 text-slate-600 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title="Réinitialiser le chrono"
+                          >
+                            🔄
                           </button>
                         </div>
-                        {matchEvents
-                          .filter((evt) => evt.type !== "assist")
-                          .map((evt) => (
-                            <div key={evt.id} className="text-[8.5px] font-bold flex items-center justify-between text-slate-200 hover:bg-[#131b29] p-0.5 rounded transition group">
-                              <span className="flex items-center gap-1 truncate min-w-0">
-                                <span className="text-[10px]">
-                                  {evt.type === "goal" 
-                                    ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽")) 
-                                    : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}
-                                </span>
-                                <span className="text-white font-extrabold truncate max-w-[130px]">
-                                  {evt.player}
-                                  {evt.type === "goal" ? (
-                                    <span className="text-[#00E599] font-bold text-[8px] ml-0.5">
-                                      ({evt.points && evt.points > 1 ? `+${evt.points} pts` : "1 pt"}{evt.assister ? ` • ${evt.assister}` : ""})
-                                    </span>
-                                  ) : null}
-                                </span>
-                              </span>
-                              <div className="flex items-center gap-0.5 shrink-0">
-                                <span className="text-[7.5px] text-amber-400 font-mono font-black">
-                                  {evt.period ? `${evt.period} ${evt.time}` : evt.time}
-                                </span>
-                                <button
-                                  onClick={() => handleDeleteMatchEvent(evt.id)}
-                                  className="text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition px-0.5 cursor-pointer font-black text-[8px]"
-                                  title="Supprimer cet événement"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            </div>
-                          ))}
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => {
-                      if (!isProOrAdmin) {
-                        setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
-                        setIsCheckoutOpen(true);
-                        return;
-                      }
-                      setIsMatchEditOpen(true);
-                    }}
-                    className={`mt-1.5 pt-1 border-t ${isModernSleek ? "border-slate-100" : "border-[#1f293d]/60"} cursor-pointer text-center`}
-                  >
-                    <div className="flex items-center justify-center gap-1 mb-0.5">
-                      <p className={`text-[8.5px] font-black ${isModernSleek ? "text-slate-700" : "text-slate-300"} uppercase tracking-wider truncate`}>
-                        {activeMatch.competition}
-                      </p>
-                      {activeMatch.isFinished && (
-                        <span className="text-[7px] bg-emerald-500 text-slate-950 font-black px-1 rounded uppercase">
-                          TERMINÉ
-                        </span>
+
+                      {/* Manual Match Finish Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFinishLiveMatch();
+                        }}
+                        className={`w-full py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer border flex items-center justify-center gap-1.5 shadow-2xs ${isModernSleek
+                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                          : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-200 border-[#26354d]"
+                          }`}
+                        title="Enregistrer les résultats et terminer officiellement le match"
+                      >
+                        <span>🏁 TERMINER LE MATCH</span>
+                      </button>
+
+                      {/* Match Events Feed Log */}
+                      {matchEvents.filter((evt) => evt.type !== "assist").length > 0 && (
+                        <div className={`mt-1 w-full p-2 rounded-xl border max-h-56 overflow-y-auto text-left space-y-1.5 scrollbar-thin ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
+                          <div className={`text-[9px] font-black uppercase tracking-wider flex items-center justify-between border-b pb-1 ${isModernSleek ? "text-slate-600 border-slate-200" : "text-slate-400 border-[#1f293d]"}`}>
+                            <span>ÉVÉNEMENTS ({matchEvents.filter((evt) => evt.type !== "assist").length}) :</span>
+                            <button
+                              onClick={() => {
+                                if (confirm("Effacer tout l'historique des événements de ce match ?")) {
+                                  setMatchEvents([]);
+                                }
+                              }}
+                              className={`text-[8.5px] font-bold transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
+                            >
+                              Effacer
+                            </button>
+                          </div>
+                          {matchEvents
+                            .filter((evt) => evt.type !== "assist")
+                            .map((evt) => (
+                              <div key={evt.id} className={`text-[10px] font-bold flex items-center justify-between p-1.5 rounded-lg transition group ${isModernSleek ? "text-slate-700 bg-white border border-slate-200/80 hover:bg-slate-100/70" : "text-slate-200 hover:bg-[#131b29]"}`}>
+                                <span className="flex items-center gap-1.5 truncate min-w-0">
+                                  <span className="text-xs">
+                                    {evt.type === "goal"
+                                      ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"))
+                                      : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}
+                                  </span>
+                                  <span className={`font-extrabold truncate max-w-[140px] ${isModernSleek ? "text-slate-800" : "text-white"}`}>
+                                    {evt.player}
+                                    {evt.type === "goal" ? (
+                                      <span className={`font-bold text-[9.5px] ml-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                                        ({evt.points && evt.points > 1 ? `+${evt.points} pts` : "1 pt"}{evt.assister ? ` • ${evt.assister}` : ""})
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className={`text-[9px] font-mono font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                                    {evt.period ? `${evt.period} ${evt.time}` : evt.time}
+                                  </span>
+                                  <button
+                                    onClick={() => handleDeleteMatchEvent(evt.id)}
+                                    className={`opacity-0 group-hover:opacity-100 transition px-1 cursor-pointer font-black text-[9.5px] ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
+                                    title="Supprimer cet événement"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
                       )}
                     </div>
-                    {activeMatch.score && (
-                      <p className="text-xs font-mono font-black text-[#00E599]">
-                        Score : {activeMatch.score}
+                  ) : (
+                    <div
+                      onClick={() => {
+                        if (!isProOrAdmin) {
+                          setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
+                          setIsCheckoutOpen(true);
+                          return;
+                        }
+                        setIsMatchEditOpen(true);
+                      }}
+                      className={`mt-1.5 pt-1 border-t ${isModernSleek ? "border-slate-100" : "border-[#1f293d]/60"} cursor-pointer text-center`}
+                    >
+                      <div className="flex items-center justify-center gap-1 mb-0.5">
+                        <p className={`text-[8.5px] font-black ${isModernSleek ? "text-slate-700" : "text-slate-300"} uppercase tracking-wider truncate`}>
+                          {activeMatch.competition}
+                        </p>
+                        {activeMatch.isFinished && (
+                          <span className="text-[7px] bg-emerald-500 text-slate-950 font-black px-1 rounded uppercase">
+                            TERMINÉ
+                          </span>
+                        )}
+                      </div>
+                      {activeMatch.score && (
+                        <p className="text-xs font-mono font-black text-[#00E599]">
+                          Score : {activeMatch.score}
+                        </p>
+                      )}
+                      <p className={`text-[8.5px] font-bold ${isModernSleek ? "text-emerald-800" : "text-slate-400"} mt-0.5`}>
+                        {activeMatch.dateTime}
                       </p>
-                    )}
-                    <p className={`text-[8.5px] font-bold ${isModernSleek ? "text-emerald-800" : "text-slate-400"} mt-0.5`}>
-                      {activeMatch.dateTime}
-                    </p>
-                  </div>
-                )}
-              </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* NOTES TACTIQUES dictation & editing container */}
-            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "bg-[#090d14] border border-[#1a2130]"} rounded-xl p-3 flex-1 flex flex-col min-h-[180px]`}>
-              <div className={`flex items-center justify-between mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}>
-                <p className={`text-[9px] ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} font-black uppercase tracking-wider flex items-center gap-1`}>
+            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "bg-[#090d14] border border-[#1a2130]"} rounded-xl ${isNotesSectionCollapsed ? "p-2 shrink-0" : "p-3 flex-1 flex flex-col min-h-[180px]"}`}>
+              <div className={`flex items-center justify-between ${isNotesSectionCollapsed ? "" : `mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}`}>
+                <p
+                  onClick={() => setIsNotesSectionCollapsed(!isNotesSectionCollapsed)}
+                  className={`text-[9.5px] ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer select-none`}
+                >
                   <span>📝 NOTES</span>
                   <span className="text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
                     <Award className="w-2 h-2" /> PRO
                   </span>
                 </p>
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-1">
                   <button
                     onClick={handleToggleMicRecording}
-                    className={`relative p-0.5 border rounded transition cursor-pointer ${isRecordingVoice
+                    className={`relative h-6 w-6 flex items-center justify-center border rounded transition cursor-pointer shrink-0 ${isRecordingVoice
                       ? "bg-rose-600 border-rose-500 text-white animate-pulse"
                       : isModernSleek
-                        ? "hover:bg-slate-200 border-slate-200 text-amber-600 hover:text-amber-800"
-                        : "hover:bg-[#1a2333] border-[#1a2130] text-amber-500 hover:text-brand-cream"
+                        ? "bg-white hover:bg-slate-200 border-slate-200 text-amber-600 hover:text-amber-800"
+                        : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-amber-500 hover:text-brand-cream"
                       }`}
                     title={isRecordingVoice ? "Arrêter l'enregistrement" : "Enregistrer une note vocale"}
                   >
-                    <Mic className="h-3 w-3" />
+                    <Mic className="h-3 w-3 shrink-0" />
                   </button>
                   <button
                     onClick={() => setIsNotesExpanded(true)}
-                    className={`p-0.5 ${isModernSleek ? "hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} border rounded transition`}
+                    className={`h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} border rounded transition cursor-pointer shrink-0`}
                     title="Agrandir les notes"
                   >
-                    <Maximize2 className="h-3 w-3" />
+                    <Maximize2 className="h-3 w-3 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsNotesSectionCollapsed(!isNotesSectionCollapsed)}
+                    className={`h-6 px-1.5 rounded border text-[8.5px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
+                      ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900"
+                      : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-white"
+                      }`}
+                    title={isNotesSectionCollapsed ? "Déplier la section Notes" : "Réduire la section Notes"}
+                    aria-label={isNotesSectionCollapsed ? "Déplier la section Notes" : "Réduire la section Notes"}
+                  >
+                    <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isNotesSectionCollapsed ? "-rotate-90" : ""}`} />
+                    <span>{isNotesSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
                   </button>
                 </div>
               </div>
 
-              {isRecordingVoice && (
-                <div className="mb-1.5 bg-rose-950/30 border border-rose-500/50 rounded-lg p-1 flex items-center justify-between text-[8px] text-rose-300 shadow-sm animate-pulse">
-                  <span className="flex items-center gap-1 font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
-                    🎤 Dictée vocale...
-                  </span>
-                  <span className="font-extrabold underline text-rose-200 cursor-pointer" onClick={handleToggleMicRecording}>Arrêter</span>
-                </div>
-              )}
+              {!isNotesSectionCollapsed && (
+                <>
+                  {isRecordingVoice && (
+                    <div className="mb-1.5 bg-rose-950/30 border border-rose-500/50 rounded-lg p-1 flex items-center justify-between text-[8px] text-rose-300 shadow-sm animate-pulse">
+                      <span className="flex items-center gap-1 font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                        🎤 Dictée vocale...
+                      </span>
+                      <span className="font-extrabold underline text-rose-200 cursor-pointer" onClick={handleToggleMicRecording}>Arrêter</span>
+                    </div>
+                  )}
 
-              {speechError && (
-                <div className="mb-1.5 bg-rose-950/50 border border-rose-500/60 rounded-lg p-1 text-[8px] text-rose-200 flex items-center justify-between font-bold">
-                  <span>⚠️ {speechError}</span>
-                  <button onClick={() => setSpeechError(null)} className="text-slate-400 hover:text-white font-bold ml-1">✕</button>
-                </div>
-              )}
+                  {speechError && (
+                    <div className="mb-1.5 bg-rose-950/50 border border-rose-500/60 rounded-lg p-1 text-[8px] text-rose-200 flex items-center justify-between font-bold">
+                      <span>⚠️ {speechError}</span>
+                      <button onClick={() => setSpeechError(null)} className="text-slate-400 hover:text-white font-bold ml-1">✕</button>
+                    </div>
+                  )}
 
-              <textarea
-                value={tacticalNotes}
-                onChange={(e) => setTacticalNotes(e.target.value)}
-                placeholder="STRATÉGIE ET NOTES DU MATCH..."
-                className={`w-full flex-1 min-h-[110px] ${isModernSleek
-                  ? "bg-white border-slate-300 focus:border-emerald-500 text-slate-900 placeholder-slate-400 shadow-2xs"
-                  : "bg-[#0d1117] border-[#1f293d] focus:border-[#354563] text-slate-200 placeholder-[#62728f]"
-                  } border rounded-lg p-2.5 text-xs focus:outline-none resize-none font-medium leading-relaxed scrollbar-thin transition`}
-              />
+                  <textarea
+                    value={tacticalNotes}
+                    onChange={(e) => setTacticalNotes(e.target.value)}
+                    placeholder="STRATÉGIE ET NOTES DU MATCH..."
+                    className={`w-full flex-1 min-h-[110px] ${isModernSleek
+                      ? "bg-white border-slate-300 focus:border-emerald-500 text-slate-900 placeholder-slate-400 shadow-2xs"
+                      : "bg-[#0d1117] border-[#1f293d] focus:border-[#354563] text-slate-200 placeholder-[#62728f]"
+                      } border rounded-lg p-2.5 text-xs focus:outline-none resize-none font-medium leading-relaxed scrollbar-thin transition`}
+                  />
+                </>
+              )}
             </div>
 
           </div>
@@ -10945,8 +11238,9 @@ export default function TacticsBoard({
               </div>
               <button
                 onClick={() => setIsNotesExpanded(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                   }`}
+                title="Fermer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -10963,6 +11257,18 @@ export default function TacticsBoard({
                   }`}
               />
             </div>
+
+            <div className={`px-5 sm:px-6 py-3.5 border-t flex items-center justify-end relative z-10 shrink-0 ${isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
+              <button
+                onClick={() => setIsNotesExpanded(false)}
+                className={`h-10 px-5 rounded-xl font-bold text-xs inline-flex items-center justify-center whitespace-nowrap transition cursor-pointer border ${isModernSleek
+                  ? "bg-white hover:bg-slate-200 text-slate-700 border-slate-300 shadow-xs"
+                  : "bg-[#162235] hover:bg-[#233350] text-slate-300 border-[#2e3d5b]"
+                  }`}
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -10973,18 +11279,14 @@ export default function TacticsBoard({
       {pendingGoalToken && (() => {
         const currentAction = pendingScoreAction || getSportScoreActions(activeSport)[0];
         return (
-          <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-            <div className={`max-w-md w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto flex flex-col border overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
+          <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-sm overflow-y-auto">
+            <div className={`max-w-md w-full rounded-2xl sm:rounded-3xl shadow-xl relative my-auto flex flex-col border overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
               }`}>
-              {/* Ambient background glow accents */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
               {/* Header bar */}
-              <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
+              <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
                 }`}>
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl border ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
+                  <div className={`p-2 rounded-xl border ${isModernSleek ? "bg-white border-slate-200 text-slate-700 shadow-sm" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
                     }`}>
                     <span className="text-xl">{currentAction.icon}</span>
                   </div>
@@ -10992,7 +11294,7 @@ export default function TacticsBoard({
                     <h3 className={`text-sm sm:text-base font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                       {currentAction.label === "But" ? "Nouveau But !" : `Nouveau : ${currentAction.label} (+${currentAction.points} pts)`}
                     </h3>
-                    <p className="text-[11px] text-emerald-600 dark:text-[#00E599] font-bold mt-0.5">
+                    <p className={`text-[11px] font-bold mt-0.5 ${isModernSleek ? "text-slate-500" : "text-[#00E599]"}`}>
                       {activeSport === "rugby" ? "Marqueur" : activeSport === "basketball" ? "Buteur / Panier" : "Buteur"} : #{pendingGoalToken.number || "?"} {pendingGoalToken.name}
                     </p>
                   </div>
@@ -11000,95 +11302,101 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => { setPendingGoalToken(null); setPendingScoreAction(null); }}
-                  className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200/70" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                     }`}
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-            <div className="p-5 sm:p-6 space-y-4 relative z-10">
-              <div>
-                <label className="text-xs font-black text-amber-500 uppercase tracking-wider block flex items-center gap-1.5 mb-2">
-                  <span>👟</span>
-                  <span>Passeur décisif (Optionnel) :</span>
-                </label>
+              <div className="p-5 sm:p-6 space-y-4 relative z-10">
+                <div>
+                  <label className={`text-xs font-black uppercase tracking-wider block flex items-center gap-1.5 mb-2 ${isModernSleek ? "text-slate-700" : "text-amber-500"}`}>
+                    <span>👟</span>
+                    <span>Passeur décisif (Optionnel) :</span>
+                  </label>
 
-                {/* Action individuelle / sans passeur option */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedPasseurName("")}
-                  className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${selectedPasseurName === ""
-                    ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-800 dark:bg-[#00E599]/20 dark:border-[#00E599] dark:text-[#00E599]"
-                    : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#1f293d]"
-                    }`}
-                >
-                  <span>🚫 Aucun (Action individuelle / Solo)</span>
-                  {selectedPasseurName === "" && <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-[#00E599]" />}
-                </button>
+                  {/* Action individuelle / sans passeur option */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPasseurName("")}
+                    className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${selectedPasseurName === ""
+                      ? isModernSleek ? "bg-slate-100 border-slate-900 text-slate-900 font-black" : "bg-[#00E599]/20 border-[#00E599] text-[#00E599]"
+                      : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#1f293d]"
+                      }`}
+                  >
+                    <span>🚫 Aucun (Action individuelle / Solo)</span>
+                    {selectedPasseurName === "" && <CheckCircle className={`w-4 h-4 ${isModernSleek ? "text-slate-900" : "text-[#00E599]"}`} />}
+                  </button>
 
-                {/* List of teammates on pitch and bench for this team */}
-                <div className={`text-[10px] font-bold uppercase mt-3 mb-1.5 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                  Coéquipiers de l&apos;équipe :
+                  {/* List of teammates on pitch and bench for this team */}
+                  <div className={`text-[10px] font-bold uppercase mt-3 mb-1.5 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                    Coéquipiers de l&apos;équipe :
+                  </div>
+                  <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+                    {currentTokens
+                      .filter((t) => t.type === pendingGoalToken.type && t.id !== pendingGoalToken.id)
+                      .concat(
+                        (pendingGoalToken.type === "player_a" ? substitutes : opponentSubstitutes)
+                          .filter((s) => s.id !== pendingGoalToken.id)
+                      )
+                      .map((teammate) => {
+                        const isSelected = selectedPasseurName === teammate.name;
+                        return (
+                          <button
+                            key={teammate.id}
+                            type="button"
+                            onClick={() => setSelectedPasseurName(teammate.name)}
+                            className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${isSelected
+                              ? isModernSleek ? "bg-slate-100 border-slate-900 text-slate-900 font-black shadow-sm" : "bg-[#00E599]/20 border-[#00E599] text-[#00E599] font-black shadow-sm"
+                              : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#131d2b]"
+                              }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <span className={`w-5 h-5 rounded-full font-black text-[9px] flex items-center justify-center shrink-0 ${isModernSleek ? "bg-slate-200 text-slate-800" : "bg-[#1f293d] text-[#00E599]"
+                                }`}>
+                                {teammate.number || "?"}
+                              </span>
+                              <span className="truncate">{teammate.name}</span>
+                              <span className={`text-[9px] font-normal shrink-0 ${isModernSleek ? "text-slate-500" : "text-slate-500"}`}>({teammate.role || "Joueur"})</span>
+                            </div>
+                            {isSelected && <CheckCircle className={`w-4 h-4 shrink-0 ${isModernSleek ? "text-slate-900" : "text-[#00E599]"}`} />}
+                          </button>
+                        );
+                      })}
+                  </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
-                  {currentTokens
-                    .filter((t) => t.type === pendingGoalToken.type && t.id !== pendingGoalToken.id)
-                    .concat(
-                      (pendingGoalToken.type === "player_a" ? substitutes : opponentSubstitutes)
-                        .filter((s) => s.id !== pendingGoalToken.id)
-                    )
-                    .map((teammate) => {
-                      const isSelected = selectedPasseurName === teammate.name;
-                      return (
-                        <button
-                          key={teammate.id}
-                          type="button"
-                          onClick={() => setSelectedPasseurName(teammate.name)}
-                          className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${isSelected
-                            ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-800 dark:bg-[#00E599]/20 dark:border-[#00E599] dark:text-[#00E599] font-black shadow-sm"
-                            : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100" : "bg-[#111827] border-[#1f293d] text-slate-300 hover:bg-[#131d2b]"
-                            }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <span className={`w-5 h-5 rounded-full font-black text-[9px] flex items-center justify-center shrink-0 ${isModernSleek ? "bg-slate-200 text-slate-800" : "bg-[#1f293d] text-[#00E599]"
-                              }`}>
-                              {teammate.number || "?"}
-                            </span>
-                            <span className="truncate">{teammate.name}</span>
-                            <span className={`text-[9px] font-normal shrink-0 ${isModernSleek ? "text-slate-500" : "text-slate-500"}`}>({teammate.role || "Joueur"})</span>
-                          </div>
-                          {isSelected && <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-[#00E599] shrink-0" />}
-                        </button>
-                      );
-                    })}
-                </div>
-              </div>
 
-              {/* Modal Actions */}
-              <div className={`flex items-center justify-between gap-3 pt-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
-                <button
-                  type="button"
-                  onClick={() => { setPendingGoalToken(null); setPendingScoreAction(null); }}
-                  className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={() => confirmGoalRecord(pendingGoalToken, selectedPasseurName, currentAction)}
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs rounded-xl transition cursor-pointer shadow-lg shadow-[#00e599]/20 flex items-center justify-center gap-1.5"
-                >
-                  <span>
-                    {currentAction.label === "But"
-                      ? "⚽ VALIDER LE BUT"
-                      : `${currentAction.icon} VALIDER ${currentAction.label.toUpperCase()} (+${currentAction.points})`}
-                  </span>
-                </button>
+                {/* Modal Actions */}
+                <div className={`flex items-center justify-between gap-3 pt-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+                  <button
+                    type="button"
+                    onClick={() => { setPendingGoalToken(null); setPendingScoreAction(null); }}
+                    className={`h-10 px-4 rounded-xl font-bold text-xs inline-flex items-center justify-center whitespace-nowrap transition border cursor-pointer ${isModernSleek
+                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                      : "bg-[#161c28] hover:bg-[#1e2738] text-white border-[#233149]"
+                      }`}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => confirmGoalRecord(pendingGoalToken, selectedPasseurName, currentAction)}
+                    className={`h-10 px-5 font-black text-xs rounded-xl transition cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap border ${isModernSleek
+                      ? "bg-slate-900 hover:bg-slate-800 border-slate-900 text-white shadow-sm"
+                      : "bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 border-transparent text-[#07090e] shadow-lg shadow-[#00e599]/20"
+                      }`}
+                  >
+                    <span>
+                      {currentAction.label === "But"
+                        ? "⚽ VALIDER LE BUT"
+                        : `${currentAction.icon} VALIDER ${currentAction.label.toUpperCase()} (+${currentAction.points})`}
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         );
       })()}
 
@@ -11139,14 +11447,15 @@ export default function TacticsBoard({
                     }
                     handleAddNewMatch();
                   }}
-                  className="px-3 py-1.5 bg-[#00E599] hover:bg-[#05be80] text-slate-950 font-black text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#00e599]/20"
+                  className="h-9 px-3.5 bg-[#00E599] hover:bg-[#05be80] text-slate-950 font-black text-xs rounded-xl transition inline-flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer shadow-md shadow-[#00e599]/20"
                   title="Créer un nouveau match"
                 >
-                  <Plus className="h-3.5 w-3.5" /> NOUVEAU MATCH
+                  <Plus className="h-3.5 w-3.5 shrink-0" />
+                  <span>NOUVEAU MATCH</span>
                 </button>
                 <button
                   onClick={() => setIsMatchEditOpen(false)}
-                  className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                  className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                     }`}
                   title="Fermer"
                 >
@@ -11483,11 +11792,11 @@ export default function TacticsBoard({
             </div>
 
             {/* Modal Footer */}
-            <div className={`pt-3 border-t mt-3 flex justify-end shrink-0 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+            <div className={`px-5 py-3.5 border-t mt-3 flex justify-end shrink-0 ${isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
               }`}>
               <button
                 onClick={() => setIsMatchEditOpen(false)}
-                className={`px-5 py-2 font-bold rounded-xl text-xs transition cursor-pointer ${isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-[#162235] hover:bg-[#233350] text-slate-300"
+                className={`h-10 px-5 font-bold rounded-xl text-xs inline-flex items-center justify-center whitespace-nowrap border transition cursor-pointer ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-300 text-slate-700 shadow-xs" : "bg-[#162235] hover:bg-[#233350] border-[#2e3d5b] text-slate-300"
                   }`}
               >
                 Fermer
@@ -11501,66 +11810,73 @@ export default function TacticsBoard({
       {/* 6.5. MATCH FINISHED RECAP MODAL */}
       {/* ========================================================= */}
       {isMatchFinishedModalOpen && (
-        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-md">
-          <div ref={matchFinishedModalRef} className={`border-2 border-emerald-500 max-w-lg w-full rounded-3xl p-6 shadow-2xl relative overflow-hidden ${isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
+          <div ref={matchFinishedModalRef} className={`border max-w-lg w-full rounded-3xl p-6 shadow-xl relative overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0d1117] border-emerald-500 text-white"
             }`}>
             {/* Header / Banner */}
             <div className={`-mx-6 -mt-6 p-5 border-b text-center relative mb-5 ${isModernSleek
-              ? "bg-gradient-to-r from-emerald-100 via-white to-emerald-100 border-emerald-200 text-slate-900"
+              ? "bg-slate-50 border-slate-200 text-slate-900"
               : "bg-gradient-to-r from-emerald-950 via-[#0d1117] to-emerald-950 border-emerald-500/30 text-white"
               }`}>
               <span className="text-2xl mb-1 block">🏆</span>
-              <h3 className="text-sm sm:text-base font-black uppercase text-[#00E599] tracking-wider">
+              <h3 className={`text-sm sm:text-base font-black uppercase tracking-wider ${isModernSleek ? "text-slate-900" : "text-[#00E599]"}`}>
                 MATCH TERMINÉ — SCORE FINAL
               </h3>
-              <p className={`text-[11px] font-medium mt-0.5 ${isModernSleek ? "text-slate-600" : "text-slate-300"
+              <p className={`text-[11px] font-medium mt-0.5 ${isModernSleek ? "text-slate-500" : "text-slate-300"
                 }`}>
                 {activeMatch.competition} • {activeMatch.dateTime}
               </p>
               {!isExportingModalScreen && (
                 <button
                   onClick={() => setIsMatchFinishedModalOpen(false)}
-                  className={`absolute top-3 right-3 p-1 rounded-lg transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-white/10"
+                  className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200/70" : "text-slate-400 hover:text-white hover:bg-white/10"
                     }`}
+                  title="Fermer"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
             {/* Big Score Box */}
-            <div className={`border rounded-2xl p-4 text-center mb-5 shadow-lg relative ${isModernSleek
-              ? "bg-gradient-to-b from-emerald-50/60 to-slate-50 border-emerald-300 text-slate-900"
-              : "bg-gradient-to-b from-[#131d2b] to-[#0a0f18] border-emerald-500/40 text-white"
+            <div className={`border rounded-2xl p-4 text-center mb-5 relative ${isModernSleek
+              ? "bg-slate-50 border-slate-200 text-slate-900 shadow-sm"
+              : "bg-gradient-to-b from-[#131d2b] to-[#0a0f18] border-emerald-500/40 text-white shadow-lg"
               }`}>
               <div className="flex items-center justify-around gap-2">
                 <div className="flex flex-col items-center flex-1">
                   <span className="text-xl mb-1">🛡️</span>
-                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${isModernSleek ? "text-slate-900" : "text-white"
+                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${isModernSleek ? "text-slate-700" : "text-white"
                     }`}>
                     {activeMatch.homeTeam}
                   </span>
-                  <span className="text-3xl font-black font-mono text-[#00E599] mt-1">
+                  <span className={`text-3xl font-black font-mono mt-1 ${isModernSleek ? "text-slate-900" : "text-[#00E599]"}`}>
                     {homeScore}
                   </span>
                 </div>
 
                 <div className="flex flex-col items-center shrink-0">
-                  <span className="text-[10px] font-black uppercase bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full shadow-md">
+                  <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${isModernSleek
+                    ? "bg-white border-slate-200 text-slate-700 shadow-sm"
+                    : "bg-emerald-500 border-emerald-400 text-slate-950 shadow-md"
+                    }`}>
                     TERMINÉ
                   </span>
-                  <span className="text-xs font-mono font-bold text-amber-500 mt-2 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30">
+                  <span className={`text-xs font-mono font-bold mt-2 px-2 py-0.5 rounded border ${isModernSleek
+                    ? "bg-white border-slate-200 text-slate-600"
+                    : "bg-black/60 border-amber-500/30 text-amber-500"
+                    }`}>
                     ⏱️ {formatLiveTime(liveTimerSeconds)}
                   </span>
                 </div>
 
                 <div className="flex flex-col items-center flex-1">
                   <span className="text-xl mb-1">🛡️</span>
-                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${isModernSleek ? "text-slate-900" : "text-white"
+                  <span className={`text-xs font-black uppercase truncate max-w-[100px] ${isModernSleek ? "text-slate-700" : "text-white"
                     }`}>
                     {activeMatch.awayTeam}
                   </span>
-                  <span className="text-3xl font-black font-mono text-rose-500 mt-1">
+                  <span className={`text-3xl font-black font-mono mt-1 ${isModernSleek ? "text-slate-900" : "text-rose-500"}`}>
                     {awayScore}
                   </span>
                 </div>
@@ -11570,7 +11886,7 @@ export default function TacticsBoard({
             {/* Events timeline */}
             {matchEvents.filter((evt) => evt.type !== "assist").length > 0 && (
               <div className="mb-4">
-                <span className="text-[10px] font-black text-[#00E599] uppercase tracking-wider block mb-1.5">
+                <span className={`text-[10px] font-black uppercase tracking-wider block mb-1.5 ${isModernSleek ? "text-slate-500" : "text-[#00E599]"}`}>
                   HISTORIQUE DES ÉVÉNEMENTS DU MATCH ({matchEvents.filter((evt) => evt.type !== "assist").length})
                 </span>
                 <div className={`p-2 rounded-xl border max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#080d14] border-[#1f293d]"
@@ -11582,22 +11898,22 @@ export default function TacticsBoard({
                         }`}>
                         <span className="flex items-center gap-2 truncate">
                           <span>
-                            {evt.type === "goal" 
-                              ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽")) 
+                            {evt.type === "goal"
+                              ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"))
                               : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}
                           </span>
                           <span className={`font-extrabold flex items-center gap-1 ${isModernSleek ? "text-slate-900" : "text-white"
                             }`}>
                             {evt.player}
                             {evt.type === "goal" ? (
-                              <span className="text-[#00E599] font-bold text-xs">
+                              <span className={`font-bold text-xs ${isModernSleek ? "text-slate-600" : "text-[#00E599]"}`}>
                                 ({evt.points && evt.points > 1 ? `+${evt.points} pts` : "1 pt"}{evt.assister ? ` • ${evt.assister}` : ""})
                               </span>
                             ) : null}
                           </span>
                           {evt.type !== "goal" && <span className="text-slate-500 font-normal text-[10px]">({evt.note})</span>}
                         </span>
-                        <span className="text-amber-500 font-mono text-[10px] font-black shrink-0 ml-2">
+                        <span className={`font-mono text-[10px] font-black shrink-0 ml-2 ${isModernSleek ? "text-slate-500" : "text-amber-500"}`}>
                           {evt.period ? `${evt.period} • ${evt.time}` : evt.time}
                         </span>
                       </div>
@@ -11608,27 +11924,30 @@ export default function TacticsBoard({
 
             {/* Buttons / Actions */}
             {!isExportingModalScreen && (
-              <div className={`flex flex-col sm:flex-row items-center gap-2 pt-2 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+              <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
                 }`}>
                 <button
                   onClick={handleShareMatchWhatsApp}
-                  className="w-full sm:flex-1 py-2.5 px-3 bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 font-black text-xs rounded-xl transition cursor-pointer shadow-lg shadow-emerald-500/20 text-center flex items-center justify-center gap-1.5"
+                  className={`w-full sm:flex-1 h-10 px-3 font-black text-xs rounded-xl transition cursor-pointer text-center inline-flex items-center justify-center gap-1.5 whitespace-nowrap border ${isModernSleek
+                    ? "bg-slate-900 hover:bg-slate-800 border-slate-900 text-white shadow-sm"
+                    : "bg-[#25D366] hover:bg-[#20bd5a] border-transparent text-slate-950 shadow-lg shadow-emerald-500/20"
+                    }`}
                   title="Partager le bilan complet du match directement sur WhatsApp"
                 >
-                  <Share2 className="w-4 h-4" />
+                  <Share2 className="w-4 h-4 shrink-0" />
                   <span>PARTAGER WHATSAPP</span>
                 </button>
 
                 <button
                   onClick={handleExportModalWindowImage}
-                  className={`w-full sm:flex-1 py-2.5 px-3 border font-bold text-xs rounded-xl transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${isModernSleek
-                    ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800"
+                  className={`w-full sm:flex-1 h-10 px-3 border font-bold text-xs rounded-xl transition cursor-pointer text-center inline-flex items-center justify-center gap-1.5 whitespace-nowrap ${isModernSleek
+                    ? "bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-sm"
                     : "bg-[#131d2b] hover:bg-[#1c2c40] border-[#00E599]/40 text-[#00E599]"
                     }`}
                   title="Exporter une capture image PNG exacte de cette fenêtre"
                 >
-                  <Camera className="w-3.5 h-3.5" />
-                  <span>📸 EXPORTER FENÊTRE (PNG)</span>
+                  <Camera className="w-4 h-4 shrink-0" />
+                  <span>EXPORTER (PNG)</span>
                 </button>
 
                 <button
@@ -11636,7 +11955,7 @@ export default function TacticsBoard({
                     setIsMatchFinishedModalOpen(false);
                     setIsLiveMatchMode(false);
                   }}
-                  className={`w-full sm:w-auto py-2.5 px-4 font-bold text-xs rounded-xl transition cursor-pointer text-center ${isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-[#182338] hover:bg-[#233350] text-slate-300"
+                  className={`w-full sm:w-auto h-10 px-4 font-bold text-xs rounded-xl transition cursor-pointer text-center inline-flex items-center justify-center whitespace-nowrap border ${isModernSleek ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700" : "bg-[#182338] hover:bg-[#233350] border-[#263750] text-slate-300"
                     }`}
                 >
                   Fermer
@@ -11675,8 +11994,9 @@ export default function TacticsBoard({
               </div>
               <button
                 onClick={() => setIsSaveModalOpen(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                   }`}
+                title="Fermer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -11755,13 +12075,16 @@ export default function TacticsBoard({
                   <div className={`flex items-center justify-between gap-3 pt-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
                     <button
                       onClick={() => setIsSaveModalOpen(false)}
-                      className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
+                      className={`h-10 px-4 rounded-xl font-bold text-xs inline-flex items-center justify-center whitespace-nowrap transition border cursor-pointer ${isModernSleek
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                        : "bg-[#161c28] hover:bg-[#1e2738] text-white border-[#233149]"
+                        }`}
                     >
                       Annuler
                     </button>
                     <button
                       onClick={handleSaveTacticState}
-                      className="px-5 py-2.5 bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black rounded-xl text-xs transition cursor-pointer shadow-lg shadow-[#00E599]/20"
+                      className="h-10 px-5 bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black rounded-xl text-xs inline-flex items-center justify-center whitespace-nowrap transition cursor-pointer shadow-lg shadow-[#00E599]/20"
                     >
                       Confirmer l&apos;enregistrement
                     </button>
@@ -11979,14 +12302,17 @@ export default function TacticsBoard({
                   setIsMultiTeamUpgradeModalOpen(false);
                   if (onOpenTrialModal) onOpenTrialModal();
                 }}
-                className="w-full py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-emerald-400 text-slate-950 font-black text-xs uppercase rounded-xl hover:brightness-110 transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:flex-1 h-11 px-4 bg-gradient-to-r from-amber-400 via-amber-500 to-emerald-400 text-slate-950 font-black text-xs uppercase rounded-xl hover:brightness-110 transition shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
               >
-                <Award className="w-4 h-4" />
+                <Award className="w-4 h-4 shrink-0" />
                 <span>Débloquer l&apos;Accès PRO (Essai 14j Offert)</span>
               </button>
               <button
                 onClick={() => setIsMultiTeamUpgradeModalOpen(false)}
-                className="w-full sm:w-auto px-4 py-3 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
+                className={`w-full sm:w-auto h-11 px-5 rounded-xl font-bold text-xs inline-flex items-center justify-center whitespace-nowrap transition border cursor-pointer ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                  : "bg-[#161c28] hover:bg-[#1e2738] text-white border-[#233149]"
+                  }`}
               >
                 Fermer
               </button>
@@ -12053,14 +12379,17 @@ export default function TacticsBoard({
                   setIsLiveMatchUpgradeModalOpen(false);
                   if (onOpenTrialModal) onOpenTrialModal();
                 }}
-                className="w-full py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-rose-400 text-slate-950 font-black text-xs uppercase rounded-xl hover:brightness-110 transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:flex-1 h-11 px-4 bg-gradient-to-r from-amber-400 via-amber-500 to-rose-400 text-slate-950 font-black text-xs uppercase rounded-xl hover:brightness-110 transition shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
               >
-                <Award className="w-4 h-4" />
+                <Award className="w-4 h-4 shrink-0" />
                 <span>Passer à la Formule PRO+ (14,90 €/m)</span>
               </button>
               <button
                 onClick={() => setIsLiveMatchUpgradeModalOpen(false)}
-                className="w-full sm:w-auto px-4 py-3 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
+                className={`w-full sm:w-auto h-11 px-5 rounded-xl font-bold text-xs inline-flex items-center justify-center whitespace-nowrap transition border cursor-pointer ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                  : "bg-[#161c28] hover:bg-[#1e2738] text-white border-[#233149]"
+                  }`}
               >
                 Fermer
               </button>
@@ -12206,15 +12535,16 @@ export default function TacticsBoard({
             <div className={`flex items-center justify-between border-t p-4 px-5 sm:px-6 shrink-0 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <button
                 onClick={handleAddOpponent}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300" : "bg-[#172233] hover:bg-[#1f2f47] text-slate-200 border-slate-700"
+                className={`h-10 px-3.5 text-xs font-bold rounded-xl transition cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap border ${isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300" : "bg-[#172233] hover:bg-[#1f2f47] text-slate-200 border-slate-700"
                   }`}
               >
-                <Plus className="h-3.5 w-3.5" /> Ajouter un joueur
+                <Plus className="h-3.5 w-3.5 shrink-0" />
+                <span>Ajouter un joueur</span>
               </button>
 
               <button
                 onClick={() => setIsOpponentRosterModalOpen(false)}
-                className="px-5 py-2.5 bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs rounded-xl shadow-lg transition cursor-pointer"
+                className="h-10 px-5 bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs rounded-xl inline-flex items-center justify-center whitespace-nowrap shadow-lg transition cursor-pointer"
               >
                 Valider les noms
               </button>
@@ -12236,6 +12566,46 @@ export default function TacticsBoard({
         const activeSubs = isAway ? opponentSubstitutes : substitutes;
         const currentRoles = isAway ? opponentSetPieceRoles : setPieceRoles;
         const availablePositions = getSportCommonPositions(activeSport);
+
+        const getPlayerDefaultHeadAvatar = (
+          p: { role?: string; number?: number; photo?: string },
+          isOpponentTeam: boolean
+        ) => {
+          if (p.photo) {
+            return autoTransparentCache[p.photo] || p.photo;
+          }
+          const isGK =
+            activeSport !== "basketball" &&
+            activeSport !== "rugby" &&
+            (p.role === "G" ||
+              p.role === "GK" ||
+              p.role === "GB" ||
+              p.role === "Gardien" ||
+              p.number === 1);
+          return activeSport === "basketball"
+            ? isOpponentTeam
+              ? "/images/avatars/basket_opponent_red.png"
+              : "/images/avatars/basket_player_green.png"
+            : activeSport === "handball"
+              ? isGK
+                ? isOpponentTeam
+                  ? "/images/avatars/handball_opponent_goalkeeper.png"
+                  : "/images/avatars/handball_goalkeeper_yellow.png"
+                : isOpponentTeam
+                  ? "/images/avatars/handball_opponent_red.png"
+                  : "/images/avatars/handball_player_green.png"
+              : activeSport === "rugby"
+                ? isOpponentTeam
+                  ? "/images/avatars/rugby_opponent_red.png"
+                  : "/images/avatars/rugby_player_green.png"
+                : isGK
+                  ? isOpponentTeam
+                    ? "/images/avatars/opponent_goalkeeper.png"
+                    : "/images/avatars/goalkeeper_yellow.png"
+                  : isOpponentTeam
+                    ? "/images/avatars/opponent_red.png"
+                    : "/images/avatars/player_green.png";
+        };
 
         const updateRole = (key: keyof SetPieceRoleConfig, val: string) => {
           if (isAway) {
@@ -12324,7 +12694,7 @@ export default function TacticsBoard({
 
                   <button
                     onClick={() => setIsSetPiecesOpen(false)}
-                    className={`p-1.5 rounded-xl transition cursor-pointer font-bold ${isModernSleek
+                    className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer font-bold shrink-0 ${isModernSleek
                       ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200"
                       : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                       }`}
@@ -12479,13 +12849,13 @@ export default function TacticsBoard({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleOpenInterTeamSwap(undefined, undefined, rolesTargetTeam)}
-                          className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 border shadow-xs ${isModernSleek
+                          className={`h-8 px-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer inline-flex items-center justify-center gap-1.5 border shadow-xs whitespace-nowrap ${isModernSleek
                             ? "bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-800"
                             : "bg-gradient-to-r from-cyan-600/20 via-blue-600/20 to-cyan-600/20 hover:from-cyan-600/30 hover:to-blue-600/30 border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white"
                             }`}
                           title="Échanger avec une autre équipe du club"
                         >
-                          <ArrowLeftRight className={`w-3.5 h-3.5 ${isModernSleek ? "text-cyan-700" : "text-cyan-400"}`} />
+                          <ArrowLeftRight className={`w-3.5 h-3.5 shrink-0 ${isModernSleek ? "text-cyan-700" : "text-cyan-400"}`} />
                           <span>Échanger</span>
                           <span className={`text-[9px] px-1 rounded font-black border ${isModernSleek ? "bg-cyan-100 border-cyan-300 text-cyan-900" : "bg-cyan-500/25 border-cyan-500/40 text-cyan-200"
                             }`}>
@@ -12495,19 +12865,19 @@ export default function TacticsBoard({
 
                         <button
                           onClick={() => handleAutoRenumberSquad(rolesTargetTeam)}
-                          className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition cursor-pointer flex items-center gap-1 border ${isModernSleek
+                          className={`h-8 px-2.5 rounded-xl text-[10px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-1 border whitespace-nowrap ${isModernSleek
                             ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
                             : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] hover:border-[#00E599]/40 text-slate-300 hover:text-white"
                             }`}
                           title="Renuméroter automatiquement de 1 à N sans doublon"
                         >
-                          <Zap className="w-3 h-3 text-amber-500" />
+                          <Zap className="w-3 h-3 text-amber-500 shrink-0" />
                           <span>1-N</span>
                         </button>
 
                         <button
                           onClick={() => handleAddNewSubstitute(rolesTargetTeam)}
-                          className={`px-2.5 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow-xs ${isAway
+                          className={`h-8 px-2.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer inline-flex items-center justify-center gap-1 shadow-xs whitespace-nowrap ${isAway
                             ? isModernSleek
                               ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800"
                               : "bg-gradient-to-r from-rose-500/20 to-red-600/20 hover:from-rose-500/30 hover:to-red-600/30 border-rose-500/40 text-rose-300"
@@ -12517,7 +12887,7 @@ export default function TacticsBoard({
                             }`}
                           title="Ajouter un joueur à l'effectif"
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-3.5 h-3.5 shrink-0" />
                           <span>Joueur</span>
                         </button>
                       </div>
@@ -12675,28 +13045,19 @@ export default function TacticsBoard({
                                       ? isModernSleek ? "bg-white border-rose-200" : "border-rose-500/40 bg-[#121926]"
                                       : isModernSleek ? "bg-white border-emerald-200" : "border-emerald-500/40 bg-[#121926]"
                                       }`}>
-                                      {player.photo ? (
-                                        <>
-                                          <img
-                                            src={player.photo}
-                                            alt={player.name}
-                                            className="w-full h-full object-cover"
-                                          />
-                                          <button
-                                            onClick={() => handleRemovePlayerPhoto(player.id, true)}
-                                            className="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition z-10 cursor-pointer"
-                                            title="Supprimer la photo"
-                                          >
-                                            <X className="w-2.5 h-2.5" />
-                                          </button>
-                                        </>
-                                      ) : (
-                                        <div className={`w-full h-full flex flex-col items-center justify-center transition ${isModernSleek
-                                          ? isAway ? "text-slate-400 group-hover:text-rose-600" : "text-slate-400 group-hover:text-emerald-600"
-                                          : isAway ? "text-slate-400 group-hover:text-rose-300" : "text-slate-400 group-hover:text-[#00E599]"
-                                          }`}>
-                                          <User className="w-4 h-4 opacity-70" />
-                                        </div>
+                                      <img
+                                        src={getPlayerDefaultHeadAvatar(player, isAway)}
+                                        alt={player.name}
+                                        className={`w-full h-full ${player.photo ? "object-cover" : "object-contain p-0.5"}`}
+                                      />
+                                      {player.photo && (
+                                        <button
+                                          onClick={() => handleRemovePlayerPhoto(player.id, true)}
+                                          className="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition z-10 cursor-pointer"
+                                          title="Supprimer la photo"
+                                        >
+                                          <X className="w-2.5 h-2.5" />
+                                        </button>
                                       )}
 
                                       {/* Player number pill badge overlay on avatar */}
@@ -12960,28 +13321,19 @@ export default function TacticsBoard({
                                   {/* Sub Photo Avatar with Upload / Delete */}
                                   <div className={`relative group w-10 h-10 rounded-xl border flex items-center justify-center overflow-hidden shrink-0 shadow-inner ${isModernSleek ? "bg-white border-amber-200" : "bg-[#121926] border-amber-500/40"
                                     }`}>
-                                    {sub.photo ? (
-                                      <>
-                                        <img
-                                          src={sub.photo}
-                                          alt={sub.name}
-                                          className="w-full h-full object-cover"
-                                        />
-                                        <button
-                                          onClick={() => handleRemovePlayerPhoto(sub.id, false)}
-                                          className="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition z-10 cursor-pointer"
-                                          title="Supprimer la photo"
-                                        >
-                                          <X className="w-2.5 h-2.5" />
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <div className={`w-full h-full flex flex-col items-center justify-center transition ${isModernSleek
-                                        ? isAway ? "text-slate-400 group-hover:text-rose-600" : "text-slate-400 group-hover:text-amber-600"
-                                        : isAway ? "text-slate-400 group-hover:text-rose-300" : "text-slate-400 group-hover:text-amber-300"
-                                        }`}>
-                                        <User className="w-4 h-4 opacity-70" />
-                                      </div>
+                                    <img
+                                      src={getPlayerDefaultHeadAvatar(sub, isAway)}
+                                      alt={sub.name}
+                                      className={`w-full h-full ${sub.photo ? "object-cover" : "object-contain p-0.5"}`}
+                                    />
+                                    {sub.photo && (
+                                      <button
+                                        onClick={() => handleRemovePlayerPhoto(sub.id, false)}
+                                        className="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition z-10 cursor-pointer"
+                                        title="Supprimer la photo"
+                                      >
+                                        <X className="w-2.5 h-2.5" />
+                                      </button>
                                     )}
 
                                     {/* Player number pill badge overlay on avatar */}
@@ -13243,315 +13595,87 @@ export default function TacticsBoard({
 
                     {/* Roles Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-
-                      {/* 1. Capitaine */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.captain
-                        ? isModernSleek
-                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                        } space-y-2`}>
-                        <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
-                            }`}>
-                            <span>👑</span>
-                            <span>CAPITAINE D&apos;ÉQUIPE</span>
-                          </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.captain
-                            ? isModernSleek
-                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                            }`}>
-                            BRASSARD
-                          </span>
-                        </div>
-                        <select
-                          value={currentRoles.captain}
-                          onChange={(e) => updateRole("captain", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                            }`}
-                        >
-                          <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun capitaine attribué --</option>
-                          {starters.map(p => (
-                            <option key={p.id} value={p.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              N°{p.number || "?"} - {p.name} ({p.role || "Titulaire"})
-                            </option>
-                          ))}
-                          {activeSubs.map(s => (
-                            <option key={s.id} value={s.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              [SUB] N°{s.number || "?"} - {s.name} ({s.role || "Remplaçant"})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 2. Penalty (11m) */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.penaltyTaker
-                        ? isModernSleek
-                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                        } space-y-2`}>
-                        <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
-                            }`}>
-                            <span>⚽</span>
-                            <span>TIREUR DE PENALTY (11M)</span>
-                          </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.penaltyTaker
-                            ? isModernSleek
-                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                            }`}>
-                            SURFACE
-                          </span>
-                        </div>
-                        <select
-                          value={currentRoles.penaltyTaker}
-                          onChange={(e) => updateRole("penaltyTaker", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                            }`}
-                        >
-                          <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
-                          {starters.map(p => (
-                            <option key={p.id} value={p.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              N°{p.number || "?"} - {p.name} ({p.role || "Titulaire"})
-                            </option>
-                          ))}
-                          {activeSubs.map(s => (
-                            <option key={s.id} value={s.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              [SUB] N°{s.number || "?"} - {s.name} ({s.role || "Remplaçant"})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 3. Coup Franc Direct */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.directFreeKick
-                        ? isModernSleek
-                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                        } space-y-2`}>
-                        <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
-                            }`}>
-                            <span>⚡</span>
-                            <span>COUP FRANC DIRECT</span>
-                          </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.directFreeKick
-                            ? isModernSleek
-                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                            }`}>
-                            TIR AXE
-                          </span>
-                        </div>
-                        <select
-                          value={currentRoles.directFreeKick}
-                          onChange={(e) => updateRole("directFreeKick", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                            }`}
-                        >
-                          <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
-                          {starters.map(p => (
-                            <option key={p.id} value={p.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              N°{p.number || "?"} - {p.name} ({p.role || "Titulaire"})
-                            </option>
-                          ))}
-                          {activeSubs.map(s => (
-                            <option key={s.id} value={s.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              [SUB] N°{s.number || "?"} - {s.name} ({s.role || "Remplaçant"})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 4. Coup Franc Excentré Gauche */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.offCenterFKLeft
-                        ? isModernSleek
-                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                        } space-y-2`}>
-                        <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
-                            }`}>
-                            <span>↪️</span>
-                            <span>CF EXCENTRÉ GAUCHE</span>
-                          </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.offCenterFKLeft
-                            ? isModernSleek
-                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                            }`}>
-                            CÔTÉ GAUCHE
-                          </span>
-                        </div>
-                        <select
-                          value={currentRoles.offCenterFKLeft}
-                          onChange={(e) => updateRole("offCenterFKLeft", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                            }`}
-                        >
-                          <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
-                          {starters.map(p => (
-                            <option key={p.id} value={p.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              N°{p.number || "?"} - {p.name} ({p.role || "Titulaire"})
-                            </option>
-                          ))}
-                          {activeSubs.map(s => (
-                            <option key={s.id} value={s.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              [SUB] N°{s.number || "?"} - {s.name} ({s.role || "Remplaçant"})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 5. Coup Franc Excentré Droit */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.offCenterFKRight
-                        ? isModernSleek
-                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                        } space-y-2`}>
-                        <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
-                            }`}>
-                            <span>↩️</span>
-                            <span>CF EXCENTRÉ DROIT</span>
-                          </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.offCenterFKRight
-                            ? isModernSleek
-                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                            }`}>
-                            CÔTÉ DROIT
-                          </span>
-                        </div>
-                        <select
-                          value={currentRoles.offCenterFKRight}
-                          onChange={(e) => updateRole("offCenterFKRight", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                            }`}
-                        >
-                          <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
-                          {starters.map(p => (
-                            <option key={p.id} value={p.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              N°{p.number || "?"} - {p.name} ({p.role || "Titulaire"})
-                            </option>
-                          ))}
-                          {activeSubs.map(s => (
-                            <option key={s.id} value={s.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              [SUB] N°{s.number || "?"} - {s.name} ({s.role || "Remplaçant"})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 6. Corner Gauche */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.cornerLeft
-                        ? isModernSleek
-                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                        } space-y-2`}>
-                        <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
-                            }`}>
-                            <span>🚩</span>
-                            <span>CORNER GAUCHE</span>
-                          </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.cornerLeft
-                            ? isModernSleek
-                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                            }`}>
-                            FLAG GAUCHE
-                          </span>
-                        </div>
-                        <select
-                          value={currentRoles.cornerLeft}
-                          onChange={(e) => updateRole("cornerLeft", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                            }`}
-                        >
-                          <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
-                          {starters.map(p => (
-                            <option key={p.id} value={p.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              N°{p.number || "?"} - {p.name} ({p.role || "Titulaire"})
-                            </option>
-                          ))}
-                          {activeSubs.map(s => (
-                            <option key={s.id} value={s.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              [SUB] N°{s.number || "?"} - {s.name} ({s.role || "Remplaçant"})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 7. Corner Droit */}
-                      <div className={`p-3.5 rounded-2xl border transition-all duration-200 ${currentRoles.cornerRight
-                        ? isModernSleek
-                          ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
-                          : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
-                        : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
-                        } space-y-2`}>
-                        <div className="flex items-center justify-between">
-                          <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
-                            }`}>
-                            <span>🚩</span>
-                            <span>CORNER DROIT</span>
-                          </label>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${currentRoles.cornerRight
-                            ? isModernSleek
-                              ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
-                            : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
-                            }`}>
-                            FLAG DROIT
-                          </span>
-                        </div>
-                        <select
-                          value={currentRoles.cornerRight}
-                          onChange={(e) => updateRole("cornerRight", e.target.value)}
-                          className={`w-full rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
-                            : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
-                            }`}
-                        >
-                          <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>-- Aucun tireur attribué --</option>
-                          {starters.map(p => (
-                            <option key={p.id} value={p.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              N°{p.number || "?"} - {p.name} ({p.role || "Titulaire"})
-                            </option>
-                          ))}
-                          {activeSubs.map(s => (
-                            <option key={s.id} value={s.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
-                              [SUB] N°{s.number || "?"} - {s.name} ({s.role || "Remplaçant"})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
+                      {([
+                        { key: "captain" as const, icon: "👑", label: "CAPITAINE D'ÉQUIPE", badge: "BRASSARD", emptyLabel: "-- Aucun capitaine attribué --" },
+                        { key: "penaltyTaker" as const, icon: "⚽", label: "TIREUR DE PENALTY (11M)", badge: "SURFACE", emptyLabel: "-- Aucun tireur attribué --" },
+                        { key: "directFreeKick" as const, icon: "⚡", label: "COUP FRANC DIRECT", badge: "TIR AXE", emptyLabel: "-- Aucun tireur attribué --" },
+                        { key: "offCenterFKLeft" as const, icon: "↪️", label: "CF EXCENTRÉ GAUCHE", badge: "CÔTÉ GAUCHE", emptyLabel: "-- Aucun tireur attribué --" },
+                        { key: "offCenterFKRight" as const, icon: "↩️", label: "CF EXCENTRÉ DROIT", badge: "CÔTÉ DROIT", emptyLabel: "-- Aucun tireur attribué --" },
+                        { key: "cornerLeft" as const, icon: "🚩", label: "CORNER GAUCHE", badge: "FLAG GAUCHE", emptyLabel: "-- Aucun tireur attribué --" },
+                        { key: "cornerRight" as const, icon: "🚩", label: "CORNER DROIT", badge: "FLAG DROIT", emptyLabel: "-- Aucun tireur attribué --" },
+                      ]).map((roleItem) => {
+                        const assignedName = currentRoles[roleItem.key];
+                        const assignedPlayer =
+                          starters.find((p) => p.name === assignedName) ||
+                          activeSubs.find((s) => s.name === assignedName);
+                        return (
+                          <div
+                            key={roleItem.key}
+                            className={`p-3.5 rounded-2xl border transition-all duration-200 ${assignedName
+                              ? isModernSleek
+                                ? isAway ? "bg-rose-50/60 border-rose-300 shadow-sm" : "bg-emerald-50/60 border-emerald-300 shadow-sm"
+                                : isAway ? "bg-[#1c1218] border-rose-500/50 shadow-sm" : "bg-[#0f1724] border-[#00E599]/40 shadow-sm"
+                              : isModernSleek ? "bg-slate-50 border-slate-200 hover:border-slate-300" : "bg-[#090d14] border-[#1f293d] hover:border-[#354563]"
+                              } space-y-2`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <label className={`text-xs font-black flex items-center gap-1.5 uppercase ${isModernSleek ? "text-slate-900" : "text-white"
+                                }`}>
+                                <span>{roleItem.icon}</span>
+                                <span>{roleItem.label}</span>
+                              </label>
+                              <span className={`text-[8px] px-1.5 py-0.5 rounded font-black border uppercase ${assignedName
+                                ? isModernSleek
+                                  ? isAway ? "bg-rose-100 text-rose-800 border-rose-300" : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                  : isAway ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/30"
+                                : isModernSleek ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-[#121926] text-[#62728f] border-[#1f293d]"
+                                }`}>
+                                {roleItem.badge}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {assignedPlayer && (
+                                <div className={`relative w-9 h-9 rounded-xl border flex items-center justify-center overflow-hidden shrink-0 shadow-xs ${isAway
+                                  ? isModernSleek ? "bg-white border-rose-200" : "bg-[#121926] border-rose-500/40"
+                                  : isModernSleek ? "bg-white border-emerald-200" : "bg-[#121926] border-emerald-500/40"
+                                  }`}>
+                                  <img
+                                    src={getPlayerDefaultHeadAvatar(assignedPlayer, isAway)}
+                                    alt={assignedPlayer.name}
+                                    className={`w-full h-full ${assignedPlayer.photo ? "object-cover" : "object-contain p-0.5"}`}
+                                  />
+                                  <span className={`absolute bottom-0 left-0 text-[7.5px] font-black px-1 rounded-tr leading-tight border-t border-r ${isAway
+                                    ? isModernSleek ? "bg-white/95 text-rose-800 border-rose-200" : "bg-rose-950/90 text-rose-300 border-rose-500/40"
+                                    : isModernSleek ? "bg-white/95 text-emerald-800 border-emerald-200" : "bg-slate-950/90 text-[#00E599] border-[#00E599]/40"
+                                    }`}>
+                                    #{assignedPlayer.number ?? "?"}
+                                  </span>
+                                </div>
+                              )}
+                              <select
+                                value={assignedName}
+                                onChange={(e) => updateRole(roleItem.key, e.target.value)}
+                                className={`flex-1 min-w-0 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer transition border ${isModernSleek
+                                  ? "bg-white border-slate-300 text-slate-900 hover:border-slate-400 focus:border-emerald-500 shadow-xs"
+                                  : `bg-[#0d1117] border-[#1f293d] text-white hover:border-[#354563] ${isAway ? "focus:border-rose-500" : "focus:border-[#00E599]"}`
+                                  }`}
+                              >
+                                <option value="" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>{roleItem.emptyLabel}</option>
+                                {starters.map(p => (
+                                  <option key={p.id} value={p.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
+                                    N°{p.number || "?"} - {p.name} ({p.role || "Titulaire"})
+                                  </option>
+                                ))}
+                                {activeSubs.map(s => (
+                                  <option key={s.id} value={s.name} className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>
+                                    [SUB] N°{s.number || "?"} - {s.name} ({s.role || "Remplaçant"})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -13573,12 +13697,12 @@ export default function TacticsBoard({
                 </div>
                 <button
                   onClick={() => setIsSetPiecesOpen(false)}
-                  className={`px-5 py-2.5 font-black text-xs uppercase rounded-xl tracking-wider cursor-pointer transition flex items-center gap-1.5 shadow-lg ${isAway
+                  className={`h-10 px-5 font-black text-xs uppercase rounded-xl tracking-wider cursor-pointer transition inline-flex items-center justify-center gap-1.5 shadow-lg whitespace-nowrap ${isAway
                     ? "bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white shadow-rose-500/20"
                     : "bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] shadow-[#00e599]/20"
                     }`}
                 >
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-4 h-4 shrink-0" />
                   <span>Appliquer & Fermer</span>
                 </button>
               </div>
@@ -13660,7 +13784,7 @@ export default function TacticsBoard({
                               setIsInterTeamSwapOpen(false);
                               setSwapNotification(null);
                             }}
-                            className={`p-2 rounded-xl transition cursor-pointer font-bold ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                            className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer font-bold shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                               }`}
                             title="Fermer la passerelle"
                           >
@@ -13757,11 +13881,11 @@ export default function TacticsBoard({
                                 }`}>
                                 <div className={`w-12 h-12 rounded-xl border flex items-center justify-center font-black text-sm overflow-hidden shrink-0 shadow-xs ${isModernSleek ? "bg-cyan-50 text-cyan-800 border-cyan-300" : "bg-gradient-to-br from-cyan-950 to-blue-950 border-cyan-500/40 text-cyan-300"
                                   }`}>
-                                  {swapSourcePlayer.photo ? (
-                                    <img src={swapSourcePlayer.photo} alt={swapSourcePlayer.name} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <span>N°{swapSourcePlayer.number}</span>
-                                  )}
+                                  <img
+                                    src={getPlayerDefaultHeadAvatar(swapSourcePlayer, currentIsAway)}
+                                    alt={swapSourcePlayer.name}
+                                    className={`w-full h-full ${swapSourcePlayer.photo ? "object-cover" : "object-contain p-0.5"}`}
+                                  />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-xs font-black truncate ${isModernSleek ? "text-slate-900" : "text-white"}`}>{swapSourcePlayer.name}</p>
@@ -13930,11 +14054,21 @@ export default function TacticsBoard({
                                       }`}
                                   >
                                     <div className="flex items-center gap-2.5 min-w-0">
-                                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${isSelected
-                                        ? "bg-cyan-500 text-white shadow-xs"
-                                        : isModernSleek ? "bg-cyan-50 text-cyan-800 border border-cyan-200" : "bg-[#141d2e] text-cyan-300 border border-[#1f293d]"
+                                      <div className={`relative w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden shrink-0 border ${isSelected
+                                        ? "bg-white border-cyan-500 shadow-xs"
+                                        : isModernSleek ? "bg-cyan-50 border-cyan-200" : "bg-[#141d2e] border-[#1f293d]"
                                         }`}>
-                                        {player.number}
+                                        <img
+                                          src={getPlayerDefaultHeadAvatar(player, false)}
+                                          alt={player.name}
+                                          className={`w-full h-full ${player.photo ? "object-cover" : "object-contain p-0.5"}`}
+                                        />
+                                        <span className={`absolute bottom-0 left-0 text-[7.5px] font-black px-1 rounded-tr leading-tight border-t border-r ${isSelected
+                                          ? "bg-cyan-600 text-white border-cyan-500"
+                                          : isModernSleek ? "bg-white/95 text-cyan-800 border-cyan-200" : "bg-slate-950/90 text-cyan-300 border-cyan-500/40"
+                                          }`}>
+                                          #{player.number}
+                                        </span>
                                       </div>
                                       <div className="min-w-0">
                                         <p className="text-xs font-bold truncate leading-tight">{player.name}</p>
@@ -14000,10 +14134,18 @@ export default function TacticsBoard({
                                   Quitte {activeTeam.name}
                                 </span>
                                 <div className="flex items-center gap-2.5 pt-1">
-                                  <span className={`w-8 h-8 rounded-lg font-black text-xs flex items-center justify-center border ${isModernSleek ? "bg-cyan-50 text-cyan-800 border-cyan-200" : "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                                  <div className={`relative w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border ${isModernSleek ? "bg-cyan-50 border-cyan-200" : "bg-cyan-500/20 border-cyan-500/40"
                                     }`}>
-                                    N°{swapSourcePlayer.number}
-                                  </span>
+                                    <img
+                                      src={getPlayerDefaultHeadAvatar(swapSourcePlayer, currentIsAway)}
+                                      alt={swapSourcePlayer.name}
+                                      className={`w-full h-full ${swapSourcePlayer.photo ? "object-cover" : "object-contain p-0.5"}`}
+                                    />
+                                    <span className={`absolute bottom-0 left-0 text-[7.5px] font-black px-1 rounded-tr leading-tight border-t border-r ${isModernSleek ? "bg-white/95 text-cyan-800 border-cyan-200" : "bg-slate-950/90 text-cyan-300 border-cyan-500/40"
+                                      }`}>
+                                      #{swapSourcePlayer.number}
+                                    </span>
+                                  </div>
                                   <div className="min-w-0 flex-1">
                                     <p className={`text-xs font-black truncate ${isModernSleek ? "text-slate-900" : "text-white"}`}>{swapSourcePlayer.name}</p>
                                     <p className={`text-[10px] font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Poste : {swapSourcePlayer.role} • {swapSourcePlayer.isStarter ? "Titulaire" : "Remplaçant"}</p>
@@ -14022,10 +14164,18 @@ export default function TacticsBoard({
                                   Rejoint {activeTeam.name}
                                 </span>
                                 <div className="flex items-center gap-2.5 pt-1">
-                                  <span className={`w-8 h-8 rounded-lg font-black text-xs flex items-center justify-center border ${isModernSleek ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-[#00E599]/20 text-[#00E599] border border-[#00E599]/40"
+                                  <div className={`relative w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border ${isModernSleek ? "bg-emerald-50 border-emerald-200" : "bg-[#00E599]/20 border border-[#00E599]/40"
                                     }`}>
-                                    N°{selectedTargetPlayer.number}
-                                  </span>
+                                    <img
+                                      src={getPlayerDefaultHeadAvatar(selectedTargetPlayer, false)}
+                                      alt={selectedTargetPlayer.name}
+                                      className={`w-full h-full ${selectedTargetPlayer.photo ? "object-cover" : "object-contain p-0.5"}`}
+                                    />
+                                    <span className={`absolute bottom-0 left-0 text-[7.5px] font-black px-1 rounded-tr leading-tight border-t border-r ${isModernSleek ? "bg-white/95 text-emerald-800 border-emerald-200" : "bg-slate-950/90 text-[#00E599] border-[#00E599]/40"
+                                      }`}>
+                                      #{selectedTargetPlayer.number}
+                                    </span>
+                                  </div>
                                   <div className="min-w-0 flex-1">
                                     <p className={`text-xs font-black truncate ${isModernSleek ? "text-slate-900" : "text-white"}`}>{selectedTargetPlayer.name}</p>
                                     <p className={`text-[10px] font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Poste : {selectedTargetPlayer.role} • Prêt à jouer</p>
@@ -14043,7 +14193,7 @@ export default function TacticsBoard({
                               <button
                                 type="button"
                                 onClick={() => handleExecuteDirectTransfer("bring_from_target")}
-                                className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer border ${isModernSleek
+                                className={`h-10 px-3.5 rounded-xl text-xs font-bold transition cursor-pointer border inline-flex items-center justify-center whitespace-nowrap ${isModernSleek
                                   ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
                                   : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] hover:border-slate-500 text-slate-300 hover:text-white"
                                   }`}
@@ -14055,9 +14205,9 @@ export default function TacticsBoard({
                               <button
                                 type="button"
                                 onClick={handleExecuteInterTeamSwap}
-                                className="px-5 py-2.5 bg-gradient-to-r from-cyan-400 via-teal-400 to-[#00E599] hover:from-cyan-300 hover:to-[#05f4a4] text-slate-950 font-black text-xs uppercase rounded-xl tracking-wider cursor-pointer transition flex items-center gap-2 shadow-lg shadow-cyan-500/20 hover:scale-[1.01]"
+                                className="h-10 px-5 bg-gradient-to-r from-cyan-400 via-teal-400 to-[#00E599] hover:from-cyan-300 hover:to-[#05f4a4] text-slate-950 font-black text-xs uppercase rounded-xl tracking-wider cursor-pointer transition inline-flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 hover:scale-[1.01] whitespace-nowrap"
                               >
-                                <ArrowLeftRight className="w-4 h-4 text-slate-950" />
+                                <ArrowLeftRight className="w-4 h-4 text-slate-950 shrink-0" />
                                 <span>Confirmer la Permutation des 2 Joueurs</span>
                               </button>
                             </div>
@@ -14079,7 +14229,7 @@ export default function TacticsBoard({
                             setIsInterTeamSwapOpen(false);
                             setSwapNotification(null);
                           }}
-                          className={`px-4 py-2 text-xs font-bold rounded-xl border transition cursor-pointer ${isModernSleek
+                          className={`h-10 px-4 inline-flex items-center justify-center text-xs font-bold rounded-xl border transition cursor-pointer whitespace-nowrap ${isModernSleek
                             ? "bg-white hover:bg-slate-200 text-slate-700 border-slate-300"
                             : "bg-[#141d2e] hover:bg-[#1c283f] text-slate-300 hover:text-white border-[#1f293d]"
                             }`}
@@ -14108,10 +14258,10 @@ export default function TacticsBoard({
             }`}>
 
             {/* Header */}
-            <div className={`flex items-center justify-between border-b pb-4 mb-2 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
+            <div className={`flex flex-wrap items-center justify-between gap-3 border-b pb-4 mb-2 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"
               }`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-xs ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-800" : "bg-[#131b29] border-[#1f293d] text-[#00E599]"
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-xs shrink-0 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-800" : "bg-[#131b29] border-[#1f293d] text-[#00E599]"
                   }`}>
                   <Box className="w-5 h-5" />
                 </div>
@@ -14132,16 +14282,42 @@ export default function TacticsBoard({
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowSquad3DModal(false)}
-                className={`p-2 rounded-xl transition cursor-pointer ${isModernSleek
-                  ? "text-slate-400 hover:text-slate-900 hover:bg-slate-100"
-                  : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                  }`}
-                title="Fermer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenShareSquad3D}
+                  className={`h-9 px-3.5 border font-bold text-xs rounded-xl inline-flex items-center justify-center gap-2 transition cursor-pointer whitespace-nowrap ${isModernSleek
+                    ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
+                    : "bg-[#131b29] hover:bg-[#1f293d] border-[#1f293d] text-slate-200"
+                    }`}
+                  title="Partager par WhatsApp ou E-mail"
+                >
+                  <Share2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Partager</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadSquad3DImage}
+                  className="h-9 px-4 bg-[#00E599] hover:bg-[#00c985] text-slate-950 font-black text-xs uppercase rounded-xl inline-flex items-center justify-center gap-2 shadow-sm transition cursor-pointer border border-[#00E599] whitespace-nowrap"
+                >
+                  <Download className="w-4 h-4 shrink-0" />
+                  <span>Télécharger PNG HD</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSquad3DModal(false)}
+                  className={`h-9 px-3 border rounded-xl font-bold text-xs inline-flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0 whitespace-nowrap ${isModernSleek
+                    ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                    : "bg-[#131b29] hover:bg-[#1a2333] border-[#1f293d] text-slate-300 hover:text-white"
+                    }`}
+                  title="Fermer"
+                >
+                  <X className="w-4 h-4 shrink-0" />
+                  <span>Fermer</span>
+                </button>
+              </div>
             </div>
 
             {/* Toolbar Controls */}
@@ -14312,22 +14488,24 @@ export default function TacticsBoard({
               {/* Right Controls: Share & Download Buttons */}
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={handleOpenShareSquad3D}
-                  className={`px-3 py-2 border font-bold text-xs rounded-xl flex items-center gap-2 transition cursor-pointer ${isModernSleek
-                    ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700"
+                  className={`h-9 px-3.5 border font-bold text-xs rounded-xl inline-flex items-center justify-center gap-2 transition cursor-pointer whitespace-nowrap ${isModernSleek
+                    ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
                     : "bg-[#131b29] hover:bg-[#1f293d] border-[#1f293d] text-slate-200"
                     }`}
                   title="Partager par WhatsApp ou E-mail"
                 >
-                  <Share2 className="w-4 h-4 text-emerald-400" />
+                  <Share2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>Partager</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleDownloadSquad3DImage}
-                  className="px-4 py-2 bg-[#00E599] hover:bg-[#00c985] text-slate-950 font-black text-xs uppercase rounded-xl flex items-center gap-2 shadow-sm transition cursor-pointer"
+                  className="h-9 px-4 bg-[#00E599] hover:bg-[#00c985] text-slate-950 font-black text-xs uppercase rounded-xl inline-flex items-center justify-center gap-2 shadow-sm transition cursor-pointer border border-[#00E599] whitespace-nowrap"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-4 h-4 shrink-0" />
                   <span>Télécharger PNG HD</span>
                 </button>
               </div>
@@ -14723,6 +14901,46 @@ export default function TacticsBoard({
 
             </div>
 
+            {/* Modal Footer: Export, Share & Close Buttons */}
+            <div className={`pt-4 border-t flex flex-wrap items-center justify-between gap-3 relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+              <span className={`text-xs font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                Export haute définition prêt pour WhatsApp, E-mail et réseaux sociaux.
+              </span>
+              <div className="flex flex-wrap items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  onClick={handleOpenShareSquad3D}
+                  className={`h-10 px-4 border font-bold text-xs rounded-xl inline-flex items-center justify-center gap-2 transition cursor-pointer whitespace-nowrap ${isModernSleek
+                    ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
+                    : "bg-[#131b29] hover:bg-[#1f293d] border-[#1f293d] text-slate-200"
+                    }`}
+                >
+                  <Share2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Partager</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadSquad3DImage}
+                  className="h-10 px-4 bg-[#00E599] hover:bg-[#00c985] text-slate-950 font-black text-xs uppercase rounded-xl inline-flex items-center justify-center gap-2 shadow-sm transition cursor-pointer border border-[#00E599] whitespace-nowrap"
+                >
+                  <Download className="w-4 h-4 shrink-0" />
+                  <span>Télécharger PNG HD</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSquad3DModal(false)}
+                  className={`h-10 px-5 border rounded-xl font-bold text-xs inline-flex items-center justify-center transition cursor-pointer whitespace-nowrap ${isModernSleek
+                    ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                    : "bg-[#131b29] hover:bg-[#1a2333] border-[#1f293d] text-slate-300 hover:text-white"
+                    }`}
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -14755,11 +14973,11 @@ export default function TacticsBoard({
               </div>
               <button
                 onClick={() => setIsUserConfigModalOpen(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer text-sm shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                   }`}
                 title={t.userModal.close}
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -15081,13 +15299,16 @@ export default function TacticsBoard({
                 <button
                   type="button"
                   onClick={() => setIsUserConfigModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
+                  className={`h-10 px-4 inline-flex items-center justify-center rounded-xl font-bold text-xs transition border cursor-pointer whitespace-nowrap ${isModernSleek
+                    ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                    : "bg-[#161c28] hover:bg-[#1e2738] text-white border-[#233149]"
+                    }`}
                 >
                   {t.userModal.cancel}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#00E599]/20 transition cursor-pointer flex items-center gap-2"
+                  className="h-10 px-5 bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#00E599]/20 transition cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   {t.userModal.save}
                 </button>
@@ -15133,10 +15354,11 @@ export default function TacticsBoard({
               </div>
               <button
                 onClick={() => setIsCheckoutOpen(false)}
-                className={`font-bold p-1.5 rounded-xl cursor-pointer transition text-lg ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                className={`w-9 h-9 flex items-center justify-center font-bold rounded-xl cursor-pointer transition shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                   }`}
+                title="Fermer"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -15152,6 +15374,19 @@ export default function TacticsBoard({
                 coachName={activeCoach?.firstName ? `${activeCoach.firstName} ${activeCoach.lastName}` : undefined}
                 isModernSleek={isModernSleek}
               />
+            </div>
+
+            <div className={`mt-6 pt-4 border-t flex items-center justify-end relative z-10 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+              <button
+                type="button"
+                onClick={() => setIsCheckoutOpen(false)}
+                className={`h-10 px-5 rounded-xl font-bold text-xs inline-flex items-center justify-center transition border cursor-pointer whitespace-nowrap ${isModernSleek
+                  ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                  : "bg-[#161c28] hover:bg-[#1e2738] text-slate-200 border-[#233149]"
+                  }`}
+              >
+                Fermer
+              </button>
             </div>
           </div>
         </div>

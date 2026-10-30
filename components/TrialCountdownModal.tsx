@@ -171,7 +171,7 @@ export default function TrialCountdownModal({
 
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-xl transition cursor-pointer ${
+            className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${
               isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
             }`}
             title="Fermer"
@@ -328,7 +328,9 @@ export default function TrialCountdownModal({
         }`}>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-white font-bold text-xs transition border border-[#233149] cursor-pointer"
+            className={`h-10 px-4 inline-flex items-center justify-center rounded-xl font-bold text-xs transition border cursor-pointer whitespace-nowrap ${
+              isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-[#161c28] hover:bg-[#1e2738] text-white border-[#233149]"
+            }`}
           >
             {isNewAccountWelcome ? "Commencer à utiliser THE BOX" : "Continuer mon entraînement"}
           </button>
@@ -339,10 +341,10 @@ export default function TrialCountdownModal({
                 onClose();
                 onOpenCheckout();
               }}
-              className="px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition cursor-pointer"
+              className="h-10 px-5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 inline-flex items-center justify-center gap-1.5 transition cursor-pointer whitespace-nowrap"
             >
               <span>Découvrir les Offres Pro</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </button>
           )}
         </div>

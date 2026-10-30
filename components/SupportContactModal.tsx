@@ -185,7 +185,7 @@ export default function SupportContactModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className={`p-1.5 rounded-xl transition cursor-pointer disabled:opacity-50 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
+            className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer disabled:opacity-50 shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
               }`}
             title="Fermer"
           >
@@ -229,7 +229,7 @@ export default function SupportContactModal({
                     setSubmitSuccess(false);
                     setMessage("");
                   }}
-                  className={`px-4 py-2 rounded-xl font-bold text-xs transition border cursor-pointer ${
+                  className={`h-10 px-4 inline-flex items-center justify-center rounded-xl font-bold text-xs transition border cursor-pointer whitespace-nowrap ${
                     isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-[#161c28] hover:bg-[#1e2738] text-slate-300 border-[#233149]"
                   }`}
                 >
@@ -238,7 +238,7 @@ export default function SupportContactModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2 rounded-xl bg-[#00E599] hover:bg-[#06b87d] text-[#07090e] font-black text-xs transition cursor-pointer shadow-lg shadow-[#00E599]/20"
+                  className="h-10 px-5 inline-flex items-center justify-center rounded-xl bg-[#00E599] hover:bg-[#06b87d] text-[#07090e] font-black text-xs transition cursor-pointer shadow-lg shadow-[#00E599]/20 whitespace-nowrap"
                 >
                   Fermer
                 </button>
@@ -406,12 +406,14 @@ export default function SupportContactModal({
               )}
 
               {/* ACTIONS */}
-              <div className={`pt-2 flex items-center justify-between gap-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+              <div className={`pt-3 flex items-center justify-between gap-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-slate-300 font-bold text-xs transition border border-[#233149] cursor-pointer disabled:opacity-50"
+                  className={`h-10 px-4 inline-flex items-center justify-center rounded-xl font-bold text-xs transition border cursor-pointer disabled:opacity-50 whitespace-nowrap ${
+                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-[#161c28] hover:bg-[#1e2738] text-slate-300 border-[#233149]"
+                  }`}
                 >
                   Annuler
                 </button>
@@ -419,7 +421,7 @@ export default function SupportContactModal({
                 <button
                   type="submit"
                   disabled={isSubmitting || !message.trim() || !email.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-lg shadow-[#00E599]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer inline-flex items-center justify-center gap-2 shadow-lg shadow-[#00E599]/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   {isSubmitting ? (
                     <>
@@ -428,7 +430,7 @@ export default function SupportContactModal({
                     </>
                   ) : (
                     <>
-                      <Send className="w-3.5 h-3.5" />
+                      <Send className="w-3.5 h-3.5 shrink-0" />
                       <span>Envoyer au Support</span>
                     </>
                   )}
