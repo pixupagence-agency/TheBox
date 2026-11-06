@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       imageUrl && 
       typeof imageUrl === "string" && 
       imageUrl.length <= MAX_IMAGE_BASE64_LENGTH &&
-      /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(imageUrl)
+      /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(imageUrl)
     );
 
     if (hasImage) {

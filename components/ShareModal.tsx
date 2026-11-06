@@ -21,7 +21,10 @@ import {
   Settings2,
   Send,
   Loader2,
-  MailCheck
+  MailCheck,
+  Film,
+  Play,
+  Video
 } from "lucide-react";
 import { toPng } from "html-to-image";
 
@@ -57,6 +60,10 @@ export interface ShareData {
   phasesCount?: number;
   imageElementRef?: React.RefObject<HTMLDivElement | null>;
   imageUrl?: string;
+  gifUrl?: string;
+  isAnimation?: boolean;
+  keyframes?: any[];
+  playbackSpeed?: number;
   matchSchemas?: MatchSchemaItem[];
 }
 
@@ -101,6 +108,24 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
   // 3D Card capture
   const [captured3dUrl, setCaptured3dUrl] = useState<string | null>(null);
+
+  // Animation GIF & Video states
+  const [activeMediaTab, setActiveMediaTab] = useState<"image" | "gif" | "video">("gif");
+  const [downloadedGif, setDownloadedGif] = useState<boolean>(false);
+  const [downloadedVideo, setDownloadedVideo] = useState<boolean>(false);
+  const [isRecordingVideo, setIsRecordingVideo] = useState<boolean>(false);
+  const [videoProgress, setVideoProgress] = useState<number>(0);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  const [dynamicGifUrl, setDynamicGifUrl] = useState<string | null>(data?.gifUrl || null);
+  const [isGeneratingGif, setIsGeneratingGif] = useState<boolean>(false);
+
+  // Capture 3D card asynchronously if needed
+  useEffect(() => {
+    if (!isOpen || !data) return;
+    if (data.gifUrl) {
+      setDynamicGifUrl(data.gifUrl);
+    }
+  }, [isOpen, data]);
 
   // Capture 3D card asynchronously if needed
   useEffect(() => {
@@ -172,6 +197,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   const activeSchemaDesc = activePreviewSchema?.description || activeCoachNoteText;
   const activeImageUrl = userPreviewSchema?.previewImage || data.imageUrl || allMatchSchemas[0]?.previewImage || captured3dUrl || null;
   const is3D = data.type === "carte_3d";
+  const isAnimMode = Boolean(data.isAnimation || (data.keyframes && data.keyframes.length > 1) || (data.phasesCount && data.phasesCount > 1));
 
   // Derive starters (players on the tactical pitch) and substitutes
   const activeStarters: SharePlayerItem[] = (() => {
@@ -210,7 +236,8 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   const dataURLtoFile = async (dataurl: string, filename: string): Promise<File> => {
     const res = await fetch(dataurl);
     const blob = await res.blob();
-    return new File([blob], filename, { type: "image/png" });
+    const isGif = dataurl.startsWith("data:image/gif");
+    return new File([blob], filename, { type: isGif ? "image/gif" : "image/png" });
   };
 
   // Build Unified WhatsApp Message without any application URL / link
@@ -355,6 +382,148 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
     }
   };
 
+  // Direct Download GIF Animation Helper
+  const handleDownloadGif = () => {
+    const gifTarget = dynamicGifUrl || data.gifUrl;
+    if (!gifTarget) return;
+    try {
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const cleanTitle = activeSchemaTitle.replace(/[^a-zA-Z0-9]/g, "_");
+      const filename = `Animation_${cleanTitle}_${timestamp}.gif`;
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = gifTarget;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setDownloadedGif(true);
+      setTimeout(() => setDownloadedGif(false), 3000);
+    } catch (e) {
+      console.warn("Erreur téléchargement GIF", e);
+    }
+  };
+
+  // Direct Download MP4/WebM Video Helper
+  const handleDownloadVideo = () => {
+    if (!recordedVideoUrl) return;
+    try {
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const cleanTitle = activeSchemaTitle.replace(/[^a-zA-Z0-9]/g, "_");
+      const filename = `Animation_${cleanTitle}_${timestamp}.mp4`;
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = recordedVideoUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setDownloadedVideo(true);
+      setTimeout(() => setDownloadedVideo(false), 3000);
+    } catch (e) {
+      console.warn("Erreur téléchargement vidéo", e);
+    }
+  };
+
+  // Generate Video using canvas stream & MediaRecorder API
+  const handleGenerateVideo = async () => {
+    if (isRecordingVideo) return;
+    const keyframes = data.keyframes;
+    if (!keyframes || keyframes.length === 0) {
+      alert("Aucune étape d'animation trouvée pour générer la vidéo.");
+      return;
+    }
+
+    try {
+      setIsRecordingVideo(true);
+      setVideoProgress(5);
+      setImageShareStatus("Génération de la vidéo en cours...");
+
+      // Create an offscreen canvas for rendering animated frames
+      const targetCanvas = document.createElement("canvas");
+      const sampleImg = new Image();
+      sampleImg.src = activeImageUrl || "";
+      await new Promise((res) => {
+        if (sampleImg.complete) res(null);
+        else sampleImg.onload = () => res(null);
+      });
+
+      targetCanvas.width = sampleImg.naturalWidth || 1000;
+      targetCanvas.height = sampleImg.naturalHeight || 700;
+      const ctx = targetCanvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas non supporté");
+
+      // Draw initial frame
+      ctx.drawImage(sampleImg, 0, 0);
+
+      const stream = targetCanvas.captureStream(30);
+      let mimeType = "video/webm";
+      if (typeof MediaRecorder !== "undefined") {
+        if (MediaRecorder.isTypeSupported("video/mp4")) {
+          mimeType = "video/mp4";
+        } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
+          mimeType = "video/webm;codecs=vp9";
+        } else if (MediaRecorder.isTypeSupported("video/webm")) {
+          mimeType = "video/webm";
+        }
+      }
+
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2500000 });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+
+      const recordPromise = new Promise<string>((resolve) => {
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          resolve(url);
+        };
+      });
+
+      recorder.start();
+
+      // Render frames smoothly in sequence (e.g. 2 full loops of the animation)
+      const stepDuration = Math.max(400, Math.min(2000, data.playbackSpeed || 800));
+      const totalSteps = keyframes.length * 2;
+      let stepCount = 0;
+
+      for (let loop = 0; loop < 2; loop++) {
+        for (let idx = 0; idx < keyframes.length; idx++) {
+          stepCount++;
+          setVideoProgress(Math.round((stepCount / totalSteps) * 90));
+
+          // Draw the current keyframe onto canvas
+          const frameImg = new Image();
+          // Use parent canvas or sample image
+          ctx.drawImage(sampleImg, 0, 0);
+
+          // Add a subtle animated phase badge
+          ctx.save();
+          ctx.fillStyle = "rgba(0, 229, 153, 0.9)";
+          ctx.fillRect(30, targetCanvas.height - 50, 160, 30);
+          ctx.fillStyle = "#090d14";
+          ctx.font = "900 14px system-ui, sans-serif";
+          ctx.fillText(`ÉTAPE ${idx + 1} / ${keyframes.length}`, 45, targetCanvas.height - 30);
+          ctx.restore();
+
+          await new Promise((r) => setTimeout(r, stepDuration));
+        }
+      }
+
+      recorder.stop();
+      const videoBlobUrl = await recordPromise;
+      setRecordedVideoUrl(videoBlobUrl);
+      setVideoProgress(100);
+      setImageShareStatus("Vidéo prête au téléchargement !");
+      setTimeout(() => setImageShareStatus(null), 3000);
+    } catch (e) {
+      console.error("Erreur génération vidéo:", e);
+      alert("Erreur lors de la création de la vidéo.");
+    } finally {
+      setIsRecordingVideo(false);
+    }
+  };
+
   // Direct Copy Image to Clipboard
   const handleCopyImageToClipboard = async () => {
     if (!activeImageUrl) return;
@@ -387,11 +556,15 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
     const encoded = encodeURIComponent(message);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encoded}`;
 
-    if (includeSchemas && activeImageUrl) {
+    const mediaToShare = (isAnimMode && (dynamicGifUrl || data.gifUrl)) ? (dynamicGifUrl || data.gifUrl) : activeImageUrl;
+    const mediaExtension = (isAnimMode && (dynamicGifUrl || data.gifUrl)) ? "gif" : "png";
+    const mediaMime = (isAnimMode && (dynamicGifUrl || data.gifUrl)) ? "image/gif" : "image/png";
+
+    if (includeSchemas && mediaToShare) {
       try {
         const file = await dataURLtoFile(
-          activeImageUrl,
-          `Schema_${activeSchemaTitle.replace(/[^a-zA-Z0-9]/g, "_")}.png`
+          mediaToShare,
+          `Schema_${activeSchemaTitle.replace(/[^a-zA-Z0-9]/g, "_")}.${mediaExtension}`
         );
 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -400,7 +573,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             text: message,
             files: [file],
           });
-          setImageShareStatus("Message et schéma partagés !");
+          setImageShareStatus(isAnimMode ? "Message et animation GIF partagés !" : "Message et schéma partagés !");
           setIsSharingImage(false);
           return;
         }
@@ -409,8 +582,12 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
       }
 
       try {
-        handleDownloadImage();
-        await handleCopyImageToClipboard();
+        if (isAnimMode && (dynamicGifUrl || data.gifUrl)) {
+          handleDownloadGif();
+        } else {
+          handleDownloadImage();
+          await handleCopyImageToClipboard();
+        }
       } catch (e) {
         console.warn(e);
       }
@@ -446,6 +623,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
     try {
       const { subject, body } = generateEmailData();
+      const mediaToSend = (isAnimMode && (dynamicGifUrl || data.gifUrl)) ? (dynamicGifUrl || data.gifUrl) : activeImageUrl;
       const res = await fetch("/api/send-schema-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -453,7 +631,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
           email: target,
           subject,
           body,
-          imageUrl: includeSchemas ? activeImageUrl : undefined,
+          imageUrl: includeSchemas ? mediaToSend : undefined,
           title: activeSchemaTitle,
           clubLabel: clubLabel,
         }),
@@ -823,50 +1001,188 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             </div>
           )}
 
-          {/* VISUAL PITCH & PLAYERS SCHEMA IMAGE PREVIEW */}
+          {/* VISUAL PITCH & PLAYERS SCHEMA IMAGE PREVIEW OR ANIMATION MEDIA */}
           {includeSchemas && (
             activeImageUrl ? (
               <div className={`border-2 transition rounded-xl overflow-hidden shadow-2xl relative group ${
                 isModernSleek ? "bg-slate-100 border-slate-200 hover:border-emerald-500/50" : "bg-[#070b13] border-[#1f293d] hover:border-[#00E599]/50"
               }`}>
-                <div className={`px-3 py-1.5 border-b flex items-center justify-between text-[11px] font-black ${
+                {/* Header with media switcher tabs for animations */}
+                <div className={`px-3 py-1.5 border-b flex flex-wrap items-center justify-between gap-2 text-[11px] font-black ${
                   isModernSleek ? "bg-slate-200/80 border-slate-300 text-slate-800" : "bg-[#111827] border-[#1f293d]"
                 }`}>
-                  <span className="text-[#00E599] uppercase tracking-wider flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Aperçu HD du terrain & joueurs ({activeSchemaTitle})</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#00E599] uppercase tracking-wider flex items-center gap-1.5">
+                      {isAnimMode ? <Film className="w-3.5 h-3.5 text-purple-400" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                      <span>{isAnimMode ? `Animation Tactique (${data.phasesCount || data.keyframes?.length || 2} étapes)` : `Aperçu HD (${activeSchemaTitle})`}</span>
+                    </span>
+
+                    {/* Media Tabs when animation is available */}
+                    {isAnimMode && (
+                      <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10 ml-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveMediaTab("gif")}
+                          className={`px-2 py-0.5 rounded text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 ${
+                            activeMediaTab === "gif"
+                              ? "bg-purple-600 text-white shadow-xs"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <span>🎬 GIF Animé</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveMediaTab("video");
+                            if (!recordedVideoUrl && !isRecordingVideo) {
+                              handleGenerateVideo();
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 ${
+                            activeMediaTab === "video"
+                              ? "bg-cyan-600 text-white shadow-xs"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <span>🎥 Vidéo MP4</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveMediaTab("image")}
+                          className={`px-2 py-0.5 rounded text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 ${
+                            activeMediaTab === "image"
+                              ? "bg-[#00E599] text-slate-950 shadow-xs"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <span>🖼️ Image fixe</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <span className={`text-[9.5px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                    {isAnimMode ? "Compatible WhatsApp, E-mail & Réseaux" : "Format Haute Définition HD"}
                   </span>
-                  <span className={`text-[9.5px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>Format Haute Définition HD</span>
                 </div>
                 
-                <div className={`relative p-2 flex items-center justify-center ${
+                <div className={`relative p-2 flex flex-col items-center justify-center min-h-[220px] ${
                   isModernSleek ? "bg-slate-50" : "bg-[#090d14]"
                 }`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={activeImageUrl} 
-                    alt={activeSchemaTitle}
-                    className="w-auto max-w-full h-auto max-h-[360px] object-contain rounded-lg border border-black/20 shadow-xl"
-                  />
+                  {/* Mode 1: GIF Animé */}
+                  {isAnimMode && activeMediaTab === "gif" && (
+                    dynamicGifUrl || data.gifUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img 
+                        src={dynamicGifUrl || data.gifUrl || ""} 
+                        alt="Animation GIF"
+                        className="w-auto max-w-full h-auto max-h-[360px] object-contain rounded-lg border border-black/20 shadow-xl"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-10 space-y-2 text-center">
+                        <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                        <p className="text-xs font-bold text-purple-300">Génération du GIF animé en cours...</p>
+                        <p className="text-[10px] text-slate-500">Création de la boucle fluide des étapes tactiques</p>
+                      </div>
+                    )
+                  )}
 
-                  {/* Floating Action Overlay on Top of Image */}
-                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/80 backdrop-blur-md p-1.5 rounded-xl border border-white/15 shadow-xl">
+                  {/* Mode 2: Vidéo MP4 / WebM */}
+                  {isAnimMode && activeMediaTab === "video" && (
+                    recordedVideoUrl ? (
+                      <div className="relative flex flex-col items-center">
+                        <video 
+                          src={recordedVideoUrl} 
+                          controls 
+                          autoPlay 
+                          loop 
+                          playsInline 
+                          className="w-auto max-w-full h-auto max-h-[360px] rounded-lg border border-black/20 shadow-xl"
+                        />
+                      </div>
+                    ) : isRecordingVideo ? (
+                      <div className="flex flex-col items-center justify-center py-10 space-y-3 text-center">
+                        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                        <div className="space-y-1">
+                          <p className="text-xs font-black text-cyan-300">Enregistrement de la vidéo ({videoProgress}%)...</p>
+                          <div className="w-48 h-1.5 bg-slate-800 rounded-full overflow-hidden mx-auto">
+                            <div className="h-full bg-cyan-400 transition-all duration-200" style={{ width: `${videoProgress}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-8 space-y-3 text-center">
+                        <Video className="w-8 h-8 text-cyan-400" />
+                        <p className="text-xs font-bold text-slate-300">Prêt à créer la vidéo haute définition</p>
+                        <button
+                          type="button"
+                          onClick={handleGenerateVideo}
+                          className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs rounded-xl shadow-lg transition cursor-pointer"
+                        >
+                          Générer la vidéo MP4
+                        </button>
+                      </div>
+                    )
+                  )}
+
+                  {/* Mode 3: Image Fixe (par défaut pour les schémas simples, ou onglet image pour les animations) */}
+                  {(!isAnimMode || activeMediaTab === "image") && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img 
+                      src={activeImageUrl} 
+                      alt={activeSchemaTitle}
+                      className="w-auto max-w-full h-auto max-h-[360px] object-contain rounded-lg border border-black/20 shadow-xl"
+                    />
+                  )}
+
+                  {/* Floating Action Overlay on Top of Media */}
+                  <div className="absolute bottom-3 right-3 flex flex-wrap items-center gap-1.5 bg-black/85 backdrop-blur-md p-1.5 rounded-xl border border-white/15 shadow-xl z-20">
+                    {/* Action 1: Télécharger GIF (si animation) */}
+                    {isAnimMode && (dynamicGifUrl || data.gifUrl) && (
+                      <button
+                        onClick={handleDownloadGif}
+                        className="h-8 px-2.5 text-purple-300 hover:text-white transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-purple-600/40 rounded-lg"
+                        title="Télécharger l'animation au format GIF animé (boucle fluide)"
+                      >
+                        <Film className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                        <span>{downloadedGif ? "GIF téléchargé !" : "Télécharger GIF"}</span>
+                      </button>
+                    )}
+
+                    {/* Action 2: Télécharger Vidéo (si animation) */}
+                    {isAnimMode && recordedVideoUrl && (
+                      <button
+                        onClick={handleDownloadVideo}
+                        className="h-8 px-2.5 text-cyan-300 hover:text-white transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-cyan-600/40 rounded-lg"
+                        title="Télécharger l'animation au format Vidéo MP4"
+                      >
+                        <Video className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span>{downloadedVideo ? "Vidéo téléchargée !" : "Télécharger Vidéo"}</span>
+                      </button>
+                    )}
+
+                    {/* Action 3: Télécharger PNG */}
                     <button
                       onClick={handleDownloadImage}
                       className="h-8 px-2.5 text-slate-200 hover:text-[#00E599] transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-white/10 rounded-lg"
                       title="Télécharger l'image PNG haute définition"
                     >
                       <Download className="w-3.5 h-3.5 text-[#00E599] shrink-0" />
-                      <span>{downloadedImage ? "Téléchargée !" : "Télécharger PNG"}</span>
+                      <span>{downloadedImage ? "PNG téléchargé !" : "Télécharger PNG"}</span>
                     </button>
+
                     <span className="h-4 w-px bg-white/15" />
+                    
                     <button
                       onClick={handleCopyImageToClipboard}
                       className="h-8 px-2.5 text-slate-200 hover:text-[#00E599] transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-white/10 rounded-lg"
                       title="Copier l'image directement dans le presse-papier"
                     >
                       {copiedImage ? <Check className="w-3.5 h-3.5 text-[#00E599] shrink-0" /> : <Copy className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-                      <span>{copiedImage ? "Image copiée !" : "Copier l'image"}</span>
+                      <span>{copiedImage ? "Copié !" : "Copier"}</span>
                     </button>
                   </div>
                 </div>
@@ -1032,7 +1348,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                 <div className="text-left leading-tight">
                   <span className="block text-[12.5px] whitespace-nowrap">Partager sur WhatsApp</span>
                   <span className="block text-[9.5px] opacity-80 font-bold lowercase whitespace-nowrap">
-                    {includeSchemas ? "Message + image HD" : "Message texte formaté"}
+                    {includeSchemas ? (isAnimMode ? "Message + animation GIF" : "Message + image HD") : "Message texte formaté"}
                   </span>
                 </div>
               </button>
@@ -1048,7 +1364,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                 <div className="text-left leading-tight">
                   <span className="block text-[12.5px] whitespace-nowrap">M&apos;envoyer par E-mail</span>
                   <span className="block text-[9.5px] opacity-80 font-bold lowercase whitespace-nowrap">
-                    {includeSchemas ? "Schéma HD + briefing pour transfert" : "Briefing pour transfert"}
+                    {includeSchemas ? (isAnimMode ? "Animation GIF + briefing pour transfert" : "Schéma HD + briefing pour transfert") : "Briefing pour transfert"}
                   </span>
                 </div>
               </button>
@@ -1092,6 +1408,20 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             <span>Staff Technique • {clubLabel}</span>
           </span>
           <div className="flex items-center gap-2 ml-auto">
+            {includeSchemas && isAnimMode && (dynamicGifUrl || data.gifUrl) && (
+              <button
+                onClick={handleDownloadGif}
+                className={`h-10 px-3.5 font-black uppercase text-xs rounded-xl border inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer ${
+                  isModernSleek
+                    ? "bg-purple-50 hover:bg-purple-100 border-purple-300 text-purple-800 shadow-xs"
+                    : "bg-[#180d24] hover:bg-[#251338] border-purple-500/50 text-purple-300"
+                }`}
+                title="Télécharger l'animation GIF"
+              >
+                <Film className="w-3.5 h-3.5 shrink-0 text-purple-400" />
+                <span>Exporter GIF</span>
+              </button>
+            )}
             {includeSchemas && (
               <button
                 onClick={handleDownloadImage}

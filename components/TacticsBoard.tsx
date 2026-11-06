@@ -4669,6 +4669,7 @@ export default function TacticsBoard({
       return;
     }
     const targetKeyframes = schema?.keyframes || keyframes;
+    const isAnim = Boolean(schema?.isAnimation || (targetKeyframes && targetKeyframes.length > 1));
     const firstFrame = targetKeyframes?.[0] || keyframes[0];
     const targetTokens = Array.isArray(firstFrame)
       ? firstFrame
@@ -4714,8 +4715,34 @@ export default function TacticsBoard({
         sport: s.sport,
       }));
 
-    const defaultSchemaTitle = schema?.name || `Schéma ${(schema?.sport || activeSport).toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}`;
-    const defaultSchemaNotes = schema?.description || tacticalNotes || (activeMatch?.notes ? activeMatch.notes : "Schéma tactique de référence");
+    const defaultSchemaTitle = schema?.name || (isAnim ? `Animation ${(schema?.sport || activeSport).toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}` : `Schéma ${(schema?.sport || activeSport).toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}`);
+    const defaultSchemaNotes = schema?.description || tacticalNotes || (activeMatch?.notes ? activeMatch.notes : (isAnim ? "Animation tactique séquentielle de référence" : "Schéma tactique de référence"));
+
+    // Pre-generate GIF if it is a multi-step animation
+    let precomputedGifUrl: string | undefined = undefined;
+    if (isAnim && Array.isArray(targetKeyframes) && targetKeyframes.length > 1) {
+      try {
+        const frameImages = targetKeyframes.map((_, fIdx) => generateCompositeTacticsCanvas(schema, fIdx));
+        fetch("/api/generate-animation-gif", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            frames: frameImages,
+            delay: Math.max(300, Math.min(2500, playbackSpeed || 800)),
+            width: 720,
+          }),
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((json) => {
+            if (json?.gifUrl) {
+              setShareData((prev) => (prev ? { ...prev, gifUrl: json.gifUrl } : null));
+            }
+          })
+          .catch((err) => console.warn("Erreur pré-génération GIF:", err));
+      } catch (e) {
+        console.warn("Could not start background GIF generation:", e);
+      }
+    }
 
     setShareData({
       type: "schema",
@@ -4730,6 +4757,10 @@ export default function TacticsBoard({
       substitutes: activeSubs,
       phasesCount: targetKeyframes?.length || 1,
       imageUrl: schemaImg,
+      gifUrl: precomputedGifUrl,
+      isAnimation: isAnim,
+      keyframes: targetKeyframes,
+      playbackSpeed: playbackSpeed,
       matchSchemas: matchSavedSchemas.length > 0 ? matchSavedSchemas : undefined,
     });
     setShareModalOpen(true);
@@ -4770,7 +4801,7 @@ export default function TacticsBoard({
   };
 
   // Helper function to generate high resolution composite tactic pitch image
-  const generateCompositeTacticsCanvas = (schemaOverride?: any): string => {
+  const generateCompositeTacticsCanvas = (schemaOverride?: any, frameIndexOverride?: number): string => {
     const isMatchReport = !schemaOverride && (isLiveMatchMode || matchEvents.length > 0);
     const targetSport = schemaOverride?.sport || activeSport;
     const sportKey = targetSport.toLowerCase();
@@ -5290,8 +5321,13 @@ export default function TacticsBoard({
     // 3. Render Player Tokens
     let exportTokens: any[] = [];
     if (schemaOverride) {
+      const activeFrameIdx = typeof frameIndexOverride === "number" ? Math.max(0, frameIndexOverride) : 0;
       if (Array.isArray(schemaOverride)) {
         exportTokens = schemaOverride;
+      } else if (Array.isArray(schemaOverride.keyframes?.[activeFrameIdx])) {
+        exportTokens = schemaOverride.keyframes[activeFrameIdx];
+      } else if (Array.isArray(schemaOverride.keyframes?.[activeFrameIdx]?.players)) {
+        exportTokens = schemaOverride.keyframes[activeFrameIdx].players;
       } else if (Array.isArray(schemaOverride.keyframes?.[0])) {
         exportTokens = schemaOverride.keyframes[0];
       } else if (Array.isArray(schemaOverride.keyframes?.[0]?.players)) {
@@ -5304,7 +5340,11 @@ export default function TacticsBoard({
         exportTokens = currentTokens;
       }
     } else {
-      exportTokens = currentTokens;
+      if (typeof frameIndexOverride === "number" && keyframes[frameIndexOverride]) {
+        exportTokens = keyframes[frameIndexOverride];
+      } else {
+        exportTokens = currentTokens;
+      }
     }
 
     if (!exportTokens || exportTokens.length === 0) {
@@ -10231,6 +10271,35 @@ export default function TacticsBoard({
                           : "bg-[#090d14] border-[#1a2130]"
                           }`}
                       >
+                        {/* Partager l'animation (GIF animé & Vidéo) */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isProOrAdmin) {
+                              setSleekToastMessage("🔒 Le partage d'animations tactiques est réservé aux formules PRO & PRO+.");
+                              setIsCheckoutOpen(true);
+                              return;
+                            }
+                            handleOpenShareSchema({
+                              name: `Animation ${activeSport.toUpperCase()} (${keyframes.length} étapes)`,
+                              sport: activeSport,
+                              keyframes: keyframes,
+                              isAnimation: true,
+                              playbackSpeed: playbackSpeed,
+                              formation: selectedFormationA,
+                              drawings: drawingActions,
+                            });
+                          }}
+                          className={`h-7 w-8 rounded-md transition cursor-pointer flex items-center justify-center shadow-xs ${isModernSleek
+                            ? "bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800"
+                            : "bg-[#102420] hover:bg-[#16332c] border border-[#00E599]/50 text-[#00E599]"
+                            }`}
+                          title="Partager l'animation (GIF animé, Vidéo, WhatsApp, E-mail)"
+                          aria-label="Partager l'animation"
+                        >
+                          <Share2 className="w-4 h-4 shrink-0" />
+                        </button>
+
                         {/* Sauvegarder (Disquette) */}
                         <button
                           type="button"
