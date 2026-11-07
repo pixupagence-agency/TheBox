@@ -10,16 +10,268 @@
   --color-brand-border: #224b46;
 }
 
+:root {
+  --stitch-background: #111319;
+  --stitch-surface-lowest: #0b0e13;
+  --stitch-surface-low: #191c21;
+  --stitch-surface: #1d2025;
+  --stitch-surface-high: #272a30;
+  --stitch-surface-highest: #32353b;
+  --stitch-outline: #849585;
+  --stitch-outline-variant: #3b4b3d;
+  --stitch-primary: #00ff87;
+  --stitch-secondary: #d4af37;
+  --stitch-text: #e1e2ea;
+  --stitch-muted: #b9cbb9;
+}
+
 html {
   font-size: 101.5%; /* Subtle +1.5% adjustment for crisp legibility */
+  color-scheme: dark;
 }
 
 body {
-  background-color: var(--color-brand-deep);
-  color: #ffffff;
+  background-color: var(--stitch-background);
+  color: var(--stitch-text);
+  font-family: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.premium-shell {
+  background: var(--stitch-background);
+  color: var(--stitch-text);
+}
+
+.premium-card {
+  background: linear-gradient(180deg, rgba(29, 32, 37, 0.94), rgba(17, 19, 25, 0.96));
+  border: 1px solid rgba(132, 149, 133, 0.24);
+  box-shadow: 0 12px 36px -18px rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.premium-pill {
+  border: 1px solid rgba(132, 149, 133, 0.3);
+  background: rgba(25, 28, 33, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.premium-button-primary {
+  background: var(--stitch-primary);
+  color: #00210c;
+  border: 1px solid rgba(96, 255, 152, 0.72);
+  box-shadow: 0 8px 24px -16px rgba(0, 255, 135, 0.75);
+}
+
+.premium-button-secondary {
+  background: rgba(29, 32, 37, 0.82);
+  border: 1px solid rgba(132, 149, 133, 0.32);
+  color: var(--stitch-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+#tactical-command-center.stitch-board:not(.modern-sleek-mode) {
+  background: var(--stitch-background);
+  color: var(--stitch-text);
+  font-family: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+#tactical-command-center.stitch-board:not(.modern-sleek-mode) #tour-top-header,
+#tactical-command-center.stitch-board:not(.modern-sleek-mode) #tour-left-toolbar,
+#tactical-command-center.stitch-board:not(.modern-sleek-mode) #tour-right-sidebar {
+  background-color: #11141a;
+  border-color: #2a2f37;
+}
+
+/* Design « cockpit » du tableau tactique (thème sombre uniquement) */
+#tactical-command-center.stitch-board:not(.modern-sleek-mode) {
+  --cockpit-bg: #07090e;
+  --cockpit-panel: #191c21;
+  --cockpit-field: #0b0e13;
+  --cockpit-line: #2a2f37;
+  --cockpit-accent: #00e599;
+  --cockpit-gold: #e9c349;
+
+  .tb-main {
+    padding: 0;
+    background-color: var(--cockpit-bg);
+  }
+
+  .tb-toolbar {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    gap: 0.375rem;
+    background-color: #11141a;
+    border-bottom: 1px solid var(--cockpit-line);
+  }
+
+  .tb-toolbar button {
+    padding-inline: 0.4rem;
+  }
+
+  .tb-workspace {
+    padding: 0.75rem;
+    margin: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .tb-workspace {
+      align-items: stretch;
+    }
+  }
+
+  .tb-panel {
+    background-color: var(--cockpit-panel);
+    border: 1px solid var(--cockpit-line);
+    border-radius: 0.75rem;
+    overflow-y: auto;
+  }
+
+  .tb-panel button {
+    border-radius: 0.375rem;
+  }
+
+  .tb-panel button:not([aria-label]) {
+    padding-block: 0.5rem;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+  }
+
+  .tb-panel .overflow-y-auto {
+    max-height: none;
+  }
+
+  .tb-formation-active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+  }
+
+  .tb-formation-active::before {
+    content: "";
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 9999px;
+    background-color: currentColor;
+  }
+
+  .tb-rail-btn svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .tb-rail-btn-active::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 3px;
+    background-color: var(--cockpit-accent);
+  }
+
+  .tb-pitch-box {
+    border-radius: 0.875rem;
+  }
+
+  #pitch-football {
+    background-color: #06140f;
+  }
+
+  #pitch-football > div:first-child {
+    opacity: 0.28;
+  }
+
+  .tb-token-label {
+    text-shadow: 0 1px 3px #000, 0 0 6px rgba(0, 0, 0, 0.8);
+  }
+
+  .tb-pro-badge {
+    background: rgba(212, 175, 55, 0.12);
+    color: var(--cockpit-gold);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    border-radius: 0.25rem;
+    box-shadow: none;
+  }
+
+  .tb-pro-badge svg {
+    display: none;
+  }
+
+  .tb-sidebar-scroll {
+    padding: 0;
+    gap: 0;
+  }
+
+  .tb-team-pill {
+    padding: 0.875rem;
+    background: transparent;
+    border-width: 0 0 1px;
+    border-color: var(--cockpit-line);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .tb-team-pill:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: var(--cockpit-line);
+  }
+
+  .tb-section {
+    padding: 0.875rem;
+    background: transparent;
+    border-bottom: 1px solid var(--cockpit-line);
+    border-radius: 0;
+  }
+
+  .tb-section:last-child {
+    border-bottom: 0;
+  }
+
+  .tb-section-head {
+    border-bottom: 0;
+    padding-bottom: 0;
+    margin-bottom: 0.625rem;
+  }
+
+  .tb-section-head > :first-child,
+  .tb-section-head > :first-child > span:first-child:not(.tb-pro-badge) {
+    color: #fff;
+    font-size: 0.75rem;
+    gap: 0.375rem;
+  }
+
+  .tb-section-head > :last-child button {
+    background: transparent;
+    border-color: transparent;
+    color: #cbd5e1;
+  }
+
+  .tb-section-head > :last-child button:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+
+  .tb-match-card {
+    background-color: var(--cockpit-panel);
+    border-color: var(--cockpit-line);
+  }
+
+  .tb-section textarea {
+    background-color: var(--cockpit-panel);
+    border-color: var(--cockpit-line);
+  }
+
+  .tb-section textarea::placeholder {
+    color: #94a3b8;
+  }
+}
+
+#tactical-command-center.stitch-board:not(.modern-sleek-mode) .pitch-viewport-frame {
+  border-color: var(--stitch-outline-variant);
+  box-shadow: 0 18px 42px -24px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(132, 149, 133, 0.12);
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

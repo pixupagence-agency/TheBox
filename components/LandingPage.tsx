@@ -137,10 +137,10 @@ export default function LandingPage({
   }));
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-white flex flex-col font-sans selection:bg-white selection:text-[#07090e]">
+    <div className="premium-shell min-h-screen text-slate-100 flex flex-col font-sans selection:bg-[#00E599] selection:text-[#07110e]">
       
       {/* BRAND HEADER / NAVBAR */}
-      <header className="border-b border-[#1b2436] bg-[#0d1117]/90 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-[#1d2a39] bg-[#091319]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-2">
           
           {/* Logo Brand Emblem - Aligned strictly with the app logo */}
@@ -264,10 +264,10 @@ export default function LandingPage({
         </div>
 
         {/* Hero Top Content Container in Translucent Glass Card */}
-        <div className="text-center max-w-4xl mx-auto relative z-10 my-auto bg-[#07090e]/80 backdrop-blur-md border border-[#00E599]/30 p-6 sm:p-12 rounded-3xl shadow-2xl">
+        <div className="premium-card text-center max-w-4xl mx-auto relative z-10 my-auto p-6 sm:p-12 rounded-[28px] shadow-[0_18px_80px_-28px_rgba(0,229,153,0.28)]">
           
           {/* Badge */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#0d1117]/90 border border-[#00E599]/50 text-xs font-black uppercase tracking-widest text-[#00E599] mb-6 shadow-xl">
+          <div className="premium-pill inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest text-[#00E599] mb-6 shadow-xl">
             <span className="w-2.5 h-2.5 rounded-full bg-[#00E599] animate-pulse shadow-[0_0_10px_#00E599]" />
             <span>{t.hero.badge}</span>
           </div>
@@ -289,7 +289,7 @@ export default function LandingPage({
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <button
               onClick={onOpenLoginModal}
-              className="px-8 py-4 rounded-xl bg-[#00E599] hover:bg-[#06b87d] text-[#0d1117] font-black text-sm flex items-center justify-center gap-3 transition duration-200 shadow-2xl shadow-[#00E599]/40 hover:scale-105 cursor-pointer group uppercase tracking-wider"
+              className="premium-button-primary px-8 py-4 rounded-xl font-black text-sm flex items-center justify-center gap-3 transition duration-200 hover:scale-[1.02] cursor-pointer group uppercase tracking-wider"
             >
               <LogIn className="h-4 w-4 text-[#0d1117]" />
               <span>{t.hero.ctaBoard}</span>
@@ -298,7 +298,7 @@ export default function LandingPage({
 
             <button
               onClick={onOpenRegisterModal}
-              className="px-7 py-4 rounded-xl bg-[#0d1117]/95 hover:bg-[#141b29] border border-[#00E599]/40 hover:border-[#00E599] text-white font-black text-sm flex items-center justify-center gap-2.5 transition duration-200 cursor-pointer shadow-xl"
+              className="premium-button-secondary px-7 py-4 rounded-xl font-black text-sm flex items-center justify-center gap-2.5 transition duration-200 cursor-pointer shadow-xl"
             >
               <UserPlus className="h-4 w-4 text-[#00E599]" />
               <span>{t.hero.ctaRegister}</span>
@@ -307,15 +307,15 @@ export default function LandingPage({
 
           {/* Key Feature Highlights Pill Bar */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs text-slate-300 font-bold border-t border-[#1f293d]/80 pt-6">
-            <div className="flex items-center gap-2 bg-[#0d1117]/90 px-3.5 py-1.5 rounded-full border border-[#1f293d]">
+            <div className="premium-pill flex items-center gap-2 px-3.5 py-1.5 rounded-full">
               <Check className="w-4 h-4 text-[#00E599]" />
               <span>{t.hero.highlightAnimations}</span>
             </div>
-            <div className="flex items-center gap-2 bg-[#0d1117]/90 px-3.5 py-1.5 rounded-full border border-[#1f293d]">
+            <div className="premium-pill flex items-center gap-2 px-3.5 py-1.5 rounded-full">
               <Check className="w-4 h-4 text-[#00E599]" />
               <span>{t.hero.highlightAnalysis}</span>
             </div>
-            <div className="flex items-center gap-2 bg-[#0d1117]/90 px-3.5 py-1.5 rounded-full border border-[#1f293d]">
+            <div className="premium-pill flex items-center gap-2 px-3.5 py-1.5 rounded-full">
               <Check className="w-4 h-4 text-[#00E599]" />
               <span>{t.hero.highlightExport}</span>
             </div>

@@ -72,7 +72,7 @@ export default function Home() {
       const saved = localStorage.getItem("thebox_modern_sleek");
       if (saved !== null) return saved === "true";
     }
-    return true;
+    return false;
   });
 
   // Keep theme state synchronized with localStorage
@@ -674,7 +674,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#07090e] text-white relative">
+    <main className="premium-shell min-h-screen text-white relative">
       
       {!isLoggedIn ? (
         <LandingPage

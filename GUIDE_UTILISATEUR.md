@@ -115,7 +115,7 @@ La barre d'outils latérale gauche met à votre disposition l'ensemble des trac�
 | **Dessin libre (Crayon)** | ✏️ | Tracé spontané ou schématisation rapide à main levée. |
 | **Formes géométriques** | ⭕ / ⬛ | Zones de pressing, cadrage du porteur, zones de surnombre. |
 | **Gomme & Annulation** | ⌫ / ↺ | Effacement ciblé d'un tracé ou annulation du dernier geste (`Ctrl + Z`). |
-| **Remise à zéro (RAZ)** | 🗑️ | Efface tous les tracés en un clic sans déplacer les joueurs. |
+| **Effacer (remise à zéro)** | 🗑️ | Efface tous les tracés en un clic sans déplacer les joueurs. |
 
 ---
 

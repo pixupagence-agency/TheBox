@@ -83,7 +83,7 @@ export default function OnboardingTutorialModal({
         "Dessin libre (✏️) et zones de pressing colorées",
         "Palette de couleurs (vert fluo, rouge, bleu, blanc, jaune)"
       ],
-      proTip: "Le raccourci clavier Ctrl+Z ou le bouton RAZ vous permet d'effacer vos tracés sans toucher à vos joueurs.",
+      proTip: "Le raccourci clavier Ctrl+Z ou le bouton Effacer vous permet d'effacer vos tracés sans toucher à vos joueurs.",
       preferredPlacement: "right"
     },
     {

@@ -331,7 +331,7 @@
 | 1 | Appuyer sur `Ctrl + Z` (ou `Cmd + Z` sur Mac). | Le dernier tracé réalisé disparaît immédiatement. | [ ] |
 | 2 | Appuyer sur `Ctrl + Y` (ou `Cmd + Shift + Z`). | Le tracé annulé réapparaît à l'identique. | [ ] |
 | 3 | Activer l'outil **Gomme** et cliquer sur un tracé précis. | Seul le tracé ciblé est effacé, les autres tracés et les joueurs restent intacts. | [ ] |
-| 4 | Cliquer sur le bouton **Remise à zéro des tracés (RAZ / 🗑️)**. | Une confirmation rapide s'affiche (ou suppression immédiate) : tous les tracés sont effacés, mais les positions des joueurs restent rigoureusement conservées. | [ ] |
+| 4 | Cliquer sur le bouton **Effacer (remise à zéro des tracés / 🗑️)**. | Une confirmation rapide s'affiche (ou suppression immédiate) : tous les tracés sont effacés, mais les positions des joueurs restent rigoureusement conservées. | [ ] |
 
 ---
 

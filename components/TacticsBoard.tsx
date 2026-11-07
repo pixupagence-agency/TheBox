@@ -19,7 +19,7 @@ import {
   Mic, Trash, Eye, Globe, LogOut, ChevronDown, Award, Eraser, Lock, X, User, Users,
   Search, UserCheck, Upload, ArrowLeftRight, Zap, AlertCircle, Cloud, Filter, Film,
   Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target, Shirt, Circle,
-  CreditCard, Box
+  CreditCard, Box, Scan, Bookmark, CalendarDays, CircleHelp, NotebookPen
 } from "lucide-react";
 import { saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
 import { isSuperAdminEmail } from "@/lib/security";
@@ -361,6 +361,26 @@ export interface TeamRosterPlayer {
   status?: "normal" | "excellent" | "tired" | "injured" | "suspended";
   photo?: string;
   isStarter?: boolean;
+}
+
+// Bascule unique vers le design « cockpit » : les préférences d'affichage étaient déjà
+// persistées (thème, représentation des joueurs, panneau droit), les nouveaux défauts
+// n'auraient donc jamais atteint les utilisateurs existants. Rejouée une seule fois,
+// elle laisse ensuite chacun libre de revenir au thème clair ou aux pastilles.
+const COCKPIT_DESIGN_KEY = "thebox_cockpit_design_v1";
+if (typeof window !== "undefined") {
+  try {
+    if (!localStorage.getItem(COCKPIT_DESIGN_KEY)) {
+      localStorage.setItem("thebox_modern_sleek", "false");
+      localStorage.setItem("thebox_player_representation", "head");
+      if (window.innerWidth >= 1280) {
+        localStorage.setItem("thebox_right_sidebar_open", "true");
+      }
+      localStorage.setItem(COCKPIT_DESIGN_KEY, "1");
+    }
+  } catch {
+    // Stockage indisponible (navigation privée) : les défauts du code s'appliquent.
+  }
 }
 
 export const standardDefaultRoles26: { num: number; role: string; starter: boolean }[] = [
@@ -983,7 +1003,7 @@ export default function TacticsBoard({
         return saved;
       }
     }
-    return "dot";
+    return "head";
   });
 
   useEffect(() => {
@@ -1126,6 +1146,7 @@ export default function TacticsBoard({
   };
 
   // Notes state (persisted per active match)
+  const [quickNote, setQuickNote] = useState<string>("");
   const [tacticalNotes, setTacticalNotes] = useState<string>(() => {
     if (typeof window !== "undefined") {
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
@@ -1358,8 +1379,8 @@ export default function TacticsBoard({
         return saved === "true";
       }
     }
-    // En mode gratuit, la colonne de droite (schémas, matchs et notes) est fermée par défaut
-    return false;
+    // Ouverte par défaut sur grand écran ; en dessous de xl, elle reste un tiroir à la demande
+    return typeof window !== "undefined" && window.innerWidth >= 1280;
   });
 
   useEffect(() => {
@@ -1460,7 +1481,7 @@ export default function TacticsBoard({
       const saved = localStorage.getItem("thebox_modern_sleek");
       if (saved !== null) return saved === "true";
     }
-    return true; // Propose the sleek modern design active by default
+    return false; // Le design sombre « cockpit » est le thème par défaut
   });
 
   const [sleekToastMessage, setSleekToastMessage] = useState<string | null>(null);
@@ -7431,10 +7452,10 @@ export default function TacticsBoard({
           }`
           : `relative z-30 w-full ${isTeamAPanelCollapsed
             ? "lg:w-9 xl:w-10 p-1.5"
-            : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-36 xl:w-40 p-2 lg:p-2.5 gap-1.5 lg:gap-2")
+            : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-40 xl:w-44 2xl:w-52 p-2.5 lg:p-3 gap-2.5")
           } shrink-0 flex flex-col justify-start ${isCompactUI ? "p-1.5 gap-1 text-[85%]" : ""} ${isModernSleek
             ? "bg-white border-2 border-emerald-500/30 rounded-2xl shadow-md text-slate-800"
-            : "bg-[#0d1117] border border-[#00E599]/30 hover:border-[#00E599]/50 rounded-2xl shadow-xl"
+            : "tb-panel"
           } transition-all duration-200`
           }`}
       >
@@ -7461,7 +7482,7 @@ export default function TacticsBoard({
               onClick={(e) => { e.stopPropagation(); setIsTeamAPanelCollapsed(false); }}
               className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${isModernSleek
                 ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
-                : "bg-[#162234] text-[#00E599] hover:bg-[#00E599] hover:text-slate-950 border border-[#233149]"
+                : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               title={t.tactics.teamPanel.expandClub}
             >
@@ -7475,7 +7496,7 @@ export default function TacticsBoard({
             <div className={`flex items-center justify-between border-b ${isModernSleek ? "border-slate-200 pb-1.5" : "border-[#1f293d] pb-1.5"}`}>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#00E599] animate-pulse" />
-                <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>
+                <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${isModernSleek ? "text-emerald-800" : "text-white"}`}>
                   {t.tactics.playerCard.myClubBadge}
                 </span>
               </div>
@@ -7485,7 +7506,7 @@ export default function TacticsBoard({
                   onClick={() => setIsTeamAPanelCollapsed(true)}
                   className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${isModernSleek
                     ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
-                    : "bg-[#162234] text-[#00E599] hover:bg-[#00E599] hover:text-slate-950 border border-[#233149]"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
                     }`}
                   title={t.tactics.teamPanel.collapseClub}
                   aria-label={t.tactics.teamPanel.collapseClub}
@@ -7532,10 +7553,10 @@ export default function TacticsBoard({
                       className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-black transition cursor-pointer text-center ${selectedFormationA === form
                         ? isModernSleek
                           ? "bg-emerald-600 text-white font-black shadow-md shadow-emerald-600/30"
-                          : "bg-[#00E599] text-[#0d1117] font-black shadow-md shadow-[#00e599]/20"
+                          : "tb-formation-active bg-[#00E599]/10 border border-[#00E599]/60 text-[#00E599] font-black"
                         : isModernSleek
                           ? "bg-slate-50 hover:bg-emerald-50 border border-slate-200 text-slate-700 font-bold"
-                          : "bg-[#090d14] hover:bg-[#151f30] border border-[#1a2130] hover:border-[#00e599]/30 text-slate-300 hover:text-brand-cream"
+                          : "bg-[#0b0e13] hover:bg-white/5 border border-[#2a2f37] hover:border-[#00e599]/40 text-slate-200"
                         }`}
                     >
                       {form}
@@ -7551,11 +7572,11 @@ export default function TacticsBoard({
                 onClick={regroupTeamAInCamp}
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
-                  : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
+                  : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs`}
                 title={t.tactics.teamPanel.regroupClubTooltip}
               >
-                <RotateCcw className={`w-3 h-3 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} shrink-0`} />
+                <ArrowLeftRight className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} shrink-0`} />
                 <span>{t.tactics.teamPanel.inTheirHalf}</span>
               </button>
 
@@ -7563,7 +7584,7 @@ export default function TacticsBoard({
                 onClick={clearTeamAPlayers}
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800"
-                  : "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-800/80 text-emerald-200 hover:text-white"
+                  : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
               >
                 {t.tactics.teamPanel.clear}
@@ -7578,11 +7599,11 @@ export default function TacticsBoard({
                 }}
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
-                  : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
+                  : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
                 title={t.tactics.teamPanel.rosterTooltipClub}
               >
-                <span className="text-xs">👥</span>
+                <Users className={`w-3.5 h-3.5 shrink-0 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
                 <span>{t.tactics.teamPanel.roster}</span>
                 <span className={`text-[8.5px] font-mono font-bold ml-0.5 ${isModernSleek ? "text-emerald-800" : "text-emerald-300"}`}>
                   ({currentTokens.filter((t) => t.type === "player_a").length + substitutes.length})
@@ -7598,11 +7619,11 @@ export default function TacticsBoard({
                 }}
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800"
-                  : "bg-gradient-to-r from-[#121926] to-[#182338] hover:from-[#182338] border-[#233149] text-[#00E599] hover:text-white"
+                  : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
                 title={t.tactics.teamPanel.rolesTooltipClub}
               >
-                <span className="text-xs">🎯</span>
+                <Target className="w-3.5 h-3.5 shrink-0 text-[#e9c349]" />
                 <span>{t.tactics.teamPanel.tacticalRoles}</span>
                 {Object.values(setPieceRoles).filter(Boolean).length > 0 && (
                   <span className="bg-[#00E599] text-slate-950 font-black text-[8px] px-1.5 py-0.2 rounded-full ml-0.5">
@@ -7631,10 +7652,10 @@ export default function TacticsBoard({
           }`
           : `relative z-30 w-full ${isTeamBPanelCollapsed
             ? "lg:w-9 xl:w-10 p-1.5"
-            : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-36 xl:w-40 p-2 lg:p-2.5 gap-1.5 lg:gap-2")
+            : (isModernSleek ? "lg:w-36 xl:w-44 p-2.5 gap-2" : "lg:w-40 xl:w-44 2xl:w-52 p-2.5 lg:p-3 gap-2.5")
           } shrink-0 flex flex-col justify-start ${isCompactUI ? "p-1.5 gap-1 text-[85%]" : ""} ${isModernSleek
             ? "bg-white border-2 border-rose-500/30 rounded-2xl shadow-md text-slate-800"
-            : "bg-[#0d1117] border border-rose-900/40 hover:border-rose-700/60 rounded-2xl shadow-xl"
+            : "tb-panel"
           } transition-all duration-200`
           }`}
       >
@@ -7661,7 +7682,7 @@ export default function TacticsBoard({
               onClick={(e) => { e.stopPropagation(); setIsTeamBPanelCollapsed(false); }}
               className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${isModernSleek
                 ? "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
-                : "bg-[#251217] text-rose-300 hover:bg-rose-500 hover:text-slate-950 border border-[#492331]"
+                : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               title={t.tactics.teamPanel.expandOpponent}
             >
@@ -7675,7 +7696,7 @@ export default function TacticsBoard({
             <div className={`flex items-center justify-between border-b ${isModernSleek ? "border-slate-200 pb-1.5" : "border-[#1f293d] pb-1.5"}`}>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${isModernSleek ? "text-rose-700" : "text-rose-400"}`}>
+                <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${isModernSleek ? "text-rose-700" : "text-white"}`}>
                   {t.tactics.playerCard.myOpponentBadge}
                 </span>
               </div>
@@ -7685,7 +7706,7 @@ export default function TacticsBoard({
                   onClick={() => setIsTeamBPanelCollapsed(true)}
                   className={`px-2 py-0.5 ${isFullscreenMode ? "p-1" : "lg:p-1"} rounded-md text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${isModernSleek
                     ? "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
-                    : "bg-[#251217] text-rose-300 hover:bg-rose-500 hover:text-slate-950 border border-[#492331]"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
                     }`}
                   title={t.tactics.teamPanel.collapseOpponent}
                   aria-label={t.tactics.teamPanel.collapseOpponent}
@@ -7732,10 +7753,10 @@ export default function TacticsBoard({
                       className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-black transition cursor-pointer text-center ${selectedFormationB === form
                         ? isModernSleek
                           ? "bg-rose-600 text-white font-black shadow-md shadow-rose-600/30"
-                          : "bg-rose-500 text-slate-950 font-black shadow-md shadow-rose-500/20"
+                          : "tb-formation-active bg-rose-500/10 border border-rose-400/60 text-rose-300 font-black"
                         : isModernSleek
                           ? "bg-slate-50 hover:bg-rose-50 border border-slate-200 text-slate-700 font-bold"
-                          : "bg-[#090d14] hover:bg-[#2c1a1e] border border-[#1a2130] hover:border-rose-500/30 text-rose-300 hover:text-brand-cream"
+                          : "bg-[#0b0e13] hover:bg-white/5 border border-[#2a2f37] hover:border-rose-400/40 text-slate-200"
                         }`}
                     >
                       {form}
@@ -7751,7 +7772,7 @@ export default function TacticsBoard({
                 onClick={handleAddOpponent}
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-rose-600 hover:bg-rose-700 border-rose-600 text-white shadow-2xs"
-                  : "bg-rose-950/90 hover:bg-rose-900 border-rose-700/80 text-rose-200 hover:text-white"
+                  : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 shadow-sm`}
                 title={t.tactics.teamPanel.addOpponentTooltip}
               >
@@ -7763,11 +7784,11 @@ export default function TacticsBoard({
                 onClick={regroupTeamBInCamp}
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
-                  : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
+                  : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 shadow-sm`}
                 title={t.tactics.teamPanel.regroupOpponentTooltip}
               >
-                <RotateCcw className={`w-3 h-3 ${isModernSleek ? "text-rose-600" : "text-rose-400"} shrink-0`} />
+                <ArrowLeftRight className={`w-3.5 h-3.5 ${isModernSleek ? "text-rose-600" : "text-rose-400"} shrink-0`} />
                 <span>{t.tactics.teamPanel.inTheirHalf}</span>
               </button>
 
@@ -7775,7 +7796,7 @@ export default function TacticsBoard({
                 onClick={clearTeamBPlayers}
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-800 shadow-2xs"
-                  : "bg-rose-950/80 hover:bg-rose-900 border-rose-800/80 text-rose-200 hover:text-white"
+                  : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
               >
                 {t.tactics.teamPanel.clear}
@@ -7795,11 +7816,11 @@ export default function TacticsBoard({
                 }}
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
-                  : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
+                  : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
                 title={t.tactics.teamPanel.rosterTooltipOpponent}
               >
-                <span className="text-xs">👥</span>
+                <Users className="w-3.5 h-3.5 shrink-0 text-rose-400" />
                 <span>{t.tactics.teamPanel.roster}</span>
                 {!isProOrAdmin && (
                   <span className="text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm">
@@ -7825,11 +7846,11 @@ export default function TacticsBoard({
                 }}
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 shadow-2xs"
-                  : "bg-gradient-to-r from-[#211217] to-[#381822] hover:from-[#381822] border-[#492331] text-rose-200 hover:text-white"
+                  : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
                   } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs relative`}
                 title={t.tactics.teamPanel.rolesTooltipOpponent}
               >
-                <span className="text-xs">🎯</span>
+                <Target className="w-3.5 h-3.5 shrink-0 text-[#e9c349]" />
                 <span>{t.tactics.teamPanel.tacticalRoles}</span>
                 {!isProOrAdmin && (
                   <span className="text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm">
@@ -7849,11 +7870,27 @@ export default function TacticsBoard({
     );
   };
 
+  const railBtnClass = (isActive: boolean) => isModernSleek
+    ? `w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer relative ${isActive
+      ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
+      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"}`
+    : `tb-rail-btn w-full py-2 flex flex-col items-center justify-center gap-1 transition cursor-pointer relative ${isActive
+      ? "tb-rail-btn-active bg-[#00E599]/15 text-[#00E599]"
+      : "text-slate-400 hover:text-white hover:bg-white/5"}`;
+  const railLabelClass = isModernSleek
+    ? "text-[7.5px] font-black uppercase tracking-tighter mt-0.5 leading-none"
+    : "text-[10px] font-semibold leading-none";
+  const teamInitials = (name?: string) => {
+    const words = (name || "").trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return "?";
+    return (words.length === 1 ? words[0].slice(0, 2) : words[0][0] + words[1][0]).toUpperCase();
+  };
+
   return (
     <div
-      className={`flex flex-col h-screen overflow-hidden relative font-sans select-none transition-colors duration-300 ${isModernSleek
+      className={`stitch-board flex flex-col h-screen overflow-hidden relative font-sans select-none transition-colors duration-300 ${isModernSleek
         ? "bg-[#f1f5f9] text-slate-800 modern-sleek-mode"
-        : "bg-[#07090e] text-white"
+        : "bg-[#111319] text-white"
         } ${isCompactUI ? "compact-mode text-[92%]" : ""}`}
       id="tactical-command-center"
     >
@@ -7900,13 +7937,20 @@ export default function TacticsBoard({
 
           {/* Logo badge SVG */}
           <div className="flex items-center gap-2.5">
-            <LogoIcon className={`${isCompactUI ? "w-7 h-7" : isModernSleek ? "w-8 h-8 text-emerald-800" : "w-9 h-9 text-white"} flex-shrink-0 transition-all`} />
+            <LogoIcon className={`${isCompactUI ? "w-7 h-7" : isModernSleek ? "w-8 h-8 text-emerald-800" : "w-9 h-9 text-[#00E599]"} flex-shrink-0 transition-all`} />
             <div className="text-left flex flex-col justify-center select-none">
-              <h1 className={`${isCompactUI ? "text-base" : "text-lg"} font-black ${isModernSleek ? "tracking-wider lowercase text-slate-900" : "tracking-wide lowercase text-white"} leading-none`}>
-                the box
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className={`${isCompactUI ? "text-base" : "text-lg"} font-black ${isModernSleek ? "tracking-wider lowercase text-slate-900" : "tracking-tight uppercase text-[#00E599]"} leading-none whitespace-nowrap`}>
+                  the box
+                </h1>
+                {!isModernSleek && (isUserAdmin || isPaidSubscriber) && (
+                  <span className="tb-pro-badge hidden sm:inline-block text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded whitespace-nowrap">
+                    {isUserAdmin || currentPlan === "club" ? "Pro Club" : currentPlan === "pro_plus" || currentPlan === "annuel" ? "Pro+" : "Pro"}
+                  </span>
+                )}
+              </div>
               {!isCompactUI && (
-                <p className={`text-[8.5px] ${isModernSleek ? "text-slate-500 font-bold" : "text-white/70"} uppercase tracking-[0.18em] leading-none mt-1`}>
+                <p className={`hidden lg:block whitespace-nowrap text-[8.5px] ${isModernSleek ? "text-slate-500 font-bold" : "text-white/70"} uppercase tracking-[0.18em] leading-none mt-1`}>
                   zone de décision tactique
                 </p>
               )}
@@ -7924,11 +7968,11 @@ export default function TacticsBoard({
               }}
               className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${isModernSleek
                 ? "bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
-                : "bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 text-amber-300 border-amber-500/50 hover:border-amber-300 hover:brightness-110"
+                : "bg-[#d4af37]/10 text-[#e9c349] border-[#d4af37]/45 hover:bg-[#d4af37]/20"
                 }`}
               title={t.tactics.adminBadgeTooltip}
             >
-              <span>👑</span>
+              {isModernSleek && <span>👑</span>}
               <span className="hidden sm:inline">Accès Illimité • Admin The Box</span>
               <span className="sm:hidden text-[10px]">Admin</span>
             </button>
@@ -7937,11 +7981,11 @@ export default function TacticsBoard({
               onClick={() => setIsCheckoutOpen(true)}
               className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${isModernSleek
                 ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
-                : "bg-gradient-to-r from-emerald-500/20 via-emerald-500/30 to-teal-500/20 text-emerald-300 border-emerald-500/50 hover:border-emerald-300 hover:brightness-110"
+                : "bg-[#d4af37]/10 text-[#e9c349] border-[#d4af37]/45 hover:bg-[#d4af37]/20"
                 }`}
               title={`Formule ${currentPlan.toUpperCase()} active. Cliquez pour gérer vos offres et formules.`}
             >
-              <span>✨</span>
+              {isModernSleek && <span>✨</span>}
               <span className="font-bold hidden sm:inline">
                 Formule {currentPlan === "pro_plus" || currentPlan === "annuel" || currentPlan === "club" ? "PRO+" : "PRO"}
               </span>
@@ -7971,19 +8015,19 @@ export default function TacticsBoard({
                 ? isModernSleek ? "bg-slate-100 text-slate-600 border-slate-300" : "bg-[#121926] text-slate-400 border-[#1f293d] hover:border-slate-500"
                 : isModernSleek
                   ? "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100"
-                  : "bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-emerald-500/20 text-amber-300 border-amber-500/50 hover:border-amber-300 hover:brightness-110"
+                  : "bg-[#d4af37]/10 text-[#e9c349] border-[#d4af37]/45 hover:bg-[#d4af37]/20"
                 }`}
               title={t.tactics.trialBadgeTooltip}
             >
-              <span className={liveTrialStatus.isExpired ? "" : "animate-pulse"}>
+              <span className={`${liveTrialStatus.isExpired ? "" : "animate-pulse"} ${isModernSleek ? "" : "hidden"}`}>
                 {liveTrialStatus.isExpired ? "⏳" : "⏰"}
               </span>
-              <span className="font-mono hidden sm:inline">
+              <span className="font-mono hidden lg:inline whitespace-nowrap">
                 {liveTrialStatus.isExpired
                   ? "Essai expiré (Gratuit)"
                   : `Démo Pro : ${liveTrialStatus.days}j ${String(liveTrialStatus.hours).padStart(2, '0')}h ${String(liveTrialStatus.minutes).padStart(2, '0')}m ${String(liveTrialStatus.seconds).padStart(2, '0')}s`}
               </span>
-              <span className="font-mono sm:hidden text-[10px] font-bold">
+              <span className="font-mono lg:hidden whitespace-nowrap text-[10px] font-bold">
                 {liveTrialStatus.isExpired ? "Expiré" : `${liveTrialStatus.days}j ${liveTrialStatus.hours}h`}
               </span>
             </button>
@@ -8005,7 +8049,7 @@ export default function TacticsBoard({
                 title={t.tactics.tutorialTooltip}
               >
                 <span className="text-xs group-hover:scale-110 transition-transform">🎓</span>
-                <span className={`font-semibold hidden sm:inline ${isModernSleek ? "text-slate-700 group-hover:text-emerald-800" : "text-slate-200 group-hover:text-[#00E599]"}`}>Tuto Coach</span>
+                <span className={`font-semibold hidden xl:inline whitespace-nowrap ${isModernSleek ? "text-slate-700 group-hover:text-emerald-800" : "text-slate-200 group-hover:text-[#00E599]"}`}>Tuto Coach</span>
               </button>
             )}
 
@@ -8017,10 +8061,26 @@ export default function TacticsBoard({
                 title={t.tactics.cloudSyncTooltip}
               >
                 <Cloud className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
-                <span className="font-semibold">Cloud Sync</span>
+                <span className="font-semibold">Sync Cloud</span>
                 <span className={`w-1.5 h-1.5 rounded-full ${isModernSleek ? "bg-emerald-800" : "bg-[#00E599]"} animate-pulse`}></span>
               </div>
             )}
+
+            {/* Plein écran : action prioritaire, placée dans l'en-tête */}
+            <button
+              type="button"
+              onClick={togglePitchFullscreen}
+              className={`h-9 px-2.5 xl:px-4 rounded-lg font-black transition-all duration-200 cursor-pointer flex items-center gap-2 select-none shrink-0 ${isModernSleek
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 shadow-sm"
+                : "bg-[#00E599] hover:bg-[#33edad] text-[#04120c]"
+                }`}
+              title={isPitchFullscreen ? t.tactics.pitchModes.fullscreenExit : t.tactics.pitchModes.fullscreenEnter}
+            >
+              {isPitchFullscreen ? <Minimize2 className="h-4 w-4 shrink-0 stroke-[2.5]" /> : <Maximize2 className="h-4 w-4 shrink-0 stroke-[2.5]" />}
+              <span className="hidden lg:inline uppercase tracking-wider text-[11px] font-black whitespace-nowrap">
+                {isPitchFullscreen ? t.tactics.pitchModes.fullscreenExit : t.tactics.pitchModes.fullscreenEnter}
+              </span>
+            </button>
 
             <button
               onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
@@ -8061,19 +8121,21 @@ export default function TacticsBoard({
                 aria-label={t.userMenu.profileAriaLabel}
                 aria-expanded={isUserMenuOpen}
               >
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 ${isUserAdmin
-                  ? "bg-gradient-to-tr from-amber-500 to-emerald-400 text-slate-950 font-black ring-2 ring-amber-400/50"
-                  : "bg-gradient-to-r from-purple-500 to-pink-500"
+                <div className={`w-7 h-7 flex items-center justify-center font-black text-xs text-white shrink-0 ${!isModernSleek
+                  ? "rounded-lg bg-[#d4af37] !text-[#241a00]"
+                  : isUserAdmin
+                  ? "rounded-full bg-gradient-to-tr from-amber-500 to-emerald-400 text-slate-950 font-black ring-2 ring-amber-400/50"
+                  : "rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
                   }`}>
                   {activeCoach?.firstName ? activeCoach.firstName.charAt(0) : "C"}{activeCoach?.lastName ? activeCoach.lastName.charAt(0) : "P"}
                 </div>
-                <div className="text-left hidden sm:block">
-                  <p className={`text-xs font-black ${isModernSleek ? "text-slate-900" : "text-white"} leading-none flex items-center gap-1`}>
+                <div className="text-left hidden lg:block">
+                  <p className={`text-xs font-black whitespace-nowrap ${isModernSleek ? "text-slate-900" : "text-white"} leading-none flex items-center gap-1`}>
                     <span>{activeCoach?.firstName || "Coach"} {activeCoach?.lastName || "Principal"}</span>
-                    {isUserAdmin && <span className="text-[9px] bg-amber-500/20 text-amber-700 font-black px-1 rounded border border-amber-500/30">{t.userMenu.adminBadge}</span>}
+                    {isUserAdmin && <span className={`text-[9px] bg-amber-500/20 font-black px-1 rounded border border-amber-500/30 ${isModernSleek ? "text-amber-700" : "text-[#e9c349]"}`}>{t.userMenu.adminBadge}</span>}
                     <ChevronDown className={`h-3 w-3 ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} />
                   </p>
-                  <p className={`text-[9px] ${isModernSleek ? "text-slate-500 font-bold" : "text-[#62728f] font-black"} uppercase tracking-wider leading-none mt-1`}>
+                  <p className={`text-[9px] ${isModernSleek ? "text-slate-500 font-bold" : "text-slate-400 font-black"} uppercase tracking-wider leading-none mt-1`}>
                     {isUserAdmin ? t.userMenu.platformAdmin : (currentLang === "en" ? (
                       activeCoach?.role === "Coach Principal" ? t.userModal.roles.principal :
                         activeCoach?.role === "Entraîneur Adjoint" ? t.userModal.roles.adjoint :
@@ -8397,7 +8459,7 @@ export default function TacticsBoard({
             } flex flex-col justify-between flex-shrink-0 transition-all duration-300 relative z-30`}
         >
 
-          <div className="flex-1 overflow-y-auto p-2.5 space-y-4 scrollbar-thin flex flex-col items-center">
+          <div className={`flex-1 overflow-y-auto ${isModernSleek ? "p-2.5 space-y-4" : "py-2 space-y-3"} scrollbar-thin flex flex-col items-center`}>
 
             {/* 1. OUTILS (ICON BUTTONS) */}
             <div className="flex flex-col items-center gap-1.5 w-full">
@@ -8405,47 +8467,26 @@ export default function TacticsBoard({
 
               <button
                 onClick={() => { setActiveTool("select"); setDrawingTool("brush"); }}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${activeTool === "select"
-                  ? isModernSleek
-                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                  : isModernSleek
-                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                  }`}
+                className={railBtnClass(activeTool === "select")}
                 title={t.tactics.tools.select}
               >
                 <MousePointer className="h-4 w-4" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.selectBtn}</span>
+                <span className={railLabelClass}>{t.tactics.tools.selectBtn}</span>
               </button>
 
               <button
                 onClick={() => { setActiveTool("move"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${activeTool === "move"
-                  ? isModernSleek
-                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                  : isModernSleek
-                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                  }`}
+                className={railBtnClass(activeTool === "move")}
                 title={t.tactics.tools.move}
               >
                 <Move className="h-4 w-4" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.moveBtn}</span>
+                <span className={railLabelClass}>{t.tactics.tools.moveBtn}</span>
               </button>
 
               {/* Ligne Tactique (Pleine & Pointillée sur le même bouton) */}
               <button
                 onClick={handleToggleLineTool}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer relative ${activeTool === "line"
-                  ? isModernSleek
-                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                  : isModernSleek
-                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                  }`}
+                className={railBtnClass(activeTool === "line")}
                 title={
                   activeTool === "line"
                     ? drawingTool === "shape-dashed-line"
@@ -8463,7 +8504,7 @@ export default function TacticsBoard({
                     <line x1="5" y1="19" x2="19" y2="5" />
                   </svg>
                 )}
-                <span className="text-[7px] font-black uppercase tracking-tighter mt-0.5 leading-none">
+                <span className={railLabelClass}>
                   {activeTool === "line"
                     ? drawingTool === "shape-dashed-line"
                       ? t.tactics.tools.dashedLine
@@ -8486,51 +8527,44 @@ export default function TacticsBoard({
 
               <button
                 onClick={() => { setActiveTool("arrow"); setDrawingTool("arrow-direct"); setSelectedStrokeIndex(null); }}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${activeTool === "arrow"
-                  ? isModernSleek
-                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                  : isModernSleek
-                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                  }`}
+                className={railBtnClass(activeTool === "arrow")}
                 title={t.tactics.tools.arrow}
               >
                 <ArrowUpRight className="h-4 w-4" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.arrowBtn}</span>
+                <span className={railLabelClass}>{t.tactics.tools.arrowBtn}</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTool("draw"); setDrawingTool("shape-rect"); setSelectedStrokeIndex(null); }}
+                className={railBtnClass(activeTool === "draw" && drawingTool === "shape-rect")}
+                title={t.tactics.tools.zoneTooltip}
+              >
+                <Scan className="h-4 w-4" />
+                <span className={railLabelClass}>{t.tactics.tools.zoneBtn}</span>
               </button>
 
               <button
                 onClick={() => { setActiveTool("draw"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${activeTool === "draw"
-                  ? isModernSleek
-                    ? "bg-emerald-600 text-white border-emerald-600 font-black shadow-md shadow-emerald-600/30"
-                    : "bg-[#00E599] text-[#0d1117] border-[#00E599] shadow-md shadow-[#00e599]/20"
-                  : isModernSleek
-                    ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 shadow-2xs"
-                    : "bg-[#090d14] border-[#1a2130] text-[#62728f] hover:text-brand-cream hover:border-[#354563]"
-                  }`}
+                className={railBtnClass(activeTool === "draw" && drawingTool !== "shape-rect")}
                 title={t.tactics.tools.draw}
               >
                 <Pencil className="h-4 w-4" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.drawBtn}</span>
+                <span className={railLabelClass}>{t.tactics.tools.drawBtn}</span>
               </button>
 
               <button
                 onClick={handleClearDrawings}
                 disabled={drawingActions.length === 0}
-                className={`w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${drawingActions.length > 0
-                  ? isModernSleek
+                className={!isModernSleek
+                  ? `tb-rail-btn w-full py-2 flex flex-col items-center justify-center gap-1 transition ${drawingActions.length > 0 ? "text-rose-400 hover:bg-rose-500/10 cursor-pointer" : "text-slate-600 cursor-not-allowed"}`
+                  : `w-11 h-11 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer ${drawingActions.length > 0
                     ? "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100 hover:border-rose-400 shadow-2xs"
-                    : "bg-rose-950/80 border-rose-800 text-rose-300 hover:bg-rose-900 hover:text-white hover:border-rose-500 shadow-md shadow-rose-950/40"
-                  : isModernSleek
-                    ? "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed"
-                    : "bg-[#090d14] border-[#1a2130] text-[#62728f]/40 cursor-not-allowed"
+                    : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed"
                   }`}
                 title={t.tactics.tools.clearDrawings}
               >
                 <Trash2 className={`h-4 w-4 ${drawingActions.length > 0 ? (isModernSleek ? "text-rose-600" : "text-rose-400") : ""}`} />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">{t.tactics.tools.clearBtn}</span>
+                <span className={railLabelClass}>{t.tactics.tools.clearBtn}</span>
               </button>
             </div>
 
@@ -8539,7 +8573,7 @@ export default function TacticsBoard({
             {/* 2. STROKE COLOR / SIZE PICKER */}
             <div className="flex flex-col items-center gap-1 w-full" title={t.tactics.tools.strokeOptions}>
               <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>{t.tactics.strokeSection}</span>
-              <div className={`flex flex-col items-center gap-1.5 ${isModernSleek ? "bg-slate-100 border border-slate-200 shadow-2xs" : "bg-[#090d14] border-[#1a2130]"} p-1.5 rounded-xl`}>
+              <div className={`${isModernSleek ? "flex flex-col" : "grid grid-cols-2"} items-center gap-1.5 ${isModernSleek ? "bg-slate-100 border border-slate-200 shadow-2xs" : "bg-[#090d14] border-[#1a2130]"} p-1.5 rounded-xl`}>
                 {["#00E599", "#ef4444", "#3b82f6", "#1e293b", "#eab308"].map((c) => (
                   <button
                     key={c}
@@ -8552,58 +8586,54 @@ export default function TacticsBoard({
               </div>
             </div>
 
-            <div className={`w-8 h-px ${isModernSleek ? "bg-slate-200" : "bg-[#1f293d]"}`} />
+            </div>
 
-            {/* 4. ACTIONS (ICON BUTTONS) */}
+          {/* 4. EXPORT, OFFRE PRO, PARAMÈTRES & AIDE (épinglés en bas du rail) */}
+          <div className={`border-t ${isModernSleek ? "border-slate-200 bg-slate-50 p-2" : "border-[#2a2f37] py-2"} flex flex-col items-center gap-1 shrink-0`}>
             <div id="tour-export-actions" className="flex flex-col items-center gap-1.5 w-full">
-              <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>{t.tactics.exportSection}</span>
-
               <button
                 onClick={handleOpenExportModal}
-                className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center transition cursor-pointer shadow-sm ${isModernSleek
-                  ? "bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
-                  : "bg-gradient-to-r from-[#00E599]/20 to-emerald-600/20 hover:from-[#00E599]/30 hover:to-emerald-600/30 border border-[#00E599]/50 text-[#00E599] shadow-[#00e599]/10"
-                  }`}
+                className={isModernSleek
+                  ? "w-11 h-11 rounded-xl flex flex-col items-center justify-center transition cursor-pointer bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
+                  : "w-12 py-1.5 rounded-md flex flex-col items-center justify-center transition cursor-pointer bg-[#e9c349] hover:bg-[#f2d469] text-[#241a00]"}
                 title={t.tactics.tools.exportPng}
               >
-                <Download className="h-4 w-4" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">PNG</span>
+                {isModernSleek && <Download className="h-4 w-4" />}
+                <span className={isModernSleek ? "text-[7.5px] font-black uppercase tracking-tighter mt-0.5" : "text-[9px] font-black uppercase leading-tight text-center"}>{t.tactics.tools.exportHdBtn}</span>
               </button>
 
               <button
                 onClick={() => setShowSquad3DModal(true)}
-                className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center transition cursor-pointer shadow-sm ${isModernSleek
-                  ? "bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 shadow-2xs"
-                  : "bg-gradient-to-r from-amber-500/20 via-amber-600/20 to-yellow-500/20 hover:from-amber-500/30 hover:via-amber-600/30 hover:to-yellow-500/30 border border-amber-500/50 text-amber-300 shadow-amber-500/10"
-                  }`}
+                className={isModernSleek
+                  ? "w-11 h-11 rounded-xl flex flex-col items-center justify-center transition cursor-pointer bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 shadow-2xs"
+                  : "tb-rail-btn w-full py-1.5 flex flex-col items-center justify-center gap-1 transition cursor-pointer text-[#e9c349] hover:bg-white/5"}
                 title={t.tactics.tools.cardView3D}
               >
-                <Sparkles className="h-4 w-4 text-amber-500" />
-                <span className="text-[7.5px] font-black uppercase tracking-tighter mt-0.5">3D</span>
+                <Sparkles className="h-4 w-4" />
+                <span className={railLabelClass}>3D</span>
               </button>
             </div>
 
-          </div>
+            {!isProOrAdmin && (
+              <button
+                onClick={() => setIsCheckoutOpen(true)}
+                className={isModernSleek
+                  ? "w-11 h-11 rounded-xl flex items-center justify-center transition cursor-pointer border bg-gradient-to-r from-[#00E599] to-[#059669] border-[#00E599] text-[#0d1117] hover:brightness-110"
+                  : "tb-rail-btn w-full py-1.5 flex flex-col items-center justify-center gap-1 transition cursor-pointer text-[#e9c349] hover:bg-white/5"}
+                title={t.tactics.tools.subscribePro}
+              >
+                <Award className="h-5 w-5 shrink-0" />
+                {!isModernSleek && <span className={railLabelClass}>Pro</span>}
+              </button>
+            )}
 
-          {/* 5. PLAN PRO CTA (ICON) */}
-          <div className={`p-2 border-t ${isModernSleek ? "border-slate-200 bg-slate-50" : "border-[#1f293d] bg-[#090c12]"} flex justify-center`}>
-            <button
-              onClick={() => {
-                if (isUserAdmin && onOpenAdminPlatform) {
-                  onOpenAdminPlatform();
-                } else {
-                  setIsCheckoutOpen(true);
-                }
-              }}
-              className={`w-11 h-11 rounded-xl flex items-center justify-center transition cursor-pointer border ${isProOrAdmin
-                ? isModernSleek
-                  ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 shadow-xs"
-                  : "bg-emerald-500/20 border-emerald-500/40 text-amber-400 hover:bg-emerald-500/30"
-                : "bg-gradient-to-r from-[#00E599] to-[#059669] border-[#00E599] text-[#0d1117] hover:brightness-110 shadow-lg shadow-[#00e599]/10"
-                }`}
-              title={isProOrAdmin ? (isUserAdmin ? t.tactics.tools.proBadgeAdmin : t.tactics.tools.proBadgeActive(activePlan)) : t.tactics.tools.subscribePro}
-            >
-              <Award className="h-5 w-5 shrink-0" />
+            <button onClick={handleOpenUserConfig} className={railBtnClass(false)} title={t.tactics.tools.settingsBtn}>
+              <Settings className="h-4 w-4" />
+              <span className={railLabelClass}>{t.tactics.tools.settingsBtn}</span>
+            </button>
+            <button onClick={() => setIsUserGuideModalOpen(true)} className={railBtnClass(false)} title={t.tactics.tools.helpBtn}>
+              <CircleHelp className="h-4 w-4" />
+              <span className={railLabelClass}>{t.tactics.tools.helpBtn}</span>
             </button>
           </div>
 
@@ -8612,7 +8642,7 @@ export default function TacticsBoard({
         {/* ========================================================= */}
         {/* CENTER PANEL: PITCH VIEWPORT & CONTROLLERS & FORMATIONS */}
         {/* ========================================================= */}
-        <main className={`flex-1 flex flex-col ${isModernSleek ? "bg-[#f1f5f9]" : "bg-[#07090e]"} ${isCompactUI ? "p-1.5 sm:p-2" : "p-1.5 sm:p-2.5 lg:p-3 xl:p-4"} overflow-y-auto overflow-x-hidden scrollbar-thin transition-all duration-200`}>
+        <main className={`tb-main flex-1 flex flex-col ${isModernSleek ? "bg-[#f1f5f9]" : "bg-[#07090e]"} ${isCompactUI ? "p-1.5 sm:p-2" : "p-1.5 sm:p-2.5 lg:p-3 xl:p-4"} overflow-y-auto overflow-x-hidden scrollbar-thin transition-all duration-200`}>
 
           {/* Pitch Area Main Toolbar */}
           <div
@@ -8620,7 +8650,7 @@ export default function TacticsBoard({
             className={`relative z-30 flex flex-wrap items-center justify-between ${isCompactUI ? "py-1.5 px-3 gap-1.5 mb-2 text-[90%]" : "py-2 px-4 gap-2 mb-3"
               } ${isModernSleek
                 ? "bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-sm text-slate-800"
-                : "bg-[#0d1117] border border-[#1f293d] rounded-xl shadow-lg"
+                : "tb-toolbar"
               } transition-all duration-300`}
           >
 
@@ -8964,39 +8994,33 @@ export default function TacticsBoard({
               </div>
             </div>
 
-            {/* GROUP 5: Fullscreen Expand Toggle - Prominent & High Visual Priority */}
+            {/* GROUP 5: Simuler la phase (lit les étapes d'animation, ou ouvre l'éditeur s'il n'y en a pas encore) */}
             <div className="flex items-center">
               <button
                 type="button"
-                onClick={togglePitchFullscreen}
-                className={`h-8 px-3 rounded-xl font-black text-xs transition-all duration-200 cursor-pointer flex items-center gap-2 select-none shadow-md ${isPitchFullscreen
-                  ? isModernSleek
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 shadow-emerald-500/20"
-                    : "bg-gradient-to-r from-emerald-500 to-[#00E599] text-slate-950 border border-[#00E599] shadow-[#00E599]/30"
-                  : isModernSleek
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
-                    : "bg-gradient-to-r from-[#00E599] via-emerald-400 to-teal-300 hover:from-emerald-400 hover:to-[#00E599] text-slate-950 border border-[#00E599] shadow-md shadow-[#00E599]/25 hover:shadow-[#00E599]/40 hover:scale-[1.02] active:scale-[0.98]"
+                disabled={isLiveMatchMode}
+                onClick={() => {
+                  setIsAnimationCreatorOpen(true);
+                  if (keyframes.length > 1) setIsPlaying(!isPlaying);
+                }}
+                className={`h-8 px-2.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 select-none border disabled:opacity-40 disabled:cursor-not-allowed ${isModernSleek
+                  ? "bg-white hover:bg-emerald-50 border-slate-200 text-slate-700"
+                  : "bg-[#1d2025] hover:bg-[#272a30] border-[#2a2f37] text-slate-100"
                   }`}
-                title={isPitchFullscreen ? t.tactics.pitchModes.fullscreenExit : t.tactics.pitchModes.fullscreenEnter}
+                title={isLiveMatchMode ? t.tactics.pitchModes.animationLiveDisabled : t.tactics.pitchModes.simulatePhaseTooltip}
               >
-                {isPitchFullscreen ? (
-                  <>
-                    <Minimize2 className="h-4 w-4 shrink-0 stroke-[2.5]" />
-                    <span className="uppercase tracking-wider text-[10.5px] font-black">{t.tactics.pitchModes.fullscreenExit.toUpperCase()}</span>
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 className="h-4 w-4 shrink-0 stroke-[2.5]" />
-                    <span className="uppercase tracking-wider text-[10.5px] font-black">{t.tactics.pitchModes.fullscreenEnter.toUpperCase()}</span>
-                  </>
-                )}
+                {isPlaying
+                  ? <Pause className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
+                  : <Play className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />}
+                <span className="text-[10.5px] font-bold whitespace-nowrap">{t.tactics.pitchModes.simulatePhase}</span>
               </button>
             </div>
 
           </div>
 
+
           {/* PITCH WORKSPACE WITH FLANKING PANELS (LEFT: MON EQUIPE + SUBS, CENTER: PITCH, RIGHT: COMPO ADVERSE) */}
-          <div className="flex-1 flex flex-col lg:flex-row items-stretch lg:items-center justify-center gap-2 xl:gap-3.5 w-full m-auto min-h-0">
+          <div className="tb-workspace flex-1 flex flex-col lg:flex-row items-stretch lg:items-center justify-center gap-2 xl:gap-3.5 w-full m-auto min-h-0">
 
             {/* 1. LEFT FLANKING PANEL: MON EQUIPE (USER CLUB + SUBS) */}
             {!isPitchFullscreen && renderTeamAPanel(false)}
@@ -9592,7 +9616,7 @@ export default function TacticsBoard({
                       onTouchStart={handlePitchPanStart}
                       className={`relative z-0 w-full mx-auto my-auto shrink-0 rounded-3xl overflow-hidden select-none ${isModernSleek
                         ? "border-4 border-slate-300 ring-8 ring-white/90 shadow-2xl bg-[#032e22]"
-                        : "border-4 border-[#1f293d] shadow-2xl bg-[#032e22]"
+                        : "tb-pitch-box border border-[#00E599]/25 shadow-2xl bg-[#06140f]"
                         } ${isPanningPitch
                           ? "cursor-grabbing transition-none"
                           : (zoomScale !== 100 || activeTool === "move") && (activeTool === "select" || activeTool === "move")
@@ -9905,12 +9929,28 @@ export default function TacticsBoard({
                                           : defaultHeadSrc;
 
                                         return (
-                                          <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center relative bg-transparent">
-                                            <img
-                                              src={photoSrc}
-                                              alt={token.name}
-                                              className="w-full h-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] select-none pointer-events-none"
-                                            />
+                                          <div className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center relative">
+                                            <div
+                                              className="w-full h-full rounded-[10px] overflow-hidden border-2 bg-[#0b1512] shadow-lg"
+                                              style={{ borderColor: isTeamB ? (teamBColor || "#e11d48") : (teamAColor || "#00E599") }}
+                                            >
+                                              <img
+                                                src={photoSrc}
+                                                alt={token.name}
+                                                className="w-full h-full object-contain select-none pointer-events-none"
+                                              />
+                                            </div>
+                                            {(token.number ?? null) !== null && (
+                                              <span
+                                                className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black leading-none shadow-md"
+                                                style={{
+                                                  backgroundColor: isTeamB ? (teamBColor || "#e11d48") : (teamAColor || "#00E599"),
+                                                  color: isTeamB ? "#ffffff" : "#04120c",
+                                                }}
+                                              >
+                                                {token.number}
+                                              </span>
+                                            )}
                                           </div>
                                         );
                                       })()
@@ -10057,10 +10097,13 @@ export default function TacticsBoard({
                                 {/* Name Label JUST BELOW the token pastille */}
                                 {token.type.startsWith("player") && showPlayerNames && (
                                   <div className={`absolute top-[100%] mt-1 ${isModernSleek
-                                    ? "bg-white/95 text-slate-900 border border-slate-300 font-black shadow-md shadow-slate-900/10"
-                                    : "bg-slate-950/90 text-slate-200 border border-slate-800 font-bold"
-                                    } text-[9px] px-1.5 py-0.5 rounded-md whitespace-nowrap pointer-events-none flex items-center gap-1 z-20`}>
+                                    ? "bg-white/95 text-slate-900 border border-slate-300 font-black shadow-md shadow-slate-900/10 text-[9px] px-1.5 py-0.5 rounded-md flex items-center gap-1"
+                                    : "tb-token-label bg-[#07090e]/60 rounded px-1 text-white font-bold text-[9px] flex flex-col items-center leading-tight"
+                                    } whitespace-nowrap pointer-events-none z-20`}>
                                     <span>{token.name}</span>
+                                    {!isModernSleek && token.type === "player_a" && token.role && isNaN(Number(token.role)) && (
+                                      <span className="text-[#00E599] text-[8px] font-bold">{token.role}</span>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -10144,7 +10187,7 @@ export default function TacticsBoard({
                       </div>
 
                       {/* Center: Playback Controls & Sequence Timeline */}
-                      <div className="flex-1 flex items-center gap-2 min-w-0 justify-center">
+                      <div className="flex-1 flex items-center gap-2 min-w-fit justify-center">
 
                         {/* Playback Controls (Prev, Play/Pause, Next) - Icon Only */}
                         <div
@@ -10501,7 +10544,7 @@ export default function TacticsBoard({
             </button>
           </div>
 
-          <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto scrollbar-thin h-full">
+          <div className="tb-sidebar-scroll flex-1 flex flex-col p-3 gap-3 overflow-y-auto scrollbar-thin h-full">
 
             {/* Active Team Pill (Above SCHÉMAS) */}
             <button
@@ -10514,20 +10557,31 @@ export default function TacticsBoard({
               }}
               className={`w-full ${isModernSleek
                 ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800 shadow-2xs"
-                : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d]"
+                : "tb-team-pill"
                 } border hover:border-amber-500/50 p-2 rounded-xl flex items-center justify-between transition cursor-pointer shadow-sm group`}
               title={t.tactics.sidebar.switchTeamTooltip}
             >
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="w-5 h-5 rounded-md bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-500 text-[10px] shrink-0">
-                  🛡️
-                </span>
-                <span className={`text-[11px] font-black ${isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-amber-200"} truncate transition`}>
-                  {activeTeam?.name || "Séniors A (Fanion)"}
+                {isModernSleek ? (
+                  <span className="w-5 h-5 rounded-md bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-500 text-[10px] shrink-0">
+                    🛡️
+                  </span>
+                ) : (
+                  <span className="w-7 h-7 rounded-full border-2 border-[#00E599] flex items-center justify-center shrink-0">
+                    <Shield className="w-3.5 h-3.5 text-[#00E599]" />
+                  </span>
+                )}
+                <span className="min-w-0 text-left">
+                  <span className={`block ${isModernSleek ? "text-[11px]" : "text-sm"} font-black ${isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-amber-200"} truncate transition`}>
+                    {activeTeam?.name || "Séniors A (Fanion)"}
+                  </span>
+                  {!isModernSleek && activeMatch?.competition && (
+                    <span className="block text-[10px] font-semibold text-slate-400 truncate mt-0.5">{activeMatch.competition}</span>
+                  )}
                 </span>
               </div>
               {isProOrAdmin ? (
-                <span className="text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0 shadow-sm">
+                <span className="tb-pro-badge text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0 shadow-sm">
                   PRO
                 </span>
               ) : (
@@ -10538,14 +10592,15 @@ export default function TacticsBoard({
             </button>
 
             {/* SCHÉMAS section (with save, share, and collapse buttons) */}
-            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "bg-[#090d14] border border-[#1a2130]"} rounded-xl p-2 shrink-0`}>
-              <div className={`flex items-center justify-between ${isSchemasSectionCollapsed ? "" : `mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}`}>
+            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "tb-section"} rounded-xl p-2 shrink-0`}>
+              <div className={`tb-section-head flex items-center justify-between ${isSchemasSectionCollapsed ? "" : `mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}`}>
                 <p
                   onClick={() => setIsSchemasSectionCollapsed(!isSchemasSectionCollapsed)}
                   className={`text-[9.5px] ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f] font-black"} uppercase tracking-wider flex items-center gap-1 cursor-pointer select-none`}
                 >
-                  <span>📖 SCHÉMAS</span>
-                  <span className="text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
+                  {!isModernSleek && <Bookmark className="w-4 h-4 text-[#e9c349] shrink-0" />}
+                  <span>{isModernSleek ? "📖 " : ""}SCHÉMAS</span>
+                  <span className="tb-pro-badge text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
                     <Award className="w-2 h-2" /> PRO
                   </span>
                 </p>
@@ -10582,7 +10637,7 @@ export default function TacticsBoard({
                     aria-label={isSchemasSectionCollapsed ? "Déplier la section Schémas" : "Réduire la section Schémas"}
                   >
                     <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isSchemasSectionCollapsed ? "-rotate-90" : ""}`} />
-                    <span>{isSchemasSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
+                    <span className={isModernSleek ? "" : "sr-only"}>{isSchemasSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
                   </button>
                 </div>
               </div>
@@ -10722,8 +10777,8 @@ export default function TacticsBoard({
             </div>
 
             {/* MATCH CARD (MATCH À VENIR / MATCH EN COURS) */}
-            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "bg-[#090d14] border border-[#1a2130]"} rounded-xl p-2.5 shrink-0`}>
-              <div className={`flex items-center justify-between ${isMatchSectionCollapsed ? "" : `mb-2 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1.5`}`}>
+            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "tb-section"} rounded-xl p-2.5 shrink-0`}>
+              <div className={`tb-section-head flex items-center justify-between ${isMatchSectionCollapsed ? "" : `mb-2 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1.5`}`}>
                 <div
                   onClick={() => setIsMatchSectionCollapsed(!isMatchSectionCollapsed)}
                   className="flex items-center gap-1.5 cursor-pointer select-none"
@@ -10735,10 +10790,10 @@ export default function TacticsBoard({
                     </span>
                   ) : (
                     <span className={`${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} text-[9.5px] font-black uppercase flex items-center gap-1`}>
-                      {getSportBallInfo(activeSport).emoji} MATCH
+                      {isModernSleek ? getSportBallInfo(activeSport).emoji : <CalendarDays className="w-4 h-4 text-[#e9c349] shrink-0" />} MATCH
                     </span>
                   )}
-                  <span className="text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
+                  <span className="tb-pro-badge text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
                     <Award className="w-2 h-2" /> PRO
                   </span>
                 </div>
@@ -10784,7 +10839,7 @@ export default function TacticsBoard({
                     aria-label={isMatchSectionCollapsed ? "Déplier la section Match" : "Réduire la section Match"}
                   >
                     <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isMatchSectionCollapsed ? "-rotate-90" : ""}`} />
-                    <span>{isMatchSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
+                    <span className={isModernSleek ? "" : "sr-only"}>{isMatchSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
                   </button>
                 </div>
               </div>
@@ -10792,7 +10847,7 @@ export default function TacticsBoard({
               {!isMatchSectionCollapsed && (
                 /* Match details & Live controls card */
                 <div
-                  className={`${isModernSleek ? "bg-white border-slate-200 text-slate-800 shadow-2xs" : "bg-[#0d1117] border-[#1f293d] text-white"
+                  className={`${isModernSleek ? "bg-white border-slate-200 text-slate-800 shadow-2xs" : "tb-match-card text-white"
                     } border rounded-xl ${isLiveMatchMode ? "p-3" : "p-2.5"} text-center relative overflow-hidden transition ${!isLiveMatchMode
                       ? isModernSleek ? "hover:border-slate-300 group cursor-pointer" : "group cursor-pointer hover:border-[#354563]"
                       : ""
@@ -10801,8 +10856,14 @@ export default function TacticsBoard({
                   <div className="flex items-center justify-between gap-1.5">
                     {/* Home Team */}
                     <div className="flex flex-col items-center flex-1 min-w-0">
-                      <span className={`${isLiveMatchMode ? "text-xs" : "text-[10px]"} mb-0.5`}>🛡️</span>
-                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[9px] max-w-[65px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                      {isModernSleek ? (
+                        <span className={`${isLiveMatchMode ? "text-xs" : "text-[10px]"} mb-0.5`}>🛡️</span>
+                      ) : (
+                        <span className="w-11 h-11 rounded-full border-2 border-[#00E599]/60 bg-[#00E599]/10 text-[#00E599] flex items-center justify-center text-xs font-black mb-1.5">
+                          {teamInitials(activeMatch.homeTeam)}
+                        </span>
+                      )}
+                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
                         {activeMatch.homeTeam}
                       </span>
                       {isLiveMatchMode && (
@@ -10906,8 +10967,14 @@ export default function TacticsBoard({
 
                     {/* Away Team */}
                     <div className="flex flex-col items-center flex-1 min-w-0">
-                      <span className={`${isLiveMatchMode ? "text-xs" : "text-[10px]"} mb-0.5`}>🛡️</span>
-                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[9px] max-w-[65px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                      {isModernSleek ? (
+                        <span className={`${isLiveMatchMode ? "text-xs" : "text-[10px]"} mb-0.5`}>🛡️</span>
+                      ) : (
+                        <span className="w-11 h-11 rounded-full border-2 border-rose-400/60 bg-rose-500/10 text-rose-300 flex items-center justify-center text-xs font-black mb-1.5">
+                          {teamInitials(activeMatch.awayTeam)}
+                        </span>
+                      )}
+                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
                         {activeMatch.awayTeam}
                       </span>
                       {isLiveMatchMode && (
@@ -11179,14 +11246,15 @@ export default function TacticsBoard({
             </div>
 
             {/* NOTES TACTIQUES dictation & editing container */}
-            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "bg-[#090d14] border border-[#1a2130]"} rounded-xl ${isNotesSectionCollapsed ? "p-2 shrink-0" : "p-3 flex-1 flex flex-col min-h-[180px]"}`}>
-              <div className={`flex items-center justify-between ${isNotesSectionCollapsed ? "" : `mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}`}>
+            <div className={`${isModernSleek ? "bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs" : "tb-section"} rounded-xl ${isNotesSectionCollapsed ? "p-2 shrink-0" : "p-3 flex-1 flex flex-col min-h-[180px]"}`}>
+              <div className={`tb-section-head flex items-center justify-between ${isNotesSectionCollapsed ? "" : `mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}`}>
                 <p
                   onClick={() => setIsNotesSectionCollapsed(!isNotesSectionCollapsed)}
                   className={`text-[9.5px] ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer select-none`}
                 >
-                  <span>📝 NOTES</span>
-                  <span className="text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
+                  {!isModernSleek && <NotebookPen className="w-4 h-4 text-[#e9c349] shrink-0" />}
+                  <span>{isModernSleek ? "📝 NOTES" : t.tactics.sidebar.notesTitle}</span>
+                  <span className="tb-pro-badge text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
                     <Award className="w-2 h-2" /> PRO
                   </span>
                 </p>
@@ -11221,7 +11289,7 @@ export default function TacticsBoard({
                     aria-label={isNotesSectionCollapsed ? "Déplier la section Notes" : "Réduire la section Notes"}
                   >
                     <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isNotesSectionCollapsed ? "-rotate-90" : ""}`} />
-                    <span>{isNotesSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
+                    <span className={isModernSleek ? "" : "sr-only"}>{isNotesSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
                   </button>
                 </div>
               </div>
@@ -11254,6 +11322,23 @@ export default function TacticsBoard({
                       : "bg-[#0d1117] border-[#1f293d] focus:border-[#354563] text-slate-200 placeholder-[#62728f]"
                       } border rounded-lg p-2.5 text-xs focus:outline-none resize-none font-medium leading-relaxed scrollbar-thin transition`}
                   />
+                  <input
+                    type="text"
+                    value={quickNote}
+                    onChange={(e) => setQuickNote(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter" || !quickNote.trim()) return;
+                      e.preventDefault();
+                      setTacticalNotes(tacticalNotes.trim() ? `${tacticalNotes.trimEnd()}\n- ${quickNote.trim()}` : `- ${quickNote.trim()}`);
+                      setQuickNote("");
+                    }}
+                    placeholder={t.tactics.sidebar.quickNotePlaceholder}
+                    aria-label={t.tactics.sidebar.quickNotePlaceholder}
+                    className={`w-full mt-2 shrink-0 ${isModernSleek
+                      ? "bg-white border-slate-300 focus:border-emerald-500 text-slate-900 placeholder-slate-400"
+                      : "bg-[#0b0e13] border-[#2a2f37] focus:border-[#00E599]/60 text-slate-100 placeholder-slate-400"
+                      } border rounded-md px-2.5 py-2 text-xs font-medium focus:outline-none transition`}
+                  />
                 </>
               )}
             </div>
@@ -11261,9 +11346,10 @@ export default function TacticsBoard({
           </div>
 
           {/* Quick coaching quotes footer watermark */}
-          <div className={`p-2 border-t ${isModernSleek ? "border-slate-200 bg-slate-50" : "border-[#1f293d] bg-[#090c12]"} text-center`}>
-            <p className={`text-[8.5px] ${isModernSleek ? "text-slate-500" : "text-[#62728f]"} font-bold uppercase tracking-widest`}>
-              THE BOX FOOTBALL CLUB • VERSION DÉMO
+          <div className={`p-2 px-3 border-t ${isModernSleek ? "border-slate-200 bg-slate-50" : "border-[#2a2f37]"} text-center`}>
+            <p className={`text-[8.5px] ${isModernSleek ? "text-slate-500" : "text-slate-400"} font-bold uppercase tracking-widest flex items-center justify-between gap-2`}>
+              <span>THE BOX FOOTBALL CLUB</span>
+              <span className={isModernSleek ? "" : "text-[#00E599]"}>VERSION DÉMO</span>
             </p>
           </div>
 

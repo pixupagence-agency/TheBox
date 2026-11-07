@@ -118,7 +118,7 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
           "Course incurvée (⤴️) : Appel courbé pour déjouer le piège du hors-jeu.",
           "Dessin libre (✏️) : Annotations spontanées et tracés à main levée.",
           "Formes (⭕ / ⬛) : Cadrage du porteur, zones de surnombre ou de pressing.",
-          "Gomme & RAZ : Effacez un tracé précis ou remettez à zéro la pelouse en 1 clic."
+          "Gomme & Effacer : Effacez un tracé précis ou remettez à zéro la pelouse en 1 clic."
         ],
         tip: "Utilisez le raccourci Ctrl + Z pour annuler instantanément votre dernier tracé sans toucher aux joueurs."
       }

@@ -38,7 +38,7 @@ test.describe('Section 9 : Export Haute Définition, Impression & Partage (FT-SH
 
   test('FT-SHARE-01 : Export Image PNG du Terrain Tactique', async ({ page }) => {
     // 1. Bouton d'export PNG direct dans la barre d'outils gauche
-    const pngExportBtn = page.locator('button:has-text("PNG")').first();
+    const pngExportBtn = page.locator('#tour-export-actions button').first();
     await expect(pngExportBtn).toBeVisible({ timeout: 5000 });
 
     // 2. Intercepter le téléchargement du fichier PNG
