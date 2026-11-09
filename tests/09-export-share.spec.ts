@@ -62,7 +62,7 @@ test.describe('Section 9 : Export Haute Définition, Impression & Partage (FT-SH
     await expect(page.locator('text=Partager le Briefing Tactique').first()).toBeVisible({ timeout: 5000 });
     const whatsappBtn = page.locator('button:has-text("Partager sur WhatsApp")').first();
     const emailBtn = page.locator('button:has-text("E-mail")').first();
-    const copyTextBtn = page.locator('button:has-text("Copier le texte du message")').first();
+    const copyTextBtn = page.getByRole('button', { name: 'Copier le texte', exact: true });
 
     await expect(whatsappBtn).toBeVisible({ timeout: 5000 });
     await expect(emailBtn).toBeVisible({ timeout: 5000 });

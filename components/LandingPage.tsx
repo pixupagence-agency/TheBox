@@ -11,6 +11,7 @@ import SportIcon from "./SportIcon";
 import LogoIcon from "./LogoIcon";
 import { LegalTab } from "./LegalAndFaqModal";
 import LandingContactSection from "./LandingContactSection";
+import { confirmAction } from "./ConfirmDialog";
 import { Language, getStoredLanguage, setStoredLanguage, translations } from "@/lib/i18n";
 
 interface LandingPageProps {
@@ -72,9 +73,12 @@ export default function LandingPage({
 
   // Direct Stripe checkout loading state
   const [stripeLoadingPlan, setStripeLoadingPlan] = React.useState<string | null>(null);
+  // Erreur de paiement affichée dans la section tarifs (au lieu d'une alerte native)
+  const [stripeError, setStripeError] = React.useState<string | null>(null);
 
   const handleLaunchStripeCheckout = async (planId: string) => {
     setStripeLoadingPlan(planId);
+    setStripeError(null);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
@@ -88,11 +92,11 @@ export default function LandingPage({
       if (data.url) {
         window.location.assign(data.url);
       } else {
-        alert(data.error || (currentLang === "fr" ? "Erreur lors de la redirection vers le paiement." : "Error redirecting to checkout."));
+        setStripeError(data.error || (currentLang === "fr" ? "Erreur lors de la redirection vers le paiement." : "Error redirecting to checkout."));
         setStripeLoadingPlan(null);
       }
     } catch (e: any) {
-      alert(currentLang === "fr" ? "Erreur de connexion à la passerelle de paiement." : "Payment gateway connection error.");
+      setStripeError(currentLang === "fr" ? "Erreur de connexion à la passerelle de paiement." : "Payment gateway connection error.");
       setStripeLoadingPlan(null);
     }
   };
@@ -137,10 +141,10 @@ export default function LandingPage({
   }));
 
   return (
-    <div className="premium-shell min-h-screen text-slate-100 flex flex-col font-sans selection:bg-[#00E599] selection:text-[#07110e]">
+    <div className="premium-shell min-h-screen text-slate-100 flex flex-col font-sans selection:bg-[#00E599] selection:text-[#04120c]">
       
       {/* BRAND HEADER / NAVBAR */}
-      <header className="border-b border-[#1d2a39] bg-[#091319]/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-[#11141a] bg-[#11141a]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-2">
           
           {/* Logo Brand Emblem - Aligned strictly with the app logo */}
@@ -164,7 +168,7 @@ export default function LandingPage({
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Language Switcher FR / EN */}
             <div 
-              className="flex items-center bg-[#121926] border border-[#232f45] rounded-xl p-1 gap-1 text-xs font-bold shadow-sm"
+              className="flex items-center bg-white/[0.03] border border-white/[0.07] rounded-xl p-1 gap-1 text-xs font-bold shadow-sm"
               role="group"
               aria-label={t.langSwitchAria}
             >
@@ -174,7 +178,7 @@ export default function LandingPage({
                 onClick={() => handleLanguageSelect("fr")}
                 className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer text-xs ${
                   currentLang === "fr"
-                    ? "bg-[#00E599] text-[#07090e] font-black shadow-sm"
+                    ? "bg-white/[0.09] text-white font-black shadow-sm"
                     : "text-slate-400 hover:text-white"
                 }`}
                 title="Français"
@@ -189,7 +193,7 @@ export default function LandingPage({
                 onClick={() => handleLanguageSelect("en")}
                 className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer text-xs ${
                   currentLang === "en"
-                    ? "bg-[#00E599] text-[#07090e] font-black shadow-sm"
+                    ? "bg-white/[0.09] text-white font-black shadow-sm"
                     : "text-slate-400 hover:text-white"
                 }`}
                 title="English"
@@ -203,7 +207,7 @@ export default function LandingPage({
             {onOpenLegalModal && (
               <button
                 onClick={() => onOpenLegalModal("faq")}
-                className="hidden sm:flex items-center justify-center h-10 w-10 rounded-xl border border-[#232f45] bg-[#0d1117]/80 hover:bg-[#121926] text-slate-300 hover:text-white transition cursor-pointer shrink-0"
+                className="hidden sm:flex items-center justify-center h-10 w-10 rounded-xl border border-[#2a2f37] bg-[#11141a]/80 hover:bg-[#191c21] text-slate-300 hover:text-white transition cursor-pointer shrink-0"
                 title={t.faqHelp}
                 aria-label={t.faqHelp}
               >
@@ -213,7 +217,7 @@ export default function LandingPage({
 
             <a
               href="#contact"
-              className="hidden md:flex items-center justify-center h-10 w-10 rounded-xl border border-[#232f45] bg-[#0d1117]/80 hover:bg-[#121926] text-slate-300 hover:text-white transition cursor-pointer shrink-0"
+              className="hidden md:flex items-center justify-center h-10 w-10 rounded-xl border border-[#2a2f37] bg-[#11141a]/80 hover:bg-[#191c21] text-slate-300 hover:text-white transition cursor-pointer shrink-0"
               title={t.contact}
               aria-label={t.contact}
             >
@@ -222,7 +226,7 @@ export default function LandingPage({
 
             <button
               onClick={onOpenLoginModal}
-              className="flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-xl border border-[#232f45] bg-[#121926] hover:bg-[#1a253b] text-xs font-extrabold text-white transition cursor-pointer shrink-0"
+              className="flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-xl border border-[#2a2f37] bg-[#191c21] hover:bg-[#22262d] text-xs font-extrabold text-white transition cursor-pointer shrink-0"
             >
               <LogIn className="h-3.5 w-3.5 text-[#00E599]" />
               <span>{t.login}</span>
@@ -230,7 +234,7 @@ export default function LandingPage({
 
             <button
               onClick={onOpenRegisterModal}
-              className="flex items-center gap-2 h-10 px-4 sm:px-5 rounded-xl bg-white hover:bg-slate-100 text-[#0d1117] text-xs font-black transition cursor-pointer shadow-lg shadow-white/10 hover:shadow-white/20 shrink-0"
+              className="flex items-center gap-2 h-10 px-4 sm:px-5 rounded-xl bg-white hover:bg-slate-100 text-[#04120c] text-xs font-black transition cursor-pointer shadow-lg shadow-white/10 hover:shadow-white/20 shrink-0"
             >
               <UserPlus className="h-3.5 w-3.5" />
               <span>{t.register}</span>
@@ -291,7 +295,7 @@ export default function LandingPage({
               onClick={onOpenLoginModal}
               className="premium-button-primary px-8 py-4 rounded-xl font-black text-sm flex items-center justify-center gap-3 transition duration-200 hover:scale-[1.02] cursor-pointer group uppercase tracking-wider"
             >
-              <LogIn className="h-4 w-4 text-[#0d1117]" />
+              <LogIn className="h-4 w-4 text-[#04120c]" />
               <span>{t.hero.ctaBoard}</span>
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
@@ -306,7 +310,7 @@ export default function LandingPage({
           </div>
 
           {/* Key Feature Highlights Pill Bar */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs text-slate-300 font-bold border-t border-[#1f293d]/80 pt-6">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs text-slate-300 font-bold border-t border-[#2a2f37]/80 pt-6">
             <div className="premium-pill flex items-center gap-2 px-3.5 py-1.5 rounded-full">
               <Check className="w-4 h-4 text-[#00E599]" />
               <span>{t.hero.highlightAnimations}</span>
@@ -326,9 +330,9 @@ export default function LandingPage({
       </section>
 
       {/* SPORTS SHOWCASE SECTION (Football enabled by default, others activable via admin) */}
-      <section className="py-16 bg-[#090d14] border-y border-[#1b2436] px-4 sm:px-6">
+      <section className="py-16 bg-[#0b0e13] border-y border-[#22262d] px-4 sm:px-6">
         <div className="max-w-7xl mx-auto text-center">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#00E599]">
+          <span className="inline-flex px-3 py-1 rounded-full border bg-[#00E599]/10 text-[#00E599] border-[#00E599]/25 text-[10px] font-black uppercase tracking-[0.14em]">
             {t.sports.tag}
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-white mt-2">
@@ -348,27 +352,33 @@ export default function LandingPage({
               return (
                 <button
                   key={sp.id}
-                  onClick={() => {
+                  onClick={async () => {
                     if (isBlocked) {
-                      alert(
-                        currentLang === "fr"
-                          ? `Le sport "${sp.label}" est actuellement réservé ou en attente d'activation par l'administrateur de la plateforme.\n\nConnectez-vous avec votre compte administrateur pour l'activer instantanément.`
-                          : `The sport "${sp.label}" is currently awaiting activation by the platform administrator.\n\nLog in with your administrator account to activate it instantly.`
-                      );
+                      const wantsLogin = await confirmAction({
+                        tone: "warning",
+                        title: currentLang === "fr" ? "Sport en attente d'activation" : "Sport awaiting activation",
+                        subject: sp.label,
+                        message: currentLang === "fr"
+                          ? "Ce sport doit être activé par l'administrateur de la plateforme. Connectez-vous avec votre compte administrateur pour l'activer instantanément."
+                          : "This sport must be activated by the platform administrator. Log in with your administrator account to activate it instantly.",
+                        confirmLabel: currentLang === "fr" ? "Se connecter" : "Log in",
+                        cancelLabel: currentLang === "fr" ? "Fermer" : "Close",
+                      });
+                      if (wantsLogin) onOpenLoginModal();
                     } else {
                       onOpenLoginModal();
                     }
                   }}
                   className={`border rounded-2xl p-6 text-center transition group cursor-pointer flex flex-col items-center justify-center shadow-lg relative ${
                     isBlocked 
-                      ? "bg-[#0a0d13]/80 border-[#1a2233] opacity-85 hover:border-amber-500/50" 
-                      : "bg-[#0d1117] border-[#1f293d] hover:border-[#00E599] hover:shadow-xl hover:shadow-[#00E599]/10"
+                      ? "bg-[#0b0e13]/80 border-[#2a2f37] opacity-85 hover:border-[#d4af37]/50" 
+                      : "bg-[#11141a] border-[#2a2f37] hover:border-[#00E599] hover:shadow-xl hover:shadow-[#00E599]/10"
                   }`}
                 >
                   {/* Status Badge */}
                   <div className="absolute top-3 right-3">
                     {isBlocked ? (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#d4af37]/10 text-[#e9c349] border border-[#d4af37]/30 flex items-center gap-1">
                         🔒 {currentLang === "fr" ? "Sur activation" : "Admin toggle"}
                       </span>
                     ) : (
@@ -380,16 +390,16 @@ export default function LandingPage({
 
                   <div className={`w-20 h-20 sm:w-22 sm:h-22 rounded-2xl border flex items-center justify-center mb-4 transition-all duration-300 shadow-lg ${
                     isBlocked
-                      ? "bg-[#0f1420] border-[#1c273c] text-slate-400 group-hover:text-amber-400 group-hover:border-amber-500/40"
-                      : "bg-[#121926] border-[#233149] text-white group-hover:text-[#00E599] group-hover:bg-[#162236] group-hover:border-[#00E599]/60 group-hover:scale-110"
+                      ? "bg-[#191c21] border-[#2a2f37] text-slate-400 group-hover:text-[#e9c349] group-hover:border-[#d4af37]/40"
+                      : "bg-[#191c21] border-[#2a2f37] text-white group-hover:text-[#00E599] group-hover:bg-[#22262d] group-hover:border-[#00E599]/60 group-hover:scale-110"
                   }`}>
                     <SportIcon sport={sp.id} className="w-10 h-10 sm:w-11 sm:h-11 stroke-[1.8]" />
                   </div>
                   <div>
-                    <h3 className={`text-sm font-black transition ${isBlocked ? "text-slate-300 group-hover:text-amber-300" : "text-white group-hover:text-[#00E599]"}`}>
+                    <h3 className={`text-sm font-black transition ${isBlocked ? "text-slate-300 group-hover:text-[#e9c349]" : "text-white group-hover:text-[#00E599]"}`}>
                       {sp.label}
                     </h3>
-                    <p className={`text-xs font-bold mt-1 ${isBlocked ? "text-amber-400/80" : "text-[#00E599]"}`}>
+                    <p className={`text-xs font-bold mt-1 ${isBlocked ? "text-[#e9c349]/80" : "text-[#00E599]"}`}>
                       {sp.players}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-1 line-clamp-1 font-medium">
@@ -406,14 +416,14 @@ export default function LandingPage({
       </section>
 
       {/* USE CASES SHOWCASE SECTION (3 IMAGES DÉMONTRANT LES UTILITÉS DU COACHING) */}
-      <section className="py-24 bg-gradient-to-b from-[#090d14] via-[#07090e] to-[#090d14] border-b border-[#1b2436] px-4 sm:px-6 relative overflow-hidden">
+      <section className="py-24 bg-gradient-to-b from-[#0b0e13] via-[#07090e] to-[#0b0e13] border-b border-[#22262d] px-4 sm:px-6 relative overflow-hidden">
         {/* Glow ambient background effects */}
         <div className="absolute top-1/3 left-10 w-96 h-96 bg-[#00E599]/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-1/3 right-10 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#121926] border border-[#233149] text-[10px] font-black uppercase tracking-widest text-[#00E599] mb-4 shadow-sm">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#00E599]/10 border border-[#00E599]/25 text-[10px] font-black uppercase tracking-[0.14em] text-[#00E599] mb-4 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-[#00E599]" />
               <span>{t.useCases.tag}</span>
             </div>
@@ -432,7 +442,7 @@ export default function LandingPage({
               return (
                 <div
                   key={i}
-                  className="bg-[#0d1117] border border-[#233149] hover:border-[#00E599]/60 rounded-3xl overflow-hidden flex flex-col group transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(0,229,153,0.12)] hover:-translate-y-1.5"
+                  className="bg-[#11141a] border border-[#2a2f37] hover:border-[#00E599]/60 rounded-3xl overflow-hidden flex flex-col group transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(0,229,153,0.12)] hover:-translate-y-1.5"
                 >
                   {/* Image container with badges and overlay */}
                   <div className="relative aspect-[16/11] w-full overflow-hidden bg-slate-900">
@@ -441,11 +451,11 @@ export default function LandingPage({
                       alt={uc.title}
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0d1117] via-transparent to-black/40 opacity-90" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#11141a] via-transparent to-black/40 opacity-90" />
                     
                     {/* Top pill badges */}
                     <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-                      <span className="bg-[#0d1117]/90 backdrop-blur-md text-[9px] font-black tracking-widest uppercase text-[#00E599] px-3 py-1 rounded-full border border-[#00E599]/40 shadow-lg">
+                      <span className="bg-[#11141a]/90 backdrop-blur-md text-[9px] font-black tracking-widest uppercase text-[#00E599] px-3 py-1 rounded-full border border-[#00E599]/40 shadow-lg">
                         {uc.tag}
                       </span>
                       <span className="bg-[#07090e]/85 backdrop-blur-md text-white font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-lg border border-white/10">
@@ -454,7 +464,7 @@ export default function LandingPage({
                     </div>
 
                     {/* Bottom floating icon */}
-                    <div className="absolute -bottom-5 right-6 w-12 h-12 rounded-2xl bg-[#121926] border border-[#00E599]/40 shadow-xl flex items-center justify-center text-[#00E599] group-hover:bg-[#00E599] group-hover:text-[#07090e] transition-colors duration-300 z-10">
+                    <div className="absolute -bottom-5 right-6 w-12 h-12 rounded-2xl bg-[#191c21] border border-[#00E599]/40 shadow-xl flex items-center justify-center text-[#00E599] group-hover:bg-[#00E599] group-hover:text-[#04120c] transition-colors duration-300 z-10">
                       <Icon className="w-6 h-6" />
                     </div>
                   </div>
@@ -469,7 +479,7 @@ export default function LandingPage({
                         {uc.desc}
                       </p>
 
-                      <div className="border-t border-[#1b2436] mt-6 pt-5 space-y-2.5">
+                      <div className="border-t border-[#22262d] mt-6 pt-5 space-y-2.5">
                         {uc.highlights.map((h, hIdx) => (
                           <div key={hIdx} className="flex items-start gap-2.5 text-xs text-slate-300 font-medium">
                             <CheckCircle2 className="w-4 h-4 text-[#00E599] shrink-0 mt-0.5" />
@@ -479,7 +489,7 @@ export default function LandingPage({
                       </div>
                     </div>
 
-                    <div className="mt-8 pt-4 border-t border-[#1b2436]/60 flex items-center justify-between">
+                    <div className="mt-8 pt-4 border-t border-[#22262d]/60 flex items-center justify-between">
                       <button
                         onClick={onOpenLoginModal}
                         className="text-xs font-black text-[#00E599] hover:text-white flex items-center gap-1.5 transition cursor-pointer group-hover:translate-x-1"
@@ -499,7 +509,7 @@ export default function LandingPage({
       {/* FEATURES GRID */}
       <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#00E599]">
+          <span className="inline-flex px-3 py-1 rounded-full border bg-[#00E599]/10 text-[#00E599] border-[#00E599]/25 text-[10px] font-black uppercase tracking-[0.14em]">
             {t.features.tag}
           </span>
           <h2 className="text-2xl sm:text-4xl font-black text-white mt-2">
@@ -516,13 +526,13 @@ export default function LandingPage({
             return (
               <div
                 key={i}
-                className="bg-[#0d1117] border border-[#233149] rounded-2xl p-6 relative overflow-hidden group hover:border-white transition duration-300 shadow-xl"
+                className="bg-[#11141a] border border-[#2a2f37] rounded-2xl p-6 relative overflow-hidden group hover:border-white transition duration-300 shadow-xl"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-[#121926] border border-[#233149] flex items-center justify-center text-[#00E599] group-hover:text-white transition">
+                  <div className="w-12 h-12 rounded-xl bg-[#191c21] border border-[#2a2f37] flex items-center justify-center text-[#00E599] group-hover:text-white transition">
                     <Icon className="h-6 w-6" />
                   </div>
-                  <span className="text-[8.5px] font-black uppercase tracking-widest text-slate-400 bg-[#121926] px-2.5 py-1 rounded-full border border-[#233149]">
+                  <span className="text-[8.5px] font-black uppercase tracking-widest text-slate-400 bg-[#191c21] px-2.5 py-1 rounded-full border border-[#2a2f37]">
                     {f.tag}
                   </span>
                 </div>
@@ -540,11 +550,11 @@ export default function LandingPage({
       </section>
 
       {/* PRICING TABLE / GRILLE TARIFAIRE */}
-      <section id="tarifs" className="py-20 bg-[#090d14] border-t border-[#1b2436] px-4 sm:px-6 scroll-mt-20">
+      <section id="tarifs" className="py-20 bg-[#0b0e13] border-t border-[#22262d] px-4 sm:px-6 scroll-mt-20">
         <div className="max-w-7xl mx-auto">
           
           <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#00E599] bg-[#121926] px-3 py-1 rounded-full border border-[#233149]">
+            <span className="inline-flex px-3 py-1 rounded-full border bg-[#00E599]/10 text-[#00E599] border-[#00E599]/25 text-[10px] font-black uppercase tracking-[0.14em]">
               {t.pricing.tag}
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-white mt-4">
@@ -555,10 +565,16 @@ export default function LandingPage({
             </p>
           </div>
 
+          {stripeError && (
+            <div role="alert" className="max-w-xl mx-auto -mt-6 mb-10 bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs font-semibold rounded-xl px-4 py-3 text-center">
+              {stripeError}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
             
             {/* PLAN GRATUIT */}
-            <div className="bg-[#0d1117] border border-[#233149] rounded-2xl p-7 flex flex-col justify-between relative shadow-xl hover:border-[#384b6e] transition">
+            <div className="bg-[#11141a] border border-[#2a2f37] rounded-2xl p-7 flex flex-col justify-between relative shadow-xl hover:border-[#3a404a] transition">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">{t.pricing.freeTag}</span>
                 <h3 className="text-xl font-black text-white">{t.pricing.freeTitle}</h3>
@@ -569,7 +585,7 @@ export default function LandingPage({
                   <span className="text-xs text-slate-400 font-semibold">{t.pricing.perMonth}</span>
                 </div>
 
-                <div className="border-t border-[#1b2436] pt-5 space-y-3 mb-8">
+                <div className="border-t border-[#22262d] pt-5 space-y-3 mb-8">
                   {t.pricing.freeFeatures.map((feat, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
                       <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
@@ -581,15 +597,15 @@ export default function LandingPage({
 
               <button
                 onClick={onOpenRegisterModal}
-                className="w-full py-3 px-4 bg-[#121926] hover:bg-[#1a253b] border border-[#233149] text-white font-extrabold text-xs rounded-xl transition cursor-pointer text-center"
+                className="w-full py-3 px-4 bg-[#191c21] hover:bg-[#22262d] border border-[#2a2f37] text-white font-extrabold text-xs rounded-xl transition cursor-pointer text-center"
               >
                 {t.pricing.freeCta}
               </button>
             </div>
 
             {/* PLAN PRO (FEATURED) */}
-            <div className="bg-gradient-to-b from-[#0f172a] to-[#0d1117] border-2 border-[#00E599] rounded-2xl p-7 flex flex-col justify-between relative shadow-2xl shadow-[#00E599]/10 transform md:-translate-y-2">
-              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#00E599] text-[#0d1117] text-[9.5px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-md">
+            <div className="bg-gradient-to-b from-[#191c21] to-[#11141a] border-2 border-[#00E599] rounded-2xl p-7 flex flex-col justify-between relative shadow-2xl shadow-[#00E599]/10 transform md:-translate-y-2">
+              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#00E599] text-[#04120c] text-[9.5px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-md">
                 {t.pricing.recommendedBadge}
               </span>
 
@@ -603,7 +619,7 @@ export default function LandingPage({
                   <span className="text-xs text-slate-400 font-semibold">{t.pricing.perMonth}</span>
                 </div>
 
-                <div className="border-t border-[#1b2436] pt-5 space-y-3 mb-8">
+                <div className="border-t border-[#22262d] pt-5 space-y-3 mb-8">
                   {t.pricing.proFeatures.map((feat, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-xs text-white font-medium">
                       <Check className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
@@ -616,7 +632,7 @@ export default function LandingPage({
               <div className="space-y-2.5 mt-auto">
                 <button
                   onClick={onOpenRegisterModal}
-                  className="w-full py-3.5 px-4 bg-[#00E599] hover:bg-[#06b87d] text-[#0d1117] font-black text-xs rounded-xl transition cursor-pointer text-center shadow-lg shadow-[#00E599]/20"
+                  className="w-full py-3.5 px-4 bg-[#00E599] hover:bg-[#33edad] text-[#04120c] font-black text-xs rounded-xl transition cursor-pointer text-center shadow-lg shadow-[#00E599]/20"
                 >
                   {t.pricing.proCtaTrial}
                 </button>
@@ -624,7 +640,7 @@ export default function LandingPage({
                   type="button"
                   disabled={Boolean(stripeLoadingPlan)}
                   onClick={() => handleLaunchStripeCheckout("pro")}
-                  className="w-full py-2.5 px-3 bg-[#111927] hover:bg-[#182337] border border-[#00E599]/30 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 px-3 bg-[#191c21] hover:bg-[#22262d] border border-[#00E599]/30 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Zap className="h-3.5 w-3.5 text-[#00E599]" />
                   <span>{stripeLoadingPlan === "pro" ? t.pricing.proRedirecting : t.pricing.proCtaSubscribe}</span>
@@ -633,21 +649,21 @@ export default function LandingPage({
             </div>
 
             {/* PLAN PRO+ */}
-            <div className="bg-[#0d1117] border border-[#233149] hover:border-amber-500/50 rounded-2xl p-7 flex flex-col justify-between relative shadow-xl transition">
+            <div className="bg-[#11141a] border border-[#2a2f37] hover:border-[#d4af37]/50 rounded-2xl p-7 flex flex-col justify-between relative shadow-xl transition">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block mb-2">{t.pricing.proPlusTag}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#e9c349] block mb-2">{t.pricing.proPlusTag}</span>
                 <h3 className="text-xl font-black text-white">{t.pricing.proPlusTitle}</h3>
                 <p className="text-xs text-slate-400 mt-1 min-h-[32px]">{t.pricing.proPlusDesc}</p>
 
                 <div className="mt-6 mb-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-amber-400">{t.pricing.proPlusPrice}</span>
+                  <span className="text-4xl font-black text-[#e9c349]">{t.pricing.proPlusPrice}</span>
                   <span className="text-xs text-slate-400 font-semibold">{t.pricing.perMonth}</span>
                 </div>
 
-                <div className="border-t border-[#1b2436] pt-5 space-y-3 mb-8">
+                <div className="border-t border-[#22262d] pt-5 space-y-3 mb-8">
                   {t.pricing.proPlusFeatures.map((feat, idx) => (
-                    <div key={idx} className={`flex items-start gap-2.5 text-xs ${idx === 1 ? "text-amber-300 font-bold bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/30" : "text-slate-200 font-semibold"}`}>
-                      <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div key={idx} className={`flex items-start gap-2.5 text-xs ${idx === 1 ? "text-[#e9c349] font-bold bg-[#d4af37]/10 p-2.5 rounded-lg border border-[#d4af37]/30" : "text-slate-200 font-semibold"}`}>
+                      <Check className="h-4 w-4 text-[#e9c349] shrink-0 mt-0.5" />
                       <span>{feat}</span>
                     </div>
                   ))}
@@ -657,7 +673,7 @@ export default function LandingPage({
               <div className="space-y-2.5 mt-auto">
                 <button
                   onClick={onOpenRegisterModal}
-                  className="w-full py-3 px-4 bg-[#121926] hover:bg-[#1a253b] border border-amber-500/40 text-amber-300 hover:text-white font-extrabold text-xs rounded-xl transition cursor-pointer text-center"
+                  className="w-full py-3 px-4 bg-[#191c21] hover:bg-[#22262d] border border-[#d4af37]/40 text-[#e9c349] hover:text-white font-extrabold text-xs rounded-xl transition cursor-pointer text-center"
                 >
                   {t.pricing.proPlusCtaTrial}
                 </button>
@@ -665,9 +681,9 @@ export default function LandingPage({
                   type="button"
                   disabled={Boolean(stripeLoadingPlan)}
                   onClick={() => handleLaunchStripeCheckout("club")}
-                  className="w-full py-2.5 px-3 bg-[#111927] hover:bg-[#182337] border border-amber-500/30 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 px-3 bg-[#191c21] hover:bg-[#22262d] border border-[#d4af37]/30 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  <Zap className="h-3.5 w-3.5 text-amber-400" />
+                  <Zap className="h-3.5 w-3.5 text-[#e9c349]" />
                   <span>{stripeLoadingPlan === "club" ? t.pricing.proRedirecting : t.pricing.proPlusCtaSubscribe}</span>
                 </button>
               </div>
@@ -682,7 +698,7 @@ export default function LandingPage({
       <LandingContactSection isAdmin={isAdmin} language={currentLang} />
 
       {/* BRAND FOOTER */}
-      <footer className="mt-auto border-t border-[#1b2436] bg-[#090d14] py-10 px-4 sm:px-6 text-xs text-slate-500">
+      <footer className="mt-auto border-t border-[#22262d] bg-[#0b0e13] py-10 px-4 sm:px-6 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           
           <div className="flex items-center gap-3">
@@ -699,12 +715,12 @@ export default function LandingPage({
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-400">
             {/* Footer Language switcher */}
-            <div className="flex items-center gap-1 bg-[#121824] border border-[#232f45] rounded-lg p-0.5 text-[11px] font-bold">
+            <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.07] rounded-lg p-0.5 text-[11px] font-bold">
               <button
                 type="button"
                 id="lang-switch-footer-fr"
                 onClick={() => handleLanguageSelect("fr")}
-                className={`px-2 py-0.5 rounded transition ${currentLang === "fr" ? "bg-[#00E599] text-[#07090e] font-black" : "text-slate-400 hover:text-white"}`}
+                className={`px-2 py-0.5 rounded transition ${currentLang === "fr" ? "bg-white/[0.09] text-white font-black" : "text-slate-400 hover:text-white"}`}
               >
                 FR
               </button>
@@ -712,7 +728,7 @@ export default function LandingPage({
                 type="button"
                 id="lang-switch-footer-en"
                 onClick={() => handleLanguageSelect("en")}
-                className={`px-2 py-0.5 rounded transition ${currentLang === "en" ? "bg-[#00E599] text-[#07090e] font-black" : "text-slate-400 hover:text-white"}`}
+                className={`px-2 py-0.5 rounded transition ${currentLang === "en" ? "bg-white/[0.09] text-white font-black" : "text-slate-400 hover:text-white"}`}
               >
                 EN
               </button>

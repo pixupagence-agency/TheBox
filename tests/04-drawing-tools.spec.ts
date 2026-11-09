@@ -20,24 +20,27 @@ test.describe('Section 4 : Boîte à Outils de Tracés & Schématisation (FT-TOO
   });
 
   test('FT-TOOL-01 : Activation des Outils de Tracé (Flèche, Crayon, Ligne)', async ({ page }) => {
+    // État actif d'un outil de la barre : contour vert (thème sombre) ou émeraude (thème clair)
+    const ACTIVE_TOOL_CLASS = /border-\[#00E599\]\/60|border-emerald-400/;
+
     // 1. Outil Flèche de course (ArrowUpRight)
     const arrowBtn = page.locator('button:has(svg.lucide-arrow-up-right)').first();
     await expect(arrowBtn).toBeVisible();
     await arrowBtn.click();
     // Vérification de la classe active
-    await expect(arrowBtn).toHaveClass(/bg-emerald-600|bg-\[#00E599\]/);
+    await expect(arrowBtn).toHaveClass(ACTIVE_TOOL_CLASS);
 
     // 2. Outil Crayon / Dessin libre (Pencil)
     const pencilBtn = page.locator('button:has(svg.lucide-pencil)').first();
     await expect(pencilBtn).toBeVisible();
     await pencilBtn.click();
-    await expect(pencilBtn).toHaveClass(/bg-emerald-600|bg-\[#00E599\]/);
+    await expect(pencilBtn).toHaveClass(ACTIVE_TOOL_CLASS);
 
     // 3. Outil Sélection / Pointeur (MousePointer)
     const selectBtn = page.locator('button:has(svg.lucide-mouse-pointer)').first();
     await expect(selectBtn).toBeVisible();
     await selectBtn.click();
-    await expect(selectBtn).toHaveClass(/bg-emerald-600|bg-\[#00E599\]/);
+    await expect(selectBtn).toHaveClass(ACTIVE_TOOL_CLASS);
   });
 
   test('FT-TOOL-02 : Dessin d\'un Tracé sur le Terrain', async ({ page }) => {

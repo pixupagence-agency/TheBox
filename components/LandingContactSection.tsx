@@ -130,11 +130,11 @@ export default function LandingContactSection({ isAdmin = false, language: propL
   };
 
   return (
-    <section id="contact" className="py-24 px-4 sm:px-6 relative border-t border-[#1b2436] bg-[#080b11] overflow-hidden">
+    <section id="contact" className="py-24 px-4 sm:px-6 relative border-t border-[#22262d] bg-[#0b0e13] overflow-hidden">
 
       {/* Visual background accents */}
       <div className="absolute top-1/4 left-0 w-96 h-96 bg-[#00E599]/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 right-0 w-96 h-96 bg-[#d4af37]/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
 
@@ -147,7 +147,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
             {t.title1} <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00E599] via-emerald-400 to-cyan-400">
+            <span className="text-[#00E599]">
               {t.titleHighlight}
             </span>
           </h2>
@@ -163,9 +163,9 @@ export default function LandingContactSection({ isAdmin = false, language: propL
           {/* LEFT COLUMN: INFORMATIONS & ASSURANCES */}
           <div className="lg:col-span-5 space-y-6">
 
-            <div className="bg-[#0d1117] border border-[#1f293d] rounded-2xl p-6 sm:p-7 space-y-6 shadow-xl relative overflow-hidden">
+            <div className="bg-[#11141a] border border-[#2a2f37] rounded-2xl p-6 sm:p-7 space-y-6 shadow-xl relative overflow-hidden">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border border-[#00E599]/30 text-[#00E599]">
+                <div className="p-3 rounded-xl bg-[#00E599]/10 border border-[#00E599]/30 text-[#00E599]">
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
@@ -176,7 +176,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
 
               <div className="space-y-4 pt-2">
                 <div className="flex items-start gap-3.5">
-                  <div className="p-2 rounded-lg bg-[#161c28] border border-[#233149] text-[#00E599] shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[#191c21] border border-[#2a2f37] text-[#00E599] shrink-0 mt-0.5">
                     <Clock className="w-4 h-4" />
                   </div>
                   <div>
@@ -188,7 +188,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                 </div>
 
                 <div className="flex items-start gap-3.5">
-                  <div className="p-2 rounded-lg bg-[#161c28] border border-[#233149] text-cyan-400 shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[#191c21] border border-[#2a2f37] text-[#e9c349] shrink-0 mt-0.5">
                     <Building className="w-4 h-4" />
                   </div>
                   <div>
@@ -200,7 +200,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                 </div>
 
                 <div className="flex items-start gap-3.5">
-                  <div className="p-2 rounded-lg bg-[#161c28] border border-[#233149] text-amber-400 shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[#191c21] border border-[#2a2f37] text-[#e9c349] shrink-0 mt-0.5">
                     <Trophy className="w-4 h-4" />
                   </div>
                   <div>
@@ -213,7 +213,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
               </div>
 
               {/* Direct email card */}
-              <div className="bg-[#121824] border border-[#1f293d] rounded-xl p-4 flex items-center justify-between gap-3">
+              <div className="bg-[#191c21] border border-[#2a2f37] rounded-xl p-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <ShieldCheck className="w-5 h-5 text-[#00E599]" />
                   <div>
@@ -245,10 +245,10 @@ export default function LandingContactSection({ isAdmin = false, language: propL
 
           {/* RIGHT COLUMN: THE CONTACT FORM */}
           <div className="lg:col-span-7">
-            <div className="bg-[#0d1117] border border-[#1f293d] rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+            <div className="bg-[#11141a] border border-[#2a2f37] rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl relative">
 
               {/* Badge info header */}
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#1b2436] flex-wrap gap-2">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#22262d] flex-wrap gap-2">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Mail className="w-4 h-4 text-[#00E599]" />
                   <span>{t.directSending}</span>
@@ -271,13 +271,13 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                     <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto mt-2 leading-relaxed">
                       {t.successDesc}{isAdmin ? <> (<span className="text-[#00E599] font-mono font-bold">{TARGET_CONTACT_EMAIL}</span>)</> : null}
                     </p>
-                    <div className="bg-[#121824] border border-[#1f293d] rounded-xl p-3.5 max-w-md mx-auto mt-4 text-left text-xs text-slate-400 space-y-1">
+                    <div className="bg-[#191c21] border border-[#2a2f37] rounded-xl p-3.5 max-w-md mx-auto mt-4 text-left text-xs text-slate-400 space-y-1">
                       <div className="flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5 text-[#00E599]" />
                         <span>{t.guaranteeDesc}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                        <Mail className="w-3.5 h-3.5 text-[#e9c349]" />
                         <span>{currentLang === "fr" ? "Réponse par email à :" : "Email reply to:"} <strong className="text-white font-mono">{email}</strong></span>
                       </div>
                     </div>
@@ -289,7 +289,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                       setIsSuccess(false);
                       setMessage("");
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-[#161c28] hover:bg-[#1e2738] text-slate-200 font-bold text-xs transition border border-[#233149] cursor-pointer inline-flex items-center gap-2"
+                    className="px-5 py-2.5 rounded-xl bg-[#191c21] hover:bg-[#22262d] text-slate-200 font-bold text-xs transition border border-[#2a2f37] cursor-pointer inline-flex items-center gap-2"
                   >
                     <span>{t.sendAnother}</span>
                   </button>
@@ -318,7 +318,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder={t.placeholderFullName}
-                        className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+                        className="w-full bg-[#191c21] border border-[#2a2f37] focus:border-[#00E599]/50 focus:ring-2 focus:ring-[#00E599]/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
 
@@ -333,7 +333,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder={t.placeholderEmail}
-                        className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+                        className="w-full bg-[#191c21] border border-[#2a2f37] focus:border-[#00E599]/50 focus:ring-2 focus:ring-[#00E599]/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
                   </div>
@@ -350,7 +350,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder={t.placeholderPhone}
-                        className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+                        className="w-full bg-[#191c21] border border-[#2a2f37] focus:border-[#00E599]/50 focus:ring-2 focus:ring-[#00E599]/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
 
@@ -364,7 +364,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                         value={club}
                         onChange={(e) => setClub(e.target.value)}
                         placeholder={t.placeholderClub}
-                        className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+                        className="w-full bg-[#191c21] border border-[#2a2f37] focus:border-[#00E599]/50 focus:ring-2 focus:ring-[#00E599]/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
                   </div>
@@ -378,10 +378,10 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                       <select
                         value={sport}
                         onChange={(e) => setSport(e.target.value)}
-                        className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none transition cursor-pointer"
+                        className="w-full bg-[#191c21] border border-[#2a2f37] focus:border-[#00E599]/50 focus:ring-2 focus:ring-[#00E599]/10 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none transition cursor-pointer"
                       >
                         {sportsOptions.map((sp) => (
-                          <option key={sp.id} value={sp.id} className="bg-[#0d1117] text-white">
+                          <option key={sp.id} value={sp.id} className="bg-[#11141a] text-white">
                             {sp.label}
                           </option>
                         ))}
@@ -401,10 +401,10 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                             setSubjectText(found.label);
                           }
                         }}
-                        className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none transition cursor-pointer"
+                        className="w-full bg-[#191c21] border border-[#2a2f37] focus:border-[#00E599]/50 focus:ring-2 focus:ring-[#00E599]/10 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none transition cursor-pointer"
                       >
                         {contactReasons.map((r) => (
-                          <option key={r.id} value={r.id} className="bg-[#0d1117] text-white">
+                          <option key={r.id} value={r.id} className="bg-[#11141a] text-white">
                             {r.label}
                           </option>
                         ))}
@@ -432,7 +432,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                           setSubjectText(val);
                         }}
                         placeholder={t.placeholderSubject}
-                        className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl pl-22 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+                        className="w-full bg-[#191c21] border border-[#2a2f37] focus:border-[#00E599]/50 focus:ring-2 focus:ring-[#00E599]/10 rounded-xl pl-22 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition"
                       />
                     </div>
                   </div>
@@ -451,7 +451,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder={t.placeholderMessage}
-                      className="w-full bg-[#121824] border border-[#233149] focus:border-[#00E599] rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none transition resize-none leading-relaxed"
+                      className="w-full bg-[#191c21] border border-[#2a2f37] focus:border-[#00E599]/50 focus:ring-2 focus:ring-[#00E599]/10 rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none transition resize-none leading-relaxed"
                     />
                   </div>
 
@@ -464,7 +464,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
                     <button
                       type="submit"
                       disabled={isSubmitting || !message.trim() || !email.trim()}
-                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-lg shadow-[#00E599]/20 disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#00E599] to-[#33edad] hover:brightness-110 text-[#04120c] font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-lg shadow-[#00E599]/20 disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
                     >
                       {isSubmitting ? (
                         <>

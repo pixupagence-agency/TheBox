@@ -28,6 +28,17 @@ import { saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFire
 import { isSuperAdminEmail } from "@/lib/security";
 import { Language, translations, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 import { confirmAction } from "@/components/ConfirmDialog";
+import { useToolbarOverflow } from "@/lib/useToolbarOverflow";
+
+// Mode live : durée d'une période et de la mi-temps
+const HALF_DURATION_SECONDS = 45 * 60;
+const HALFTIME_BREAK_SECONDS = 15 * 60;
+
+// Groupes de la barre d'outils du terrain, dans l'ordre d'affichage
+const TOOLBAR_GROUP_KEYS = ["view", "display", "drawing", "color", "export", "zoom"] as const;
+// Ordre dans lequel les groupes passent dans le menu chevron quand la ligne manque de place
+// (les outils de dessin, les plus utilisés, restent visibles le plus longtemps)
+const TOOLBAR_HIDE_ORDER = ["zoom", "export", "display", "view", "color", "drawing"] as const;
 
 export interface Token {
   id: string;
@@ -742,6 +753,37 @@ export default function TacticsBoard({
   onOpenSupportModal
 }: TacticsBoardProps) {
 
+  // Barre d'outils du terrain sur une seule ligne. Les outils qui ne tiennent pas sont repliés
+  // derrière un chevron ; au clic, ils se déroulent horizontalement dans la barre (défilement latéral).
+  const toolbarOverflow = useToolbarOverflow(TOOLBAR_GROUP_KEYS, TOOLBAR_HIDE_ORDER);
+  const [isToolbarOverflowOpen, setIsToolbarOverflowOpen] = useState(false);
+  const toolbarScrollerRef = useRef<HTMLDivElement>(null);
+  const hasToolbarOverflow = toolbarOverflow.hiddenKeys.length > 0;
+
+  useEffect(() => {
+    if (!hasToolbarOverflow) setIsToolbarOverflowOpen(false);
+  }, [hasToolbarOverflow]);
+
+  // Déroulé : on fait défiler jusqu'aux outils révélés (à côté du chevron) ; replié : retour au début
+  useEffect(() => {
+    const scroller = toolbarScrollerRef.current;
+    if (!scroller) return;
+    if (isToolbarOverflowOpen) {
+      requestAnimationFrame(() => scroller.scrollTo({ left: scroller.scrollWidth, behavior: "smooth" }));
+    } else {
+      scroller.scrollTo({ left: 0 });
+    }
+  }, [isToolbarOverflowOpen]);
+
+  useEffect(() => {
+    if (!isToolbarOverflowOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsToolbarOverflowOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isToolbarOverflowOpen]);
+
   // Active coach helper & live trial calculation
   const activeCoach = coaches.find(c => c.id === activeCoachId) || coaches[0];
   const [liveTrialStatus, setLiveTrialStatus] = useState<TrialTimeRemaining>(() =>
@@ -1282,6 +1324,16 @@ export default function TacticsBoard({
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamCategory, setNewTeamCategory] = useState("Séniors");
 
+  // Fenêtre de gestion des équipes : fermeture avec Échap
+  useEffect(() => {
+    if (!isMultiTeamModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsMultiTeamModalOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isMultiTeamModalOpen]);
+
   // Persistent Rosters for each team managed by the user
   const [teamRostersMap, setTeamRostersMap] = useState<Record<string, TeamRosterPlayer[]>>(() => {
     if (typeof window !== "undefined") {
@@ -1778,6 +1830,22 @@ export default function TacticsBoard({
     return 0;
   });
 
+  // Mi-temps : compte à rebours de 15 minutes lancé au clic sur PAUSE
+  const [halftimeSecondsLeft, setHalftimeSecondsLeft] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
+      const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
+      if (saved) {
+        try {
+          const value = JSON.parse(saved).halftimeSecondsLeft;
+          if (typeof value === "number") return value;
+        } catch (e) { }
+      }
+    }
+    return HALFTIME_BREAK_SECONDS;
+  });
+  const [isHalftimeRunning, setIsHalftimeRunning] = useState<boolean>(false);
+
   const [homeScore, setHomeScore] = useState<number>(() => {
     if (typeof window !== "undefined") {
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
@@ -1841,10 +1909,10 @@ export default function TacticsBoard({
     if (typeof window !== "undefined" && activeMatchId) {
       safeLocalStorageSetItem(
         `thebox_match_state_${activeMatchId}`,
-        JSON.stringify({ homeScore, awayScore, liveTimerSeconds, currentPeriod })
+        JSON.stringify({ homeScore, awayScore, liveTimerSeconds, currentPeriod, halftimeSecondsLeft })
       );
     }
-  }, [homeScore, awayScore, liveTimerSeconds, currentPeriod, activeMatchId]);
+  }, [homeScore, awayScore, liveTimerSeconds, currentPeriod, halftimeSecondsLeft, activeMatchId]);
 
   // Persist active match pitch state (keyframes and drawings) per match
   useEffect(() => {
@@ -1866,6 +1934,7 @@ export default function TacticsBoard({
   // Handle Match Finish & Save to match record
   const handleFinishLiveMatch = (isAuto: boolean = false) => {
     setIsLiveTimerRunning(false);
+    setIsHalftimeRunning(false);
     setIsLiveMatchMode(false);
     setLiveActionToken(null);
     setCurrentPeriod("FIN");
@@ -1906,42 +1975,63 @@ export default function TacticsBoard({
     setTimeout(() => setSleekToastMessage(null), 4500);
   };
 
-  // Live match timer effect & period automation (1MT 45m = 2700s, 2MT 90m = 5400s)
+  // Chrono du match : il continue au-delà des 45 minutes de la période (temps additionnel),
+  // l'affichage passe alors en rouge (1MT : après 45:00, 2MT : après 90:00).
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (isLiveMatchMode && isLiveTimerRunning) {
       interval = setInterval(() => {
-        setLiveTimerSeconds((prev) => {
-          const next = prev + 1;
-
-          // Auto Pause at 45:00 for 1MT -> MI-TEMPS
-          if (next === 2700 && currentPeriod === "1MT") {
-            setIsLiveTimerRunning(false);
-            setCurrentPeriod("MI-TEMPS");
-            setSleekToastMessage("⏸️ Fin de la 1ère Mi-Temps (45:00) ! Passage en pause mi-temps.");
-            setTimeout(() => setSleekToastMessage(null), 4000);
-          }
-
-          // Auto Match Finish at 90:00 for 2MT -> FIN
-          if (next === 5400 && currentPeriod === "2MT") {
-            setTimeout(() => {
-              handleFinishLiveMatch(true);
-            }, 100);
-          }
-
-          return next;
-        });
+        setLiveTimerSeconds((prev) => prev + 1);
       }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isLiveMatchMode, isLiveTimerRunning, currentPeriod]);
+  }, [isLiveMatchMode, isLiveTimerRunning]);
+
+  // Compte à rebours de la mi-temps (15 minutes)
+  useEffect(() => {
+    if (!isLiveMatchMode || !isHalftimeRunning || currentPeriod !== "MI-TEMPS") return;
+    const interval = setInterval(() => {
+      setHalftimeSecondsLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isLiveMatchMode, isHalftimeRunning, currentPeriod]);
+
+  useEffect(() => {
+    if (halftimeSecondsLeft === 0 && isHalftimeRunning) {
+      setIsHalftimeRunning(false);
+      setSleekToastMessage("⏱️ Fin de la mi-temps (15:00) ! Cliquez sur 2MT pour lancer la seconde période.");
+      setTimeout(() => setSleekToastMessage(null), 4500);
+    }
+  }, [halftimeSecondsLeft, isHalftimeRunning]);
 
   const formatLiveTime = (totalSecs: number) => {
     const m = Math.floor(totalSecs / 60);
     const s = totalSecs % 60;
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // Temps réglementaire de la période en cours dépassé (affichage en rouge)
+  const isPeriodOvertime =
+    (currentPeriod === "1MT" && liveTimerSeconds > HALF_DURATION_SECONDS) ||
+    (currentPeriod === "2MT" && liveTimerSeconds > 2 * HALF_DURATION_SECONDS);
+  const isHalftime = currentPeriod === "MI-TEMPS";
+
+  // Changement de période depuis les boutons 1MT / PAUSE / 2MT
+  const handleSelectLivePeriod = (period: "1MT" | "MI-TEMPS" | "2MT") => {
+    if (period === "MI-TEMPS") {
+      // Pause = mi-temps : le chrono du match s'arrête et le compte à rebours de 15 minutes démarre
+      setIsLiveTimerRunning(false);
+      if (currentPeriod !== "MI-TEMPS") setHalftimeSecondsLeft(HALFTIME_BREAK_SECONDS);
+      setIsHalftimeRunning(true);
+    } else {
+      setIsHalftimeRunning(false);
+      // La seconde période repart de 45:00, quel que soit le temps additionnel de la première
+      if (period === "2MT" && currentPeriod !== "2MT") setLiveTimerSeconds(HALF_DURATION_SECONDS);
+      setIsLiveTimerRunning(true);
+    }
+    setCurrentPeriod(period);
   };
 
   const handleDeleteMatchEvent = (eventId: string) => {
@@ -2093,6 +2183,8 @@ export default function TacticsBoard({
           setHomeScore(parsed.homeScore || 0);
           setAwayScore(parsed.awayScore || 0);
           setLiveTimerSeconds(parsed.liveTimerSeconds || 0);
+          setHalftimeSecondsLeft(typeof parsed.halftimeSecondsLeft === "number" ? parsed.halftimeSecondsLeft : HALFTIME_BREAK_SECONDS);
+          setIsHalftimeRunning(false);
           const periodLoaded = parsed.currentPeriod || "1MT";
           setCurrentPeriod(periodLoaded);
           if (periodLoaded === "FIN") {
@@ -2102,12 +2194,16 @@ export default function TacticsBoard({
           setHomeScore(0);
           setAwayScore(0);
           setLiveTimerSeconds(0);
+          setHalftimeSecondsLeft(HALFTIME_BREAK_SECONDS);
+          setIsHalftimeRunning(false);
           setCurrentPeriod("1MT");
         }
       } else {
         setHomeScore(0);
         setAwayScore(0);
         setLiveTimerSeconds(0);
+        setHalftimeSecondsLeft(HALFTIME_BREAK_SECONDS);
+        setIsHalftimeRunning(false);
         setCurrentPeriod("1MT");
       }
 
@@ -4557,6 +4653,8 @@ export default function TacticsBoard({
       keyframes: keyframes,
       drawings: drawingActions,
       isAnimation: isAnim,
+      // Adversaires masqués à l'enregistrement : ils restent absents de l'image, du GIF et de la vidéo partagés
+      showOpponents,
       matchId: targetMatchId,
       teamId: targetTeam.id,
       teamName: targetTeam.name,
@@ -4640,6 +4738,8 @@ export default function TacticsBoard({
     if (schema.sport) {
       setActiveSport(schema.sport);
     }
+    // Rétablit l'affichage des adversaires tel qu'il était à l'enregistrement
+    setShowOpponents(schema.showOpponents !== false);
     if (schema.id && activeMatchId && schema.matchId !== activeMatchId) {
       handleLinkSchemaToMatch(schema.id, activeMatchId);
     }
@@ -5509,7 +5609,12 @@ export default function TacticsBoard({
 
     exportTokens.forEach((token: any) => {
       if (token.type === "ball" && !showBall && !schemaOverride) return;
-      if (token.type === "player_b" && !showOpponents && !schemaOverride) return;
+      // Schéma enregistré : on suit l'état des adversaires au moment de l'enregistrement
+      // (les anciens schémas, sans cette information, les affichent comme avant)
+      const opponentsVisible = schemaOverride && !Array.isArray(schemaOverride)
+        ? schemaOverride.showOpponents !== false
+        : schemaOverride ? true : showOpponents;
+      if (token.type === "player_b" && !opponentsVisible) return;
 
       const tokX = pitchX + (token.x / 100) * pitchW;
       const tokY = pitchY + (token.y / 100) * pitchH;
@@ -6639,9 +6744,9 @@ export default function TacticsBoard({
       ? "calc(100vh - 125px)"
       : "calc(100vh - 75px)";
 
-  const normalPitchHeightExpr = !isLiveMatchMode && isAnimationCreatorOpen
-    ? "min(48vh, calc(100vh - 230px))"
-    : isToolboxVisible
+  // L'ouverture de la barre d'animation ne réduit pas le terrain : la barre s'ajoute sous la barre d'outils
+  // et la zone centrale défile si besoin.
+  const normalPitchHeightExpr = isToolboxVisible
       ? "min(54vh, calc(100vh - 200px))"
       : "min(65vh, calc(100vh - 150px))";
 
@@ -8398,6 +8503,67 @@ export default function TacticsBoard({
       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
     }`;
   const topToolGroupClass = `flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`;
+
+  // Groupes de la barre du terrain : affichés dans la ligne, ou mis de côté derrière le chevron.
+  // renderToolbarHiddenGroups est appelé après les groupes, la liste est donc complète à ce moment-là.
+  const toolbarHiddenNodes: { key: string; node: React.ReactNode }[] = [];
+  const toolbarSeparator = (
+    <div aria-hidden="true" className={`h-5 w-px mx-0.5 shrink-0 ${isModernSleek ? "bg-slate-300" : "bg-[#2a3344]"}`} />
+  );
+  const renderToolbarGroup = (key: (typeof TOOLBAR_GROUP_KEYS)[number], withSeparator: boolean, node: React.ReactNode) => {
+    if (toolbarOverflow.hiddenKeys.includes(key)) {
+      toolbarHiddenNodes.push({ key, node });
+      return null;
+    }
+    return (
+      <div
+        key={key}
+        data-toolbar-key={key}
+        className={`flex items-center gap-[inherit] shrink-0 ${key === "zoom" ? "ml-auto" : ""}`}
+      >
+        {withSeparator && toolbarSeparator}
+        {node}
+      </div>
+    );
+  };
+
+  // Outils repliés, déroulés à la suite des outils visibles quand le chevron est ouvert
+  const renderToolbarHiddenGroups = () => {
+    if (!isToolbarOverflowOpen || toolbarHiddenNodes.length === 0) return null;
+    return toolbarHiddenNodes.map(({ key, node }) => (
+      <div key={key} data-toolbar-key={key} className="flex items-center gap-[inherit] shrink-0 animate-fade-in">
+        {toolbarSeparator}
+        {node}
+      </div>
+    ));
+  };
+
+  const renderToolbarChevron = () => {
+    if (toolbarHiddenNodes.length === 0) return null;
+    const label = isToolbarOverflowOpen
+      ? (currentLang === "fr" ? "Replier les outils" : "Collapse tools")
+      : (currentLang === "fr" ? "Plus d'outils" : "More tools");
+    return (
+      <button
+        type="button"
+        onClick={() => setIsToolbarOverflowOpen((open) => !open)}
+        className={`${topToolBtnClass(isToolbarOverflowOpen)} h-8 w-8 sm:w-8 shrink-0`}
+        title={label}
+        aria-label={label}
+        aria-expanded={isToolbarOverflowOpen}
+      >
+        <ChevronRight className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isToolbarOverflowOpen ? "rotate-180" : ""}`} />
+        {!isToolbarOverflowOpen && (
+          <span
+            aria-hidden="true"
+            className={`absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full text-[8.5px] font-black leading-[14px] text-center ${isModernSleek ? "bg-emerald-600 text-white" : "bg-[#00E599] text-[#04120c]"}`}
+          >
+            {toolbarHiddenNodes.length}
+          </span>
+        )}
+      </button>
+    );
+  };
   const teamInitials = (name?: string) => {
     const words = (name || "").trim().split(/\s+/).filter(Boolean);
     if (words.length === 0) return "?";
@@ -8893,8 +9059,21 @@ export default function TacticsBoard({
             className={`relative z-30 flex flex-wrap items-center justify-start ${isCompactUI ? "py-1.5 px-3 gap-1.5 mb-2 text-[90%]" : "py-2 px-4 gap-2 mb-3"
               } tb-toolbar ${isModernSleek ? "text-slate-800" : ""} transition-all duration-300`}
           >
+            {/* Ligne unique : les groupes qui ne tiennent pas passent dans le menu du chevron */}
+            <div ref={toolbarOverflow.rowRef} className="flex items-center flex-nowrap gap-[inherit] w-full basis-full min-w-0">
+            {/* Zone des groupes : défile horizontalement quand les outils repliés sont déroulés */}
+            <div
+              ref={toolbarScrollerRef}
+              onWheel={(e) => {
+                // Molette verticale → défilement horizontal de la barre déroulée
+                if (!isToolbarOverflowOpen || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+                e.currentTarget.scrollLeft += e.deltaY;
+              }}
+              className={`flex items-center flex-nowrap gap-[inherit] flex-1 min-w-0 py-1 -my-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${isToolbarOverflowOpen ? "overflow-x-auto overscroll-x-contain" : "overflow-hidden"}`}
+            >
 
             {/* GROUP 1: Vue du terrain (complet / demi-terrain, paysage / portrait) */}
+            {renderToolbarGroup("view", false,
             <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
               <button
                 type="button"
@@ -8973,11 +9152,10 @@ export default function TacticsBoard({
                 <Smartphone className="h-[18px] w-[18px] shrink-0" />
               </button>
             </div>
-
-            {/* Séparateur vertical */}
-            <div aria-hidden="true" className={`h-5 w-px mx-0.5 shrink-0 ${isModernSleek ? "bg-slate-300" : "bg-[#2a3344]"}`} />
+            )}
 
             {/* GROUP 2: Affichage (ballon, adversaires, noms, volets, représentation des joueurs) */}
+            {renderToolbarGroup("display", true,
             <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
               <button
                 type="button"
@@ -9117,11 +9295,10 @@ export default function TacticsBoard({
               </button>
               </div>
             </div>
-
-            {/* Séparateur vertical */}
-            <div aria-hidden="true" className={`h-5 w-px mx-0.5 shrink-0 ${isModernSleek ? "bg-slate-300" : "bg-[#2a3344]"}`} />
+            )}
 
             {/* GROUP 6: Outils de dessin */}
+            {renderToolbarGroup("drawing", true,
             <div id="tour-drawing-tools" className={topToolGroupClass} title={t.tactics.toolsSection}>
               <button
                 type="button"
@@ -9210,8 +9387,10 @@ export default function TacticsBoard({
                 <Trash2 className="h-[18px] w-[18px] shrink-0" />
               </button>
             </div>
+            )}
 
             {/* GROUP 7: Couleur du tracé */}
+            {renderToolbarGroup("color", false,
             <div className={`${topToolGroupClass} px-1.5 gap-1.5`} title={t.tactics.tools.strokeOptions}>
               {["#00E599", "#ef4444", "#3b82f6", "#1e293b", "#eab308"].map((c) => (
                 <button
@@ -9225,11 +9404,10 @@ export default function TacticsBoard({
                 />
               ))}
             </div>
-
-            {/* Séparateur vertical */}
-            <div aria-hidden="true" className={`h-5 w-px mx-0.5 shrink-0 ${isModernSleek ? "bg-slate-300" : "bg-[#2a3344]"}`} />
+            )}
 
             {/* GROUP 8: Export PNG & Vue 3D */}
+            {renderToolbarGroup("export", true,
             <div id="tour-export-actions" className={topToolGroupClass}>
               <button
                 type="button"
@@ -9256,9 +9434,11 @@ export default function TacticsBoard({
                 <Sparkles className="h-[18px] w-[18px] shrink-0" />
               </button>
             </div>
+            )}
 
             {/* GROUP 4: Zooms (Échelle Terrain & Taille Joueurs) — calés à droite, collés au bouton Animation */}
-            <div className={`ml-auto flex items-center gap-2 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 px-2 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]"}`}>
+            {renderToolbarGroup("zoom", false,
+            <div className={`flex items-center gap-2 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 px-2 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]"}`}>
               {/* Pitch Zoom */}
               <div title={t.tactics.pitchModes.pitchZoom} className="flex items-center gap-1">
                 <ZoomIn className={`h-[18px] w-[18px] shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
@@ -9339,9 +9519,17 @@ export default function TacticsBoard({
                 </button>
               </div>
             </div>
+            )}
+
+            {/* Outils repliés, déroulés à la suite quand le chevron est ouvert */}
+            {renderToolbarHiddenGroups()}
+            </div>
+
+            {/* Chevron : déroule / replie les outils qui ne tiennent pas sur la ligne */}
+            {renderToolbarChevron()}
 
             {/* GROUP 5: Animation (ouvre les contrôles en seconde ligne) — reste à droite, ouvert ou fermé */}
-            <div className="flex items-center gap-1.5">
+            <div ref={toolbarOverflow.pinnedRef} className="flex items-center gap-1.5 shrink-0">
               <div className={`flex items-center h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                 <button
                   type="button"
@@ -9376,6 +9564,7 @@ export default function TacticsBoard({
                   <span className="text-[10.5px] font-bold whitespace-nowrap">Animation</span>
                 </button>
                 </div>
+            </div>
             </div>
 
             {!isPitchFullscreen && !isLiveMatchMode && isAnimationCreatorOpen && renderAnimationStrip()}
@@ -9431,8 +9620,11 @@ export default function TacticsBoard({
                             {homeScore} - {awayScore}
                           </span>
                           <div className={`h-3 w-px ${isModernSleek ? "bg-rose-300" : "bg-rose-800/60"}`} />
-                          <span className={`text-[9px] font-mono font-bold ${isModernSleek ? "text-slate-600" : "text-slate-300"}`}>
-                            {formatLiveTime(liveTimerSeconds)}
+                          <span className={`text-[9px] font-mono font-bold ${isHalftime
+                            ? halftimeSecondsLeft === 0 ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-amber-700" : "text-[#e9c349]")
+                            : isPeriodOvertime ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-slate-600" : "text-slate-300")
+                            }`}>
+                            {isHalftime ? `MT ${formatLiveTime(halftimeSecondsLeft)}` : formatLiveTime(liveTimerSeconds)}
                           </span>
                         </div>
                         <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
@@ -10606,7 +10798,7 @@ export default function TacticsBoard({
 
           <div className="tb-sidebar-scroll flex-1 flex flex-col p-3 gap-3 overflow-y-auto scrollbar-thin h-full">
 
-            {/* Active Team Pill (Above SCHÉMAS) */}
+            {/* Active Team Pill (au-dessus du module Match) */}
             <button
               onClick={() => {
                 if (!isProOrAdmin) {
@@ -10641,6 +10833,493 @@ export default function TacticsBoard({
                 </span>
               )}
             </button>
+
+            {/* MATCH CARD (MATCH À VENIR / MATCH EN COURS) */}
+            <div className={`tb-section ${isModernSleek ? "text-slate-800" : ""} rounded-xl p-2.5 shrink-0`}>
+              <div className={`tb-section-head flex items-center justify-between ${isMatchSectionCollapsed ? "" : `mb-2 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1.5`}`}>
+                <div
+                  onClick={() => setIsMatchSectionCollapsed(!isMatchSectionCollapsed)}
+                  className="flex items-center gap-1.5 cursor-pointer select-none"
+                >
+                  {isLiveMatchMode ? (
+                    <span className={`${isModernSleek ? "text-slate-900" : "text-slate-200"} text-[10px] font-black flex items-center gap-1.5 uppercase`}>
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                      MATCH EN DIRECT
+                    </span>
+                  ) : (
+                    <span className={`${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} text-[9.5px] font-black uppercase flex items-center gap-1`}>
+                      <CalendarDays className={`w-4 h-4 ${isModernSleek ? "text-amber-600" : "text-[#e9c349]"} shrink-0`} /> MATCH
+                    </span>
+                  )}
+                  <span className="tb-pro-badge text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
+                    <Award className="w-2 h-2" /> PRO
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      if (!isProOrAdmin) {
+                        setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
+                        setIsCheckoutOpen(true);
+                        return;
+                      }
+                      setIsMatchEditOpen(true);
+                    }}
+                    className={`relative h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#00E599]"} border rounded transition cursor-pointer shrink-0`}
+                    title="Gérer ou ajouter des matchs"
+                  >
+                    <Plus className="h-3 w-3 shrink-0" />
+                  </button>
+                  <button
+                    onClick={handlePrevMatch}
+                    disabled={filteredMatches.findIndex(m => m.id === activeMatchId) <= 0}
+                    className={`h-6 w-6 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
+                    title="Match précédent"
+                  >
+                    <ChevronLeft className="h-3 w-3 shrink-0" />
+                  </button>
+                  <button
+                    onClick={handleNextMatch}
+                    disabled={filteredMatches.findIndex(m => m.id === activeMatchId) >= filteredMatches.length - 1 || filteredMatches.length === 0}
+                    className={`h-6 w-6 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
+                    title="Match suivant"
+                  >
+                    <ChevronRight className="h-3 w-3 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMatchSectionCollapsed(!isMatchSectionCollapsed)}
+                    className={`h-6 px-1.5 rounded border text-[8.5px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
+                      ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900"
+                      : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-white"
+                      }`}
+                    title={isMatchSectionCollapsed ? "Déplier la section Match" : "Réduire la section Match"}
+                    aria-label={isMatchSectionCollapsed ? "Déplier la section Match" : "Réduire la section Match"}
+                  >
+                    <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isMatchSectionCollapsed ? "-rotate-90" : ""}`} />
+                    <span className="sr-only">{isMatchSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
+                  </button>
+                </div>
+              </div>
+
+              {!isMatchSectionCollapsed && (
+                /* Match details & Live controls card */
+                <div
+                  className={`tb-match-card ${isModernSleek ? "text-slate-800" : "text-white"} border rounded-xl ${isLiveMatchMode ? "p-3" : "p-2.5"} text-center relative overflow-hidden transition ${!isLiveMatchMode
+                      ? isModernSleek ? "hover:border-slate-300 group cursor-pointer" : "group cursor-pointer hover:border-[#354563]"
+                      : ""
+                    }`}
+                >
+                  <div className="flex items-center justify-between gap-1.5">
+                    {/* Home Team */}
+                    <div className="flex flex-col items-center flex-1 min-w-0">
+                      <span className={`w-11 h-11 rounded-full border-2 flex items-center justify-center text-xs font-black mb-1.5 ${isModernSleek ? "border-emerald-500/60 bg-emerald-50 text-emerald-700" : "border-[#00E599]/60 bg-[#00E599]/10 text-[#00E599]"}`}>
+                        {teamInitials(activeMatch.homeTeam)}
+                      </span>
+                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                        {activeMatch.homeTeam}
+                      </span>
+                      {isLiveMatchMode && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setHomeScore(Math.max(0, homeScore - 1)); }}
+                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title="Diminuer le score domicile"
+                          >
+                            -
+                          </button>
+                          <span className={`text-sm font-black px-0.5 font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{homeScore}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setHomeScore(homeScore + 1); }}
+                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title="Augmenter le score domicile"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Score or VS center column with MODE LIVE button */}
+                    <div className="flex flex-col items-center justify-center gap-1.5 shrink-0">
+                      {activeMatch?.isFinished || currentPeriod === "FIN" ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSleekToastMessage("🔒 Match terminé : Le mode Live est désactivé.");
+                            setTimeout(() => setSleekToastMessage(null), 3500);
+                            setIsMatchFinishedModalOpen(true);
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-[9px] font-black transition cursor-pointer flex items-center gap-1 border shadow-2xs ${isModernSleek
+                            ? "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                            : "bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800"
+                            }`}
+                          title="Match terminé - Cliquez pour ouvrir le bilan du match"
+                        >
+                          <span>🏁 MATCH TERMINÉ</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isLiveMatchMode && !isProPlusOrAdmin) {
+                              setIsLiveMatchUpgradeModalOpen(true);
+                              return;
+                            }
+                            const nextState = !isLiveMatchMode;
+                            setIsLiveMatchMode(nextState);
+                            if (nextState) {
+                              // Reprise pendant la mi-temps : c'est le compte à rebours qui repart, pas le chrono du match
+                              if (currentPeriod === "MI-TEMPS") setIsHalftimeRunning(true);
+                              else setIsLiveTimerRunning(true);
+                              setIsSchemasSectionCollapsed(true);
+                              setIsNotesSectionCollapsed(true);
+                              setIsMatchSectionCollapsed(false);
+                            } else {
+                              setIsLiveTimerRunning(false);
+                              setIsHalftimeRunning(false);
+                              setLiveActionToken(null);
+                              setIsSchemasSectionCollapsed(false);
+                              setIsNotesSectionCollapsed(false);
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-[9px] font-black transition cursor-pointer flex items-center gap-1.5 border shadow-2xs ${isLiveMatchMode
+                            ? isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-white border-[#26354d]"
+                            : isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#131d2b] hover:bg-[#1a283b] text-slate-200 border-[#26354d]"
+                            }`}
+                          title={isLiveMatchMode ? "Désactiver le mode Live Match" : (!isProPlusOrAdmin ? "Mode Live Match (Exclusivité PRO+)" : "Lancer le mode Live Match")}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                          <span>{isLiveMatchMode ? "LIVE" : "MODE LIVE"}</span>
+                          {!isProPlusOrAdmin && (
+                            <span className="text-[7px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm ml-0.5">PRO+</span>
+                          )}
+                        </button>
+                      )}
+
+                      {isLiveMatchMode ? (
+                        <div className="text-center">
+                          <div className={`text-lg font-black font-mono px-3 py-1 rounded-xl border ${isModernSleek
+                            ? "bg-slate-50 text-slate-900 border-slate-200 shadow-2xs"
+                            : "bg-[#111827] text-white border-[#26354d]"
+                            }`}>
+                            {homeScore} - {awayScore}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className={`text-[9px] ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} font-black uppercase`}>VS</span>
+                      )}
+                    </div>
+
+                    {/* Away Team */}
+                    <div className="flex flex-col items-center flex-1 min-w-0">
+                      <span className={`w-11 h-11 rounded-full border-2 flex items-center justify-center text-xs font-black mb-1.5 ${isModernSleek ? "border-rose-400/60 bg-rose-50 text-rose-600" : "border-rose-400/60 bg-rose-500/10 text-rose-300"}`}>
+                        {teamInitials(activeMatch.awayTeam)}
+                      </span>
+                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                        {activeMatch.awayTeam}
+                      </span>
+                      {isLiveMatchMode && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setAwayScore(Math.max(0, awayScore - 1)); }}
+                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title="Diminuer le score extérieur"
+                          >
+                            -
+                          </button>
+                          <span className={`text-sm font-black px-0.5 font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{awayScore}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setAwayScore(awayScore + 1); }}
+                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title="Augmenter le score extérieur"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chrono, Period & Events section */}
+                  {isLiveMatchMode ? (
+                    <div className={`mt-3 pt-2.5 border-t flex flex-col items-center gap-2 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+                      {/* Boutons rapides de points en mode BASKETBALL et RUGBY */}
+                      {(activeSport === "basketball" || activeSport === "rugby") && (
+                        <div className={`w-full p-2 rounded-xl border space-y-2 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
+                          <div className={`text-[9px] font-extrabold uppercase tracking-wider text-center ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                            {getSportBallInfo(activeSport).emoji} Noter les points ({activeMatch.homeTeam})
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5 w-full">
+                            {getSportScoreActions(activeSport).map((action) => (
+                              <button
+                                key={`quick-home-${action.id}`}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const targetToken: Token =
+                                    (liveActionToken && liveActionToken.type === "player_a" ? liveActionToken : null) ||
+                                    currentTokens.find((tk) => tk.type === "player_a") || {
+                                      id: `home_team_${activeSport}`,
+                                      type: "player_a",
+                                      x: 50,
+                                      y: 50,
+                                      name: activeMatch.homeTeam,
+                                      role: "Équipe",
+                                    };
+                                  handleRecordScore(targetToken, action);
+                                }}
+                                className={`py-1.5 px-1 rounded-lg border text-[9.5px] font-bold transition cursor-pointer flex flex-col items-center justify-center leading-snug shadow-2xs ${isModernSleek
+                                  ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-800"
+                                  : "bg-[#111827] hover:bg-[#1a2333] border-[#26354d] text-slate-200"
+                                  }`}
+                                title={`Ajouter ${action.label} (+${action.points} sur le score)`}
+                              >
+                                <span>{action.icon} {action.label}</span>
+                                <span className={`text-[9px] font-black ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>+{action.points}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className={`flex items-center justify-between gap-1.5 pt-1.5 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+                            <span className={`text-[8.5px] font-bold uppercase truncate max-w-[90px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                              Adv. ({activeMatch.awayTeam}) :
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {getSportScoreActions(activeSport).map((action) => (
+                                <button
+                                  key={`quick-away-${action.id}`}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const targetToken: Token =
+                                      (liveActionToken && liveActionToken.type === "player_b" ? liveActionToken : null) ||
+                                      currentTokens.find((tk) => tk.type === "player_b") || {
+                                        id: `away_team_${activeSport}`,
+                                        type: "player_b",
+                                        x: 50,
+                                        y: 50,
+                                        name: activeMatch.awayTeam,
+                                        role: "Équipe",
+                                      };
+                                    handleRecordScore(targetToken, action);
+                                  }}
+                                  className={`px-2 py-1 rounded-md border text-[9px] font-bold transition cursor-pointer ${isModernSleek
+                                    ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700"
+                                    : "bg-[#111827] hover:bg-[#1a2333] border-[#26354d] text-slate-300"
+                                    }`}
+                                  title={`Adversaire : ${action.label} (+${action.points} sur le score)`}
+                                >
+                                  +{action.points}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Period Selector Buttons (1MT | PAUSE = mi-temps | 2MT) */}
+                      <div className={`flex items-center justify-between gap-1 w-full p-1 rounded-xl border ${isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#080d14] border-[#1f293d]"}`}>
+                        {(["1MT", "MI-TEMPS", "2MT"] as const).map((periodKey) => (
+                          <button
+                            key={periodKey}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectLivePeriod(periodKey);
+                            }}
+                            title={periodKey === "MI-TEMPS" ? "Mi-temps : lance un compte à rebours de 15 minutes" : undefined}
+                            className={`flex-1 py-1.5 rounded-lg text-[9.5px] font-black transition cursor-pointer text-center uppercase tracking-tight ${currentPeriod === periodKey
+                              ? isModernSleek
+                                ? "bg-white text-slate-900 border border-slate-300 shadow-2xs"
+                                : "bg-[#1e293b] text-white border border-slate-600"
+                              : isModernSleek
+                                ? "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                                : "bg-[#111827] text-slate-400 hover:text-white hover:bg-[#1a2333]"
+                              }`}
+                          >
+                            {periodKey === "MI-TEMPS" ? "PAUSE" : periodKey}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Timer Bar */}
+                      <div className={`flex items-center justify-between gap-1.5 w-full p-2 rounded-xl border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
+                        {isHalftime ? (
+                          // Mi-temps : compte à rebours de 15 minutes
+                          <span
+                            className={`text-sm font-mono font-black px-2.5 py-1 rounded-lg border ${halftimeSecondsLeft === 0
+                              ? isModernSleek ? "bg-rose-50 text-rose-600 border-rose-200" : "bg-rose-500/10 text-rose-400 border-rose-500/40"
+                              : isModernSleek ? "bg-amber-50 text-amber-700 border-amber-200 shadow-2xs" : "bg-[#d4af37]/10 text-[#e9c349] border-[#d4af37]/30"
+                              }`}
+                            title="Temps restant avant la reprise"
+                          >
+                            ☕ {formatLiveTime(halftimeSecondsLeft)}
+                          </span>
+                        ) : (
+                          <span
+                            className={`text-sm font-mono font-black px-2.5 py-1 rounded-lg border transition-colors ${isPeriodOvertime
+                              ? isModernSleek ? "bg-rose-50 text-rose-600 border-rose-200 shadow-2xs" : "bg-rose-500/10 text-rose-400 border-rose-500/40"
+                              : isModernSleek ? "bg-white text-slate-900 border-slate-200 shadow-2xs" : "bg-[#111827] text-slate-200 border-[#26354d]"
+                              }`}
+                            title={isPeriodOvertime ? "Temps réglementaire de la période dépassé (temps additionnel)" : undefined}
+                          >
+                            ⏱️ {formatLiveTime(liveTimerSeconds)}
+                          </span>
+                        )}
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isHalftime) setIsHalftimeRunning(!isHalftimeRunning);
+                              else setIsLiveTimerRunning(!isLiveTimerRunning);
+                            }}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition cursor-pointer border ${isModernSleek
+                              ? "bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-2xs"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-200 border-[#26354d]"
+                              }`}
+                          >
+                            {(isHalftime ? isHalftimeRunning : isLiveTimerRunning) ? "PAUSE" : "START"}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isHalftime) {
+                                setIsHalftimeRunning(false);
+                                setHalftimeSecondsLeft(HALFTIME_BREAK_SECONDS);
+                              } else {
+                                setIsLiveTimerRunning(false);
+                                setLiveTimerSeconds(0);
+                              }
+                            }}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition cursor-pointer border ${isModernSleek
+                              ? "bg-white hover:bg-slate-100 text-slate-600 border-slate-200"
+                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
+                              }`}
+                            title={isHalftime ? "Relancer les 15 minutes de mi-temps" : "Réinitialiser le chrono"}
+                          >
+                            🔄
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Manual Match Finish Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFinishLiveMatch();
+                        }}
+                        className={`w-full py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer border flex items-center justify-center gap-1.5 shadow-2xs ${isModernSleek
+                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                          : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-200 border-[#26354d]"
+                          }`}
+                        title="Enregistrer les résultats et terminer officiellement le match"
+                      >
+                        <span>🏁 TERMINER LE MATCH</span>
+                      </button>
+
+                      {/* Match Events Feed Log */}
+                      {matchEvents.filter((evt) => evt.type !== "assist").length > 0 && (
+                        <div className={`mt-1 w-full p-2 rounded-xl border max-h-56 overflow-y-auto text-left space-y-1.5 scrollbar-thin ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
+                          <div className={`text-[9px] font-black uppercase tracking-wider flex items-center justify-between border-b pb-1 ${isModernSleek ? "text-slate-600 border-slate-200" : "text-slate-400 border-[#1f293d]"}`}>
+                            <span>ÉVÉNEMENTS ({matchEvents.filter((evt) => evt.type !== "assist").length}) :</span>
+                            <button
+                              onClick={async () => {
+                                if (await confirmAction({ title: "Effacer l'historique ?", message: "Tous les événements enregistrés pour ce match seront effacés.", confirmLabel: "Effacer" })) {
+                                  setMatchEvents([]);
+                                }
+                              }}
+                              className={`text-[8.5px] font-bold transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
+                            >
+                              Effacer
+                            </button>
+                          </div>
+                          {matchEvents
+                            .filter((evt) => evt.type !== "assist")
+                            .map((evt) => (
+                              <div key={evt.id} className={`text-[10px] font-bold flex items-center justify-between p-1.5 rounded-lg transition group ${isModernSleek ? "text-slate-700 bg-white border border-slate-200/80 hover:bg-slate-100/70" : "text-slate-200 hover:bg-[#131b29]"}`}>
+                                <span className="flex items-center gap-1.5 truncate min-w-0">
+                                  <span className="text-xs">
+                                    {evt.type === "goal"
+                                      ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"))
+                                      : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}
+                                  </span>
+                                  <span className={`font-extrabold truncate max-w-[140px] ${isModernSleek ? "text-slate-800" : "text-white"}`}>
+                                    {evt.player}
+                                    {evt.type === "goal" ? (
+                                      <span className={`font-bold text-[9.5px] ml-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                                        ({evt.points && evt.points > 1 ? `+${evt.points} pts` : "1 pt"}{evt.assister ? ` • ${evt.assister}` : ""})
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className={`text-[9px] font-mono font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                                    {evt.period ? `${evt.period} ${evt.time}` : evt.time}
+                                  </span>
+                                  <button
+                                    onClick={() => handleDeleteMatchEvent(evt.id)}
+                                    className={`opacity-0 group-hover:opacity-100 transition px-1 cursor-pointer font-black text-[9.5px] ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
+                                    title="Supprimer cet événement"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => {
+                        if (!isProOrAdmin) {
+                          setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
+                          setIsCheckoutOpen(true);
+                          return;
+                        }
+                        setIsMatchEditOpen(true);
+                      }}
+                      className={`mt-1.5 pt-1 border-t ${isModernSleek ? "border-slate-100" : "border-[#1f293d]/60"} cursor-pointer text-center`}
+                    >
+                      <div className="flex items-center justify-center gap-1 mb-0.5">
+                        <p className={`text-[8.5px] font-black ${isModernSleek ? "text-slate-700" : "text-slate-300"} uppercase tracking-wider truncate`}>
+                          {activeMatch.competition}
+                        </p>
+                        {activeMatch.isFinished && (
+                          <span className="text-[7px] bg-emerald-500 text-slate-950 font-black px-1 rounded uppercase">
+                            TERMINÉ
+                          </span>
+                        )}
+                      </div>
+                      {activeMatch.score && (
+                        <p className="text-xs font-mono font-black text-[#00E599]">
+                          Score : {activeMatch.score}
+                        </p>
+                      )}
+                      <p className={`text-[8.5px] font-bold ${isModernSleek ? "text-emerald-800" : "text-slate-400"} mt-0.5`}>
+                        {activeMatch.dateTime}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* SCHÉMAS section (with save, share, and collapse buttons) */}
             <div className={`tb-section ${isModernSleek ? "text-slate-800" : ""} rounded-xl p-2 shrink-0`}>
@@ -10824,466 +11503,6 @@ export default function TacticsBoard({
                     })()}
                   </div>
                 </>
-              )}
-            </div>
-
-            {/* MATCH CARD (MATCH À VENIR / MATCH EN COURS) */}
-            <div className={`tb-section ${isModernSleek ? "text-slate-800" : ""} rounded-xl p-2.5 shrink-0`}>
-              <div className={`tb-section-head flex items-center justify-between ${isMatchSectionCollapsed ? "" : `mb-2 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1.5`}`}>
-                <div
-                  onClick={() => setIsMatchSectionCollapsed(!isMatchSectionCollapsed)}
-                  className="flex items-center gap-1.5 cursor-pointer select-none"
-                >
-                  {isLiveMatchMode ? (
-                    <span className={`${isModernSleek ? "text-slate-900" : "text-slate-200"} text-[10px] font-black flex items-center gap-1.5 uppercase`}>
-                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                      MATCH EN DIRECT
-                    </span>
-                  ) : (
-                    <span className={`${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} text-[9.5px] font-black uppercase flex items-center gap-1`}>
-                      <CalendarDays className={`w-4 h-4 ${isModernSleek ? "text-amber-600" : "text-[#e9c349]"} shrink-0`} /> MATCH
-                    </span>
-                  )}
-                  <span className="tb-pro-badge text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
-                    <Award className="w-2 h-2" /> PRO
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => {
-                      if (!isProOrAdmin) {
-                        setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
-                        setIsCheckoutOpen(true);
-                        return;
-                      }
-                      setIsMatchEditOpen(true);
-                    }}
-                    className={`relative h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#00E599]"} border rounded transition cursor-pointer shrink-0`}
-                    title="Gérer ou ajouter des matchs"
-                  >
-                    <Plus className="h-3 w-3 shrink-0" />
-                  </button>
-                  <button
-                    onClick={handlePrevMatch}
-                    disabled={filteredMatches.findIndex(m => m.id === activeMatchId) <= 0}
-                    className={`h-6 w-6 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
-                    title="Match précédent"
-                  >
-                    <ChevronLeft className="h-3 w-3 shrink-0" />
-                  </button>
-                  <button
-                    onClick={handleNextMatch}
-                    disabled={filteredMatches.findIndex(m => m.id === activeMatchId) >= filteredMatches.length - 1 || filteredMatches.length === 0}
-                    className={`h-6 w-6 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
-                    title="Match suivant"
-                  >
-                    <ChevronRight className="h-3 w-3 shrink-0" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsMatchSectionCollapsed(!isMatchSectionCollapsed)}
-                    className={`h-6 px-1.5 rounded border text-[8.5px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
-                      ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900"
-                      : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-white"
-                      }`}
-                    title={isMatchSectionCollapsed ? "Déplier la section Match" : "Réduire la section Match"}
-                    aria-label={isMatchSectionCollapsed ? "Déplier la section Match" : "Réduire la section Match"}
-                  >
-                    <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isMatchSectionCollapsed ? "-rotate-90" : ""}`} />
-                    <span className="sr-only">{isMatchSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
-                  </button>
-                </div>
-              </div>
-
-              {!isMatchSectionCollapsed && (
-                /* Match details & Live controls card */
-                <div
-                  className={`tb-match-card ${isModernSleek ? "text-slate-800" : "text-white"} border rounded-xl ${isLiveMatchMode ? "p-3" : "p-2.5"} text-center relative overflow-hidden transition ${!isLiveMatchMode
-                      ? isModernSleek ? "hover:border-slate-300 group cursor-pointer" : "group cursor-pointer hover:border-[#354563]"
-                      : ""
-                    }`}
-                >
-                  <div className="flex items-center justify-between gap-1.5">
-                    {/* Home Team */}
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <span className={`w-11 h-11 rounded-full border-2 flex items-center justify-center text-xs font-black mb-1.5 ${isModernSleek ? "border-emerald-500/60 bg-emerald-50 text-emerald-700" : "border-[#00E599]/60 bg-[#00E599]/10 text-[#00E599]"}`}>
-                        {teamInitials(activeMatch.homeTeam)}
-                      </span>
-                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
-                        {activeMatch.homeTeam}
-                      </span>
-                      {isLiveMatchMode && (
-                        <div className="flex items-center gap-1.5 mt-1.5">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setHomeScore(Math.max(0, homeScore - 1)); }}
-                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
-                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
-                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
-                              }`}
-                            title="Diminuer le score domicile"
-                          >
-                            -
-                          </button>
-                          <span className={`text-sm font-black px-0.5 font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{homeScore}</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setHomeScore(homeScore + 1); }}
-                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
-                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
-                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
-                              }`}
-                            title="Augmenter le score domicile"
-                          >
-                            +
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Score or VS center column with MODE LIVE button */}
-                    <div className="flex flex-col items-center justify-center gap-1.5 shrink-0">
-                      {activeMatch?.isFinished || currentPeriod === "FIN" ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSleekToastMessage("🔒 Match terminé : Le mode Live est désactivé.");
-                            setTimeout(() => setSleekToastMessage(null), 3500);
-                            setIsMatchFinishedModalOpen(true);
-                          }}
-                          className={`px-2.5 py-1 rounded-full text-[9px] font-black transition cursor-pointer flex items-center gap-1 border shadow-2xs ${isModernSleek
-                            ? "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
-                            : "bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800"
-                            }`}
-                          title="Match terminé - Cliquez pour ouvrir le bilan du match"
-                        >
-                          <span>🏁 MATCH TERMINÉ</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isLiveMatchMode && !isProPlusOrAdmin) {
-                              setIsLiveMatchUpgradeModalOpen(true);
-                              return;
-                            }
-                            const nextState = !isLiveMatchMode;
-                            setIsLiveMatchMode(nextState);
-                            if (nextState) {
-                              setIsLiveTimerRunning(true);
-                              setIsSchemasSectionCollapsed(true);
-                              setIsNotesSectionCollapsed(true);
-                              setIsMatchSectionCollapsed(false);
-                            } else {
-                              setIsLiveTimerRunning(false);
-                              setLiveActionToken(null);
-                              setIsSchemasSectionCollapsed(false);
-                              setIsNotesSectionCollapsed(false);
-                            }
-                          }}
-                          className={`px-2.5 py-1 rounded-full text-[9px] font-black transition cursor-pointer flex items-center gap-1.5 border shadow-2xs ${isLiveMatchMode
-                            ? isModernSleek
-                              ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                              : "bg-[#161f2e] hover:bg-[#1e293b] text-white border-[#26354d]"
-                            : isModernSleek
-                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
-                              : "bg-[#131d2b] hover:bg-[#1a283b] text-slate-200 border-[#26354d]"
-                            }`}
-                          title={isLiveMatchMode ? "Désactiver le mode Live Match" : (!isProPlusOrAdmin ? "Mode Live Match (Exclusivité PRO+)" : "Lancer le mode Live Match")}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                          <span>{isLiveMatchMode ? "LIVE" : "MODE LIVE"}</span>
-                          {!isProPlusOrAdmin && (
-                            <span className="text-[7px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm ml-0.5">PRO+</span>
-                          )}
-                        </button>
-                      )}
-
-                      {isLiveMatchMode ? (
-                        <div className="text-center">
-                          <div className={`text-lg font-black font-mono px-3 py-1 rounded-xl border ${isModernSleek
-                            ? "bg-slate-50 text-slate-900 border-slate-200 shadow-2xs"
-                            : "bg-[#111827] text-white border-[#26354d]"
-                            }`}>
-                            {homeScore} - {awayScore}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className={`text-[9px] ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} font-black uppercase`}>VS</span>
-                      )}
-                    </div>
-
-                    {/* Away Team */}
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <span className={`w-11 h-11 rounded-full border-2 flex items-center justify-center text-xs font-black mb-1.5 ${isModernSleek ? "border-rose-400/60 bg-rose-50 text-rose-600" : "border-rose-400/60 bg-rose-500/10 text-rose-300"}`}>
-                        {teamInitials(activeMatch.awayTeam)}
-                      </span>
-                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
-                        {activeMatch.awayTeam}
-                      </span>
-                      {isLiveMatchMode && (
-                        <div className="flex items-center gap-1.5 mt-1.5">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setAwayScore(Math.max(0, awayScore - 1)); }}
-                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
-                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
-                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
-                              }`}
-                            title="Diminuer le score extérieur"
-                          >
-                            -
-                          </button>
-                          <span className={`text-sm font-black px-0.5 font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{awayScore}</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setAwayScore(awayScore + 1); }}
-                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
-                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
-                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
-                              }`}
-                            title="Augmenter le score extérieur"
-                          >
-                            +
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Chrono, Period & Events section */}
-                  {isLiveMatchMode ? (
-                    <div className={`mt-3 pt-2.5 border-t flex flex-col items-center gap-2 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
-                      {/* Boutons rapides de points en mode BASKETBALL et RUGBY */}
-                      {(activeSport === "basketball" || activeSport === "rugby") && (
-                        <div className={`w-full p-2 rounded-xl border space-y-2 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
-                          <div className={`text-[9px] font-extrabold uppercase tracking-wider text-center ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
-                            {getSportBallInfo(activeSport).emoji} Noter les points ({activeMatch.homeTeam})
-                          </div>
-                          <div className="grid grid-cols-3 gap-1.5 w-full">
-                            {getSportScoreActions(activeSport).map((action) => (
-                              <button
-                                key={`quick-home-${action.id}`}
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const targetToken: Token =
-                                    (liveActionToken && liveActionToken.type === "player_a" ? liveActionToken : null) ||
-                                    currentTokens.find((tk) => tk.type === "player_a") || {
-                                      id: `home_team_${activeSport}`,
-                                      type: "player_a",
-                                      x: 50,
-                                      y: 50,
-                                      name: activeMatch.homeTeam,
-                                      role: "Équipe",
-                                    };
-                                  handleRecordScore(targetToken, action);
-                                }}
-                                className={`py-1.5 px-1 rounded-lg border text-[9.5px] font-bold transition cursor-pointer flex flex-col items-center justify-center leading-snug shadow-2xs ${isModernSleek
-                                  ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-800"
-                                  : "bg-[#111827] hover:bg-[#1a2333] border-[#26354d] text-slate-200"
-                                  }`}
-                                title={`Ajouter ${action.label} (+${action.points} sur le score)`}
-                              >
-                                <span>{action.icon} {action.label}</span>
-                                <span className={`text-[9px] font-black ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>+{action.points}</span>
-                              </button>
-                            ))}
-                          </div>
-                          <div className={`flex items-center justify-between gap-1.5 pt-1.5 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
-                            <span className={`text-[8.5px] font-bold uppercase truncate max-w-[90px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                              Adv. ({activeMatch.awayTeam}) :
-                            </span>
-                            <div className="flex items-center gap-1">
-                              {getSportScoreActions(activeSport).map((action) => (
-                                <button
-                                  key={`quick-away-${action.id}`}
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const targetToken: Token =
-                                      (liveActionToken && liveActionToken.type === "player_b" ? liveActionToken : null) ||
-                                      currentTokens.find((tk) => tk.type === "player_b") || {
-                                        id: `away_team_${activeSport}`,
-                                        type: "player_b",
-                                        x: 50,
-                                        y: 50,
-                                        name: activeMatch.awayTeam,
-                                        role: "Équipe",
-                                      };
-                                    handleRecordScore(targetToken, action);
-                                  }}
-                                  className={`px-2 py-1 rounded-md border text-[9px] font-bold transition cursor-pointer ${isModernSleek
-                                    ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700"
-                                    : "bg-[#111827] hover:bg-[#1a2333] border-[#26354d] text-slate-300"
-                                    }`}
-                                  title={`Adversaire : ${action.label} (+${action.points} sur le score)`}
-                                >
-                                  +{action.points}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Period Selector Buttons (1MT | PAUSE | 2MT | FIN) */}
-                      <div className={`flex items-center justify-between gap-1 w-full p-1 rounded-xl border ${isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#080d14] border-[#1f293d]"}`}>
-                        {(["1MT", "MI-TEMPS", "2MT", "FIN"] as const).map((periodKey) => (
-                          <button
-                            key={periodKey}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (periodKey === "FIN") {
-                                handleFinishLiveMatch();
-                              } else {
-                                setCurrentPeriod(periodKey);
-                                if (periodKey === "MI-TEMPS") {
-                                  setIsLiveTimerRunning(false);
-                                } else if (!isLiveTimerRunning) {
-                                  setIsLiveTimerRunning(true);
-                                }
-                              }
-                            }}
-                            className={`flex-1 py-1.5 rounded-lg text-[9.5px] font-black transition cursor-pointer text-center uppercase tracking-tight ${currentPeriod === periodKey
-                              ? isModernSleek
-                                ? "bg-white text-slate-900 border border-slate-300 shadow-2xs"
-                                : "bg-[#1e293b] text-white border border-slate-600"
-                              : isModernSleek
-                                ? "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                                : "bg-[#111827] text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                              }`}
-                          >
-                            {periodKey === "MI-TEMPS" ? "PAUSE" : periodKey}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Timer Bar */}
-                      <div className={`flex items-center justify-between gap-1.5 w-full p-2 rounded-xl border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
-                        <span className={`text-sm font-mono font-black px-2.5 py-1 rounded-lg border ${isModernSleek ? "bg-white text-slate-900 border-slate-200 shadow-2xs" : "bg-[#111827] text-slate-200 border-[#26354d]"}`}>
-                          ⏱️ {formatLiveTime(liveTimerSeconds)}
-                        </span>
-
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setIsLiveTimerRunning(!isLiveTimerRunning); }}
-                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition cursor-pointer border ${isModernSleek
-                              ? "bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-2xs"
-                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-200 border-[#26354d]"
-                              }`}
-                          >
-                            {isLiveTimerRunning ? "PAUSE" : "START"}
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setIsLiveTimerRunning(false); setLiveTimerSeconds(0); }}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition cursor-pointer border ${isModernSleek
-                              ? "bg-white hover:bg-slate-100 text-slate-600 border-slate-200"
-                              : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
-                              }`}
-                            title="Réinitialiser le chrono"
-                          >
-                            🔄
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Manual Match Finish Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleFinishLiveMatch();
-                        }}
-                        className={`w-full py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer border flex items-center justify-center gap-1.5 shadow-2xs ${isModernSleek
-                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                          : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-200 border-[#26354d]"
-                          }`}
-                        title="Enregistrer les résultats et terminer officiellement le match"
-                      >
-                        <span>🏁 TERMINER LE MATCH</span>
-                      </button>
-
-                      {/* Match Events Feed Log */}
-                      {matchEvents.filter((evt) => evt.type !== "assist").length > 0 && (
-                        <div className={`mt-1 w-full p-2 rounded-xl border max-h-56 overflow-y-auto text-left space-y-1.5 scrollbar-thin ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
-                          <div className={`text-[9px] font-black uppercase tracking-wider flex items-center justify-between border-b pb-1 ${isModernSleek ? "text-slate-600 border-slate-200" : "text-slate-400 border-[#1f293d]"}`}>
-                            <span>ÉVÉNEMENTS ({matchEvents.filter((evt) => evt.type !== "assist").length}) :</span>
-                            <button
-                              onClick={async () => {
-                                if (await confirmAction({ title: "Effacer l'historique ?", message: "Tous les événements enregistrés pour ce match seront effacés.", confirmLabel: "Effacer" })) {
-                                  setMatchEvents([]);
-                                }
-                              }}
-                              className={`text-[8.5px] font-bold transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
-                            >
-                              Effacer
-                            </button>
-                          </div>
-                          {matchEvents
-                            .filter((evt) => evt.type !== "assist")
-                            .map((evt) => (
-                              <div key={evt.id} className={`text-[10px] font-bold flex items-center justify-between p-1.5 rounded-lg transition group ${isModernSleek ? "text-slate-700 bg-white border border-slate-200/80 hover:bg-slate-100/70" : "text-slate-200 hover:bg-[#131b29]"}`}>
-                                <span className="flex items-center gap-1.5 truncate min-w-0">
-                                  <span className="text-xs">
-                                    {evt.type === "goal"
-                                      ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"))
-                                      : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}
-                                  </span>
-                                  <span className={`font-extrabold truncate max-w-[140px] ${isModernSleek ? "text-slate-800" : "text-white"}`}>
-                                    {evt.player}
-                                    {evt.type === "goal" ? (
-                                      <span className={`font-bold text-[9.5px] ml-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                                        ({evt.points && evt.points > 1 ? `+${evt.points} pts` : "1 pt"}{evt.assister ? ` • ${evt.assister}` : ""})
-                                      </span>
-                                    ) : null}
-                                  </span>
-                                </span>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <span className={`text-[9px] font-mono font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                                    {evt.period ? `${evt.period} ${evt.time}` : evt.time}
-                                  </span>
-                                  <button
-                                    onClick={() => handleDeleteMatchEvent(evt.id)}
-                                    className={`opacity-0 group-hover:opacity-100 transition px-1 cursor-pointer font-black text-[9.5px] ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
-                                    title="Supprimer cet événement"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => {
-                        if (!isProOrAdmin) {
-                          setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
-                          setIsCheckoutOpen(true);
-                          return;
-                        }
-                        setIsMatchEditOpen(true);
-                      }}
-                      className={`mt-1.5 pt-1 border-t ${isModernSleek ? "border-slate-100" : "border-[#1f293d]/60"} cursor-pointer text-center`}
-                    >
-                      <div className="flex items-center justify-center gap-1 mb-0.5">
-                        <p className={`text-[8.5px] font-black ${isModernSleek ? "text-slate-700" : "text-slate-300"} uppercase tracking-wider truncate`}>
-                          {activeMatch.competition}
-                        </p>
-                        {activeMatch.isFinished && (
-                          <span className="text-[7px] bg-emerald-500 text-slate-950 font-black px-1 rounded uppercase">
-                            TERMINÉ
-                          </span>
-                        )}
-                      </div>
-                      {activeMatch.score && (
-                        <p className="text-xs font-mono font-black text-[#00E599]">
-                          Score : {activeMatch.score}
-                        </p>
-                      )}
-                      <p className={`text-[8.5px] font-bold ${isModernSleek ? "text-emerald-800" : "text-slate-400"} mt-0.5`}>
-                        {activeMatch.dateTime}
-                      </p>
-                    </div>
-                  )}
-                </div>
               )}
             </div>
 
@@ -12210,152 +12429,206 @@ export default function TacticsBoard({
       )}
 
       {/* MULTI-TEAM MANAGER MODAL (PRO MODE) */}
-      {isMultiTeamModalOpen && (
-        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
-          <div className={`max-w-xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto border overflow-hidden ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"}`}>
-            {/* Ambient background glow accents */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Header bar */}
-            <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 shrink-0 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
-              }`}>
-              <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl border ${isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/30 text-[#00E599]"
-                  }`}>
-                  <span className="text-base">🛡️</span>
+      {isMultiTeamModalOpen && (() => {
+        const activeTeamObj = teams.find((tm) => tm.id === activeTeamId);
+        const closeTeamsModal = () => setIsMultiTeamModalOpen(false);
+        return (
+          <div
+            className={`${premiumOverlay} z-50`}
+            onClick={(e) => { if (e.target === e.currentTarget) closeTeamsModal(); }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Gestion des équipes"
+              className={`${premiumShell} w-full max-w-4xl max-h-[94vh] sm:max-h-[86vh] ${pth.panel}`}
+            >
+              {/* ================= SIDEBAR ================= */}
+              <aside className={`hidden md:flex w-60 shrink-0 flex-col border-r relative z-10 ${pth.sidebar}`}>
+                <div className="px-5 pt-6 pb-5">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center ${pth.accentChip}`}>
+                      <Shield className="h-5 w-5" />
+                    </div>
+                    <div className="leading-tight min-w-0">
+                      <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${pth.accent}`}>Mon club</p>
+                      <p className={`text-sm font-black truncate ${pth.text}`}>{teams.length} équipe{teams.length > 1 ? "s" : ""}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className={`text-sm sm:text-base font-black uppercase tracking-wide flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-                    <span>Gestion Multi-Équipes</span>
-                    <span className="text-[8px] bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase">
-                      PRO
-                    </span>
-                  </h3>
-                  <p className={`text-[11px] font-medium ${isModernSleek ? "text-slate-500" : "text-[#62728f]"}`}>
-                    Gérez les schémas tactiques de vos différentes équipes ({displayClubTitle})
-                  </p>
+                <div className="px-3 space-y-2">
+                  {[
+                    { label: "Équipe active", value: activeTeamObj?.name || "—" },
+                    { label: "Catégorie", value: activeTeamObj?.category || "—" },
+                    { label: "Effectif", value: activeTeamObj ? `${getRosterForTeam(activeTeamObj.id).length} joueurs` : "—" },
+                  ].map((row) => (
+                    <div key={row.label} className={`p-3 rounded-xl border ${pth.card}`}>
+                      <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${pth.faint}`}>{row.label}</p>
+                      <p className={`text-xs font-bold mt-0.5 truncate ${pth.text}`}>{row.value}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <button
-                onClick={() => setIsMultiTeamModalOpen(false)}
-                className={`p-1.5 rounded-xl transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-                  }`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                <p className={`mt-auto px-5 pb-6 pt-4 text-[11px] leading-relaxed ${pth.faint}`}>
+                  Chaque équipe garde son effectif et ses schémas. Basculez de l&apos;une à l&apos;autre à tout moment.
+                </p>
+              </aside>
 
-            <div className="p-5 sm:p-6 space-y-5 relative z-10">
-              {/* TEAM CARDS LIST */}
-              <div className="space-y-3">
-                <label className={`block text-[10px] font-black uppercase tracking-wider ${isModernSleek ? "text-slate-700" : "text-slate-400"}`}>
-                  Équipes Enregistrées ({teams.length}) :
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {teams.map((team) => {
-                    const isActive = activeTeamId === team.id;
-                    const tacticCount = savedTactics.filter(
-                      (s) => s.teamId === team.id || (!s.teamId && team.isDefault)
-                    ).length;
+              {/* ================= MAIN ================= */}
+              <main className="flex-1 min-w-0 flex flex-col relative z-10 min-h-0">
+                <header className={`px-5 sm:px-7 pt-5 sm:pt-6 pb-4 border-b ${pth.border}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <h2 className={`text-lg sm:text-xl font-black tracking-tight flex items-center gap-2 ${pth.text}`}>
+                        <span>Gestion des équipes</span>
+                        <span className={`text-[9px] font-black uppercase tracking-[0.14em] px-2 py-0.5 rounded-md border ${pth.goldChip}`}>Pro</span>
+                      </h2>
+                      <p className={`text-xs mt-1 ${pth.sub}`}>
+                        Sélectionnez l&apos;équipe à afficher sur le tableau ou ajoutez-en une nouvelle.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={closeTeamsModal}
+                      className={`p-2 rounded-xl border transition cursor-pointer shrink-0 ${pth.ghostBtn}`}
+                      title="Fermer"
+                      aria-label="Fermer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </header>
 
-                    return (
-                      <div
-                        key={team.id}
-                        onClick={() => handleSelectTeam(team.id)}
-                        className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col justify-between ${isActive
-                          ? isModernSleek
-                            ? "bg-emerald-50 border-emerald-500 text-slate-900 shadow-md"
-                            : "bg-gradient-to-br from-[#11241f] to-[#0a1815] border-[#00E599] text-white shadow-lg shadow-[#00E599]/10"
-                          : isModernSleek
-                            ? "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-800"
-                            : "bg-[#090d14] border-[#1f293d] hover:border-slate-600 text-slate-300"
-                          }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-base">🛡️</span>
-                            <div>
-                              <p className="text-xs font-black truncate max-w-[140px]">{team.name}</p>
-                              <p className={`text-[9px] font-bold mt-0.5 uppercase ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>{team.category}</p>
+                <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-7 py-5 space-y-6">
+                  {/* TEAM CARDS LIST */}
+                  <section>
+                    <p className={`${premiumLabel} ${pth.sub}`}>Équipes enregistrées ({teams.length})</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {teams.map((team) => {
+                        const isActive = activeTeamId === team.id;
+                        const tacticCount = savedTactics.filter(
+                          (s) => s.teamId === team.id || (!s.teamId && team.isDefault)
+                        ).length;
+                        const playerCount = getRosterForTeam(team.id).length;
+
+                        return (
+                          <div
+                            key={team.id}
+                            role="button"
+                            tabIndex={0}
+                            aria-pressed={isActive}
+                            onClick={() => handleSelectTeam(team.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSelectTeam(team.id);
+                              }
+                            }}
+                            className={`group p-3.5 rounded-2xl border transition cursor-pointer flex flex-col gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00E599]/40 ${isActive ? pth.selected : pth.selectable}`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-xs font-black shrink-0 ${isActive ? pth.accentChip : pth.chip}`}>
+                                {teamInitials(team.name)}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className={`text-sm font-black truncate ${pth.text}`}>{team.name}</p>
+                                <p className={`text-[10px] font-bold uppercase tracking-[0.12em] mt-0.5 truncate ${pth.faint}`}>{team.category}</p>
+                              </div>
+                              {isActive ? (
+                                <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.12em] px-2 py-1 rounded-md border shrink-0 ${pth.accentChip}`}>
+                                  <Check className="w-3 h-3" />
+                                  Active
+                                </span>
+                              ) : !team.isDefault ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteTeam(team.id);
+                                  }}
+                                  className={`p-1.5 rounded-lg transition cursor-pointer shrink-0 opacity-70 group-hover:opacity-100 ${pth.faint} hover:text-rose-500 ${isModernSleek ? "hover:bg-rose-50" : "hover:bg-rose-500/10"}`}
+                                  title="Supprimer cette équipe"
+                                  aria-label={`Supprimer l'équipe ${team.name}`}
+                                >
+                                  <Trash className="w-3.5 h-3.5" />
+                                </button>
+                              ) : null}
+                            </div>
+
+                            <div className={`pt-2.5 border-t flex items-center justify-between gap-2 text-[11px] ${pth.border}`}>
+                              <div className={`flex items-center gap-3 font-semibold ${pth.sub}`}>
+                                <span className="inline-flex items-center gap-1"><Users className="w-3.5 h-3.5" />{playerCount} joueur{playerCount > 1 ? "s" : ""}</span>
+                                <span className="inline-flex items-center gap-1"><Bookmark className="w-3.5 h-3.5" />{tacticCount} schéma{tacticCount > 1 ? "s" : ""}</span>
+                              </div>
+                              {!isActive && (
+                                <span className={`font-bold inline-flex items-center gap-0.5 ${pth.accent} opacity-0 group-hover:opacity-100 transition`}>
+                                  Basculer <ChevronRight className="w-3.5 h-3.5" />
+                                </span>
+                              )}
                             </div>
                           </div>
-                          {isActive ? (
-                            <span className="text-[9px] bg-[#00E599] text-slate-950 font-black px-2 py-0.5 rounded-full uppercase">
-                              ACTIVE
-                            </span>
-                          ) : (
-                            !team.isDefault && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteTeam(team.id);
-                                }}
-                                className="p-1 text-slate-400 hover:text-rose-500 transition cursor-pointer"
-                                title="Supprimer cette équipe"
-                              >
-                                <Trash className="w-3.5 h-3.5" />
-                              </button>
-                            )
-                          )}
-                        </div>
+                        );
+                      })}
+                    </div>
+                  </section>
 
-                        <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[10px] ${isModernSleek ? "border-slate-200" : "border-[#1a2333]"
-                          }`}>
-                          <span className={`font-bold ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>📖 {tacticCount} Schéma(s)</span>
-                          <span className={isActive ? "text-[#00E599] font-black" : "text-amber-500 font-bold"}>
-                            {isActive ? "Sélectionnée" : "Basculez ➔"}
-                          </span>
-                        </div>
+                  {/* CREATE NEW TEAM FORM */}
+                  <form onSubmit={handleCreateNewTeam} className={`rounded-2xl border p-4 sm:p-5 space-y-4 ${pth.cardMuted}`}>
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${pth.accentChip}`}>
+                        <Plus className="w-4 h-4" />
                       </div>
-                    );
-                  })}
+                      <div>
+                        <p className={`text-sm font-black ${pth.text}`}>Nouvelle équipe</p>
+                        <p className={`text-[11px] ${pth.sub}`}>Séniors, U19, Féminines… un effectif type est créé automatiquement.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px] gap-3">
+                      <div>
+                        <label htmlFor="new-team-name" className={`${premiumLabel} ${pth.sub}`}>Nom de l&apos;équipe</label>
+                        <input
+                          id="new-team-name"
+                          type="text"
+                          placeholder="Ex : U17 National, Séniors C…"
+                          value={newTeamName}
+                          onChange={(e) => setNewTeamName(e.target.value)}
+                          className={`w-full border rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none transition ${pth.input}`}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="new-team-category" className={`${premiumLabel} ${pth.sub}`}>Catégorie</label>
+                        <select
+                          id="new-team-category"
+                          value={newTeamCategory}
+                          onChange={(e) => setNewTeamCategory(e.target.value)}
+                          className={`w-full border rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none transition cursor-pointer ${pth.input} ${pth.option}`}
+                        >
+                          <option value="Séniors">Séniors</option>
+                          <option value="Jeunes / U19">Jeunes / U19 / U17</option>
+                          <option value="Féminines">Équipe Féminine</option>
+                          <option value="Formation">École de Foot / Formation</option>
+                          <option value="Loisirs">Loisirs / Vétérans</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={!newTeamName.trim()}
+                        className={`px-5 py-2.5 rounded-xl text-xs font-black transition inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${pth.primaryBtn}`}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Ajouter l&apos;équipe
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </div>
-
-              {/* CREATE NEW TEAM FORM */}
-              <form onSubmit={handleCreateNewTeam} className={`border rounded-xl p-4 space-y-3 ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#121926] border-[#1f293d] text-white"
-                }`}>
-                <label className="block text-[10px] text-amber-500 font-black uppercase tracking-wider flex items-center gap-1.5">
-                  <Plus className="w-3.5 h-3.5 text-[#00E599]" />
-                  <span>Créer une nouvelle équipe (Séniors, U19, Féminines...)</span>
-                </label>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Ex: U17 National, Séniors C, Équipe 1..."
-                    value={newTeamName}
-                    onChange={(e) => setNewTeamName(e.target.value)}
-                    className={`border rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold ${isModernSleek ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-white focus:border-[#00E599]"
-                      }`}
-                  />
-
-                  <select
-                    value={newTeamCategory}
-                    onChange={(e) => setNewTeamCategory(e.target.value)}
-                    className={`border rounded-lg px-3 py-2 text-xs focus:outline-none transition font-bold ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#090d14] border-[#1f293d] text-slate-300 focus:border-[#00E599]"
-                      }`}
-                  >
-                    <option value="Séniors">Séniors</option>
-                    <option value="Jeunes / U19">Jeunes / U19 / U17</option>
-                    <option value="Féminines">Équipe Féminine</option>
-                    <option value="Formation">École de Foot / Formation</option>
-                    <option value="Loisirs">Loisirs / Vétérans</option>
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-2 bg-gradient-to-r from-amber-500 via-amber-400 to-emerald-400 text-slate-950 font-black text-xs uppercase rounded-lg hover:brightness-110 transition cursor-pointer shadow-md"
-                >
-                  + Ajouter l&apos;équipe au club
-                </button>
-              </form>
+              </main>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* MULTI-TEAM PRO UPGRADE PROMPT MODAL */}
       {isMultiTeamUpgradeModalOpen && (
@@ -14198,6 +14471,11 @@ export default function TacticsBoard({
                       transformStyle: "preserve-3d",
                     }}
                   >
+                    {/* Terrain du sport de l'utilisateur : rendu 3D détaillé pour le football, tracés officiels du sport sinon */}
+                    {activeSport === "basketball" || activeSport === "rugby" || activeSport === "handball" ? (
+                      <Pitch sport={activeSport} isPortrait={squad3DOrientation === "portrait"} />
+                    ) : (
+                    <>
                     {/* Mower Stripes parallel to goal lines */}
                     {squad3DOrientation === "portrait" ? (
                       <div className="absolute inset-0 flex flex-col h-full w-full opacity-20 pointer-events-none">
@@ -14412,6 +14690,8 @@ export default function TacticsBoard({
                         <line x1="107.5" y1="70.5" x2="107.5" y2="68.6" stroke="#f59e0b" strokeWidth="0.12" strokeDasharray="0.4,0.4" strokeLinecap="round" />
                         <polygon points="107.5,68.6 105.7,69.2 107.5,69.8" fill="#ef4444" stroke="#b91c1c" strokeWidth="0.08" />
                       </svg>
+                    )}
+                    </>
                     )}
                   </div>
 
