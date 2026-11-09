@@ -39,13 +39,20 @@ import {
   Keyboard,
   Compass,
   Eye,
-  HelpCircle
+  HelpCircle,
+  Edit3
 } from "lucide-react";
+import { getPremiumTheme } from "@/lib/premiumModalTheme";
+import { renderGuideIcon } from "./UserGuideModal";
+import { confirmAction } from "@/components/ConfirmDialog";
 
 interface AdminGuideEditorProps {
   isModernSleek?: boolean;
   initialSectionId?: string;
   onPreviewGuide?: () => void;
+  /** En-tête de la fenêtre, affiché au-dessus de l'article (même place qu'en lecture) */
+  header?: React.ReactNode;
+  onSelectSection?: (id: string) => void;
 }
 
 const AVAILABLE_ICONS = [
@@ -75,7 +82,9 @@ const PRESET_MEDIA = [
 export default function AdminGuideEditor({
   isModernSleek = false,
   initialSectionId,
-  onPreviewGuide
+  onPreviewGuide,
+  header,
+  onSelectSection
 }: AdminGuideEditorProps) {
   const [sections, setSections] = useState<GuideSectionItem[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -97,6 +106,11 @@ export default function AdminGuideEditor({
   }, [initialSectionId]);
 
   const currentSection = sections.find((s) => s.id === selectedId) || sections[0];
+
+  const selectSection = (id: string) => {
+    setSelectedId(id);
+    onSelectSection?.(id);
+  };
 
   // Update a field of current section
   const handleUpdateCurrentSection = <K extends keyof GuideSectionItem>(
@@ -146,8 +160,14 @@ export default function AdminGuideEditor({
   };
 
   // Reset to default sections
-  const handleReset = () => {
-    if (window.confirm("Êtes-vous sûr de vouloir réinitialiser l'ensemble du guide aux 11 articles d'origine de TheBox ? Toutes vos modifications personnalisées seront effacées.")) {
+  const handleReset = async () => {
+    if (
+      await confirmAction({
+        title: "Réinitialiser le guide ?",
+        message: "Le guide reviendra aux 11 articles d'origine de TheBox. Toutes vos modifications personnalisées seront effacées.",
+        confirmLabel: "Réinitialiser",
+      })
+    ) {
       const def = resetGuideSections();
       setSections(def);
       setSelectedId(def[0].id);
@@ -188,12 +208,13 @@ export default function AdminGuideEditor({
   };
 
   // Delete section
-  const handleDeleteSection = (id: string) => {
+  const handleDeleteSection = async (id: string) => {
     if (sections.length <= 1) {
       alert("Le guide doit comporter au moins un article.");
       return;
     }
-    if (window.confirm("Voulez-vous vraiment supprimer cet article du guide ?")) {
+    const article = sections.find((s) => s.id === id);
+    if (await confirmAction({ title: "Supprimer cet article ?", subject: article?.title, message: "L'article sera retiré du guide utilisateur." })) {
       const filtered = sections.filter((s) => s.id !== id);
       setSections(filtered);
       setSelectedId(filtered[0].id);
@@ -245,554 +266,379 @@ export default function AdminGuideEditor({
     s.summary.toLowerCase().includes(searchFilter.toLowerCase())
   );
 
+  const th = getPremiumTheme(isModernSleek);
+  // Champs « en place » : ils ressemblent au texte lu, et se révèlent au survol / à la saisie
+  const inlineField = `bg-transparent border border-transparent rounded-lg outline-none transition ${isModernSleek ? "hover:border-slate-200 focus:border-emerald-500 focus:bg-white" : "hover:border-white/10 focus:border-[#00E599]/50 focus:bg-white/[0.03]"}`;
+  const boxField = `w-full rounded-xl border outline-none transition ${th.input}`;
+  const labelCls = `block text-[10px] font-black uppercase tracking-[0.14em] mb-1.5 ${th.faint}`;
+  const badgeChip = (badge: string) => (badge === "PRO+" ? th.goldChip : th.accentChip);
+
   return (
-    <div className="flex flex-col h-full space-y-4">
-      {/* TOP NOTIFICATION BAR */}
-      {saveStatus && (
-        <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between animate-fade-in shadow-lg">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#00E599]" />
-            <span>{saveStatus}</span>
+    <>
+      {/* ================= SIDEBAR : SOMMAIRE ÉDITABLE ================= */}
+      <aside className={`hidden md:flex w-80 shrink-0 flex-col border-r relative z-10 ${th.sidebar}`}>
+        <div className="px-5 pt-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center ${th.goldTile}`}>
+              <Edit3 className="h-5 w-5" />
+            </div>
+            <div className="leading-tight">
+              <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${th.gold}`}>Édition</p>
+              <p className={`text-sm font-black ${th.text}`}>Guide d&apos;utilisation</p>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setSaveStatus(null)}
-            className="text-xs text-emerald-400 hover:text-white"
-          >
-            &times;
-          </button>
-        </div>
-      )}
 
-      {/* ACTION BAR */}
-      <div className={`p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 shadow-sm ${
-        isModernSleek ? "bg-white border-slate-200" : "bg-[#0f141d] border-[#1e293d]"
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-[#00E599]/15 border border-[#00E599]/30 text-[#00E599]">
-            <BookOpen className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className={`text-sm font-black flex items-center gap-2 ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-              <span>Éditeur Officiel du Guide Utilisateur</span>
-              <span className="text-[10px] bg-amber-500/20 border border-amber-500/40 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase">
-                Admin
-              </span>
-            </h3>
-            <p className={`text-xs ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-              Modifiez en temps réel les vidéos (MP4, YouTube, WebP) et les textes de chaque article.
-            </p>
+          <div className="relative mt-5">
+            <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${th.faint}`} />
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Filtrer les articles…"
+              className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs border outline-none transition ${th.input}`}
+            />
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center justify-between px-8 pb-2">
+          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${th.faint}`}>Sommaire</p>
+          <p className={`text-[10px] font-bold tabular-nums ${th.faint}`}>{filteredSections.length} / {sections.length}</p>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 pb-3 space-y-1 scrollbar-thin">
+          {filteredSections.map((sec) => {
+            const isSelected = sec.id === currentSection?.id;
+            const idx = sections.findIndex((s) => s.id === sec.id);
+            return (
+              <div
+                key={sec.id}
+                onClick={() => selectSection(sec.id)}
+                className={`group relative w-full px-3 py-2.5 rounded-xl border transition cursor-pointer flex items-center gap-3 ${isSelected ? th.navActive : th.navIdle}`}
+              >
+                {isSelected && <span className={`absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full ${th.navIndicator}`} />}
+                <span className={`text-[10px] font-mono font-black w-5 shrink-0 tabular-nums ${isSelected ? th.accent : th.faint}`}>{sec.number}</span>
+                <span className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${th.cardMuted}`}>
+                  {renderGuideIcon(sec.iconName, "w-4 h-4")}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-bold truncate">{sec.title}</span>
+                  <span className={`block text-[10px] truncate mt-0.5 ${th.faint}`}>{sec.summary}</span>
+                </span>
+                {sec.badge && (
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md border shrink-0 group-hover:hidden ${badgeChip(sec.badge)}`}>{sec.badge}</span>
+                )}
+                {/* Réordonner (au survol) */}
+                <span className="hidden group-hover:flex flex-col shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleMoveSection(idx, "up"); }}
+                    disabled={idx === 0}
+                    className={`p-0.5 rounded disabled:opacity-20 cursor-pointer ${th.faint} hover:opacity-70`}
+                    title="Monter d'un rang"
+                    aria-label="Monter d'un rang"
+                  >
+                    <ArrowUp className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleMoveSection(idx, "down"); }}
+                    disabled={idx === sections.length - 1}
+                    className={`p-0.5 rounded disabled:opacity-20 cursor-pointer ${th.faint} hover:opacity-70`}
+                    title="Descendre d'un rang"
+                    aria-label="Descendre d'un rang"
+                  >
+                    <ArrowDown className="w-3 h-3" />
+                  </button>
+                </span>
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className={`p-3 border-t space-y-1.5 ${th.border}`}>
           <button
             type="button"
             onClick={handleCreateSection}
-            className="px-3 py-1.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+            className={`w-full h-9 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition cursor-pointer ${th.ghostBtn}`}
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Nouvel Article</span>
+            Nouvel article
           </button>
-
           <button
             type="button"
             onClick={handleReset}
-            className="px-3 py-1.5 rounded-xl bg-slate-500/15 hover:bg-slate-500/25 text-slate-300 border border-slate-500/30 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-            title="Réinitialiser l'ensemble du guide par défaut"
+            className={`w-full h-8 rounded-xl text-[11px] font-bold inline-flex items-center justify-center gap-1.5 transition cursor-pointer ${th.sub} hover:opacity-80`}
+            title="Revenir aux articles d'origine de The Box"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Réinitialiser par défaut</span>
-          </button>
-
-          {onPreviewGuide && (
-            <button
-              type="button"
-              onClick={onPreviewGuide}
-              className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Ouvrir le Guide</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={handleSaveAll}
-            className="px-4 py-1.5 rounded-xl bg-[#00E599] hover:bg-[#05c482] text-[#07090e] text-xs font-black flex items-center gap-1.5 shadow-md shadow-[#00E599]/20 transition cursor-pointer"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>Enregistrer Tout</span>
+            <RotateCcw className="w-3 h-3" />
+            Réinitialiser le guide
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* MAIN TWO-COLUMN LAYOUT */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
-        {/* LEFT COLUMN: LIST OF ARTICLES */}
-        <div className={`lg:col-span-4 rounded-2xl border flex flex-col overflow-hidden ${
-          isModernSleek ? "bg-white border-slate-200" : "bg-[#0b0e14] border-[#1e293b]"
-        }`}>
-          {/* SEARCH & COUNT HEADER */}
-          <div className={`p-3 border-b flex items-center justify-between gap-2 shrink-0 ${
-            isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#0e131d] border-[#1b2436]"
-          }`}>
-            <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Filtrer les articles..."
-                className={`w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border outline-none ${
-                  isModernSleek
-                    ? "bg-white border-slate-300 text-slate-900"
-                    : "bg-[#07090e] border-[#1f293d] text-white focus:border-[#00E599]"
-                }`}
-              />
-            </div>
-            <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">
-              {sections.length} article(s)
-            </span>
-          </div>
+      {/* ================= MAIN ================= */}
+      <main className="flex-1 min-w-0 flex flex-col relative z-10 min-h-0">
+        {header}
 
-          {/* LIST */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1.5 scrollbar-thin">
-            {filteredSections.map((sec, idx) => {
-              const isSelected = sec.id === currentSection?.id;
-              return (
-                <div
-                  key={sec.id}
-                  className={`group rounded-xl border p-2.5 transition flex items-center justify-between gap-2 cursor-pointer ${
-                    isSelected
-                      ? isModernSleek
-                        ? "bg-emerald-50 border-emerald-500 text-slate-900 shadow-sm"
-                        : "bg-[#141b29] border-[#00E599] text-white shadow-md shadow-[#00E599]/10"
-                      : isModernSleek
-                      ? "bg-transparent border-transparent hover:bg-slate-100 text-slate-700"
-                      : "bg-transparent border-transparent hover:bg-[#111827] text-slate-400 hover:text-white"
-                  }`}
-                  onClick={() => setSelectedId(sec.id)}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[10px] font-mono font-black text-slate-500 shrink-0">
-                      {sec.number}
-                    </span>
-                    <div className="truncate">
-                      <p className="text-xs font-bold truncate">{sec.title}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{sec.summary}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
-                    {sec.badge && (
-                      <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                        {sec.badge}
-                      </span>
-                    )}
-
-                    {/* REORDER BUTTONS */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMoveSection(idx, "up");
-                      }}
-                      disabled={idx === 0}
-                      className="p-1 hover:text-white disabled:opacity-20 text-slate-500"
-                      title="Monter d'un rang"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMoveSection(idx, "down");
-                      }}
-                      disabled={idx === sections.length - 1}
-                      className="p-1 hover:text-white disabled:opacity-20 text-slate-500"
-                      title="Descendre d'un rang"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {/* Sommaire mobile */}
+        <div className={`md:hidden px-5 py-3 border-b ${th.border}`}>
+          <select
+            value={currentSection?.id || ""}
+            onChange={(e) => selectSection(e.target.value)}
+            className={`w-full rounded-xl px-3 py-2 text-xs font-bold border outline-none ${th.input} ${th.option}`}
+            aria-label="Choisir un article à modifier"
+          >
+            {sections.map((sec) => (
+              <option key={sec.id} value={sec.id}>{sec.number} · {sec.title}</option>
+            ))}
+          </select>
         </div>
 
-        {/* RIGHT COLUMN: ARTICLE EDITOR */}
-        <div className={`lg:col-span-8 rounded-2xl border flex flex-col overflow-hidden ${
-          isModernSleek ? "bg-white border-slate-200" : "bg-[#0b0e14] border-[#1e293b]"
-        }`}>
-          {currentSection ? (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-thin">
-              {/* ARTICLE HEADER / META */}
-              <div className="space-y-4 border-b pb-5 border-slate-700/50">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-[#00E599] uppercase tracking-wider">
-                      Édition de l&apos;Article
-                    </span>
-                    <span className="font-mono text-xs font-black bg-black/40 px-2 py-0.5 rounded text-slate-300">
-                      ID: {currentSection.id}
-                    </span>
-                  </div>
-
+        {currentSection ? (
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            <article className="max-w-3xl mx-auto px-5 sm:px-8 py-6 sm:py-8 space-y-7">
+              {/* En-tête de l'article (comme en lecture) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${th.accent}`}>Section</span>
+                  <input
+                    type="text"
+                    value={currentSection.number}
+                    onChange={(e) => handleUpdateCurrentSection("number", e.target.value)}
+                    className={`${inlineField} w-10 px-1 text-[10px] font-black font-mono ${th.accent}`}
+                    aria-label="Numéro de l'article"
+                  />
+                  <input
+                    type="text"
+                    value={currentSection.badge || ""}
+                    onChange={(e) => handleUpdateCurrentSection("badge", e.target.value)}
+                    placeholder="+ Badge"
+                    className={`w-24 px-1.5 py-0.5 rounded-md border text-[9px] font-black outline-none transition ${currentSection.badge ? badgeChip(currentSection.badge) : `border-dashed ${th.border} bg-transparent ${th.faint}`}`}
+                    aria-label="Badge (Essentiel, PRO+…)"
+                  />
                   <button
                     type="button"
                     onClick={() => handleDeleteSection(currentSection.id)}
-                    className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                    className={`ml-auto h-7 px-2.5 rounded-lg border text-[11px] font-bold inline-flex items-center gap-1.5 transition cursor-pointer ${isModernSleek ? "bg-white border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50" : "bg-white/[0.03] border-white/10 text-slate-400 hover:text-rose-300 hover:border-rose-500/40 hover:bg-rose-500/10"}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Supprimer cet article</span>
+                    Supprimer l&apos;article
                   </button>
                 </div>
+                <input
+                  type="text"
+                  value={currentSection.title}
+                  onChange={(e) => handleUpdateCurrentSection("title", e.target.value)}
+                  placeholder="Titre de l'article"
+                  className={`${inlineField} w-full -mx-2 px-2 py-1 text-xl sm:text-2xl font-black tracking-tight ${th.text}`}
+                  aria-label="Titre de l'article"
+                />
+                <input
+                  type="text"
+                  value={currentSection.summary}
+                  onChange={(e) => handleUpdateCurrentSection("summary", e.target.value)}
+                  placeholder="Accroche : ce que le coach va apprendre"
+                  className={`${inlineField} w-full -mx-2 px-2 py-1 text-sm ${th.sub}`}
+                  aria-label="Résumé de l'article"
+                />
 
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  {/* NUMÉRO */}
-                  <div className="sm:col-span-2">
-                    <label className="text-[11px] font-bold text-slate-400 block mb-1">
-                      Numéro
-                    </label>
-                    <input
-                      type="text"
-                      value={currentSection.number}
-                      onChange={(e) => handleUpdateCurrentSection("number", e.target.value)}
-                      className={`w-full px-3 py-1.5 text-xs font-mono font-bold rounded-xl border outline-none ${
-                        isModernSleek
-                          ? "bg-slate-50 border-slate-300 text-slate-900"
-                          : "bg-[#080d15] border-[#1e293b] text-white focus:border-[#00E599]"
-                      }`}
-                      placeholder="01"
-                    />
-                  </div>
-
-                  {/* TITRE */}
-                  <div className="sm:col-span-7">
-                    <label className="text-[11px] font-bold text-slate-400 block mb-1">
-                      Titre de l&apos;article
-                    </label>
-                    <input
-                      type="text"
-                      value={currentSection.title}
-                      onChange={(e) => handleUpdateCurrentSection("title", e.target.value)}
-                      className={`w-full px-3 py-1.5 text-xs font-bold rounded-xl border outline-none ${
-                        isModernSleek
-                          ? "bg-slate-50 border-slate-300 text-slate-900"
-                          : "bg-[#080d15] border-[#1e293b] text-white focus:border-[#00E599]"
-                      }`}
-                      placeholder="Ex: Le Terrain Tactique & Pions Joueurs"
-                    />
-                  </div>
-
-                  {/* BADGE */}
-                  <div className="sm:col-span-3">
-                    <label className="text-[11px] font-bold text-slate-400 block mb-1">
-                      Badge (optionnel)
-                    </label>
-                    <input
-                      type="text"
-                      value={currentSection.badge || ""}
-                      onChange={(e) => handleUpdateCurrentSection("badge", e.target.value)}
-                      className={`w-full px-3 py-1.5 text-xs rounded-xl border outline-none ${
-                        isModernSleek
-                          ? "bg-slate-50 border-slate-300 text-slate-900"
-                          : "bg-[#080d15] border-[#1e293b] text-white focus:border-[#00E599]"
-                      }`}
-                      placeholder="Essentiel, PRO+, etc."
-                    />
-                  </div>
-                </div>
-
-                {/* ACCROCHE / RÉSUMÉ */}
-                <div>
-                  <label className="text-[11px] font-bold text-slate-400 block mb-1">
-                    Accroche / Résumé synthétique
-                  </label>
-                  <input
-                    type="text"
-                    value={currentSection.summary}
-                    onChange={(e) => handleUpdateCurrentSection("summary", e.target.value)}
-                    className={`w-full px-3 py-1.5 text-xs rounded-xl border outline-none ${
-                      isModernSleek
-                        ? "bg-slate-50 border-slate-300 text-slate-900"
-                        : "bg-[#080d15] border-[#1e293b] text-white focus:border-[#00E599]"
-                    }`}
-                    placeholder="Courte description de ce que le coach va apprendre."
-                  />
-                </div>
-
-                {/* ICÔNE */}
-                <div>
-                  <label className="text-[11px] font-bold text-slate-400 block mb-1">
-                    Icône représentative
-                  </label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {AVAILABLE_ICONS.map((item) => {
-                      const IconComp = item.icon;
-                      const isSelected = (currentSection.iconName || "book").toLowerCase() === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => handleUpdateCurrentSection("iconName", item.id)}
-                          className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                            isSelected
-                              ? "bg-[#00E599]/20 border-[#00E599] text-[#00E599]"
-                              : "bg-black/20 border-slate-700 text-slate-400 hover:text-white"
-                          }`}
-                        >
-                          <IconComp className="w-3.5 h-3.5" />
-                          <span>{item.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Icône */}
+                <div className="flex items-center gap-1 flex-wrap pt-1">
+                  <span className={`text-[10px] font-black uppercase tracking-[0.14em] mr-1 ${th.faint}`}>Icône</span>
+                  {AVAILABLE_ICONS.map((item) => {
+                    const IconComp = item.icon;
+                    const isSel = (currentSection.iconName || "book").toLowerCase() === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleUpdateCurrentSection("iconName", item.id)}
+                        className={`w-8 h-8 rounded-lg border flex items-center justify-center transition cursor-pointer ${isSel ? th.accentChip : `${th.selectable} ${th.faint}`}`}
+                        title={item.name}
+                        aria-label={item.name}
+                      >
+                        <IconComp className="w-4 h-4" />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* SECTION: VIDÉO & MÉDIA EN DIRECT */}
-              <div className={`p-4 rounded-2xl border space-y-4 ${
-                isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#080d15] border-[#1e293b]"
-              }`}>
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <Film className="w-4 h-4 text-[#00E599]" />
-                    <h4 className="text-xs font-black uppercase tracking-wider text-white">
-                      Vidéo & Média de Démonstration
-                    </h4>
+              {/* Démonstration (comme en lecture) */}
+              <div className={`rounded-2xl border overflow-hidden ${th.card}`}>
+                <div className={`px-4 py-3 border-b flex items-center justify-between gap-2 ${th.border}`}>
+                  <div className={`flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] ${th.accent}`}>
+                    <Film className="w-4 h-4" />
+                    Démonstration
                   </div>
-                  <span className="text-[10px] text-slate-400 font-medium">
-                    Type détecté : <strong className="text-[#00E599] font-mono">{getMediaType(currentSection.videoUrl).toUpperCase()}</strong>
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${th.chip}`}>
+                    {getMediaType(currentSection.videoUrl).toUpperCase()}
                   </span>
                 </div>
-
-                {/* URL INPUT & PRESETS */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-400 block">
-                    URL de la vidéo / média (MP4, WebM, YouTube, Vimeo, WebP, GIF) :
-                  </label>
+                <div className="p-3 space-y-3">
+                  <GuideMediaViewer url={currentSection.videoUrl} title={currentSection.title} className="max-h-[380px]" />
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={currentSection.videoUrl || ""}
                       onChange={(e) => handleUpdateCurrentSection("videoUrl", e.target.value)}
-                      className={`flex-1 px-3 py-2 text-xs font-mono rounded-xl border outline-none ${
-                        isModernSleek
-                          ? "bg-white border-slate-300 text-slate-900"
-                          : "bg-[#04060a] border-[#1e293b] text-white focus:border-[#00E599]"
-                      }`}
-                      placeholder="https://... ou /images/guide/capture.webp ou lien YouTube"
+                      className={`${boxField} flex-1 px-3 py-2 text-xs font-mono`}
+                      placeholder="Lien MP4, YouTube, Vimeo, WebP ou GIF"
+                      aria-label="Lien du média"
                     />
-                    <label className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0 transition">
+                    <label className={`px-3 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 transition ${th.ghostBtn}`}>
                       <Upload className="w-3.5 h-3.5" />
-                      <span>Fichier local</span>
-                      <input
-                        type="file"
-                        accept="video/*,image/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
+                      Importer
+                      <input type="file" accept="video/*,image/*" onChange={handleFileUpload} className="hidden" />
                     </label>
                   </div>
-
-                  {/* QUICK PRESETS */}
-                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                    <span className="text-[10px] text-slate-500 font-bold">Suggestions :</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`text-[10px] font-bold ${th.faint}`}>Suggestions :</span>
                     {PRESET_MEDIA.map((preset, pIdx) => (
                       <button
                         key={pIdx}
                         type="button"
                         onClick={() => handleUpdateCurrentSection("videoUrl", preset.url)}
-                        className="text-[10px] px-2 py-0.5 rounded-lg bg-black/30 hover:bg-black/60 text-slate-400 hover:text-[#00E599] border border-slate-800 transition cursor-pointer"
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border transition cursor-pointer ${currentSection.videoUrl === preset.url ? th.accentChip : `${th.selectable} ${th.sub}`}`}
                       >
                         {preset.label}
                       </button>
                     ))}
                   </div>
                 </div>
-
-                {/* LIVE PREVIEW BOX */}
-                <div className="border border-black/40 rounded-xl overflow-hidden bg-black/40 p-2.5">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-                    <span>Aperçu en direct du lecteur</span>
-                    {currentSection.videoUrl && (
-                      <span className="text-[#00E599] font-mono text-[9px] truncate max-w-xs">
-                        {currentSection.videoUrl}
-                      </span>
-                    )}
-                  </div>
-                  <GuideMediaViewer
-                    url={currentSection.videoUrl}
-                    title={currentSection.title}
-                  />
-                </div>
               </div>
 
-              {/* SECTION: TEXTES & BLOCS DE CONTENU */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Type className="w-4 h-4 text-[#00E599]" />
-                    <h4 className="text-xs font-black uppercase tracking-wider text-white">
-                      Contenu Rédactionnel ({currentSection.content.length} bloc(s))
-                    </h4>
+              {/* Blocs de contenu (comme en lecture) */}
+              {currentSection.content.map((block, bIdx) => (
+                <section key={bIdx} className={`group/block relative space-y-3 rounded-2xl -mx-3 px-3 py-3 border border-transparent transition ${isModernSleek ? "hover:border-slate-200" : "hover:border-white/[0.06]"}`}>
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-1.5 h-5 rounded-full shrink-0 ${th.accentDot}`} />
+                    <input
+                      type="text"
+                      value={block.subtitle || ""}
+                      onChange={(e) => handleUpdateBlock(bIdx, { ...block, subtitle: e.target.value })}
+                      placeholder="Sous-titre (optionnel)"
+                      className={`${inlineField} w-full px-2 py-1 text-base font-black tracking-tight ${th.text}`}
+                      aria-label="Sous-titre du bloc"
+                    />
+                    {currentSection.content.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBlock(bIdx)}
+                        className={`p-1.5 rounded-lg opacity-0 group-hover/block:opacity-100 transition cursor-pointer shrink-0 ${isModernSleek ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50" : "text-slate-500 hover:text-rose-300 hover:bg-rose-500/10"}`}
+                        title="Supprimer ce bloc"
+                        aria-label="Supprimer ce bloc"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleAddBlock}
-                    className="px-2.5 py-1 rounded-lg bg-[#00E599]/15 hover:bg-[#00E599]/25 text-[#00E599] border border-[#00E599]/30 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Ajouter un sous-paragraphe</span>
-                  </button>
-                </div>
+                  <div>
+                    <label className={labelCls}>Texte <span className="normal-case tracking-normal font-semibold">· ligne vide = nouveau paragraphe</span></label>
+                    <textarea
+                      rows={Math.max(3, block.paragraphs.join("\n\n").split("\n").length + 1)}
+                      value={block.paragraphs.join("\n\n")}
+                      onChange={(e) => {
+                        const lines = e.target.value.split("\n\n").map((p) => p.trim()).filter(Boolean);
+                        handleUpdateBlock(bIdx, { ...block, paragraphs: lines.length > 0 ? lines : [e.target.value] });
+                      }}
+                      className={`${boxField} px-3 py-2.5 text-sm sm:text-[15px] leading-7 resize-y`}
+                      placeholder="Rédigez les explications détaillées ici."
+                    />
+                  </div>
 
-                {currentSection.content.map((block, bIdx) => (
-                  <div
-                    key={bIdx}
-                    className={`p-4 rounded-2xl border space-y-3 relative ${
-                      isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#0e131d] border-[#1f293d]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
-                        Bloc #{bIdx + 1}
-                      </span>
-                      {currentSection.content.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveBlock(bIdx)}
-                          className="text-xs text-rose-400 hover:text-rose-300 font-bold"
-                          title="Supprimer ce bloc"
-                        >
-                          &times; Supprimer le bloc
-                        </button>
-                      )}
-                    </div>
-
-                    {/* SOUS-TITRE */}
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-400 block mb-1">
-                        Sous-titre (optionnel)
-                      </label>
-                      <input
-                        type="text"
-                        value={block.subtitle || ""}
-                        onChange={(e) =>
-                          handleUpdateBlock(bIdx, { ...block, subtitle: e.target.value })
-                        }
-                        className={`w-full px-3 py-1.5 text-xs font-bold rounded-xl border outline-none ${
-                          isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900"
-                            : "bg-[#07090e] border-[#1e293b] text-white focus:border-[#00E599]"
-                        }`}
-                        placeholder="Ex: Positionnement & Glisser-déposer"
-                      />
-                    </div>
-
-                    {/* PARAGRAPHES */}
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-400 block mb-1">
-                        Paragraphes de texte (un paragraphe par saut de ligne)
-                      </label>
+                  <div>
+                    <label className={labelCls}>Points clés <span className="normal-case tracking-normal font-semibold">· une puce par ligne</span></label>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className={`w-4 h-4 shrink-0 mt-3 ${th.accent}`} />
                       <textarea
-                        rows={3}
-                        value={block.paragraphs.join("\n\n")}
-                        onChange={(e) => {
-                          const lines = e.target.value
-                            .split("\n\n")
-                            .map((p) => p.trim())
-                            .filter(Boolean);
-                          handleUpdateBlock(bIdx, {
-                            ...block,
-                            paragraphs: lines.length > 0 ? lines : [e.target.value]
-                          });
-                        }}
-                        className={`w-full p-3 text-xs leading-relaxed rounded-xl border outline-none ${
-                          isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900"
-                            : "bg-[#07090e] border-[#1e293b] text-white focus:border-[#00E599]"
-                        }`}
-                        placeholder="Rédigez les explications détaillées ici. Séparez par une double ligne vide pour créer un nouveau paragraphe."
-                      />
-                    </div>
-
-                    {/* LISTE À PUCES (POINTS CLÉS) */}
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-400 block mb-1">
-                        Points Clés / Liste à puces (une puce par ligne)
-                      </label>
-                      <textarea
-                        rows={3}
+                        rows={Math.max(2, (block.bullets || []).length + 1)}
                         value={(block.bullets || []).join("\n")}
                         onChange={(e) => {
-                          const bullets = e.target.value
-                            .split("\n")
-                            .map((b) => b.trim())
-                            .filter(Boolean);
+                          const bullets = e.target.value.split("\n").map((b) => b.trim()).filter(Boolean);
                           handleUpdateBlock(bIdx, { ...block, bullets });
                         }}
-                        className={`w-full p-2.5 text-xs font-mono rounded-xl border outline-none ${
-                          isModernSleek
-                            ? "bg-white border-slate-300 text-slate-900"
-                            : "bg-[#07090e] border-[#1e293b] text-white focus:border-[#00E599]"
-                        }`}
-                        placeholder="Ex: Équipe A : Titulaires et remplaçants&#10;Double-clic joueur : Fiche détaillée"
+                        className={`${boxField} flex-1 px-3 py-2.5 text-sm leading-7 resize-y`}
+                        placeholder={"Point clé n°1\nPoint clé n°2"}
                       />
                     </div>
+                  </div>
 
-                    {/* ASTUCE PRO */}
-                    <div>
-                      <label className="text-[11px] font-bold text-amber-400 flex items-center gap-1.5 mb-1">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Astuce Pro / Conseil coach (optionnel)</span>
-                      </label>
+                  {/* Astuce pro (même encart doré qu'en lecture) */}
+                  <div className={`p-4 rounded-2xl border flex items-start gap-3 ${isModernSleek
+                    ? "bg-gradient-to-br from-amber-50 to-white border-amber-200"
+                    : "bg-gradient-to-br from-[#d4af37]/[0.10] to-transparent border-[#d4af37]/25"
+                    }`}>
+                    <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${th.goldTile}`}>
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[10px] font-black uppercase tracking-[0.14em] mb-0.5 ${th.gold}`}>Astuce pro <span className={`normal-case tracking-normal font-semibold ${th.faint}`}>· optionnelle</span></p>
                       <input
                         type="text"
                         value={block.tip || ""}
-                        onChange={(e) =>
-                          handleUpdateBlock(bIdx, { ...block, tip: e.target.value })
-                        }
-                        className={`w-full px-3 py-1.5 text-xs rounded-xl border outline-none ${
-                          isModernSleek
-                            ? "bg-amber-50 border-amber-300 text-amber-900"
-                            : "bg-amber-500/10 border-amber-500/30 text-amber-200 focus:border-amber-400"
-                        }`}
-                        placeholder="Ex: Utilisez le raccourci Ctrl + Z pour annuler instantanément votre tracé."
+                        onChange={(e) => handleUpdateBlock(bIdx, { ...block, tip: e.target.value })}
+                        placeholder="Ex : Ctrl + Z annule instantanément votre dernier tracé."
+                        className={`${inlineField} w-full -mx-2 px-2 py-1 text-sm ${th.body}`}
+                        aria-label="Astuce pro"
                       />
                     </div>
                   </div>
-                ))}
-              </div>
+                </section>
+              ))}
 
-              {/* BOTTOM SAVE BUTTON */}
-              <div className="pt-2 flex items-center justify-between border-t border-slate-800">
-                <span className="text-xs text-slate-400">
-                  Modifications prêtes pour l&apos;article <strong>{currentSection.title}</strong>
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSaveAll}
-                  className="px-5 py-2 rounded-xl bg-[#00E599] hover:bg-[#05c482] text-[#07090e] text-xs font-black flex items-center gap-2 shadow-lg shadow-[#00E599]/20 transition cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Enregistrer l&apos;article & l&apos;ensemble du guide</span>
-                </button>
-              </div>
-            </div>
+              <button
+                type="button"
+                onClick={handleAddBlock}
+                className={`w-full py-3 rounded-2xl border border-dashed text-xs font-bold inline-flex items-center justify-center gap-1.5 transition cursor-pointer ${isModernSleek ? "border-slate-300 text-slate-500 hover:text-emerald-700 hover:border-emerald-400 hover:bg-emerald-50/50" : "border-white/10 text-slate-400 hover:text-[#00E599] hover:border-[#00E599]/40 hover:bg-[#00E599]/[0.04]"}`}
+              >
+                <Plus className="w-4 h-4" />
+                Ajouter un bloc
+              </button>
+            </article>
+          </div>
+        ) : (
+          <div className={`flex-1 flex flex-col items-center justify-center text-center p-12 ${th.sub}`}>
+            <BookOpen className="w-10 h-10 mb-3 opacity-40" />
+            <p className="text-sm font-bold">Sélectionnez un article à modifier.</p>
+          </div>
+        )}
+
+        {/* Pied : enregistrement */}
+        <footer className={`px-5 sm:px-8 py-3.5 border-t flex items-center justify-between gap-3 ${th.border}`}>
+          {saveStatus ? (
+            <p className={`text-[11px] font-bold flex items-center gap-1.5 ${th.accent}`}>
+              <CheckCircle2 className="w-4 h-4" />
+              {saveStatus}
+            </p>
           ) : (
-            <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center h-full">
-              <BookOpen className="w-12 h-12 mb-3 opacity-30" />
-              <p className="text-sm font-bold">Sélectionnez un article à éditer dans la colonne de gauche.</p>
-            </div>
+            <p className={`text-[11px] truncate ${th.sub}`}>
+              Les modifications sont visibles par tous les coachs après l&apos;enregistrement.
+            </p>
           )}
-        </div>
-      </div>
-    </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {onPreviewGuide && (
+              <button
+                type="button"
+                onClick={onPreviewGuide}
+                className={`h-10 px-4 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer ${th.ghostBtn}`}
+              >
+                <Eye className="w-4 h-4" />
+                Aperçu
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleSaveAll}
+              className={`h-10 px-5 rounded-xl text-xs font-black inline-flex items-center gap-2 transition cursor-pointer ${th.primaryBtn}`}
+            >
+              <Save className="w-4 h-4" />
+              Enregistrer le guide
+            </button>
+          </div>
+        </footer>
+      </main>
+    </>
   );
 }

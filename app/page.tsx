@@ -67,13 +67,8 @@ export default function Home() {
   const [isLegalModalOpen, setIsLegalModalOpen] = useState<boolean>(false);
   const [legalModalTab, setLegalModalTab] = useState<LegalTab>("faq");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState<boolean>(false);
-  const [isModernSleek, setIsModernSleek] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("thebox_modern_sleek");
-      if (saved !== null) return saved === "true";
-    }
-    return false;
-  });
+  // Thème lu après le montage (et non au premier rendu) pour que le HTML serveur et client soient identiques
+  const [isModernSleek, setIsModernSleek] = useState<boolean>(false);
 
   // Keep theme state synchronized with localStorage
   useEffect(() => {
@@ -84,6 +79,7 @@ export default function Home() {
         setIsModernSleek(saved === "true");
       }
     };
+    checkTheme();
     window.addEventListener("storage", checkTheme);
     const interval = setInterval(checkTheme, 500);
     return () => {
@@ -107,6 +103,16 @@ export default function Home() {
   const [newPassword, setNewPassword] = useState("");
   const [newConfirmPassword, setNewConfirmPassword] = useState("");
 
+  // Drapeaux admin stockés localement : lus après le montage pour éviter une erreur d'hydratation
+  const [hasLocalAdminFlag, setHasLocalAdminFlag] = useState(false);
+  useEffect(() => {
+    try {
+      setHasLocalAdminFlag(localStorage.getItem("thebox_admin_mode") === "true" || localStorage.getItem("thebox_guide_admin") === "true");
+    } catch {
+      // stockage indisponible (navigation privée) : on garde false
+    }
+  }, []);
+
   // Derived active state - compute admin status with safe fallback
   const activeCoach = coaches.find(c => c.id === activeCoachId) || coaches[0] || {
     id: "",
@@ -124,7 +130,7 @@ export default function Home() {
       activeCoach.role === "Super Admin" ||
       isSuperAdminEmail(activeCoach.email) ||
       activeCoach.email?.toLowerCase().includes("pixup") ||
-      (typeof window !== "undefined" && (localStorage.getItem("thebox_admin_mode") === "true" || localStorage.getItem("thebox_guide_admin") === "true"))
+      hasLocalAdminFlag
     )
   );
 
@@ -739,7 +745,11 @@ export default function Home() {
         isOpen={isLegalModalOpen}
         onClose={() => setIsLegalModalOpen(false)}
         defaultTab={legalModalTab}
-        onOpenSupport={() => setIsSupportModalOpen(true)}
+        onOpenSupport={() => {
+          // Le support prend le relais : on ferme la FAQ pour qu'il soit seul au premier plan
+          setIsLegalModalOpen(false);
+          setIsSupportModalOpen(true);
+        }}
         isModernSleek={isModernSleek}
       />
 

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css'; // Global styles
 import PWARegister from '@/components/PWARegister';
+import ConfirmDialogHost from '@/components/ConfirmDialog';
 
 export const viewport: Viewport = {
   themeColor: '#111319',
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <PWARegister />
         {children}
+        <ConfirmDialogHost />
       </body>
     </html>
   );

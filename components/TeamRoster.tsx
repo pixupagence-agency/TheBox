@@ -18,6 +18,7 @@ import {
   Moon,
   Shield,
 } from "lucide-react";
+import { confirmAction } from "@/components/ConfirmDialog";
 
 export interface Player {
   id: string;
@@ -83,8 +84,9 @@ export default function TeamRoster({ roster, setRoster, isModernSleek = false }:
     setNotes("");
   };
 
-  const handleDeletePlayer = (id: string) => {
-    if (confirm("Supprimer ce joueur de l'effectif ?")) {
+  const handleDeletePlayer = async (id: string) => {
+    const player = roster.find((p) => p.id === id);
+    if (await confirmAction({ title: "Retirer ce joueur ?", subject: player?.name, message: "Le joueur sera supprimé de l'effectif.", confirmLabel: "Retirer" })) {
       setRoster(roster.filter((p) => p.id !== id));
     }
   };

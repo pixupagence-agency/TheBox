@@ -16,6 +16,7 @@ import {
   Building,
   Tag
 } from "lucide-react";
+import { getPremiumTheme, premiumOverlay, premiumShell, premiumLabel } from "@/lib/premiumModalTheme";
 
 interface SupportContactModalProps {
   isOpen: boolean;
@@ -139,308 +140,247 @@ export default function SupportContactModal({
     }
   };
 
+  const th = getPremiumTheme(isModernSleek);
+  const inputBase = `w-full rounded-xl px-3 py-2.5 text-xs border outline-none transition ${th.input}`;
+  const labelBase = `${premiumLabel} ${th.sub}`;
+
   return (
     <div
-      className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto"
+      className={`${premiumOverlay} z-[130]`}
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
         }
       }}
     >
-      <div className={`max-w-xl w-full rounded-2xl sm:rounded-3xl shadow-2xl relative my-auto overflow-hidden border ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
-        }`}>
+      <div className={`${premiumShell} w-full max-w-4xl max-h-[94vh] sm:max-h-[88vh] ${th.panel}`}>
+        {!isModernSleek && (
+          <div className="absolute -top-40 left-32 w-[460px] h-[300px] bg-[#00E599]/[0.05] rounded-full blur-3xl pointer-events-none" />
+        )}
 
-        {/* Glow visual accents */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* HEADER */}
-        <div className={`px-5 sm:px-6 py-4 border-b flex items-center justify-between relative z-10 ${isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#0f141d] border-[#1f293d] text-white"
-          }`}>
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl border ${
-              isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-gradient-to-br from-[#00E599]/20 to-cyan-500/20 border-[#00E599]/40 text-[#00E599]"
-            }`}>
-              <Mail className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className={`text-base font-black tracking-wide ${isModernSleek ? "text-slate-900" : "text-white"}`}>
-                  Contacter le Support
-                </h3>
-                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
-                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599]/40 text-[#00E599]"
-                }`}>
-                  7j / 7
-                </span>
+        {/* ================= SIDEBAR ================= */}
+        <aside className={`hidden md:flex w-64 shrink-0 flex-col border-r relative z-10 ${th.sidebar}`}>
+          <div className="px-5 pt-6 pb-5">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center ${th.accentChip}`}>
+                <Mail className="h-5 w-5" />
               </div>
-              <p className={`text-xs font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                Notre équipe vous répond directement à votre adresse e-mail.
-              </p>
+              <div className="leading-tight">
+                <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${th.accent}`}>The Box</p>
+                <p className={`text-sm font-black ${th.text}`}>Support</p>
+              </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer disabled:opacity-50 shrink-0 ${isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-              }`}
-            title="Fermer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* BODY */}
-        <div className="p-5 sm:p-6 relative z-10">
-          {submitSuccess ? (
-            /* SUCCESS VIEW */
-            <div className="text-center py-6 sm:py-8 space-y-4 animate-fade-in">
-              <div className={`w-16 h-16 rounded-full border-2 mx-auto flex items-center justify-center shadow-lg animate-scale-up ${
-                isModernSleek ? "bg-emerald-100 border-emerald-400 text-emerald-800 shadow-emerald-500/10" : "bg-[#00E599]/15 border-[#00E599] text-[#00E599] shadow-[#00E599]/20"
-              }`}>
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-              <div>
-                <h4 className={`text-lg font-black ${isModernSleek ? "text-slate-900" : "text-white"}`}>Message transmis avec succès !</h4>
-                <p className={`text-xs max-w-md mx-auto mt-2 leading-relaxed ${isModernSleek ? "text-slate-600" : "text-slate-300"}`}>
-                  Votre demande a bien été envoyée à l&apos;équipe support The Box{isAdmin ? <> (<span className={`font-mono font-bold ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{SUPPORT_EMAIL_TARGET}</span>)</> : null}.
-                </p>
-                <div className={`border rounded-xl p-3 max-w-md mx-auto mt-4 text-left ${
-                  isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#121824] border-[#1f293d]"
-                }`}>
-                  <div className={`flex items-center gap-2 text-[11px] mb-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
-                    <Clock className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
-                    <span>Délai de réponse habituel : moins de 24 heures</span>
+          <div className="px-3 space-y-2">
+            {[
+              { icon: Clock, title: "Réponse sous 24 h", desc: "Par e-mail, 7 j / 7." },
+              { icon: ShieldCheck, title: isAdmin ? SUPPORT_EMAIL_TARGET : "Support technique The Box", desc: isAdmin ? "Destinataire officiel" : "Votre demande arrive directement à l'équipe." },
+              { icon: Sparkles, title: "Vos idées comptent", desc: "Suggestions d'amélioration bienvenues." },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.desc} className={`p-3 rounded-2xl border flex items-start gap-3 ${th.card}`}>
+                  <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${th.accentChip}`}>
+                    <Icon className="h-4 w-4" />
                   </div>
-                  <div className={`flex items-center gap-2 text-[11px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
-                    <Mail className="w-3.5 h-3.5 text-cyan-500" />
-                    <span>Une réponse vous sera envoyée à : <strong className={`font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{email}</strong></span>
+                  <div className="min-w-0">
+                    <p className={`text-xs font-black truncate ${th.text}`}>{item.title}</p>
+                    <p className={`text-[11px] leading-snug ${th.sub}`}>{item.desc}</p>
                   </div>
                 </div>
-              </div>
+              );
+            })}
+          </div>
 
-              <div className="pt-2 flex justify-center gap-3">
+          {(userClub || userSport || userPlan) && (
+            <div className="mt-auto p-3">
+              <div className={`p-3 rounded-2xl border ${th.cardMuted}`}>
+                <p className={`text-[10px] font-black uppercase tracking-[0.18em] mb-2 ${th.faint}`}>Joint à votre demande</p>
+                <dl className="space-y-1 text-[11px]">
+                  {userClub && <div className="flex justify-between gap-2"><dt className={th.sub}>Club</dt><dd className={`font-bold truncate ${th.text}`}>{userClub}</dd></div>}
+                  {userSport && <div className="flex justify-between gap-2"><dt className={th.sub}>Sport</dt><dd className={`font-bold capitalize ${th.text}`}>{userSport}</dd></div>}
+                  {userPlan && <div className="flex justify-between gap-2"><dt className={th.sub}>Formule</dt><dd className={`font-bold uppercase ${th.text}`}>{userPlan}</dd></div>}
+                </dl>
+              </div>
+            </div>
+          )}
+        </aside>
+
+        {/* ================= MAIN ================= */}
+        <main className="flex-1 min-w-0 flex flex-col relative z-10 min-h-0">
+          <header className={`px-5 sm:px-8 pt-5 sm:pt-6 pb-4 border-b ${th.border}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className={`md:hidden text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${th.accent}`}>Support</p>
+                <h2 className={`text-lg sm:text-xl font-black tracking-tight ${th.text}`}>Contacter le support</h2>
+                <p className={`text-xs mt-1 ${th.sub}`}>Notre équipe vous répond directement à votre adresse e-mail.</p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className={`p-2 rounded-xl border transition cursor-pointer shrink-0 disabled:opacity-50 ${th.ghostBtn}`}
+                title="Fermer (Échap)"
+                aria-label="Fermer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </header>
+
+          {submitSuccess ? (
+            /* ---------- SUCCÈS ---------- */
+            <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-10 flex flex-col items-center justify-center text-center animate-fade-in">
+              <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center ${th.accentChip}`}>
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <h3 className={`mt-5 text-xl font-black tracking-tight ${th.text}`}>Message envoyé</h3>
+              <p className={`mt-2 text-sm max-w-md leading-relaxed ${th.sub}`}>
+                Votre demande a bien été transmise à l&apos;équipe support The Box{isAdmin ? <> (<span className={`font-mono font-bold ${th.accent}`}>{SUPPORT_EMAIL_TARGET}</span>)</> : null}.
+              </p>
+              <div className={`mt-5 w-full max-w-md p-4 rounded-2xl border text-left space-y-2 ${th.cardMuted}`}>
+                <p className={`text-xs flex items-center gap-2 ${th.body}`}>
+                  <Clock className={`w-4 h-4 shrink-0 ${th.accent}`} />
+                  Délai de réponse habituel : moins de 24 heures
+                </p>
+                <p className={`text-xs flex items-center gap-2 min-w-0 ${th.body}`}>
+                  <Mail className={`w-4 h-4 shrink-0 ${th.accent}`} />
+                  <span className="truncate">Réponse envoyée à <strong className={`font-mono ${th.text}`}>{email}</strong></span>
+                </p>
+              </div>
+              <div className="mt-6 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setSubmitSuccess(false);
                     setMessage("");
                   }}
-                  className={`h-10 px-4 inline-flex items-center justify-center rounded-xl font-bold text-xs transition border cursor-pointer whitespace-nowrap ${
-                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-[#161c28] hover:bg-[#1e2738] text-slate-300 border-[#233149]"
-                  }`}
+                  className={`h-10 px-4 rounded-xl border text-xs font-bold transition cursor-pointer ${th.ghostBtn}`}
                 >
                   Envoyer un autre message
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="h-10 px-5 inline-flex items-center justify-center rounded-xl bg-[#00E599] hover:bg-[#06b87d] text-[#07090e] font-black text-xs transition cursor-pointer shadow-lg shadow-[#00E599]/20 whitespace-nowrap"
+                  className={`h-10 px-5 rounded-xl text-xs font-black transition cursor-pointer ${th.primaryBtn}`}
                 >
                   Fermer
                 </button>
               </div>
             </div>
           ) : (
-            /* FORM VIEW */
-            <form onSubmit={handleSubmit} className="space-y-4">
+            /* ---------- FORMULAIRE ---------- */
+            <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-5 sm:py-6 space-y-4 scrollbar-thin">
+                {errorMessage && (
+                  <div className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 animate-shake ${th.danger}`}>
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span className="leading-relaxed">{errorMessage}</span>
+                  </div>
+                )}
 
-              {/* Recipient info badge */}
-              <div className={`rounded-xl px-3.5 py-2.5 flex items-center justify-between flex-wrap gap-2 text-xs border ${
-                isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700" : "bg-[#121824] border-[#1f293d] text-slate-400"
-              }`}>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className={`w-4 h-4 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
-                  <span>{isAdmin ? "Destinataire officiel :" : "Assistance :"}</span>
-                  {isAdmin ? (
-                    <strong className={`font-mono ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}>{SUPPORT_EMAIL_TARGET}</strong>
-                  ) : (
-                    <strong className={isModernSleek ? "text-slate-900" : "text-white"}>Support Technique The Box</strong>
-                  )}
-                </div>
-              </div>
-
-              {/* Error Alert */}
-              {errorMessage && (
-                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs rounded-xl p-3 flex items-start gap-2.5 animate-shake">
-                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">{errorMessage}</span>
-                </div>
-              )}
-
-              {/* Two columns: Name & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
-                    <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Votre Nom</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Coach Martin"
-                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
-                      isModernSleek 
-                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
-                    }`}
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelBase}>Votre nom</label>
+                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Coach Martin" className={inputBase} />
+                  </div>
+                  <div>
+                    <label className={labelBase}>Votre email <span className={th.accent}>*</span></label>
+                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="martin.coach@gmail.com" className={inputBase} />
+                  </div>
                 </div>
 
                 <div>
-                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
-                    <Mail className="w-3.5 h-3.5 text-[#00E599]" />
-                    <span>Votre Email <span className="text-[#00E599]">*</span></span>
+                  <label className={labelBase}>Type de demande</label>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                    {PRESET_CATEGORIES.map((cat) => {
+                      const isSelected = category === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setCategory(cat.id);
+                            if (!subjectText || PRESET_CATEGORIES.some((c) => c.label === subjectText)) {
+                              setSubjectText(cat.label);
+                            }
+                          }}
+                          className={`p-3 rounded-xl border text-left text-[11px] font-bold leading-snug transition cursor-pointer ${isSelected ? `${th.selected} ${th.text}` : `${th.selectable} ${th.sub}`}`}
+                        >
+                          {cat.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelBase}>Objet</label>
+                  <div className="relative flex items-center">
+                    <span className={`absolute left-2.5 font-mono text-[10px] font-black px-1.5 py-0.5 rounded-md border pointer-events-none ${th.accentChip}`}>
+                      [Support]
+                    </span>
+                    <input
+                      type="text"
+                      value={subjectText}
+                      onChange={(e) => {
+                        // Retire un éventuel [Support] tapé à la main pour éviter le doublon
+                        const val = e.target.value.replace(/^\[Support\]\s*/i, "");
+                        setSubjectText(val);
+                      }}
+                      placeholder="Ex : problème d'export de schéma, question licence…"
+                      className={`${inputBase} pl-[5.5rem]`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={`${labelBase} flex items-center justify-between`}>
+                    <span>Votre message <span className={th.accent}>*</span></span>
+                    <span className={`normal-case tracking-normal font-bold tabular-nums ${th.faint}`}>{message.length} caractères</span>
                   </label>
-                  <input
-                    type="email"
+                  <textarea
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="martin.coach@gmail.com"
-                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
-                      isModernSleek 
-                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
-                    }`}
+                    rows={6}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Décrivez votre question, le problème rencontré ou vos besoins en détail…"
+                    className={`${inputBase} resize-none leading-relaxed`}
                   />
                 </div>
               </div>
 
-              {/* Category Pills */}
-              <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
-                  <Tag className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Type de Demande</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                  {PRESET_CATEGORIES.map((cat) => {
-                    const isSelected = category === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => {
-                          setCategory(cat.id);
-                          if (!subjectText || PRESET_CATEGORIES.some((c) => c.label === subjectText)) {
-                            setSubjectText(cat.label);
-                          }
-                        }}
-                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition text-left cursor-pointer truncate ${
-                          isSelected
-                            ? isModernSleek ? "bg-emerald-50 border-emerald-500 text-emerald-800" : "bg-[#00E599]/15 border-[#00E599] text-[#00E599]"
-                            : isModernSleek ? "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300" : "bg-[#121824] border-[#1f293d] text-slate-400 hover:text-white hover:border-[#2d3a52]"
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Subject Input with visual [Support] prefix badge */}
-              <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center justify-between ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
-                  <span className="flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Objet du Message</span>
-                  </span>
-                </label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-3 bg-[#00E599]/20 text-[#00E599] font-mono text-[10px] font-black px-1.5 py-0.5 rounded pointer-events-none border border-[#00E599]/30">
-                    [Support]
-                  </span>
-                  <input
-                    type="text"
-                    value={subjectText}
-                    onChange={(e) => {
-                      // Strip leading [Support] if user types it manually to avoid duplicate
-                      const val = e.target.value.replace(/^\[Support\]\s*/i, "");
-                      setSubjectText(val);
-                    }}
-                    placeholder="Ex: Problème d'export de schéma, Question licence..."
-                    className={`w-full rounded-xl pl-22 pr-3 py-2 text-xs focus:outline-none transition border ${
-                      isModernSleek 
-                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                        : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* Message Textarea */}
-              <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center justify-between ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
-                  <span>Votre Message <span className="text-[#00E599]">*</span></span>
-                  <span className="text-[10px] text-slate-500">
-                    {message.length} caractères
-                  </span>
-                </label>
-                <textarea
-                  required
-                  rows={4}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Décrivez votre question, le problème rencontré ou vos besoins en détail..."
-                  className={`w-full rounded-xl p-3 text-xs focus:outline-none transition resize-none leading-relaxed border ${
-                    isModernSleek 
-                      ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                      : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
-                  }`}
-                />
-              </div>
-
-              {/* Context Summary Footer if available */}
-              {(userClub || userSport || userPlan) && (
-                <div className="text-[10px] text-slate-500 flex items-center gap-3 flex-wrap pt-0.5">
-                  <span className="text-slate-400 font-semibold">Infos de session :</span>
-                  {userClub && <span>Club : <strong className={isModernSleek ? "text-slate-800" : "text-slate-300"}>{userClub}</strong></span>}
-                  {userSport && <span>Sport : <strong className={isModernSleek ? "text-slate-800" : "text-slate-300"}>{userSport.toUpperCase()}</strong></span>}
-                  {userPlan && <span>Offre : <strong className={isModernSleek ? "text-slate-800" : "text-slate-300"}>{userPlan.toUpperCase()}</strong></span>}
-                </div>
-              )}
-
-              {/* ACTIONS */}
-              <div className={`pt-3 flex items-center justify-between gap-3 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+              <footer className={`px-5 sm:px-8 py-4 border-t flex items-center justify-end gap-2 ${th.border}`}>
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className={`h-10 px-4 inline-flex items-center justify-center rounded-xl font-bold text-xs transition border cursor-pointer disabled:opacity-50 whitespace-nowrap ${
-                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" : "bg-[#161c28] hover:bg-[#1e2738] text-slate-300 border-[#233149]"
-                  }`}
+                  className={`h-10 px-4 rounded-xl border text-xs font-bold transition cursor-pointer disabled:opacity-50 ${th.ghostBtn}`}
                 >
                   Annuler
                 </button>
-
                 <button
                   type="submit"
                   disabled={isSubmitting || !message.trim() || !email.trim()}
-                  className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer inline-flex items-center justify-center gap-2 shadow-lg shadow-[#00E599]/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  className={`h-10 px-5 rounded-xl text-xs font-black flex items-center gap-2 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${th.primaryBtn}`}
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-3.5 h-3.5 border-2 border-[#07090e] border-t-transparent rounded-full animate-spin" />
-                      <span>Envoi en cours...</span>
+                      <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      Envoi en cours…
                     </>
                   ) : (
                     <>
-                      <Send className="w-3.5 h-3.5 shrink-0" />
-                      <span>Envoyer au Support</span>
+                      <Send className="w-3.5 h-3.5" />
+                      Envoyer
                     </>
                   )}
                 </button>
-              </div>
-
+              </footer>
             </form>
           )}
-        </div>
-
+        </main>
       </div>
     </div>
   );

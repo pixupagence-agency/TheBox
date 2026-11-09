@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Search, Filter, BookOpen, Star, Trash2, ArrowUpRight, Plus, Eye, Share2, ClipboardList } from "lucide-react";
 import ShareModal, { ShareData } from "./ShareModal";
+import { confirmAction } from "@/components/ConfirmDialog";
 
 interface StrategyLibraryProps {
   savedTactics: any[];
@@ -90,9 +91,10 @@ export default function StrategyLibrary({ savedTactics, setSavedTactics, onLoadT
     );
   };
 
-  const deleteTactic = (id: string, isPre: boolean) => {
+  const deleteTactic = async (id: string, isPre: boolean) => {
     if (isPre) return; // Cannot delete preconfigured templates
-    if (confirm("Êtes-vous sûr de vouloir supprimer définitivement ce schéma de jeu ?")) {
+    const tactic = savedTactics.find((item) => item.id === id);
+    if (await confirmAction({ title: "Supprimer ce schéma ?", subject: tactic?.name, message: "Le schéma sera définitivement retiré de votre bibliothèque." })) {
       setSavedTactics(savedTactics.filter((item) => item.id !== id));
     }
   };

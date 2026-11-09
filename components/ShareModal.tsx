@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   X, 
   Mail, 
@@ -27,6 +27,9 @@ import {
   Video
 } from "lucide-react";
 import { toPng } from "html-to-image";
+import { clampStepDuration, getAnimationDuration, getPositionAtTime } from "@/lib/animationExport";
+import { encodeCanvasToMp4 } from "@/lib/canvasMp4Encoder";
+import { getPremiumTheme, premiumOverlay, premiumShell } from "@/lib/premiumModalTheme";
 
 export interface SharePlayerItem {
   number: number | string;
@@ -61,11 +64,33 @@ export interface ShareData {
   imageElementRef?: React.RefObject<HTMLDivElement | null>;
   imageUrl?: string;
   gifUrl?: string;
+  gifError?: boolean;
+  /** Image de chaque étape, dans l'ordre (data URLs) : source du GIF et de la vidéo */
+  renderAnimationFrame?: (position: number) => HTMLCanvasElement | null;
   isAnimation?: boolean;
   keyframes?: any[];
   playbackSpeed?: number;
   matchSchemas?: MatchSchemaItem[];
 }
+
+const VIDEO_FPS = 30;
+const VIDEO_BITRATE = 5_000_000;
+const VIDEO_LOOPS = 2;
+const VIDEO_FRAME_MS = 1000 / VIDEO_FPS;
+const ENCODER_MARGIN_MS = 1500;
+
+// "Animation FOOTBALL (2 étapes)" => "Animation_FOOTBALL_2_etapes_2026-11-07.gif"
+const buildExportFilename = (prefix: string, title: string, extension: string): string => {
+  const slug = title
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // retire les accents
+    .replace(/\d{1,2}\/\d{1,2}\/\d{4}/g, " ") // la date est déjà ajoutée en fin de nom
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(new RegExp(`^${prefix}(_|$)`, "i"), "");
+  const date = new Date().toISOString().slice(0, 10);
+  return [prefix, slug, date].filter(Boolean).join("_") + `.${extension}`;
+};
 
 export interface ShareModalProps {
   isOpen: boolean;
@@ -118,8 +143,23 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [dynamicGifUrl, setDynamicGifUrl] = useState<string | null>(data?.gifUrl || null);
   const [isGeneratingGif, setIsGeneratingGif] = useState<boolean>(false);
+  const [recordedVideoExtension, setRecordedVideoExtension] = useState<string>("webm");
+  const videoRunIdRef = useRef<number>(0);
 
-  // Capture 3D card asynchronously if needed
+  // Nouvelle animation partagée : on repart de zéro pour ne pas afficher le GIF/la vidéo de la précédente
+  const renderAnimationFrame = data?.renderAnimationFrame;
+  useEffect(() => {
+    videoRunIdRef.current += 1;
+    setIsRecordingVideo(false);
+    setVideoProgress(0);
+    setRecordedVideoUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setDynamicGifUrl(null);
+    setActiveMediaTab("gif");
+  }, [renderAnimationFrame]);
+
   useEffect(() => {
     if (!isOpen || !data) return;
     if (data.gifUrl) {
@@ -366,9 +406,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   const handleDownloadImage = () => {
     if (!activeImageUrl) return;
     try {
-      const timestamp = new Date().toISOString().slice(0, 10);
-      const cleanTitle = activeSchemaTitle.replace(/[^a-zA-Z0-9]/g, "_");
-      const filename = `Schema_${cleanTitle}_${timestamp}.png`;
+      const filename = buildExportFilename("Schema", activeSchemaTitle, "png");
       const link = document.createElement("a");
       link.download = filename;
       link.href = activeImageUrl;
@@ -387,9 +425,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
     const gifTarget = dynamicGifUrl || data.gifUrl;
     if (!gifTarget) return;
     try {
-      const timestamp = new Date().toISOString().slice(0, 10);
-      const cleanTitle = activeSchemaTitle.replace(/[^a-zA-Z0-9]/g, "_");
-      const filename = `Animation_${cleanTitle}_${timestamp}.gif`;
+      const filename = buildExportFilename("Animation", activeSchemaTitle, "gif");
       const link = document.createElement("a");
       link.download = filename;
       link.href = gifTarget;
@@ -407,9 +443,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   const handleDownloadVideo = () => {
     if (!recordedVideoUrl) return;
     try {
-      const timestamp = new Date().toISOString().slice(0, 10);
-      const cleanTitle = activeSchemaTitle.replace(/[^a-zA-Z0-9]/g, "_");
-      const filename = `Animation_${cleanTitle}_${timestamp}.mp4`;
+      const filename = buildExportFilename("Animation", activeSchemaTitle, recordedVideoExtension);
       const link = document.createElement("a");
       link.download = filename;
       link.href = recordedVideoUrl;
@@ -426,12 +460,13 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   // Generate Video using canvas stream & MediaRecorder API
   const handleGenerateVideo = async () => {
     if (isRecordingVideo) return;
-    const keyframes = data.keyframes;
-    if (!keyframes || keyframes.length === 0) {
+    const renderFrame = data.renderAnimationFrame;
+    if (!renderFrame) {
       alert("Aucune étape d'animation trouvée pour générer la vidéo.");
       return;
     }
 
+    const runId = ++videoRunIdRef.current;
     try {
       setIsRecordingVideo(true);
       setVideoProgress(5);
@@ -439,22 +474,68 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
       // Create an offscreen canvas for rendering animated frames
       const targetCanvas = document.createElement("canvas");
-      const sampleImg = new Image();
-      sampleImg.src = activeImageUrl || "";
-      await new Promise((res) => {
-        if (sampleImg.complete) res(null);
-        else sampleImg.onload = () => res(null);
-      });
+      const firstFrame = renderFrame(0);
+      if (!firstFrame) throw new Error("Canvas non supporté");
+      const stepCount = Math.max(1, data.keyframes?.length || 1);
 
-      targetCanvas.width = sampleImg.naturalWidth || 1000;
-      targetCanvas.height = sampleImg.naturalHeight || 700;
+      // Dimensions paires et limitées : exigées par les encodeurs vidéo H.264
+      const videoScale = Math.min(1, 1280 / firstFrame.width);
+      targetCanvas.width = Math.floor((firstFrame.width * videoScale) / 2) * 2;
+      targetCanvas.height = Math.floor((firstFrame.height * videoScale) / 2) * 2;
       const ctx = targetCanvas.getContext("2d");
       if (!ctx) throw new Error("Canvas non supporté");
 
-      // Draw initial frame
-      ctx.drawImage(sampleImg, 0, 0);
+      const drawFrame = (position: number) => {
+        const source = renderFrame(position);
+        if (!source) return;
+        ctx.drawImage(source, 0, 0, targetCanvas.width, targetCanvas.height);
+        const idx = Math.floor(position);
 
-      const stream = targetCanvas.captureStream(30);
+        // Add a subtle animated phase badge
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 229, 153, 0.9)";
+        ctx.fillRect(30, targetCanvas.height - 50, 160, 30);
+        ctx.fillStyle = "#090d14";
+        ctx.font = "900 14px system-ui, sans-serif";
+        ctx.fillText(`ÉTAPE ${idx + 1} / ${stepCount}`, 45, targetCanvas.height - 30);
+
+        ctx.restore();
+      };
+
+      const stepMs = clampStepDuration(data.playbackSpeed);
+      const loopDuration = getAnimationDuration(stepCount, stepMs);
+      const totalDuration = loopDuration * VIDEO_LOOPS;
+
+      const showVideo = (url: string, extension: string) => {
+        setRecordedVideoExtension(extension);
+        setRecordedVideoUrl(url);
+        setVideoProgress(100);
+        setImageShareStatus("Vidéo prête au téléchargement !");
+        setTimeout(() => setImageShareStatus(null), 3000);
+      };
+
+      const mp4 = await encodeCanvasToMp4({
+        canvas: targetCanvas,
+        frameCount: Math.round((totalDuration / 1000) * VIDEO_FPS),
+        fps: VIDEO_FPS,
+        bitrate: VIDEO_BITRATE,
+        drawFrame: (frameIndex) =>
+          drawFrame(getPositionAtTime(((frameIndex / VIDEO_FPS) * 1000) % loopDuration, stepCount, stepMs)),
+        onProgress: (ratio) => setVideoProgress(Math.round(ratio * 18) * 5),
+        isCancelled: () => runId !== videoRunIdRef.current,
+      });
+      if (runId !== videoRunIdRef.current) return;
+      if (mp4) {
+        showVideo(URL.createObjectURL(mp4), "mp4");
+        return;
+      }
+
+      // Navigateur sans WebCodecs : enregistrement en temps réel, moins régulier
+
+      // Draw initial frame
+      drawFrame(0);
+
+      const stream = targetCanvas.captureStream(VIDEO_FPS);
       let mimeType = "video/webm";
       if (typeof MediaRecorder !== "undefined") {
         if (MediaRecorder.isTypeSupported("video/mp4")) {
@@ -466,7 +547,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
         }
       }
 
-      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2500000 });
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: VIDEO_BITRATE });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) chunks.push(e.data);
@@ -482,45 +563,49 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
       recorder.start();
 
-      // Render frames smoothly in sequence (e.g. 2 full loops of the animation)
-      const stepDuration = Math.max(400, Math.min(2000, data.playbackSpeed || 800));
-      const totalSteps = keyframes.length * 2;
-      let stepCount = 0;
+      // Les positions dépendent du temps écoulé : un appareil lent perd des images mais garde la bonne vitesse.
+      // L'encodeur cale à son démarrage et perd les images encore en attente à l'arrêt :
+      // ces marges font tomber ces pertes sur des pauses plutôt que sur un déplacement
+      const movesEnd = ENCODER_MARGIN_MS + totalDuration;
+      const recordingDuration = movesEnd + ENCODER_MARGIN_MS;
+      const startedAt = performance.now();
+      let elapsed = 0;
 
-      for (let loop = 0; loop < 2; loop++) {
-        for (let idx = 0; idx < keyframes.length; idx++) {
-          stepCount++;
-          setVideoProgress(Math.round((stepCount / totalSteps) * 90));
-
-          // Draw the current keyframe onto canvas
-          const frameImg = new Image();
-          // Use parent canvas or sample image
-          ctx.drawImage(sampleImg, 0, 0);
-
-          // Add a subtle animated phase badge
-          ctx.save();
-          ctx.fillStyle = "rgba(0, 229, 153, 0.9)";
-          ctx.fillRect(30, targetCanvas.height - 50, 160, 30);
-          ctx.fillStyle = "#090d14";
-          ctx.font = "900 14px system-ui, sans-serif";
-          ctx.fillText(`ÉTAPE ${idx + 1} / ${keyframes.length}`, 45, targetCanvas.height - 30);
-          ctx.restore();
-
-          await new Promise((r) => setTimeout(r, stepDuration));
+      while (elapsed < recordingDuration) {
+        if (runId !== videoRunIdRef.current) {
+          recorder.stop();
+          return;
         }
+        const frameStart = performance.now();
+        drawFrame(
+          elapsed < ENCODER_MARGIN_MS
+            ? 0
+            : elapsed >= movesEnd
+              ? stepCount - 1
+              : getPositionAtTime((elapsed - ENCODER_MARGIN_MS) % loopDuration, stepCount, stepMs)
+        );
+        // Par paliers de 5 % : rafraîchir la fenêtre à chaque image ferait perdre des images à l'enregistrement
+        setVideoProgress(Math.round((elapsed / recordingDuration) * 18) * 5);
+        const renderTime = performance.now() - frameStart;
+        await new Promise((r) => setTimeout(r, Math.max(0, VIDEO_FRAME_MS - renderTime)));
+        elapsed = performance.now() - startedAt;
       }
 
       recorder.stop();
       const videoBlobUrl = await recordPromise;
-      setRecordedVideoUrl(videoBlobUrl);
-      setVideoProgress(100);
-      setImageShareStatus("Vidéo prête au téléchargement !");
-      setTimeout(() => setImageShareStatus(null), 3000);
+      if (runId !== videoRunIdRef.current) {
+        URL.revokeObjectURL(videoBlobUrl);
+        return;
+      }
+      showVideo(videoBlobUrl, mimeType.startsWith("video/mp4") ? "mp4" : "webm");
     } catch (e) {
       console.error("Erreur génération vidéo:", e);
-      alert("Erreur lors de la création de la vidéo.");
+      if (runId === videoRunIdRef.current) {
+        setImageShareStatus(null);
+        alert("Erreur lors de la création de la vidéo.");
+      }
     } finally {
-      setIsRecordingVideo(false);
+      if (runId === videoRunIdRef.current) setIsRecordingVideo(false);
     }
   };
 
@@ -564,7 +649,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
       try {
         const file = await dataURLtoFile(
           mediaToShare,
-          `Schema_${activeSchemaTitle.replace(/[^a-zA-Z0-9]/g, "_")}.${mediaExtension}`
+          buildExportFilename(mediaExtension === "gif" ? "Animation" : "Schema", activeSchemaTitle, mediaExtension)
         );
 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -718,733 +803,434 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   };
 
   const hasMultipleSchemas = Boolean(data.matchSchemas && data.matchSchemas.length > 1);
+  const th = getPremiumTheme(Boolean(isModernSleek));
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200">
-      <div 
-        className={`w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border relative ${
-          isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b0e14] border-[#1e293b] text-white"
-        }`}
+    <div className={`${premiumOverlay} z-[100]`}>
+      <div
+        className={`${premiumShell} w-full max-w-6xl h-[94vh] sm:h-[90vh] ${th.panel}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Glow visual accents */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        {!isModernSleek && (
+          <div className="absolute -top-40 left-40 w-[520px] h-[320px] bg-[#00E599]/[0.05] rounded-full blur-3xl pointer-events-none" />
+        )}
 
-        {/* Header */}
-        <div className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b relative z-10 ${
-          isModernSleek ? "bg-slate-100 border-slate-200 text-slate-900" : "bg-[#090d14] border-[#1f293d] text-white"
-        }`}>
-          <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${is3D ? "bg-amber-500/20 text-amber-500 border border-amber-500/40" : "bg-[#00E599]/20 text-[#00E599] border border-[#00E599]/40"}`}>
-              {is3D ? <Sparkles className="w-5 h-5" /> : <Settings2 className="w-5 h-5" />}
+        {/* ================= SIDEBAR : CONTENU DU MESSAGE ================= */}
+        <aside className={`hidden md:flex w-72 shrink-0 flex-col border-r relative z-10 ${th.sidebar}`}>
+          <div className="px-5 pt-6 pb-5">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center ${is3D ? th.goldTile : th.accentChip}`}>
+                {is3D ? <Sparkles className="h-5 w-5" /> : <Send className="h-5 w-5" />}
+              </div>
+              <div className="leading-tight min-w-0">
+                <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${th.accent}`}>{sportLabel}</p>
+                <p className={`text-sm font-black truncate ${th.text}`}>Briefing tactique</p>
+              </div>
             </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-5 scrollbar-thin">
+            {/* Éléments inclus */}
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className={`text-sm sm:text-base font-black uppercase tracking-wider ${
-                  isModernSleek ? "text-slate-900" : "text-white"
-                }`}>
-                  Partager le Briefing Tactique
-                </h3>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
-                  isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-[#162032] border-[#22334e] text-[#00E599]"
-                }`}>
-                  {sportLabel}
-                </span>
-              </div>
-              <p className={`text-xs font-medium ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                Personnalisez les éléments à intégrer dans votre message unique
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={onClose}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer shrink-0 ${
-              isModernSleek ? "text-slate-400 hover:text-slate-900 hover:bg-slate-200" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
-            }`}
-            title="Fermer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 scrollbar-thin">
-          
-          {/* SELECTION CONTROL PANEL */}
-          <div className={`border-2 rounded-xl p-3.5 space-y-3 ${
-            isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
-          }`}>
-            <div className={`flex items-center justify-between border-b pb-2 ${
-              isModernSleek ? "border-slate-200" : "border-[#1f293d]"
-            }`}>
-              <span className="text-[11px] uppercase font-black tracking-wider text-amber-500 flex items-center gap-1.5">
-                <Settings2 className="w-4 h-4" />
-                <span>Éléments inclus dans le message unique :</span>
-              </span>
-              <button
-                onClick={() => setShowLivePreview(!showLivePreview)}
-                className={`text-[10px] font-black flex items-center gap-1 cursor-pointer transition ${
-                  isModernSleek ? "text-slate-500 hover:text-emerald-800" : "text-slate-400 hover:text-[#00E599]"
-                }`}
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>{showLivePreview ? "Masquer l'aperçu texte" : "Voir aperçu texte"}</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {/* Option 1: Convocations - TITULAIRES & REMPLAÇANTS */}
-              <div className={`p-2.5 rounded-xl border transition flex flex-col justify-between ${
-                includePlayers 
-                  ? (isModernSleek ? "bg-emerald-50 border-emerald-400 text-slate-900" : "bg-[#102420] border-[#00E599]/60 text-white")
-                  : (isModernSleek ? "bg-white border-slate-200 text-slate-500 opacity-70" : "bg-[#121926]/60 border-[#1f293d] text-slate-400 opacity-60")
-              }`}>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={includePlayers}
-                    onChange={(e) => setIncludePlayers(e.target.checked)}
-                    className="w-4 h-4 accent-[#00E599] rounded cursor-pointer"
-                  />
-                  <span className="text-xs font-black flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-[#00E599]" />
-                    <span>JOUEURS ({totalPlayersCount})</span>
-                  </span>
-                </label>
-                <span className={`text-[9.5px] font-bold block mt-1 pl-6 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                  {activeStarters.length} titulaires {activeSubstitutes.length > 0 ? `+ ${activeSubstitutes.length} remplaçants` : ""}
-                </span>
-
-                {includePlayers && (
-                  <div className={`mt-2 pt-2 border-t pl-6 text-[10px] font-bold flex items-center gap-1 ${
-                    isModernSleek ? "border-slate-200 text-emerald-800" : "border-[#1f293d] text-emerald-400"
-                  }`}>
-                    <UserCheck className="w-3 h-3" />
-                    <span>Titulaires & remplaçants séparés</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Option 2: Schémas Tactiques */}
-              <div className={`p-2.5 rounded-xl border transition flex flex-col justify-between ${
-                includeSchemas 
-                  ? (isModernSleek ? "bg-emerald-50 border-emerald-400 text-slate-900" : "bg-[#102420] border-[#00E599]/60 text-white")
-                  : (isModernSleek ? "bg-white border-slate-200 text-slate-500 opacity-70" : "bg-[#121926]/60 border-[#1f293d] text-slate-400 opacity-60")
-              }`}>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={includeSchemas}
-                    onChange={(e) => setIncludeSchemas(e.target.checked)}
-                    className="w-4 h-4 accent-[#00E599] rounded cursor-pointer"
-                  />
-                  <span className="text-xs font-black flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Schémas</span>
-                  </span>
-                </label>
-                <span className={`text-[9.5px] font-bold block mt-1 pl-6 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                  {hasMultipleSchemas ? `${selectedSchemaIds.length}/${data.matchSchemas?.length} sélectionnés` : "Visuel terrain + plan"}
-                </span>
-
-                {includeSchemas && (
-                  <div className={`mt-2 pt-2 border-t pl-6 text-[10px] font-bold flex items-center gap-1 ${
-                    isModernSleek ? "border-slate-200 text-emerald-800" : "border-[#1f293d] text-emerald-400"
-                  }`}>
-                    <ImageIcon className="w-3 h-3" />
-                    <span>Image HD incluse</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Option 3: Notes & Consignes */}
-              <div className={`p-2.5 rounded-xl border transition flex flex-col justify-between ${
-                includeNotes 
-                  ? (isModernSleek ? "bg-emerald-50 border-emerald-400 text-slate-900" : "bg-[#102420] border-[#00E599]/60 text-white")
-                  : (isModernSleek ? "bg-white border-slate-200 text-slate-500 opacity-70" : "bg-[#121926]/60 border-[#1f293d] text-slate-400 opacity-60")
-              }`}>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={includeNotes}
-                    onChange={(e) => setIncludeNotes(e.target.checked)}
-                    className="w-4 h-4 accent-[#00E599] rounded cursor-pointer"
-                  />
-                  <span className="text-xs font-black flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-sky-500" />
-                    <span>Consignes</span>
-                  </span>
-                </label>
-                <span className={`text-[9.5px] font-bold block mt-1 pl-6 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                  Instructions du coach
-                </span>
-
-                {includeNotes && (
-                  <div className={`mt-2 pt-2 border-t pl-6 text-[10px] font-bold truncate ${
-                    isModernSleek ? "border-slate-200 text-sky-700" : "border-[#1f293d] text-sky-400"
-                  }`}>
-                    {customCoachNote.trim() ? "Note saisie" : "Consigne active"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* LIVE TEXT MESSAGE PREVIEW (Collapsible) */}
-          {showLivePreview && (
-            <div className={`border rounded-xl p-3 animate-in fade-in ${
-              isModernSleek ? "bg-slate-100 border-emerald-400/60" : "bg-[#05080e] border-emerald-500/40"
-            }`}>
-              <div className={`flex items-center justify-between mb-1.5 text-[10px] font-black uppercase ${
-                isModernSleek ? "text-emerald-800" : "text-emerald-400"
-              }`}>
-                <span>Aperçu en direct du texte généré (sans lien d&apos;application) :</span>
-                <button
-                  onClick={handleCopySummary}
-                  className={`flex items-center gap-1 cursor-pointer font-bold lowercase ${
-                    isModernSleek ? "text-slate-600 hover:text-slate-900" : "text-slate-300 hover:text-white"
-                  }`}
-                >
-                  <Copy className="w-3 h-3 text-[#00E599]" />
-                  <span>copier</span>
-                </button>
-              </div>
-              <pre className={`text-[11px] font-mono whitespace-pre-wrap p-2.5 rounded-lg border max-h-48 overflow-y-auto leading-relaxed scrollbar-thin select-all ${
-                isModernSleek ? "bg-white text-slate-800 border-slate-200" : "bg-[#090d14] text-slate-300 border-[#1f293d]"
-              }`}>
-                {generateWhatsAppMessage()}
-              </pre>
-            </div>
-          )}
-
-          {/* MULTI-SCHEMA SELECTOR (if match has multiple schemas) */}
-          {includeSchemas && hasMultipleSchemas && (
-            <div className={`border rounded-xl p-3 ${
-              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
-                  isModernSleek ? "text-amber-700" : "text-amber-300"
-                }`}>
-                  <Layers className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Sélectionnez les schémas à envoyer :</span>
-                </span>
-                <span className={`text-[9px] font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Cochez pour inclure / Cliquez pour prévisualiser</span>
-              </div>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                {/* Option to view the current pitch / main briefing if data.imageUrl exists */}
-                {data.imageUrl && data.matchSchemas && data.matchSchemas.length > 0 && (
-                  <div
-                    className={`px-3 py-2 rounded-lg border shrink-0 transition flex items-center gap-2 cursor-pointer ${
-                      userPreviewSchema === null
-                        ? "bg-[#102420] border-[#00E599] text-[#00E599] shadow-sm shadow-[#00e599]/20"
-                        : isModernSleek ? "bg-white border-slate-300 text-slate-800 hover:border-slate-400" : "bg-[#121926] border-[#1f293d] text-slate-300 hover:border-slate-500"
-                    }`}
-                    onClick={() => setUserPreviewSchema(null)}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={data.imageUrl} 
-                      alt="Terrain actuel" 
-                      className="w-8 h-5 object-cover rounded bg-black border border-white/20"
-                    />
-                    <div>
-                      <span className="text-[10px] font-black block truncate max-w-[120px]">Terrain actuel</span>
-                      <span className={`text-[8px] block ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Vue principale</span>
-                    </div>
-                  </div>
-                )}
-                {data.matchSchemas?.map((sc) => {
-                  const isChecked = selectedSchemaIds.includes(sc.id);
-                  const isPreviewing = userPreviewSchema?.id === sc.id;
+              <p className={`px-3 pb-2 text-[10px] font-black uppercase tracking-[0.18em] ${th.faint}`}>Contenu du message</p>
+              <div className="space-y-1.5">
+                {[
+                  { key: "players", on: includePlayers, set: setIncludePlayers, icon: Users, label: "Joueurs", desc: `${activeStarters.length} titulaires${activeSubstitutes.length > 0 ? ` · ${activeSubstitutes.length} remplaçants` : ""}` },
+                  { key: "schemas", on: includeSchemas, set: setIncludeSchemas, icon: Layers, label: isAnimMode ? "Animation" : "Schémas", desc: hasMultipleSchemas ? `${selectedSchemaIds.length}/${data.matchSchemas?.length} sélectionnés` : isAnimMode ? "GIF, vidéo ou image fixe" : "Visuel HD du terrain" },
+                  { key: "notes", on: includeNotes, set: setIncludeNotes, icon: FileText, label: "Consignes", desc: customCoachNote.trim() ? "Note personnalisée" : "Mot du coach" },
+                ].map((opt) => {
+                  const Icon = opt.icon;
                   return (
-                    <div
-                      key={sc.id}
-                      className={`px-3 py-2 rounded-lg border shrink-0 transition flex items-center gap-2 ${
-                        isPreviewing 
-                          ? "bg-[#102420] border-[#00E599] text-[#00E599] shadow-sm shadow-[#00e599]/20" 
-                          : isModernSleek ? "bg-white border-slate-300 text-slate-800 hover:border-slate-400" : "bg-[#121926] border-[#1f293d] text-slate-300 hover:border-slate-500"
-                      }`}
+                    <button
+                      key={opt.key}
+                      type="button"
+                      role="switch"
+                      aria-checked={opt.on}
+                      onClick={() => opt.set(!opt.on)}
+                      className={`w-full p-3 rounded-xl border flex items-center gap-3 text-left transition cursor-pointer ${opt.on ? th.card : `${th.cardMuted} opacity-70 hover:opacity-100`}`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleSchemaSelection(sc.id)}
-                        className="w-3.5 h-3.5 accent-[#00E599] rounded cursor-pointer"
-                        title="Inclure ce schéma dans le message"
-                      />
-                      <button
-                        onClick={() => setUserPreviewSchema(sc)}
-                        className="flex items-center gap-2 cursor-pointer text-left"
-                      >
-                        {sc.previewImage ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img 
-                            src={sc.previewImage} 
-                            alt={sc.name} 
-                            className="w-8 h-5 object-cover rounded bg-black border border-white/20"
-                          />
-                        ) : (
-                          <ImageIcon className="w-4 h-4 text-slate-400" />
-                        )}
-                        <div>
-                          <span className="text-[10px] font-black block truncate max-w-[120px]">{sc.name}</span>
-                          {sc.formation && <span className={`text-[8px] block ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>{sc.formation}</span>}
-                        </div>
-                      </button>
-                    </div>
+                      <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${opt.on ? th.accentChip : th.chip}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-black ${th.text}`}>{opt.label}</p>
+                        <p className={`text-[10.5px] truncate ${th.sub}`}>{opt.desc}</p>
+                      </div>
+                      <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${opt.on ? (isModernSleek ? "bg-emerald-500" : "bg-[#00E599]") : (isModernSleek ? "bg-slate-200" : "bg-white/10")}`}>
+                        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${opt.on ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+                      </span>
+                    </button>
                   );
                 })}
               </div>
             </div>
-          )}
 
-          {/* VISUAL PITCH & PLAYERS SCHEMA IMAGE PREVIEW OR ANIMATION MEDIA */}
-          {includeSchemas && (
-            activeImageUrl ? (
-              <div className={`border-2 transition rounded-xl overflow-hidden shadow-2xl relative group ${
-                isModernSleek ? "bg-slate-100 border-slate-200 hover:border-emerald-500/50" : "bg-[#070b13] border-[#1f293d] hover:border-[#00E599]/50"
-              }`}>
-                {/* Header with media switcher tabs for animations */}
-                <div className={`px-3 py-1.5 border-b flex flex-wrap items-center justify-between gap-2 text-[11px] font-black ${
-                  isModernSleek ? "bg-slate-200/80 border-slate-300 text-slate-800" : "bg-[#111827] border-[#1f293d]"
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#00E599] uppercase tracking-wider flex items-center gap-1.5">
-                      {isAnimMode ? <Film className="w-3.5 h-3.5 text-purple-400" /> : <ImageIcon className="w-3.5 h-3.5" />}
-                      <span>{isAnimMode ? `Animation Tactique (${data.phasesCount || data.keyframes?.length || 2} étapes)` : `Aperçu HD (${activeSchemaTitle})`}</span>
-                    </span>
-
-                    {/* Media Tabs when animation is available */}
-                    {isAnimMode && (
-                      <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10 ml-2">
-                        <button
-                          type="button"
-                          onClick={() => setActiveMediaTab("gif")}
-                          className={`px-2 py-0.5 rounded text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 ${
-                            activeMediaTab === "gif"
-                              ? "bg-purple-600 text-white shadow-xs"
-                              : "text-slate-400 hover:text-white"
-                          }`}
-                        >
-                          <span>🎬 GIF Animé</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveMediaTab("video");
-                            if (!recordedVideoUrl && !isRecordingVideo) {
-                              handleGenerateVideo();
-                            }
-                          }}
-                          className={`px-2 py-0.5 rounded text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 ${
-                            activeMediaTab === "video"
-                              ? "bg-cyan-600 text-white shadow-xs"
-                              : "text-slate-400 hover:text-white"
-                          }`}
-                        >
-                          <span>🎥 Vidéo MP4</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setActiveMediaTab("image")}
-                          className={`px-2 py-0.5 rounded text-[9.5px] font-black transition cursor-pointer flex items-center gap-1 ${
-                            activeMediaTab === "image"
-                              ? "bg-[#00E599] text-slate-950 shadow-xs"
-                              : "text-slate-400 hover:text-white"
-                          }`}
-                        >
-                          <span>🖼️ Image fixe</span>
+            {/* Sélection des schémas */}
+            {includeSchemas && hasMultipleSchemas && (
+              <div>
+                <p className={`px-3 pb-2 text-[10px] font-black uppercase tracking-[0.18em] ${th.faint}`}>Schémas du match</p>
+                <div className="space-y-1">
+                  {data.imageUrl && data.matchSchemas && data.matchSchemas.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setUserPreviewSchema(null)}
+                      className={`relative w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition cursor-pointer ${userPreviewSchema === null ? th.navActive : th.navIdle}`}
+                    >
+                      {userPreviewSchema === null && <span className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-full ${th.navIndicator}`} />}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={data.imageUrl} alt="Terrain actuel" className="w-10 h-6 object-cover rounded-md bg-black border border-white/10" />
+                      <span className="min-w-0">
+                        <span className="block text-[11px] font-bold truncate">Terrain actuel</span>
+                        <span className={`block text-[10px] ${th.faint}`}>Vue principale</span>
+                      </span>
+                    </button>
+                  )}
+                  {data.matchSchemas?.map((sc) => {
+                    const isChecked = selectedSchemaIds.includes(sc.id);
+                    const isPreviewing = userPreviewSchema?.id === sc.id;
+                    return (
+                      <div
+                        key={sc.id}
+                        className={`relative w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border transition ${isPreviewing ? th.navActive : th.navIdle}`}
+                      >
+                        {isPreviewing && <span className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-full ${th.navIndicator}`} />}
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleSchemaSelection(sc.id)}
+                          className="w-3.5 h-3.5 accent-[#00E599] rounded cursor-pointer shrink-0"
+                          title="Inclure ce schéma dans le message"
+                        />
+                        <button type="button" onClick={() => setUserPreviewSchema(sc)} className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer">
+                          {sc.previewImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={sc.previewImage} alt={sc.name} className="w-10 h-6 object-cover rounded-md bg-black border border-white/10 shrink-0" />
+                          ) : (
+                            <ImageIcon className={`w-4 h-4 shrink-0 ${th.faint}`} />
+                          )}
+                          <span className="min-w-0">
+                            <span className="block text-[11px] font-bold truncate">{sc.name}</span>
+                            {sc.formation && <span className={`block text-[10px] ${th.faint}`}>{sc.formation}</span>}
+                          </span>
                         </button>
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-3">
+            <div className={`p-3 rounded-2xl border flex items-center gap-2.5 ${th.cardMuted}`}>
+              <Shield className={`w-4 h-4 shrink-0 ${th.accent}`} />
+              <div className="min-w-0">
+                <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${th.faint}`}>Staff technique</p>
+                <p className={`text-xs font-bold truncate ${th.text}`}>{clubLabel}</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* ================= MAIN ================= */}
+        <main className="flex-1 min-w-0 flex flex-col relative z-10 min-h-0">
+          <header className={`px-5 sm:px-8 pt-5 sm:pt-6 pb-4 border-b ${th.border}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className={`md:hidden text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${th.accent}`}>{sportLabel}</p>
+                <h2 className={`text-lg sm:text-xl font-black tracking-tight ${th.text}`}>Partager le briefing tactique</h2>
+                <p className={`text-xs mt-1 ${th.sub}`}>Composez un message unique pour vos joueurs et votre staff.</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowLivePreview(!showLivePreview)}
+                  className={`hidden sm:flex px-3 py-2 rounded-xl border text-xs font-bold items-center gap-1.5 transition cursor-pointer ${showLivePreview ? th.segmentActive + " border-transparent" : th.ghostBtn}`}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Aperçu du texte
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={`p-2 rounded-xl border transition cursor-pointer ${th.ghostBtn}`}
+                  title="Fermer"
+                  aria-label="Fermer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Options mobiles */}
+            <div className={`md:hidden mt-4 flex gap-1 p-1 rounded-xl border ${th.segment}`}>
+              {[
+                { l: "Joueurs", on: includePlayers, set: setIncludePlayers },
+                { l: isAnimMode ? "Animation" : "Schémas", on: includeSchemas, set: setIncludeSchemas },
+                { l: "Consignes", on: includeNotes, set: setIncludeNotes },
+              ].map((o) => (
+                <button
+                  key={o.l}
+                  type="button"
+                  onClick={() => o.set(!o.on)}
+                  className={`flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer ${o.on ? th.segmentActive : th.segmentIdle}`}
+                >
+                  {o.on && <Check className={`w-3 h-3 ${th.accent}`} />}
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-5 sm:py-6 space-y-5 scrollbar-thin">
+            {/* Aperçu texte */}
+            {showLivePreview && (
+              <div className={`rounded-2xl border overflow-hidden ${th.card}`}>
+                <div className={`px-4 py-2.5 border-b flex items-center justify-between ${th.border}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${th.sub}`}>Texte généré</p>
+                  <button type="button" onClick={handleCopySummary} className={`text-[11px] font-bold flex items-center gap-1 cursor-pointer hover:opacity-80 ${th.accent}`}>
+                    {copiedText ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedText ? "Copié" : "Copier"}
+                  </button>
+                </div>
+                <pre className={`text-[11.5px] font-mono whitespace-pre-wrap p-4 max-h-56 overflow-y-auto leading-relaxed scrollbar-thin select-all ${th.body}`}>
+                  {generateWhatsAppMessage()}
+                </pre>
+              </div>
+            )}
+
+            {/* Visuel / animation */}
+            {includeSchemas && (
+              activeImageUrl ? (
+                <div className={`rounded-2xl border overflow-hidden ${th.card}`}>
+                  <div className={`px-4 py-2.5 border-b flex flex-wrap items-center justify-between gap-2 ${th.border}`}>
+                    <p className={`text-[11px] font-black flex items-center gap-1.5 ${th.text}`}>
+                      {isAnimMode ? <Film className="w-4 h-4 text-purple-400" /> : <ImageIcon className={`w-4 h-4 ${th.accent}`} />}
+                      {isAnimMode ? `Animation · ${data.phasesCount || data.keyframes?.length || 2} étapes` : activeSchemaTitle}
+                    </p>
+                    {isAnimMode ? (
+                      <div className={`flex items-center gap-0.5 p-0.5 rounded-lg border ${th.segment}`}>
+                        {([
+                          { id: "gif", l: "GIF animé" },
+                          { id: "video", l: "Vidéo" },
+                          { id: "image", l: "Image fixe" },
+                        ] as const).map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveMediaTab(tab.id);
+                              if (tab.id === "video" && !recordedVideoUrl && !isRecordingVideo) handleGenerateVideo();
+                            }}
+                            className={`px-2.5 py-1 rounded-md text-[10.5px] font-bold transition cursor-pointer ${activeMediaTab === tab.id ? th.segmentActive : th.segmentIdle}`}
+                          >
+                            {tab.l}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${th.chip}`}>HD</span>
                     )}
                   </div>
 
-                  <span className={`text-[9.5px] ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
-                    {isAnimMode ? "Compatible WhatsApp, E-mail & Réseaux" : "Format Haute Définition HD"}
-                  </span>
-                </div>
-                
-                <div className={`relative p-2 flex flex-col items-center justify-center min-h-[220px] ${
-                  isModernSleek ? "bg-slate-50" : "bg-[#090d14]"
-                }`}>
-                  {/* Mode 1: GIF Animé */}
-                  {isAnimMode && activeMediaTab === "gif" && (
-                    dynamicGifUrl || data.gifUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img 
-                        src={dynamicGifUrl || data.gifUrl || ""} 
-                        alt="Animation GIF"
-                        className="w-auto max-w-full h-auto max-h-[360px] object-contain rounded-lg border border-black/20 shadow-xl"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-10 space-y-2 text-center">
-                        <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-                        <p className="text-xs font-bold text-purple-300">Génération du GIF animé en cours...</p>
-                        <p className="text-[10px] text-slate-500">Création de la boucle fluide des étapes tactiques</p>
-                      </div>
-                    )
-                  )}
+                  <div className={`relative p-3 flex flex-col items-center justify-center min-h-[260px] ${isModernSleek ? "bg-slate-50" : "bg-black/20"}`}>
+                    {isAnimMode && activeMediaTab === "gif" && (
+                      dynamicGifUrl || data.gifUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={dynamicGifUrl || data.gifUrl || ""} alt="Animation GIF" className="w-auto max-w-full h-auto max-h-[380px] object-contain rounded-xl shadow-xl" />
+                      ) : data.gifError ? (
+                        <div className="py-10 space-y-1 text-center">
+                          <p className="text-xs font-bold text-rose-400">Le GIF animé n&apos;a pas pu être créé.</p>
+                          <p className={`text-[11px] ${th.sub}`}>Fermez puis rouvrez le partage pour réessayer, ou utilisez l&apos;onglet Vidéo.</p>
+                        </div>
+                      ) : (
+                        <div className="py-10 space-y-2 text-center">
+                          <Loader2 className="w-7 h-7 text-purple-400 animate-spin mx-auto" />
+                          <p className={`text-xs font-bold ${th.text}`}>Génération du GIF animé…</p>
+                        </div>
+                      )
+                    )}
 
-                  {/* Mode 2: Vidéo MP4 / WebM */}
-                  {isAnimMode && activeMediaTab === "video" && (
-                    recordedVideoUrl ? (
-                      <div className="relative flex flex-col items-center">
-                        <video 
-                          src={recordedVideoUrl} 
-                          controls 
-                          autoPlay 
-                          loop 
-                          playsInline 
-                          className="w-auto max-w-full h-auto max-h-[360px] rounded-lg border border-black/20 shadow-xl"
-                        />
-                      </div>
-                    ) : isRecordingVideo ? (
-                      <div className="flex flex-col items-center justify-center py-10 space-y-3 text-center">
-                        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-                        <div className="space-y-1">
-                          <p className="text-xs font-black text-cyan-300">Enregistrement de la vidéo ({videoProgress}%)...</p>
-                          <div className="w-48 h-1.5 bg-slate-800 rounded-full overflow-hidden mx-auto">
+                    {isAnimMode && activeMediaTab === "video" && (
+                      recordedVideoUrl ? (
+                        <video src={recordedVideoUrl} controls autoPlay loop playsInline className="w-auto max-w-full h-auto max-h-[380px] rounded-xl shadow-xl" />
+                      ) : isRecordingVideo ? (
+                        <div className="py-10 space-y-3 text-center">
+                          <Loader2 className="w-7 h-7 text-cyan-400 animate-spin mx-auto" />
+                          <p className={`text-xs font-bold ${th.text}`}>Enregistrement de la vidéo ({videoProgress}%)</p>
+                          <div className={`w-48 h-1.5 rounded-full overflow-hidden mx-auto ${isModernSleek ? "bg-slate-200" : "bg-white/10"}`}>
                             <div className="h-full bg-cyan-400 transition-all duration-200" style={{ width: `${videoProgress}%` }} />
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-8 space-y-3 text-center">
-                        <Video className="w-8 h-8 text-cyan-400" />
-                        <p className="text-xs font-bold text-slate-300">Prêt à créer la vidéo haute définition</p>
-                        <button
-                          type="button"
-                          onClick={handleGenerateVideo}
-                          className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs rounded-xl shadow-lg transition cursor-pointer"
-                        >
-                          Générer la vidéo MP4
+                      ) : (
+                        <div className="py-8 space-y-3 text-center">
+                          <Video className="w-7 h-7 text-cyan-400 mx-auto" />
+                          <p className={`text-xs font-bold ${th.text}`}>Prêt à créer la vidéo HD</p>
+                          <button type="button" onClick={handleGenerateVideo} className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${th.primaryBtn}`}>
+                            Générer la vidéo
+                          </button>
+                        </div>
+                      )
+                    )}
+
+                    {(!isAnimMode || activeMediaTab === "image") && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={activeImageUrl} alt={activeSchemaTitle} className="w-auto max-w-full h-auto max-h-[380px] object-contain rounded-xl shadow-xl" />
+                    )}
+
+                    {/* Actions sur le visuel */}
+                    <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-black/75 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-xl z-20">
+                      {isAnimMode && (dynamicGifUrl || data.gifUrl) && (
+                        <button onClick={handleDownloadGif} className="h-8 px-2.5 text-[11px] font-bold text-white/90 hover:text-white hover:bg-white/10 rounded-lg inline-flex items-center gap-1.5 transition cursor-pointer" title="Télécharger le GIF animé">
+                          <Film className="w-3.5 h-3.5 text-purple-300" />
+                          {downloadedGif ? "Téléchargé" : "GIF"}
                         </button>
-                      </div>
-                    )
-                  )}
-
-                  {/* Mode 3: Image Fixe (par défaut pour les schémas simples, ou onglet image pour les animations) */}
-                  {(!isAnimMode || activeMediaTab === "image") && (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img 
-                      src={activeImageUrl} 
-                      alt={activeSchemaTitle}
-                      className="w-auto max-w-full h-auto max-h-[360px] object-contain rounded-lg border border-black/20 shadow-xl"
-                    />
-                  )}
-
-                  {/* Floating Action Overlay on Top of Media */}
-                  <div className="absolute bottom-3 right-3 flex flex-wrap items-center gap-1.5 bg-black/85 backdrop-blur-md p-1.5 rounded-xl border border-white/15 shadow-xl z-20">
-                    {/* Action 1: Télécharger GIF (si animation) */}
-                    {isAnimMode && (dynamicGifUrl || data.gifUrl) && (
-                      <button
-                        onClick={handleDownloadGif}
-                        className="h-8 px-2.5 text-purple-300 hover:text-white transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-purple-600/40 rounded-lg"
-                        title="Télécharger l'animation au format GIF animé (boucle fluide)"
-                      >
-                        <Film className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                        <span>{downloadedGif ? "GIF téléchargé !" : "Télécharger GIF"}</span>
+                      )}
+                      {isAnimMode && recordedVideoUrl && (
+                        <button onClick={handleDownloadVideo} className="h-8 px-2.5 text-[11px] font-bold text-white/90 hover:text-white hover:bg-white/10 rounded-lg inline-flex items-center gap-1.5 transition cursor-pointer" title="Télécharger la vidéo">
+                          <Video className="w-3.5 h-3.5 text-cyan-300" />
+                          {downloadedVideo ? "Téléchargée" : "Vidéo"}
+                        </button>
+                      )}
+                      <button onClick={handleDownloadImage} className="h-8 px-2.5 text-[11px] font-bold text-white/90 hover:text-white hover:bg-white/10 rounded-lg inline-flex items-center gap-1.5 transition cursor-pointer" title="Télécharger l'image PNG HD">
+                        <Download className="w-3.5 h-3.5 text-[#00E599]" />
+                        {downloadedImage ? "Téléchargé" : "PNG"}
                       </button>
-                    )}
-
-                    {/* Action 2: Télécharger Vidéo (si animation) */}
-                    {isAnimMode && recordedVideoUrl && (
-                      <button
-                        onClick={handleDownloadVideo}
-                        className="h-8 px-2.5 text-cyan-300 hover:text-white transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-cyan-600/40 rounded-lg"
-                        title="Télécharger l'animation au format Vidéo MP4"
-                      >
-                        <Video className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                        <span>{downloadedVideo ? "Vidéo téléchargée !" : "Télécharger Vidéo"}</span>
+                      <span className="h-4 w-px bg-white/15" />
+                      <button onClick={handleCopyImageToClipboard} className="h-8 px-2.5 text-[11px] font-bold text-white/90 hover:text-white hover:bg-white/10 rounded-lg inline-flex items-center gap-1.5 transition cursor-pointer" title="Copier l'image dans le presse-papier">
+                        {copiedImage ? <Check className="w-3.5 h-3.5 text-[#00E599]" /> : <Copy className="w-3.5 h-3.5 text-amber-300" />}
+                        {copiedImage ? "Copiée" : "Copier"}
                       </button>
-                    )}
-
-                    {/* Action 3: Télécharger PNG */}
-                    <button
-                      onClick={handleDownloadImage}
-                      className="h-8 px-2.5 text-slate-200 hover:text-[#00E599] transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-white/10 rounded-lg"
-                      title="Télécharger l'image PNG haute définition"
-                    >
-                      <Download className="w-3.5 h-3.5 text-[#00E599] shrink-0" />
-                      <span>{downloadedImage ? "PNG téléchargé !" : "Télécharger PNG"}</span>
-                    </button>
-
-                    <span className="h-4 w-px bg-white/15" />
-                    
-                    <button
-                      onClick={handleCopyImageToClipboard}
-                      className="h-8 px-2.5 text-slate-200 hover:text-[#00E599] transition cursor-pointer text-[11px] font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap hover:bg-white/10 rounded-lg"
-                      title="Copier l'image directement dans le presse-papier"
-                    >
-                      {copiedImage ? <Check className="w-3.5 h-3.5 text-[#00E599] shrink-0" /> : <Copy className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-                      <span>{copiedImage ? "Copié !" : "Copier"}</span>
-                    </button>
+                    </div>
                   </div>
                 </div>
+              ) : (
+                <div className={`rounded-2xl border border-dashed p-10 text-center ${th.cardMuted}`}>
+                  <Loader2 className={`w-6 h-6 mx-auto mb-2 animate-spin ${th.faint}`} />
+                  <p className={`text-xs font-bold ${th.sub}`}>Génération du visuel du terrain…</p>
+                </div>
+              )
+            )}
+
+            {/* Joueurs convoqués */}
+            {includePlayers && allGroupPlayers.length > 0 && (
+              <div className={`rounded-2xl border p-4 space-y-4 ${th.card}`}>
+                {[
+                  { list: activeStarters, label: "Titulaires", dot: th.accentDot, numCls: th.accent, tag: "Sur le schéma" },
+                  { list: activeSubstitutes, label: "Remplaçants", dot: "bg-amber-500", numCls: th.gold, tag: "Banc" },
+                ].filter((g) => g.list.length > 0).map((g) => (
+                  <div key={g.label}>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className={`text-[11px] font-black uppercase tracking-[0.14em] flex items-center gap-2 ${th.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${g.dot}`} />
+                        {g.label}
+                        <span className={`tabular-nums ${th.faint}`}>{g.list.length}</span>
+                      </p>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${th.chip}`}>{g.tag}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {g.list.map((p, i) => (
+                        <span key={i} className={`text-[11px] font-semibold px-2 py-1 rounded-lg border flex items-center gap-1.5 ${th.cardMuted} ${th.body}`}>
+                          <strong className={`font-black tabular-nums ${g.numCls}`}>{p.number}</strong>
+                          <span>{p.name || "Joueur"}</span>
+                          {p.position && <span className={`text-[10px] ${th.faint}`}>{p.position}</span>}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className={`border border-dashed rounded-xl p-6 text-center text-xs ${
-                isModernSleek ? "bg-slate-50 border-slate-300 text-slate-500" : "bg-[#090d14] border-[#1f293d] text-slate-400"
-              }`}>
-                <ImageIcon className="w-8 h-8 mx-auto mb-2 text-slate-400 animate-pulse" />
-                <p className="font-bold">Génération du visuel du terrain...</p>
+            )}
+
+            {/* Consignes du coach */}
+            {includeNotes && (
+              <div>
+                <label className={`block text-[10px] font-black uppercase tracking-[0.14em] mb-1.5 ${th.sub}`}>Consignes ou mot du coach</label>
+                <textarea
+                  value={customCoachNote}
+                  onChange={(e) => setCustomCoachNote(e.target.value)}
+                  placeholder="Ex : rendez-vous au vestiaire à 13h30. Intensité dès l'entame et pressing haut…"
+                  rows={3}
+                  className={`w-full rounded-xl px-3 py-2.5 text-xs border outline-none transition resize-none leading-relaxed ${th.input}`}
+                />
               </div>
-            )
-          )}
+            )}
 
-          {/* PLAYERS CONVOCATION DETAIL (TITULAIRES & REMPLAÇANTS) */}
-          {includePlayers && allGroupPlayers.length > 0 && (
-            <div className={`border rounded-xl p-3.5 space-y-3 ${
-              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
-            }`}>
-              {/* Starters Section */}
-              {activeStarters.length > 0 && (
-                <div>
-                  <div className={`flex items-center justify-between border-b pb-1.5 mb-2 ${
-                    isModernSleek ? "border-slate-200" : "border-[#1f293d]"
-                  }`}>
-                    <span className={`text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
-                      isModernSleek ? "text-slate-700" : "text-slate-300"
-                    }`}>
-                      <Users className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`} />
-                      <span>TITULAIRES ({activeStarters.length}) :</span>
-                    </span>
-                    <span className={`px-2 py-0.5 rounded border text-[9.5px] font-bold ${
-                      isModernSleek ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "text-emerald-400 bg-emerald-950/60 border-emerald-500/30"
-                    }`}>
-                      Sur le schéma
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                    {activeStarters.map((p, i) => (
-                      <span
-                        key={i}
-                        className={`text-[10px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 ${
-                          isModernSleek 
-                            ? "bg-white border-emerald-300 text-slate-800 shadow-sm" 
-                            : "bg-[#121926] border-emerald-500/30 text-slate-200"
-                        }`}
-                      >
-                        <span className={`font-mono text-[9px] ${isModernSleek ? "text-slate-400" : "text-slate-500"}`}>{i + 1}.</span>
-                        <strong className={isModernSleek ? "text-emerald-800 font-extrabold" : "text-emerald-400"}>#{p.number}</strong>
-                        <span>{p.name || "Joueur"}</span>
-                        {p.position && <span className={`text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>({p.position})</span>}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Substitutes Section */}
-              {activeSubstitutes.length > 0 && (
-                <div>
-                  <div className={`flex items-center justify-between border-b pb-1.5 mb-2 ${
-                    isModernSleek ? "border-slate-200" : "border-[#1f293d]"
-                  }`}>
-                    <span className={`text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
-                      isModernSleek ? "text-slate-700" : "text-slate-400"
-                    }`}>
-                      <UserCheck className="w-3.5 h-3.5 text-amber-500" />
-                      <span>REMPLAÇANTS ({activeSubstitutes.length}) :</span>
-                    </span>
-                    <span className="text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/30 text-[9.5px] font-bold">
-                      Banc
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                    {activeSubstitutes.map((p, i) => (
-                      <span
-                        key={i}
-                        className={`text-[10px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 ${
-                          isModernSleek 
-                            ? "bg-white border-amber-300 text-slate-800 shadow-sm" 
-                            : "bg-[#121926] border-amber-500/20 text-slate-300"
-                        }`}
-                      >
-                        <span className={`font-mono text-[9px] ${isModernSleek ? "text-slate-400" : "text-slate-500"}`}>{i + 1}.</span>
-                        <strong className="text-amber-600 dark:text-amber-400">#{p.number}</strong>
-                        <span>{p.name || "Remplaçant"}</span>
-                        {p.position && <span className={`text-[9px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>({p.position})</span>}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* EDITABLE COACH NOTES (if enabled) */}
-          {includeNotes && (
-            <div className={`border rounded-xl p-3.5 space-y-1.5 ${
-              isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"
-            }`}>
-              <label className={`text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
-                isModernSleek ? "text-sky-700" : "text-sky-300"
-              }`}>
-                <FileText className="w-3.5 h-3.5 text-sky-500" />
-                <span>Consignes ou mot personnalisé du coach :</span>
-              </label>
-              <textarea
-                value={customCoachNote}
-                onChange={(e) => setCustomCoachNote(e.target.value)}
-                placeholder="Ex: Rendez-vous au vestiaire à 13h30. Focus sur l'intensité dès l'entame et le pressing haut..."
-                rows={2}
-                className={`w-full rounded-lg p-2 text-xs focus:outline-none transition resize-none border ${
-                  isModernSleek 
-                    ? "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500" 
-                    : "bg-[#0d1117] border-[#1f293d] text-slate-200 placeholder-slate-600 focus:border-[#00E599]"
-                }`}
-              />
-            </div>
-          )}
-
-          {/* Status Message Alert */}
-          {imageShareStatus && (
-            <div className="bg-[#102420] border border-[#00E599] p-2.5 rounded-xl text-xs font-bold text-[#00E599] flex items-center gap-2 animate-in fade-in">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#00E599]" />
-              <span>{imageShareStatus}</span>
-            </div>
-          )}
-
-          {/* Email Send Feedback Alert */}
-          {emailSendSuccess && (
-            <div className="bg-[#102420] border-2 border-[#00E599] p-3 rounded-xl text-xs font-bold text-[#00E599] flex items-center gap-2.5 animate-in fade-in">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#00E599]" />
-              <span>{emailSendSuccess}</span>
-            </div>
-          )}
-          {emailSendError && (
-            <div className="bg-red-950/80 border border-red-500 p-3 rounded-xl text-xs font-bold text-red-300 flex items-center gap-2.5 animate-in fade-in">
-              <X className="w-4 h-4 shrink-0 text-red-400" />
-              <span>{emailSendError}</span>
-            </div>
-          )}
-
-          {/* Action Buttons Grid */}
-          <div className="space-y-2.5 pt-1">
-            <span className={`text-[11px] uppercase font-black tracking-wider block ${
-              isModernSleek ? "text-slate-600" : "text-slate-400"
-            }`}>
-              Envoyer le message groupé :
-            </span>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {/* WhatsApp Button */}
-              <button
-                onClick={handleShareWhatsApp}
-                disabled={isSharingImage}
-                className="h-14 px-4 flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20bd5a] text-[#07130a] font-black text-xs uppercase rounded-xl transition shadow-lg shadow-emerald-500/20 cursor-pointer group active:scale-[0.98] disabled:opacity-50"
-              >
-                <div className="w-7 h-7 rounded-full bg-black/10 flex items-center justify-center text-black shrink-0">
-                  <MessageCircle className="w-4 h-4 fill-current" />
-                </div>
-                <div className="text-left leading-tight">
-                  <span className="block text-[12.5px] whitespace-nowrap">Partager sur WhatsApp</span>
-                  <span className="block text-[9.5px] opacity-80 font-bold lowercase whitespace-nowrap">
-                    {includeSchemas ? (isAnimMode ? "Message + animation GIF" : "Message + image HD") : "Message texte formaté"}
-                  </span>
-                </div>
-              </button>
-
-              {/* Email Button */}
-              <button
-                onClick={handleShareEmail}
-                className="h-14 px-4 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase rounded-xl transition shadow-lg shadow-blue-600/20 cursor-pointer group active:scale-[0.98]"
-              >
-                <div className="w-7 h-7 rounded-full bg-black/20 flex items-center justify-center text-white shrink-0">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div className="text-left leading-tight">
-                  <span className="block text-[12.5px] whitespace-nowrap">M&apos;envoyer par E-mail</span>
-                  <span className="block text-[9.5px] opacity-80 font-bold lowercase whitespace-nowrap">
-                    {includeSchemas ? (isAnimMode ? "Animation GIF + briefing pour transfert" : "Schéma HD + briefing pour transfert") : "Briefing pour transfert"}
-                  </span>
-                </div>
-              </button>
-            </div>
-
-            {/* Secondary Actions: Copy Summary & Download PNG */}
-            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
-              <button
-                onClick={handleCopySummary}
-                className={`flex-1 w-full h-10 px-3.5 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-2 whitespace-nowrap transition cursor-pointer ${
-                  copiedText 
-                    ? "bg-emerald-950/80 border-[#00E599] text-[#00E599]" 
-                    : isModernSleek ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-300"
-                }`}
-              >
-                {copiedText ? <Check className="w-4 h-4 text-[#00E599] shrink-0" /> : <Copy className="w-4 h-4 shrink-0" />}
-                <span>{copiedText ? "Texte copié !" : "Copier le texte du message"}</span>
-              </button>
-
-              {includeSchemas && (
-                <button
-                  onClick={handleDownloadImage}
-                  className={`flex-1 w-full h-10 px-3.5 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-2 whitespace-nowrap transition cursor-pointer ${
-                    isModernSleek ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-slate-200"
-                  }`}
-                >
-                  <Download className="w-4 h-4 text-[#00E599] shrink-0" />
-                  <span>{downloadedImage ? "Image téléchargée !" : "Télécharger l'image PNG HD"}</span>
-                </button>
-              )}
-            </div>
+            {/* Retours */}
+            {imageShareStatus && (
+              <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${th.accentChip}`}>
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                {imageShareStatus}
+              </div>
+            )}
+            {emailSendSuccess && (
+              <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${th.accentChip}`}>
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                {emailSendSuccess}
+              </div>
+            )}
+            {emailSendError && (
+              <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${th.danger}`}>
+                <X className="w-4 h-4 shrink-0" />
+                {emailSendError}
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Modal Footer */}
-        <div className={`flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-t text-[11px] font-bold ${
-          isModernSleek ? "bg-slate-100 border-slate-200 text-slate-600" : "bg-[#090d14] border-[#1f293d] text-slate-400"
-        }`}>
-          <span className="flex items-center gap-1.5 text-[#00E599]">
-            <Shield className="w-3.5 h-3.5 shrink-0" />
-            <span>Staff Technique • {clubLabel}</span>
-          </span>
-          <div className="flex items-center gap-2 ml-auto">
+          {/* Pied : actions d'envoi */}
+          <footer className={`px-5 sm:px-8 py-4 border-t flex flex-wrap items-center gap-2 ${th.border}`}>
+            <button
+              type="button"
+              onClick={handleCopySummary}
+              className={`h-10 px-3.5 rounded-xl border text-xs font-bold inline-flex items-center gap-2 transition cursor-pointer ${th.ghostBtn}`}
+            >
+              {copiedText ? <Check className={`w-4 h-4 ${th.accent}`} /> : <Copy className="w-4 h-4" />}
+              {copiedText ? "Texte copié" : "Copier le texte"}
+            </button>
             {includeSchemas && isAnimMode && (dynamicGifUrl || data.gifUrl) && (
               <button
+                type="button"
                 onClick={handleDownloadGif}
-                className={`h-10 px-3.5 font-black uppercase text-xs rounded-xl border inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer ${
-                  isModernSleek
-                    ? "bg-purple-50 hover:bg-purple-100 border-purple-300 text-purple-800 shadow-xs"
-                    : "bg-[#180d24] hover:bg-[#251338] border-purple-500/50 text-purple-300"
-                }`}
-                title="Télécharger l'animation GIF"
+                className={`h-10 px-3.5 rounded-xl border text-xs font-bold inline-flex items-center gap-2 transition cursor-pointer ${th.ghostBtn}`}
               >
-                <Film className="w-3.5 h-3.5 shrink-0 text-purple-400" />
-                <span>Exporter GIF</span>
+                <Film className="w-4 h-4 text-purple-400" />
+                GIF
               </button>
             )}
             {includeSchemas && (
               <button
+                type="button"
                 onClick={handleDownloadImage}
-                className={`h-10 px-3.5 font-black uppercase text-xs rounded-xl border inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer ${
-                  isModernSleek
-                    ? "bg-white hover:bg-slate-50 border-slate-300 text-slate-800 shadow-xs"
-                    : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] text-[#00E599]"
-                }`}
+                className={`h-10 px-3.5 rounded-xl border text-xs font-bold inline-flex items-center gap-2 transition cursor-pointer ${th.ghostBtn}`}
               >
-                <Download className="w-3.5 h-3.5 shrink-0 text-[#00E599]" />
-                <span>Exporter PNG</span>
+                <Download className={`w-4 h-4 ${th.accent}`} />
+                PNG HD
               </button>
             )}
-            <button
-              onClick={onClose}
-              className={`h-10 px-5 font-black uppercase text-xs rounded-xl border inline-flex items-center justify-center whitespace-nowrap transition cursor-pointer ${
-                isModernSleek ? "bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1f293d] text-slate-300"
-              }`}
-            >
-              Fermer
-            </button>
-          </div>
-        </div>
+
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={handleShareEmail}
+                className={`h-10 px-4 rounded-xl border text-xs font-black inline-flex items-center gap-2 transition cursor-pointer ${th.ghostBtn}`}
+                title={includeSchemas ? "Recevoir le briefing et le visuel par e-mail pour le transférer" : "Recevoir le briefing par e-mail pour le transférer"}
+              >
+                <Mail className="w-4 h-4 text-sky-500" />
+                M&apos;envoyer par e-mail
+              </button>
+              <button
+                type="button"
+                onClick={handleShareWhatsApp}
+                disabled={isSharingImage}
+                className="h-10 px-4 rounded-xl text-xs font-black inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-[#052e14] shadow-lg shadow-[#25D366]/20 transition cursor-pointer disabled:opacity-50"
+                title={includeSchemas ? (isAnimMode ? "Message + animation GIF" : "Message + image HD") : "Message texte formaté"}
+              >
+                <MessageCircle className="w-4 h-4" />
+                Partager sur WhatsApp
+              </button>
+            </div>
+          </footer>
+        </main>
       </div>
 
       {/* ========================================================= */}

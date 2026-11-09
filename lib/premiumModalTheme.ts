@@ -1,0 +1,80 @@
+// Thème commun des grandes fenêtres « premium » (console admin, paramètres utilisateur,
+// guide d'utilisation, FAQ & mentions légales, support) : navigation latérale + contenu.
+export function getPremiumTheme(isModernSleek: boolean) {
+  return isModernSleek
+    ? {
+      panel: "bg-white text-slate-900 border-slate-200",
+      sidebar: "bg-slate-50 border-slate-200",
+      border: "border-slate-200",
+      card: "bg-white border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.05)]",
+      cardMuted: "bg-slate-50 border-slate-200",
+      text: "text-slate-900",
+      body: "text-slate-700",
+      sub: "text-slate-500",
+      faint: "text-slate-400",
+      input: "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15",
+      navActive: "bg-white text-slate-900 border-slate-200 shadow-sm",
+      navIdle: "text-slate-500 border-transparent hover:text-slate-900 hover:bg-white/70",
+      navIndicator: "bg-emerald-500",
+      ghostBtn: "bg-white hover:bg-slate-50 border-slate-200 text-slate-700",
+      primaryBtn: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20",
+      tableHead: "bg-slate-50/80 text-slate-500",
+      rowHover: "hover:bg-slate-50/70",
+      divide: "divide-slate-100",
+      chip: "bg-slate-100 text-slate-600 border-slate-200",
+      gold: "text-amber-600",
+      goldChip: "bg-amber-50 text-amber-700 border-amber-200",
+      goldTile: "bg-gradient-to-br from-amber-100 to-amber-50 border-amber-200 text-amber-600",
+      accent: "text-emerald-600",
+      accentChip: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      accentDot: "bg-emerald-500",
+      selected: "bg-white border-emerald-500 ring-2 ring-emerald-500/15",
+      selectable: "bg-white border-slate-200 hover:border-slate-300",
+      segment: "bg-slate-100 border-slate-200",
+      segmentActive: "bg-white text-slate-900 shadow-sm",
+      segmentIdle: "text-slate-500 hover:text-slate-800",
+      danger: "bg-rose-50 text-rose-700 border-rose-200",
+      option: "",
+    }
+    : {
+      panel: "bg-[#0a0d13] text-white border-white/[0.08]",
+      sidebar: "bg-[#07090e] border-white/[0.06]",
+      border: "border-white/[0.06]",
+      card: "bg-white/[0.025] border-white/[0.07]",
+      cardMuted: "bg-white/[0.02] border-white/[0.06]",
+      text: "text-white",
+      body: "text-slate-300",
+      sub: "text-slate-400",
+      faint: "text-slate-500",
+      input: "bg-white/[0.03] border-white/10 text-white placeholder-slate-500 focus:border-[#00E599]/50 focus:ring-2 focus:ring-[#00E599]/10",
+      navActive: "bg-white/[0.06] text-white border-white/10",
+      navIdle: "text-slate-400 border-transparent hover:text-white hover:bg-white/[0.03]",
+      navIndicator: "bg-[#00E599]",
+      ghostBtn: "bg-white/[0.04] hover:bg-white/[0.08] border-white/10 text-slate-200",
+      primaryBtn: "bg-[#00E599] hover:bg-[#33edad] text-[#04120c] shadow-lg shadow-[#00E599]/10",
+      tableHead: "bg-white/[0.02] text-slate-500",
+      rowHover: "hover:bg-white/[0.025]",
+      divide: "divide-white/[0.05]",
+      chip: "bg-white/[0.05] text-slate-300 border-white/10",
+      gold: "text-[#e9c349]",
+      goldChip: "bg-[#d4af37]/10 text-[#e9c349] border-[#d4af37]/30",
+      goldTile: "bg-gradient-to-br from-[#d4af37]/25 to-[#d4af37]/5 border-[#d4af37]/30 text-[#e9c349]",
+      accent: "text-[#00E599]",
+      accentChip: "bg-[#00E599]/10 text-[#00E599] border-[#00E599]/25",
+      accentDot: "bg-[#00E599]",
+      selected: "bg-[#00E599]/[0.06] border-[#00E599]/60 ring-2 ring-[#00E599]/10",
+      selectable: "bg-white/[0.025] border-white/[0.08] hover:border-white/20",
+      segment: "bg-white/[0.03] border-white/[0.07]",
+      segmentActive: "bg-white/[0.09] text-white",
+      segmentIdle: "text-slate-400 hover:text-slate-200",
+      danger: "bg-rose-500/10 text-rose-300 border-rose-500/25",
+      option: "[&>option]:bg-[#0f141d]",
+    };
+}
+
+export type PremiumTheme = ReturnType<typeof getPremiumTheme>;
+
+// Classes de structure partagées
+export const premiumOverlay = "fixed inset-0 bg-black/80 flex items-center justify-center p-2 sm:p-6 animate-fade-in backdrop-blur-md";
+export const premiumShell = "rounded-[28px] border shadow-[0_40px_120px_-20px_rgba(0,0,0,0.6)] flex flex-col md:flex-row overflow-hidden relative";
+export const premiumLabel = "block text-[10px] font-black uppercase tracking-[0.14em] mb-1.5";

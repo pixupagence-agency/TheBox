@@ -4,6 +4,9 @@ import { checkRateLimit, getClientIp, isAllowedOrigin } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
+const MAX_FRAMES = 150;
+const DEFAULT_DELAY_MS = 100;
+
 export async function POST(req: NextRequest) {
   try {
     if (!isAllowedOrigin(req)) {
@@ -24,15 +27,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Liste d'étapes (frames) requise pour le GIF." }, { status: 400 });
     }
 
+    if (body.frames.length > MAX_FRAMES) {
+      return NextResponse.json({ error: "Trop d'images pour un seul GIF." }, { status: 400 });
+    }
+
     const frames: string[] = body.frames;
-    const delayMs = typeof body.delay === "number" && body.delay >= 200 && body.delay <= 5000 ? body.delay : 800;
+    const requestedDelays: unknown[] = Array.isArray(body.delays) ? body.delays : [];
     const targetWidth = typeof body.width === "number" && body.width >= 320 && body.width <= 1280 ? Math.round(body.width) : 720;
 
     // Convert each base64 dataUrl into a resized PNG buffer
     const buffers: Buffer[] = [];
+    let frameWidth = 0;
     let frameHeight = 0;
 
-    for (const frameData of frames) {
+    const delays: number[] = [];
+
+    for (const [frameIdx, frameData] of frames.entries()) {
       if (typeof frameData !== "string" || !frameData.startsWith("data:image/")) {
         continue;
       }
@@ -40,49 +50,39 @@ export async function POST(req: NextRequest) {
       if (commaIdx === -1) continue;
 
       const rawBuffer = Buffer.from(frameData.slice(commaIdx + 1), "base64");
-      // Resize to standard width to ensure uniform canvas size and reasonable payload size
+      // All frames must share the exact size of the first one to be joined into an animation
       const resized = await sharp(rawBuffer)
-        .resize({ width: targetWidth, withoutEnlargement: true })
+        .resize(
+          frameWidth && frameHeight
+            ? { width: frameWidth, height: frameHeight, fit: "contain", background: { r: 9, g: 13, b: 20, alpha: 1 } }
+            : { width: targetWidth, withoutEnlargement: true }
+        )
         .png()
         .toBuffer();
 
-      const meta = await sharp(resized).metadata();
-      if (!frameHeight && meta.height) {
-        frameHeight = meta.height;
+      if (!frameHeight) {
+        const meta = await sharp(resized).metadata();
+        frameWidth = meta.width || 0;
+        frameHeight = meta.height || 0;
       }
       buffers.push(resized);
+      const requestedDelay = requestedDelays[frameIdx];
+      delays.push(typeof requestedDelay === "number" && requestedDelay >= 20 && requestedDelay <= 5000 ? requestedDelay : DEFAULT_DELAY_MS);
     }
 
     if (buffers.length === 0 || frameHeight === 0) {
       return NextResponse.json({ error: "Impossible de traiter les étapes de l'animation." }, { status: 400 });
     }
 
-    // Build vertical collage of all frames for sharp multi-page animated GIF
-    const verticalHeight = frameHeight * buffers.length;
-    const compositeInput = buffers.map((buf, idx) => ({
-      input: buf,
-      top: idx * frameHeight,
-      left: 0,
-    }));
-
-    const verticalStrip = await sharp({
-      create: {
-        width: targetWidth,
-        height: verticalHeight,
-        channels: 4,
-        background: { r: 9, g: 13, b: 20, alpha: 1 },
-      },
-    })
-      .composite(compositeInput)
-      .png()
-      .toBuffer();
-
-    // Sharp animated GIF generation with uniform frame delays
-    const delays = buffers.map(() => delayMs);
-    const gifBuffer = await sharp(verticalStrip, { pageHeight: frameHeight } as any)
+    // Join the frames into a multi-page animated GIF
+    // sharp ne peut assembler qu'à partir de 2 images : une animation à une seule étape reste une image simple
+    const gifBuffer = await (buffers.length > 1 ? sharp(buffers, { join: { animated: true } }) : sharp(buffers[0]))
       .gif({
         delay: delays,
         loop: 0, // Infinite loop
+        // Ne réécrit que les pixels qui changent vraiment : évite le scintillement du terrain et allège le fichier
+        interFrameMaxError: 8,
+        effort: 1, // Encodage 4 fois plus rapide pour un fichier à peine plus lourd
       })
       .toBuffer();
 

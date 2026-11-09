@@ -72,19 +72,19 @@ export default function OnboardingTutorialModal({
     },
     {
       id: 2,
-      targetId: "tour-left-toolbar",
+      targetId: "tour-drawing-tools",
       category: "Boîte à Outils",
       badge: "Étape 2/6 • Outils de Tracé",
       icon: <PenTool className="h-5 w-5 text-blue-400" />,
       title: "Boîte à Outils & Tracés Tactiques",
-      description: "La barre latérale gauche rassemble tous vos instruments pour dessiner vos animations offensives et défensives.",
+      description: "La barre d'outils au-dessus du terrain rassemble tous vos instruments pour dessiner vos animations offensives et défensives.",
       keyPoints: [
         "Flèche de course (↗️) et lignes de passes pointillées (--)",
         "Dessin libre (✏️) et zones de pressing colorées",
         "Palette de couleurs (vert fluo, rouge, bleu, blanc, jaune)"
       ],
       proTip: "Le raccourci clavier Ctrl+Z ou le bouton Effacer vous permet d'effacer vos tracés sans toucher à vos joueurs.",
-      preferredPlacement: "right"
+      preferredPlacement: "bottom"
     },
     {
       id: 3,

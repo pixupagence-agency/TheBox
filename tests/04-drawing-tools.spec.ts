@@ -64,7 +64,7 @@ test.describe('Section 4 : Boîte à Outils de Tracés & Schématisation (FT-TOO
     }
 
     // 3. Vérifier que le bouton d'effacement / RAZ est bien présent
-    const clearBtn = page.locator('#tour-left-toolbar').getByRole('button', { name: 'Effacer' });
+    const clearBtn = page.locator('#tour-drawing-tools').getByRole('button', { name: 'Effacer' });
     await expect(clearBtn).toBeVisible();
   });
 
@@ -83,7 +83,7 @@ test.describe('Section 4 : Boîte à Outils de Tracés & Schématisation (FT-TOO
     }
 
     // 2. Cliquer sur le bouton RAZ
-    const clearBtn = page.locator('#tour-left-toolbar').getByRole('button', { name: 'Effacer' });
+    const clearBtn = page.locator('#tour-drawing-tools').getByRole('button', { name: 'Effacer' });
     if (await clearBtn.isEnabled()) {
       await clearBtn.click();
       // Les joueurs et le terrain restent intacts
