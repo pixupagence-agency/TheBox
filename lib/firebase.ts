@@ -1,5 +1,17 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged, User } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+  onAuthStateChanged,
+  User,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
+} from "firebase/auth";
 import { 
   getFirestore, 
   doc, 
@@ -107,6 +119,56 @@ export async function loginWithGoogle() {
   }
 }
 
+// --- Comptes e-mail / mot de passe (Firebase Authentication) ---
+
+export async function registerWithEmail(email: string, password: string, displayName?: string): Promise<User> {
+  const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  if (displayName) {
+    try {
+      await updateProfile(cred.user, { displayName });
+    } catch (e) {
+      console.warn("Impossible de renseigner le nom du compte:", e);
+    }
+  }
+  return cred.user;
+}
+
+export async function loginWithEmail(email: string, password: string): Promise<User> {
+  const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+  return cred.user;
+}
+
+export async function resetPassword(email: string): Promise<void> {
+  auth.languageCode = "fr";
+  await sendPasswordResetEmail(auth, email.trim());
+}
+
+/** Traduit les erreurs Firebase Auth en messages compréhensibles pour le coach. */
+export function getAuthErrorMessage(err: any): string {
+  switch (err?.code) {
+    case "auth/email-already-in-use":
+      return "Un compte existe déjà avec cette adresse e-mail. Connectez-vous ou utilisez « Mot de passe oublié ».";
+    case "auth/invalid-email":
+      return "L'adresse e-mail n'est pas valide.";
+    case "auth/weak-password":
+      return "Le mot de passe est trop faible (6 caractères minimum).";
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return "Adresse e-mail ou mot de passe incorrect.";
+    case "auth/too-many-requests":
+      return "Trop de tentatives. Patientez quelques minutes ou réinitialisez votre mot de passe.";
+    case "auth/user-disabled":
+      return "Ce compte a été désactivé. Contactez le support.";
+    case "auth/network-request-failed":
+      return "Connexion internet indisponible. Vérifiez votre réseau et réessayez.";
+    case "auth/operation-not-allowed":
+      return "La connexion par e-mail n'est pas encore activée sur le service. Contactez le support.";
+    default:
+      return "Une erreur est survenue. Veuillez réessayer.";
+  }
+}
+
 export async function logoutUser() {
   try {
     await signOut(auth);
@@ -194,7 +256,8 @@ export interface FirebaseTactic {
   pitchType?: string;
   notes?: string;
   payload: string;
-  createdAt: string;
+  /** Uniquement à la création : les règles de sécurité interdisent de le modifier ensuite. */
+  createdAt?: string;
   updatedAt: string;
 }
 

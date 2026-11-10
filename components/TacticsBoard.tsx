@@ -4744,21 +4744,7 @@ export default function TacticsBoard({
     }
 
     // Cloud Persistence via Firebase Firestore
-    try {
-      saveTacticToFirestore({
-        id: newSchema.id,
-        userId: activeCoachId,
-        name: newSchema.name,
-        sport: newSchema.sport || activeSport,
-        pitchType: "full",
-        notes: newSchema.description || "",
-        payload: JSON.stringify(newSchema),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }).catch((e) => console.log("Firebase sync queued:", e));
-    } catch (e) {
-      console.log("Firebase save skipped:", e);
-    }
+    syncSchemaToCloud(newSchema, { isNew: true });
 
     setSaveSuccess(true);
     const successMsg = isSaveAnimationMode
@@ -4776,6 +4762,41 @@ export default function TacticsBoard({
     }, 1500);
   };
 
+  // Sauvegarde en ligne d'un schéma (compte Google connecté uniquement).
+  // L'image d'aperçu n'est pas envoyée : elle est lourde (souvent > 1 Mo, la limite d'un document)
+  // et elle est régénérée à l'affichage / au partage.
+  const CLOUD_SCHEMA_MAX_CHARS = 1_000_000;
+  const syncSchemaToCloud = (schema: any, opts: { isNew?: boolean } = {}) => {
+    if (!schema?.id) return;
+    const { previewImage: _omitPreview, ...cloudSchema } = schema;
+    const payload = JSON.stringify(cloudSchema);
+
+    if (payload.length > CLOUD_SCHEMA_MAX_CHARS) {
+      console.warn(`[Firestore] Schéma ${schema.id} trop volumineux pour la sauvegarde en ligne (${payload.length} caractères).`);
+      setSleekToastMessage("⚠️ Schéma trop volumineux pour la sauvegarde en ligne : il reste enregistré sur cet appareil uniquement.");
+      setTimeout(() => setSleekToastMessage(null), 5000);
+      return;
+    }
+
+    const nowIso = new Date().toISOString();
+    saveTacticToFirestore({
+      id: schema.id,
+      userId: activeCoachId,
+      name: schema.name,
+      sport: schema.sport || activeSport,
+      pitchType: "full",
+      notes: schema.description || "",
+      payload,
+      // createdAt n'est envoyé qu'à la création (les règles de sécurité interdisent de le modifier ensuite)
+      ...(opts.isNew ? { createdAt: nowIso } : {}),
+      updatedAt: nowIso,
+    }).catch((e) => {
+      console.error("[Firestore] Échec de la sauvegarde en ligne du schéma:", e);
+      setSleekToastMessage("⚠️ La sauvegarde en ligne du schéma a échoué : il reste enregistré sur cet appareil.");
+      setTimeout(() => setSleekToastMessage(null), 5000);
+    });
+  };
+
   const handleLinkSchemaToMatch = (schemaId: string, matchId: string) => {
     setSavedTactics((prev) => {
       const nextList = prev.map((sc) => (sc.id === schemaId ? { ...sc, matchId } : sc));
@@ -4784,6 +4805,9 @@ export default function TacticsBoard({
       }
       return nextList;
     });
+    // Rattachement au match également sauvegardé en ligne
+    const current = savedTactics.find((sc) => sc.id === schemaId);
+    if (current) syncSchemaToCloud({ ...current, matchId });
   };
 
   const handleLoadSchema = (schema: any) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import TacticsBoard from "@/components/TacticsBoard";
 import LandingPage from "@/components/LandingPage";
 import AdminPlatform, { defaultSportsConfig, defaultBlockedSports, SportAccessConfig } from "@/components/AdminPlatform";
@@ -11,13 +11,18 @@ import SupportContactModal from "@/components/SupportContactModal";
 import LogoIcon from "@/components/LogoIcon";
 import { CheckCircle, Cloud, X, UserPlus, LogIn, User, Mail, Lock } from "lucide-react";
 import { 
-  auth, 
-  loginWithGoogle, 
-  logoutUser, 
-  saveUserProfileToFirestore, 
+  auth,
+  loginWithGoogle,
+  logoutUser,
+  saveUserProfileToFirestore,
   getUserProfileFromFirestore,
-  getTacticsForUser 
+  getTacticsForUser,
+  registerWithEmail,
+  loginWithEmail,
+  resetPassword,
+  getAuthErrorMessage
 } from "@/lib/firebase";
+import { restoreWorkspaceFromCloud, startWorkspaceSync, stopWorkspaceSync } from "@/lib/cloudSync";
 import { onAuthStateChanged } from "firebase/auth";
 import { isSuperAdminEmail } from "@/lib/security";
 import { Language, getStoredLanguage, setStoredLanguage, translations } from "@/lib/i18n";
@@ -46,6 +51,10 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
+  // Infos saisies à l'inscription (club, rôle, sport…) en attente de la création du compte Firebase,
+  // reprises par onAuthStateChanged pour créer le profil complet en base.
+  const pendingRegistrationRef = useRef<Partial<CoachProfile> | null>(null);
 
   // Safe client-side loading states
   const [coaches, setCoaches] = useState<CoachProfile[]>(defaultCoaches);
@@ -307,6 +316,12 @@ export default function Home() {
       if (firebaseUser) {
         const uid = firebaseUser.uid;
         const email = firebaseUser.email || "";
+
+        // Restauration des équipes, effectifs, matchs… du compte (en parallèle du chargement du profil).
+        // Elle doit être terminée avant l'ouverture du tableau, qui lit ces données à son démarrage.
+        const workspaceRestore = restoreWorkspaceFromCloud(uid).catch((e) =>
+          console.warn("[Synchro en ligne] Restauration impossible, utilisation des données de l'appareil :", e?.code || e?.message || e)
+        );
         const displayName = firebaseUser.displayName || "Coach Principal";
         const parts = displayName.split(" ");
         const first = parts[0] || "Coach";
@@ -328,13 +343,17 @@ export default function Home() {
           setStoredLanguage(profileFromDb.language);
         }
 
+        // Infos saisies dans le formulaire d'inscription (compte e-mail tout juste créé)
+        const pending = pendingRegistrationRef.current;
+        pendingRegistrationRef.current = null;
+
         const coachData: CoachProfile = {
           id: uid,
-          firstName: profileFromDb?.firstName || first,
-          lastName: profileFromDb?.lastName || last,
-          club: profileFromDb?.club || "The Box FC",
-          role: profileFromDb?.role || (isGoogleAdmin ? "Super Admin" : "Coach Principal"),
-          preferredSport: profileFromDb?.preferredSport || "football",
+          firstName: profileFromDb?.firstName || pending?.firstName || first,
+          lastName: profileFromDb?.lastName || pending?.lastName || last,
+          club: profileFromDb?.club || pending?.club || "The Box FC",
+          role: profileFromDb?.role || pending?.role || (isGoogleAdmin ? "Super Admin" : "Coach Principal"),
+          preferredSport: profileFromDb?.preferredSport || pending?.preferredSport || "football",
           email: email,
           isAdmin: Boolean(isGoogleAdmin || profileFromDb?.isAdmin),
           createdAt: profileFromDb?.createdAt || new Date().toISOString(),
@@ -342,9 +361,8 @@ export default function Home() {
           language: resolvedLang,
         };
 
-        const savedPlansStr = typeof window !== "undefined" ? localStorage.getItem("thebox_admin_user_plans") : null;
-        const savedPlans = savedPlansStr ? JSON.parse(savedPlansStr) : {};
-        const resolvedPlan = profileFromDb?.activePlan || savedPlans[uid] || (isGoogleAdmin ? "pro_plus" : "free");
+        // La formule vient uniquement de la base (écrite par le webhook Stripe), jamais du navigateur
+        const resolvedPlan = profileFromDb?.activePlan || (isGoogleAdmin ? "pro_plus" : "free");
         if (resolvedPlan) {
           setActivePlan(resolvedPlan);
         }
@@ -390,6 +408,13 @@ export default function Home() {
 
         // Fetch tactics saved in Firestore
         try {
+          // Appareil utilisé auparavant par un autre compte : ses schémas locaux ne sont pas repris
+          const restoreResult = await workspaceRestore;
+          const deviceUsedByOtherAccount = Boolean(restoreResult && restoreResult.ownerChanged);
+          if (deviceUsedByOtherAccount) {
+            setSavedTactics([]);
+          }
+
           const remoteTactics = await getTacticsForUser(uid);
           if (remoteTactics && remoteTactics.length > 0) {
             const parsed = remoteTactics.map((t) => {
@@ -405,11 +430,29 @@ export default function Home() {
                 };
               }
             });
-            setSavedTactics(parsed);
+            // Fusion avec les schémas déjà présents sur l'appareil (au lieu de les remplacer) :
+            // la version en ligne fait foi, mais on garde l'image d'aperçu locale (non stockée en ligne)
+            // et les schémas qui n'existent que sur cet appareil.
+            setSavedTactics((local) => {
+              const localById = new Map((Array.isArray(local) ? local : []).map((s: any) => [s?.id, s]));
+              const remoteIds = new Set(parsed.map((s: any) => s?.id));
+              const merged = parsed.map((remote: any) => {
+                const localCopy = localById.get(remote?.id);
+                return localCopy?.previewImage && !remote.previewImage
+                  ? { ...remote, previewImage: localCopy.previewImage }
+                  : remote;
+              });
+              const localOnly = (Array.isArray(local) ? local : []).filter((s: any) => s?.id && !remoteIds.has(s.id));
+              const idTime = (s: any) => Number(String(s?.id || "").replace(/\D/g, "")) || 0;
+              return [...localOnly, ...merged].sort((a, b) => idTime(b) - idTime(a));
+            });
           }
         } catch (e) {
           console.log("Could not load remote tactics:", e);
         }
+
+        await workspaceRestore;
+        startWorkspaceSync(uid);
 
         setCoaches((prev) => {
           const exists = prev.some((c) => c.id === uid);
@@ -420,6 +463,8 @@ export default function Home() {
         });
         setActiveCoachId(uid);
         setIsLoggedIn(true);
+      } else {
+        void stopWorkspaceSync();
       }
     });
 
@@ -494,167 +539,92 @@ export default function Home() {
     }
   }, [hasLoaded, isLoggedIn, activeCoachId]);
 
-  const handleRegisterCoach = (e: React.FormEvent) => {
+  const handleRegisterCoach = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFirstName.trim() || !newLastName.trim() || !newClub.trim()) {
+    if (!newFirstName.trim() || !newLastName.trim() || !newClub.trim() || !newEmail.trim()) {
       alert("Veuillez remplir tous les champs obligatoires (*).");
       return;
     }
 
-    if (newPassword && newPassword.length < 6) {
+    if (!newPassword || newPassword.length < 6) {
       alert("Le mot de passe doit contenir au moins 6 caractères.");
       return;
     }
 
-    if (newPassword && newPassword !== newConfirmPassword) {
+    if (newPassword !== newConfirmPassword) {
       alert("Les mots de passe ne correspondent pas.");
       return;
     }
 
-    const nowIso = new Date().toISOString();
     const resolvedSport = (!blockedSports.includes(newPrefSport) ? newPrefSport : "football");
-    const newProfile: CoachProfile = {
-      id: `coach_${Date.now()}`,
-      firstName: newFirstName,
-      lastName: newLastName,
-      club: newClub,
+
+    // Repris par onAuthStateChanged : création du profil complet en base + e-mail de bienvenue
+    pendingRegistrationRef.current = {
+      firstName: newFirstName.trim(),
+      lastName: newLastName.trim(),
+      club: newClub.trim(),
       role: newRole,
       preferredSport: resolvedSport,
-      email: newEmail.trim() || `${newFirstName.toLowerCase()}.${newLastName.toLowerCase()}@club.com`,
-      isAdmin: false,
-      createdAt: nowIso,
-      trialBonusDays: 0,
     };
 
-    const isNewAdmin = Boolean(
-      newProfile.isAdmin ||
-      isSuperAdminEmail(newProfile.email)
-    );
+    setIsAuthSubmitting(true);
+    try {
+      const user = await registerWithEmail(
+        newEmail.trim(),
+        newPassword,
+        `${newFirstName.trim()} ${newLastName.trim()}`
+      );
 
-    setCoaches([...coaches, newProfile]);
-    setActiveCoachId(newProfile.id);
-    setIsRegisterModalOpen(false);
-    setIsLoggedIn(true);
+      setActiveSport(resolvedSport);
+      setIsRegisterModalOpen(false);
+      setIsFirstLogin(true);
+      setIsNewAccountWelcome(false);
+      setIsTrialModalOpen(false);
+      localStorage.setItem(`thebox_trial_last_shown_${user.uid}`, new Date().toISOString().slice(0, 10));
 
-    // Persist new coach profile to Firestore
-    saveUserProfileToFirestore({
-      ...newProfile,
-      activePlan: isNewAdmin ? "pro_plus" : "free",
-      welcomeEmailSent: true,
-    }).catch((e) => console.log("Firestore profile sync queued:", e));
-
-    // Send gorgeous welcome email in the background
-    fetch("/api/send-welcome-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: newProfile.email,
-        firstName: newProfile.firstName,
-        lastName: newProfile.lastName
-      })
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Welcome email sent successfully:", data);
-      })
-      .catch((err) => {
-        console.error("Failed to send welcome email:", err);
-      });
-
-    setIsFirstLogin(true);
-    setIsNewAccountWelcome(false);
-    setIsTrialModalOpen(false);
-    const todayDate = nowIso.slice(0, 10);
-    localStorage.setItem(`thebox_trial_last_shown_${newProfile.id}`, todayDate);
-
-    // Reset form
-    setNewFirstName("");
-    setNewLastName("");
-    setNewClub("");
-    setNewRole("Coach Principal");
-    setNewPrefSport("football");
-    setNewEmail("");
-    setNewPassword("");
-    setNewConfirmPassword("");
+      // Reset form
+      setNewFirstName("");
+      setNewLastName("");
+      setNewClub("");
+      setNewRole("Coach Principal");
+      setNewPrefSport("football");
+      setNewEmail("");
+      setNewPassword("");
+      setNewConfirmPassword("");
+    } catch (err: any) {
+      pendingRegistrationRef.current = null;
+      console.error("Création de compte impossible:", err);
+      alert(getAuthErrorMessage(err));
+    } finally {
+      setIsAuthSubmitting(false);
+    }
   };
 
   const handleGoogleSignUp = async () => {
     try {
       const user = await loginWithGoogle();
-      if (!user) return;
+      if (!user) return; // redirection Google en cours (popup bloquée)
+      // L'ouverture du tableau est faite par onAuthStateChanged, une fois les données du compte restaurées
       setIsRegisterModalOpen(false);
       setIsLoginModalOpen(false);
-      setIsLoggedIn(true);
-    } catch (err) {
-      console.warn("Firebase Google popup fallback:", err);
-      // Fallback in case browser blocks popups
-      const googleEmail = prompt("Saisissez votre adresse e-mail Google :", "coach@thebox.com");
-      if (!googleEmail || !googleEmail.trim()) return;
-
-      const emailName = googleEmail.split("@")[0] || "Coach";
-      const derivedFirst = emailName.charAt(0).toUpperCase() + emailName.slice(1);
-      const nowIso = new Date().toISOString();
-
-      const googleProfile: CoachProfile = {
-        id: `coach_google_${Date.now()}`,
-        firstName: derivedFirst,
-        lastName: "Google",
-        club: "The Box FC",
-        role: "Coach Principal",
-        preferredSport: "football",
-        email: googleEmail.trim(),
-        isAdmin: false,
-        createdAt: nowIso,
-        trialBonusDays: 0,
-      };
-
-      const isGoogleAdmin = Boolean(
-        googleProfile.isAdmin ||
-        isSuperAdminEmail(googleProfile.email)
-      );
-
-      setCoaches([...coaches, googleProfile]);
-      setActiveCoachId(googleProfile.id);
-      setIsRegisterModalOpen(false);
-      setIsLoginModalOpen(false);
-      setIsLoggedIn(true);
-
-      saveUserProfileToFirestore({
-        ...googleProfile,
-        activePlan: isGoogleAdmin ? "pro_plus" : "free",
-        welcomeEmailSent: true,
-      }).catch((e) => console.log("Firestore profile sync queued:", e));
-
-      // Send gorgeous welcome email in the background
-      fetch("/api/send-welcome-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: googleProfile.email,
-          firstName: googleProfile.firstName,
-          lastName: googleProfile.lastName
-        })
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log("Welcome email sent successfully (Google signup):", data);
-        })
-        .catch((err) => {
-          console.error("Failed to send welcome email:", err);
-        });
-
-      if (!isGoogleAdmin) {
-        setIsNewAccountWelcome(true);
-        setIsTrialModalOpen(true);
-      } else {
-        setIsTrialModalOpen(false);
+    } catch (err: any) {
+      // Fenêtre fermée par l'utilisateur : rien à signaler
+      if (err?.code === "auth/popup-closed-by-user" || err?.code === "auth/cancelled-popup-request") return;
+      console.warn("Connexion Google impossible:", err);
+      if (err?.code !== "auth/unauthorized-domain") {
+        alert("Connexion Google impossible pour le moment. Réessayez, ou utilisez votre e-mail et votre mot de passe.");
       }
-      const todayDate = nowIso.slice(0, 10);
-      localStorage.setItem(`thebox_trial_last_shown_${googleProfile.id}`, todayDate);
     }
   };
 
   const handleLoginAsCoach = (coachId: string, sport?: string) => {
+    // Profil déjà connecté sur cet appareil : accès direct.
+    // Sinon, on pré-remplit l'e-mail : le mot de passe est obligatoire.
+    if (auth.currentUser?.uid !== coachId) {
+      const target = coaches.find((c) => c.id === coachId);
+      if (target?.email) setLoginEmail(target.email);
+      return;
+    }
     setActiveCoachId(coachId);
     if (sport) {
       setActiveSport(sport);
@@ -671,22 +641,41 @@ export default function Home() {
     setIsLoginModalOpen(false);
   };
 
-  const handleEmailPasswordSubmit = (e: React.FormEvent) => {
+  const handleEmailPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginEmail.trim()) {
-      alert("Veuillez saisir votre adresse email de coach.");
+    if (!loginEmail.trim() || !loginPassword) {
+      alert("Veuillez saisir votre adresse e-mail et votre mot de passe.");
       return;
     }
-    const matched = coaches.find(c => c.email.toLowerCase() === loginEmail.toLowerCase().trim());
-    if (matched) {
-      handleLoginAsCoach(matched.id, matched.preferredSport);
-    } else {
-      // Auto-login with default or active coach
-      setIsLoggedIn(true);
+    setIsAuthSubmitting(true);
+    try {
+      // onAuthStateChanged charge ensuite le profil, les schémas et ouvre l'application
+      await loginWithEmail(loginEmail, loginPassword);
       setIsLoginModalOpen(false);
+      setLoginEmail("");
+      setLoginPassword("");
+    } catch (err: any) {
+      console.error("Connexion impossible:", err);
+      alert(getAuthErrorMessage(err));
+    } finally {
+      setIsAuthSubmitting(false);
     }
-    setLoginEmail("");
-    setLoginPassword("");
+  };
+
+  const handleForgotPassword = async () => {
+    const email = loginEmail.trim() || prompt("Saisissez l'adresse e-mail de votre compte :", "")?.trim();
+    if (!email) return;
+    try {
+      await resetPassword(email);
+    } catch (err: any) {
+      // On ne révèle pas si l'adresse existe ou non (sauf adresse invalide)
+      if (err?.code === "auth/invalid-email") {
+        alert(getAuthErrorMessage(err));
+        return;
+      }
+      console.warn("Réinitialisation du mot de passe:", err);
+    }
+    alert(`Si un compte existe pour ${email}, un e-mail de réinitialisation du mot de passe vient d'être envoyé.`);
   };
 
   return (
@@ -722,6 +711,8 @@ export default function Home() {
           setIsRegisterModalOpen={setIsRegisterModalOpen}
           onLogout={async () => {
             try {
+              // Dernier envoi des changements en attente avant de perdre la connexion au compte
+              await stopWorkspaceSync();
               await logoutUser();
             } catch (err) {
               console.error("Logout error", err);
@@ -1009,12 +1000,20 @@ export default function Home() {
                     placeholder="••••••••"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
+                    autoComplete="current-password"
                     className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
-                      isModernSleek 
-                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white" 
+                      isModernSleek
+                        ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white"
                         : "bg-[#121824] border-[#233149] text-white placeholder-slate-500 focus:border-[#00E599]"
                     }`}
                   />
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className={`mt-1.5 text-[11px] font-bold underline-offset-2 hover:underline cursor-pointer ${isModernSleek ? "text-emerald-700" : "text-[#00E599]"}`}
+                  >
+                    Mot de passe oublié ?
+                  </button>
                 </div>
 
                 {/* ACTIONS */}
@@ -1032,10 +1031,11 @@ export default function Home() {
 
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-lg shadow-[#00E599]/20"
+                    disabled={isAuthSubmitting}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-lg shadow-[#00E599]/20 disabled:opacity-60 disabled:cursor-wait"
                   >
                     <LogIn className="w-3.5 h-3.5" />
-                    <span>Connexion</span>
+                    <span>{isAuthSubmitting ? "Connexion..." : "Connexion"}</span>
                   </button>
                 </div>
               </form>
@@ -1263,6 +1263,7 @@ export default function Home() {
                       minLength={6}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
+                      autoComplete="new-password"
                       placeholder="Min. 6 caractères"
                       className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none transition border ${
                         isModernSleek 
@@ -1314,10 +1315,11 @@ export default function Home() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-lg shadow-[#00E599]/20"
+                    disabled={isAuthSubmitting}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00E599] to-[#06b87d] hover:brightness-110 text-[#07090e] font-black text-xs transition cursor-pointer flex items-center gap-2 shadow-lg shadow-[#00E599]/20 disabled:opacity-60 disabled:cursor-wait"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
-                    <span>Créer mon Compte</span>
+                    <span>{isAuthSubmitting ? "Création..." : "Créer mon Compte"}</span>
                   </button>
                 </div>
               </form>

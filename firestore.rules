@@ -46,6 +46,30 @@ service cloud.firestore {
         (('isAdmin' in incoming()) && ('isAdmin' in existing()) && incoming().isAdmin == existing().isAdmin);
     }
 
+    // Champs d'abonnement : écrits uniquement par le serveur (webhook Stripe, Admin SDK) ou un super admin.
+    // Un coach ne peut pas s'attribuer lui-même une formule payante ni modifier ses données Stripe.
+    function billingKeys() {
+      return ['stripeCustomerId', 'stripeSubscriptionId', 'stripeStatus', 'cancelAtPeriodEnd', 'accessEndsAt'];
+    }
+
+    function hasSafeBillingOnCreate() {
+      return isSuperAdmin() || (
+        !incoming().keys().hasAny(billingKeys()) &&
+        (!('activePlan' in incoming()) || incoming().activePlan == 'free') &&
+        incoming().get('trialBonusDays', 0) == 0
+      );
+    }
+
+    function hasSafeBillingOnUpdate() {
+      return isSuperAdmin() || (
+        !incoming().diff(existing()).affectedKeys().hasAny(billingKeys()) &&
+        // la formule peut rester identique ou repasser en gratuit, jamais monter
+        (!incoming().diff(existing()).affectedKeys().hasAny(['activePlan']) || incoming().activePlan == 'free') &&
+        // les jours d'essai offerts ne peuvent pas être modifiés par le coach (0 si absent)
+        incoming().get('trialBonusDays', 0) == existing().get('trialBonusDays', 0)
+      );
+    }
+
     // --- User Profiles ---
     match /users/{userId} {
       allow read: if isOwner(userId) || isSuperAdmin();
@@ -54,6 +78,7 @@ service cloud.firestore {
         isValidId(userId) &&
         incoming().id == userId &&
         (incoming().isAdmin != true || isSuperAdmin()) &&
+        hasSafeBillingOnCreate() &&
         (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 254)) &&
         (!('firstName' in incoming()) || (incoming().firstName is string && incoming().firstName.size() <= 100)) &&
         (!('lastName' in incoming()) || (incoming().lastName is string && incoming().lastName.size() <= 100));
@@ -62,6 +87,7 @@ service cloud.firestore {
         isValidId(userId) &&
         incoming().id == existing().id &&
         hasSafeAdminStatus() &&
+        hasSafeBillingOnUpdate() &&
         hasUnchangedCreatedAt() &&
         (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 254)) &&
         (!('firstName' in incoming()) || (incoming().firstName is string && incoming().firstName.size() <= 100)) &&
@@ -148,6 +174,21 @@ service cloud.firestore {
       allow delete: if isSignedIn() &&
         isValidId(teamId) &&
         (existing().userId == request.auth.uid || isSuperAdmin());
+    }
+
+    // --- Données du coach synchronisées (équipes, effectifs, matchs, notes, événements…) ---
+    // Une clé = un ou plusieurs documents {key, part, parts, value, updatedAt} (découpage < 1 Mo).
+    match /userData/{userId}/entries/{entryId} {
+      allow read, delete: if isOwner(userId) || isSuperAdmin();
+
+      allow create, update: if isOwner(userId) &&
+        isValidId(entryId) &&
+        incoming().keys().hasOnly(['key', 'part', 'parts', 'value', 'updatedAt']) &&
+        incoming().key is string && incoming().key.size() <= 110 &&
+        incoming().part is int && incoming().part >= 0 &&
+        incoming().parts is int && incoming().parts > incoming().part && incoming().parts <= 50 &&
+        incoming().value is string && incoming().value.size() <= 1000000 &&
+        incoming().updatedAt is int;
     }
 
     // --- Global App Config (Admin Managed) ---
