@@ -353,16 +353,16 @@ export default function Home() {
 
         // Persist/Update profile in Firestore
         try {
+          // welcomeEmailSent n'est volontairement pas écrit ici : il ne passe à true qu'après un envoi réussi.
           await saveUserProfileToFirestore({
             ...coachData,
             activePlan: resolvedPlan,
-            welcomeEmailSent: true,
           });
         } catch (e) {
           console.error("Error saving coach profile to Firestore:", e);
         }
 
-        // Send welcome email if new account created
+        // Send welcome email if new account created (retried at next login if the send failed)
         if (isNewUser && email) {
           fetch("/api/send-welcome-email", {
             method: "POST",
@@ -373,9 +373,19 @@ export default function Home() {
               lastName: coachData.lastName,
             }),
           })
-            .then((res) => res.json())
-            .then((data) => console.log("Welcome email sent for user:", data))
-            .catch((err) => console.error("Failed to send welcome email:", err));
+            .then(async (res) => {
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok || !data?.success) {
+                throw new Error(data?.error || `HTTP ${res.status}`);
+              }
+              console.log("Welcome email sent for user:", data);
+              await saveUserProfileToFirestore({
+                ...coachData,
+                activePlan: resolvedPlan,
+                welcomeEmailSent: true,
+              });
+            })
+            .catch((err) => console.error("Failed to send welcome email (will retry at next login):", err));
         }
 
         // Fetch tactics saved in Firestore

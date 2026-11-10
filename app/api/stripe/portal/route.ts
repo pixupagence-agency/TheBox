@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
-import { 
-  validateSafeReturnUrl, 
-  isValidEmail, 
-  sanitizeText,
+import { verifyFirebaseIdToken, findCoachProfile } from "@/lib/firebase-admin";
+import {
+  validateSafeReturnUrl,
   checkRateLimit,
   getClientIp,
   isAllowedOrigin
@@ -34,19 +33,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Paramètres invalides." }, { status: 400 });
     }
 
-    const { customerId, coachEmail, returnUrl } = body;
+    // Seuls le jeton de connexion et l'URL de retour sont utilisés : l'identifiant client et l'e-mail
+    // envoyés par le navigateur sont ignorés, pour qu'on ne puisse pas ouvrir le portail d'un autre coach.
+    const { returnUrl } = body;
 
     const stripe = getStripe();
     if (!stripe || !isStripeConfigured) {
       return NextResponse.json({ error: "Stripe non configuré" }, { status: 503 });
     }
 
-    let targetCustomerId = typeof customerId === "string" ? sanitizeText(customerId, 100) : null;
+    const authHeader = req.headers.get("authorization") || "";
+    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const user = await verifyFirebaseIdToken(idToken);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Veuillez vous reconnecter pour accéder à la gestion de votre abonnement.", requiresAuth: true },
+        { status: 401 }
+      );
+    }
 
-    if (!targetCustomerId && coachEmail && isValidEmail(coachEmail)) {
+    const profile = await findCoachProfile({ coachId: user.uid });
+    let targetCustomerId = (profile?.data?.stripeCustomerId as string | undefined) || null;
+
+    if (!targetCustomerId && user.email) {
       try {
         const existingCustomers = await stripe.customers.list({
-          email: coachEmail.trim().toLowerCase(),
+          email: user.email.trim().toLowerCase(),
           limit: 1,
         });
         if (existingCustomers.data && existingCustomers.data.length > 0) {

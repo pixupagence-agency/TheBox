@@ -98,6 +98,13 @@ export async function POST(req: NextRequest) {
         planId: planId,
         source: "the_box_tactics",
       },
+      // Recopié sur l'abonnement : permet de retrouver la formule (PRO / PRO+) à chaque renouvellement
+      subscription_data: {
+        metadata: {
+          coachId: coachId || "",
+          planId: planId,
+        },
+      },
       billing_address_collection: "auto",
       allow_promotion_codes: true,
     };

@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp, cert, App } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import firebaseConfig from "../firebase-applet-config.json";
 
 let adminApp: App | null = null;
@@ -62,10 +63,13 @@ export function getAdminFirestore(): Firestore | null {
 export interface UpdateCoachPlanParams {
   coachId?: string | null;
   email?: string | null;
-  planId: string;
+  /** Laisser vide pour ne pas modifier le plan actuel (ex : simple mise à jour de statut). */
+  planId?: string | null;
   stripeCustomerId?: string | null;
   stripeSubscriptionId?: string | null;
   stripeStatus?: "active" | "canceled" | "past_due" | "trialing";
+  /** Champs supplémentaires à fusionner dans le profil (ex : date de fin d'accès). */
+  extra?: Record<string, any>;
 }
 
 /**
@@ -77,7 +81,7 @@ export async function updateCoachPlanInFirestore(params: UpdateCoachPlanParams):
   userId?: string;
   message: string;
 }> {
-  const { coachId, email, planId, stripeCustomerId, stripeSubscriptionId, stripeStatus = "active" } = params;
+  const { coachId, email, planId, stripeCustomerId, stripeSubscriptionId, stripeStatus = "active", extra } = params;
   const db = getAdminFirestore();
 
   if (!db) {
@@ -87,9 +91,10 @@ export async function updateCoachPlanInFirestore(params: UpdateCoachPlanParams):
   }
 
   const payload: Record<string, any> = {
-    activePlan: planId,
+    ...(extra || {}),
     updatedAt: new Date().toISOString(),
   };
+  if (planId) payload.activePlan = planId;
 
   if (stripeCustomerId) payload.stripeCustomerId = stripeCustomerId;
   if (stripeSubscriptionId) payload.stripeSubscriptionId = stripeSubscriptionId;
@@ -146,5 +151,78 @@ export async function updateCoachPlanInFirestore(params: UpdateCoachPlanParams):
       success: false,
       message: error?.message || "Erreur interne lors de la mise à jour Firestore",
     };
+  }
+}
+
+/**
+ * Vérifie un jeton d'identification Firebase (envoyé par le client) et renvoie l'utilisateur.
+ */
+export async function verifyFirebaseIdToken(idToken: string | null | undefined): Promise<{ uid: string; email?: string } | null> {
+  if (!idToken) return null;
+  if (!getAdminFirestore()) return null; // initialise l'app admin
+  try {
+    const decoded = await getAuth().verifyIdToken(idToken);
+    return { uid: decoded.uid, email: decoded.email };
+  } catch (err: any) {
+    console.warn("⚠️ [Firebase Admin] Jeton d'identification invalide :", err?.message);
+    return null;
+  }
+}
+
+/**
+ * Retrouve le profil d'un coach (id + données) par id, identifiant client Stripe ou email.
+ */
+export async function findCoachProfile(params: {
+  coachId?: string | null;
+  email?: string | null;
+  stripeCustomerId?: string | null;
+}): Promise<{ id: string; data: Record<string, any> } | null> {
+  const db = getAdminFirestore();
+  if (!db) return null;
+  try {
+    if (params.coachId) {
+      const snap = await db.collection("users").doc(params.coachId).get();
+      if (snap.exists) return { id: snap.id, data: snap.data() || {} };
+    }
+    if (params.stripeCustomerId) {
+      const q = await db.collection("users").where("stripeCustomerId", "==", params.stripeCustomerId).limit(1).get();
+      if (!q.empty) return { id: q.docs[0].id, data: q.docs[0].data() };
+    }
+    if (params.email && params.email.includes("@")) {
+      const q = await db.collection("users").where("email", "==", params.email.trim().toLowerCase()).limit(1).get();
+      if (!q.empty) return { id: q.docs[0].id, data: q.docs[0].data() };
+    }
+  } catch (err) {
+    console.error("❌ [Firebase Admin] findCoachProfile:", err);
+  }
+  return null;
+}
+
+/**
+ * Marque un événement Stripe comme traité. Renvoie false s'il l'a déjà été
+ * (Stripe peut renvoyer le même événement plusieurs fois : évite les e-mails en double).
+ */
+export async function claimStripeEvent(eventId: string): Promise<boolean> {
+  const db = getAdminFirestore();
+  if (!db) return true;
+  try {
+    await db.collection("stripeEvents").doc(eventId).create({ processedAt: new Date().toISOString() });
+    return true;
+  } catch (err: any) {
+    // Code gRPC 6 = ALREADY_EXISTS
+    if (err?.code === 6 || /already exists/i.test(err?.message || "")) return false;
+    console.warn("⚠️ [Firebase Admin] claimStripeEvent:", err?.message);
+    return true;
+  }
+}
+
+/** Libère un événement en cas d'erreur, pour que la nouvelle tentative de Stripe soit bien traitée. */
+export async function releaseStripeEvent(eventId: string): Promise<void> {
+  const db = getAdminFirestore();
+  if (!db) return;
+  try {
+    await db.collection("stripeEvents").doc(eventId).delete();
+  } catch {
+    /* ignore */
   }
 }

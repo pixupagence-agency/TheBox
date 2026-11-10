@@ -22,6 +22,7 @@ import {
   Server,
   X
 } from "lucide-react";
+import { auth } from "@/lib/firebase";
 
 interface SubscriptionPlansProps {
   activePlan: string;
@@ -82,11 +83,14 @@ export default function SubscriptionPlans({
     setPortalLoading(true);
     setPortalError(null);
     try {
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
       const res = await fetch("/api/stripe/portal", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
         body: JSON.stringify({
-          coachEmail,
           returnUrl: typeof window !== "undefined" ? window.location.href : undefined,
         }),
       });
@@ -107,29 +111,70 @@ export default function SubscriptionPlans({
     }
   };
 
-  const handleConfirmUnsubscribe = () => {
+  // Repasse le compte en gratuit côté application (utilisé quand aucun abonnement Stripe n'existe : essai, plan offert…)
+  const downgradeLocallyToFree = () => {
+    setActivePlan("free");
+    if (typeof window !== "undefined") {
+      if (coachId) {
+        const savedPlans = localStorage.getItem("thebox_admin_user_plans");
+        const parsed = savedPlans ? JSON.parse(savedPlans) : {};
+        parsed[coachId] = "free";
+        localStorage.setItem("thebox_admin_user_plans", JSON.stringify(parsed));
+        localStorage.setItem(`thebox_has_had_subscription_${coachId}`, "true");
+      }
+      localStorage.setItem("thebox_active_plan", "free");
+    }
+  };
+
+  const handleConfirmUnsubscribe = async () => {
     setIsUnsubscribing(true);
     try {
-      setActivePlan("free");
-      if (typeof window !== "undefined") {
-        if (coachId) {
-          const savedPlans = localStorage.getItem("thebox_admin_user_plans");
-          const parsed = savedPlans ? JSON.parse(savedPlans) : {};
-          parsed[coachId] = "free";
-          localStorage.setItem("thebox_admin_user_plans", JSON.stringify(parsed));
-          localStorage.setItem(`thebox_has_had_subscription_${coachId}`, "true");
-        }
-        localStorage.setItem("thebox_active_plan", "free");
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+      const res = await fetch("/api/stripe/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data?.success) {
+        // L'accès payant reste actif jusqu'à la fin de la période réglée ; le webhook repassera le compte en gratuit.
+        setShowUnsubscribeModal(false);
+        const endLabel = data.accessEndsAt
+          ? new Date(data.accessEndsAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+          : null;
+        alert(
+          `✅ Votre résiliation est enregistrée. Aucun nouveau prélèvement ne sera effectué.\n\n` +
+          (endLabel
+            ? `Vous gardez votre formule actuelle jusqu'au ${endLabel}, puis votre compte repassera en Version Gratuite.`
+            : `Votre compte repassera en Version Gratuite à la fin de la période en cours.`) +
+          `\n\nUn e-mail de confirmation vous a été envoyé.`
+        );
+        return;
       }
-      setShowUnsubscribeModal(false);
-      alert("✅ Votre désabonnement a été pris en compte.\n\nVotre compte est désormais repassé en Version Gratuite.");
+
+      if (res.status === 404) {
+        // Pas d'abonnement Stripe (essai ou formule offerte) : rien à résilier chez Stripe.
+        downgradeLocallyToFree();
+        setShowUnsubscribeModal(false);
+        alert("✅ Votre désabonnement a été pris en compte.\n\nVotre compte est désormais repassé en Version Gratuite.");
+        return;
+      }
+
+      alert(
+        `⚠️ ${data?.error || "La résiliation n'a pas pu être effectuée."}\n\n` +
+        `Vous pouvez aussi résilier directement via le bouton « Gérer / Résilier directement sur Stripe ».`
+      );
     } catch (e) {
       console.error("Unsubscribe error", e);
+      alert("⚠️ Impossible de joindre le serveur. Veuillez réessayer ou passer par le portail Stripe.");
     } finally {
       setIsUnsubscribing(false);
     }
   };
-  
+
   const plans = [
     {
       id: "free",
@@ -942,7 +987,7 @@ export default function SubscriptionPlans({
                 className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase rounded-xl transition cursor-pointer shadow-lg shadow-rose-900/30 flex items-center justify-center gap-2"
               >
                 <span>🛑</span>
-                <span>{isUnsubscribing ? "Désabonnement en cours..." : "Confirmer mon désabonnement (Passer en Gratuit)"}</span>
+                <span>{isUnsubscribing ? "Désabonnement en cours..." : "Confirmer ma résiliation"}</span>
               </button>
 
               {coachEmail && (

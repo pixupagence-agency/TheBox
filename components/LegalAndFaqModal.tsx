@@ -67,7 +67,7 @@ const FAQ_DATA: FaqItem[] = [
     id: "f5",
     category: "Abonnements & Tarifs",
     question: "Comment fonctionne la période d'essai gratuite ?",
-    answer: "Toute création de compte bénéficie automatiquement d'une période d'essai gratuite complète de 14 jours donnant accès à toutes les fonctionnalités de la formule PRO sans engagement et sans carte bancaire requise à l'inscription."
+    answer: "Toute création de compte bénéficie automatiquement d'une période d'essai gratuite complète de 14 jours donnant accès à toutes les fonctionnalités de la formule PRO+ (y compris le Mode Live Match), sans engagement et sans carte bancaire requise à l'inscription. À la fin des 14 jours, votre compte passe automatiquement en Version Gratuite."
   },
   {
     id: "f6",

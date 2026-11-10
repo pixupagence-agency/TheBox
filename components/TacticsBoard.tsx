@@ -871,19 +871,24 @@ export default function TacticsBoard({
     currentPlan.toLowerCase() === "gratuit"
   );
 
+  // Essai gratuit de 14 jours (PRO+) : compte en formule gratuite, essai non expiré,
+  // et jamais abonné (un ancien abonné revenu en gratuit ne récupère pas l'essai).
+  const isInFreeTrial = Boolean(
+    isFreePlan && !hasHadPaidSubscription && liveTrialStatus && !liveTrialStatus.isExpired
+  );
+
   const isProPlusOrAdmin = Boolean(
     isUserAdmin ||
     currentPlan === "pro_plus" ||
     currentPlan === "club" ||
     currentPlan === "annuel" ||
-    (!isFreePlan && !isPaidSubscriber && liveTrialStatus && !liveTrialStatus.isExpired)
+    isInFreeTrial
   );
 
   const isProOrAdmin = Boolean(
     isProPlusOrAdmin ||
     currentPlan === "pro" ||
-    currentPlan === "mensuel" ||
-    (!isFreePlan && !isPaidSubscriber && liveTrialStatus && !liveTrialStatus.isExpired)
+    currentPlan === "mensuel"
   );
 
   // Team configurations
