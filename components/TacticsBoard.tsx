@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import html2canvas from "html2canvas";
 import { toPng } from "html-to-image";
 import Pitch from "./Pitch";
@@ -30,9 +30,31 @@ import { Language, translations, getStoredLanguage, setStoredLanguage } from "@/
 import { confirmAction } from "@/components/ConfirmDialog";
 import { useToolbarOverflow } from "@/lib/useToolbarOverflow";
 
-// Mode live : durée d'une période et de la mi-temps
-const HALF_DURATION_SECONDS = 45 * 60;
+// Mode live : durée de la pause (mi-temps) entre les deux moitiés du match
 const HALFTIME_BREAK_SECONDS = 15 * 60;
+
+// Périodes de jeu du mode live selon le sport.
+// "MI-TEMPS" est la pause, placée après la période d'index breakAfterIndex.
+type LivePeriod = "1MT" | "2MT" | "QT1" | "QT2" | "QT3" | "QT4" | "MI-TEMPS" | "FIN";
+interface LivePeriodConfig {
+  periods: LivePeriod[];
+  periodSeconds: number;
+  breakAfterIndex: number;
+}
+const getLivePeriodConfig = (sport: string): LivePeriodConfig => {
+  switch (sport) {
+    case "basketball":
+      // 4 quart-temps de 20 minutes, pause entre QT2 et QT3
+      return { periods: ["QT1", "QT2", "QT3", "QT4"], periodSeconds: 20 * 60, breakAfterIndex: 1 };
+    case "rugby":
+      return { periods: ["1MT", "2MT"], periodSeconds: 40 * 60, breakAfterIndex: 0 };
+    case "handball":
+      return { periods: ["1MT", "2MT"], periodSeconds: 30 * 60, breakAfterIndex: 0 };
+    default:
+      // Football (et autres sports) : 2 mi-temps de 45 minutes
+      return { periods: ["1MT", "2MT"], periodSeconds: 45 * 60, breakAfterIndex: 0 };
+  }
+};
 
 // Groupes de la barre d'outils du terrain, dans l'ordre d'affichage
 const TOOLBAR_GROUP_KEYS = ["view", "display", "drawing", "color", "export", "zoom"] as const;
@@ -1813,16 +1835,29 @@ export default function TacticsBoard({
   const [isLiveTimerRunning, setIsLiveTimerRunning] = useState<boolean>(false);
   const [isMatchFinishedModalOpen, setIsMatchFinishedModalOpen] = useState<boolean>(false);
 
-  const [currentPeriod, setCurrentPeriod] = useState<"1MT" | "MI-TEMPS" | "2MT" | "FIN">(() => {
+  // Périodes de jeu du sport actif (football : 2 MT de 45 min ; basket : 4 QT de 20 min)
+  const livePeriodConfig = useMemo(() => getLivePeriodConfig(activeSport), [activeSport]);
+  const firstLivePeriod = livePeriodConfig.periods[0];
+
+  const [currentPeriod, setCurrentPeriod] = useState<LivePeriod>(() => {
+    const first = getLivePeriodConfig(activeSport).periods[0];
     if (typeof window !== "undefined") {
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
       const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
       if (saved) {
-        try { return JSON.parse(saved).currentPeriod || "1MT"; } catch (e) { }
+        try { return JSON.parse(saved).currentPeriod || first; } catch (e) { }
       }
     }
-    return "1MT";
+    return first;
   });
+
+  // Si la période enregistrée appartient à un autre sport (ex. "1MT" en basket), on la convertit
+  useEffect(() => {
+    if (currentPeriod === "MI-TEMPS" || currentPeriod === "FIN") return;
+    if (livePeriodConfig.periods.includes(currentPeriod)) return;
+    const secondHalf = currentPeriod === "2MT" || currentPeriod === "QT3" || currentPeriod === "QT4";
+    setCurrentPeriod(livePeriodConfig.periods[secondHalf ? livePeriodConfig.breakAfterIndex + 1 : 0]);
+  }, [currentPeriod, livePeriodConfig]);
 
   const [liveTimerSeconds, setLiveTimerSeconds] = useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -1974,14 +2009,14 @@ export default function TacticsBoard({
     setIsMatchFinishedModalOpen(true);
     setSleekToastMessage(
       isAuto
-        ? `🏁 Match terminé (90:00) ! Score final : ${scoreFormatted}. Données rattachées au match.`
+        ? `🏁 Match terminé (${formatLiveTime(livePeriodConfig.periods.length * livePeriodConfig.periodSeconds)}) ! Score final : ${scoreFormatted}. Données rattachées au match.`
         : `🏁 Match terminé ! Score final : ${scoreFormatted} enregistré.`
     );
     setTimeout(() => setSleekToastMessage(null), 4500);
   };
 
-  // Chrono du match : il continue au-delà des 45 minutes de la période (temps additionnel),
-  // l'affichage passe alors en rouge (1MT : après 45:00, 2MT : après 90:00).
+  // Chrono du match : il continue au-delà de la durée de la période (temps additionnel),
+  // l'affichage passe alors en rouge (ex. football 1MT : après 45:00 ; basket QT1 : après 20:00).
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (isLiveMatchMode && isLiveTimerRunning) {
@@ -2006,10 +2041,11 @@ export default function TacticsBoard({
   useEffect(() => {
     if (halftimeSecondsLeft === 0 && isHalftimeRunning) {
       setIsHalftimeRunning(false);
-      setSleekToastMessage("⏱️ Fin de la mi-temps (15:00) ! Cliquez sur 2MT pour lancer la seconde période.");
+      const nextPeriod = livePeriodConfig.periods[livePeriodConfig.breakAfterIndex + 1];
+      setSleekToastMessage(`⏱️ Fin de la pause (15:00) ! Cliquez sur ${nextPeriod} pour relancer le match.`);
       setTimeout(() => setSleekToastMessage(null), 4500);
     }
-  }, [halftimeSecondsLeft, isHalftimeRunning]);
+  }, [halftimeSecondsLeft, isHalftimeRunning, livePeriodConfig]);
 
   const formatLiveTime = (totalSecs: number) => {
     const m = Math.floor(totalSecs / 60);
@@ -2018,22 +2054,40 @@ export default function TacticsBoard({
   };
 
   // Temps réglementaire de la période en cours dépassé (affichage en rouge)
+  const currentPeriodIndex = livePeriodConfig.periods.indexOf(currentPeriod);
   const isPeriodOvertime =
-    (currentPeriod === "1MT" && liveTimerSeconds > HALF_DURATION_SECONDS) ||
-    (currentPeriod === "2MT" && liveTimerSeconds > 2 * HALF_DURATION_SECONDS);
+    currentPeriodIndex >= 0 &&
+    liveTimerSeconds > (currentPeriodIndex + 1) * livePeriodConfig.periodSeconds;
   const isHalftime = currentPeriod === "MI-TEMPS";
 
-  // Changement de période depuis les boutons 1MT / PAUSE / 2MT
-  const handleSelectLivePeriod = (period: "1MT" | "MI-TEMPS" | "2MT") => {
+  // Libellés de la pause : en basket on parle de « PAUSE » (pas de mi-temps), sinon de mi-temps
+  const isBasketLive = activeSport === "basketball";
+  const breakShortLabel = isBasketLive ? "PAUSE" : "MT";
+  const breakLongLabel = isBasketLive ? "Pause" : "Mi-temps";
+  // Période inscrite sur les événements du match (buts, cartons, remplacements…)
+  const eventPeriodLabel = isHalftime && isBasketLive ? "PAUSE" : currentPeriod;
+
+  // Boutons de période affichés : périodes de jeu avec la pause insérée au bon endroit
+  // (football : 1MT | PAUSE | 2MT ; basket : QT1 | QT2 | PAUSE | QT3 | QT4)
+  const livePeriodButtons: LivePeriod[] = [
+    ...livePeriodConfig.periods.slice(0, livePeriodConfig.breakAfterIndex + 1),
+    "MI-TEMPS",
+    ...livePeriodConfig.periods.slice(livePeriodConfig.breakAfterIndex + 1),
+  ];
+
+  // Changement de période depuis les boutons de période
+  const handleSelectLivePeriod = (period: LivePeriod) => {
     if (period === "MI-TEMPS") {
-      // Pause = mi-temps : le chrono du match s'arrête et le compte à rebours de 15 minutes démarre
+      // Pause : le chrono du match s'arrête et le compte à rebours de 15 minutes démarre
       setIsLiveTimerRunning(false);
       if (currentPeriod !== "MI-TEMPS") setHalftimeSecondsLeft(HALFTIME_BREAK_SECONDS);
       setIsHalftimeRunning(true);
     } else {
       setIsHalftimeRunning(false);
-      // La seconde période repart de 45:00, quel que soit le temps additionnel de la première
-      if (period === "2MT" && currentPeriod !== "2MT") setLiveTimerSeconds(HALF_DURATION_SECONDS);
+      // Chaque nouvelle période repart de son début théorique (ex. 2MT à 45:00, QT3 à 40:00),
+      // quel que soit le temps additionnel de la précédente
+      const index = livePeriodConfig.periods.indexOf(period);
+      if (index > 0 && period !== currentPeriod) setLiveTimerSeconds(index * livePeriodConfig.periodSeconds);
       setIsLiveTimerRunning(true);
     }
     setCurrentPeriod(period);
@@ -2190,7 +2244,7 @@ export default function TacticsBoard({
           setLiveTimerSeconds(parsed.liveTimerSeconds || 0);
           setHalftimeSecondsLeft(typeof parsed.halftimeSecondsLeft === "number" ? parsed.halftimeSecondsLeft : HALFTIME_BREAK_SECONDS);
           setIsHalftimeRunning(false);
-          const periodLoaded = parsed.currentPeriod || "1MT";
+          const periodLoaded = parsed.currentPeriod || firstLivePeriod;
           setCurrentPeriod(periodLoaded);
           if (periodLoaded === "FIN") {
             isMatchFinished = true;
@@ -2201,7 +2255,7 @@ export default function TacticsBoard({
           setLiveTimerSeconds(0);
           setHalftimeSecondsLeft(HALFTIME_BREAK_SECONDS);
           setIsHalftimeRunning(false);
-          setCurrentPeriod("1MT");
+          setCurrentPeriod(firstLivePeriod);
         }
       } else {
         setHomeScore(0);
@@ -2209,7 +2263,7 @@ export default function TacticsBoard({
         setLiveTimerSeconds(0);
         setHalftimeSecondsLeft(HALFTIME_BREAK_SECONDS);
         setIsHalftimeRunning(false);
-        setCurrentPeriod("1MT");
+        setCurrentPeriod(firstLivePeriod);
       }
 
       if (isMatchFinished) {
@@ -3408,7 +3462,7 @@ export default function TacticsBoard({
           {
             id: `evt_${Date.now()}`,
             time: timeFormatted,
-            period: currentPeriod,
+            period: eventPeriodLabel,
             type: "red" as const,
             player: tokenToRemove.name,
             number: tokenToRemove.number,
@@ -3422,7 +3476,7 @@ export default function TacticsBoard({
           {
             id: `evt_${Date.now()}`,
             time: timeFormatted,
-            period: currentPeriod,
+            period: eventPeriodLabel,
             type: "sub" as const,
             player: tokenToRemove.name,
             number: tokenToRemove.number,
@@ -3550,7 +3604,7 @@ export default function TacticsBoard({
         {
           id: `evt_${Date.now()}`,
           time: timeFormatted,
-          period: currentPeriod,
+          period: eventPeriodLabel,
           type: "sub" as const,
           player: `${originalToken.name} ➔ ${newSub.name}`,
           number: newSub.number,
@@ -4338,7 +4392,7 @@ export default function TacticsBoard({
         {
           id: `evt_${Date.now()}`,
           time: timeFormatted,
-          period: currentPeriod,
+          period: eventPeriodLabel,
           type: "yellow" as const,
           player: targetToken.name,
           number: targetToken.number,
@@ -4387,7 +4441,7 @@ export default function TacticsBoard({
       {
         id: `evt_${Date.now()}`,
         time: timeFormatted,
-        period: currentPeriod,
+        period: eventPeriodLabel,
         type: "goal" as const,
         player: scorerToken.name,
         number: scorerToken.number,
@@ -8214,9 +8268,10 @@ export default function TacticsBoard({
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800"
                   : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
-                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs`}
               >
-                {t.tactics.teamPanel.clear}
+                <Trash2 className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"} shrink-0`} />
+                <span>{t.tactics.teamPanel.clear}</span>
               </button>
 
               {/* Button 1: Effectif Mon Équipe */}
@@ -8423,9 +8478,10 @@ export default function TacticsBoard({
                 className={`w-full py-1.5 px-2 ${isModernSleek
                   ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800"
                   : "bg-[#0b0e13] hover:bg-white/5 border-[#2a2f37] text-slate-100"
-                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center text-center shadow-2xs`}
+                  } border rounded-lg text-[9.5px] font-black transition cursor-pointer flex items-center justify-center gap-1 text-center shadow-2xs`}
               >
-                {t.tactics.teamPanel.clear}
+                <Trash2 className={`w-3.5 h-3.5 ${isModernSleek ? "text-rose-600" : "text-rose-400"} shrink-0`} />
+                <span>{t.tactics.teamPanel.clear}</span>
               </button>
 
               {/* Button 1: Effectif Adverse */}
@@ -8966,44 +9022,6 @@ export default function TacticsBoard({
                     <span>✉️</span>
                     <span>{t.userMenu.contactSupport}</span>
                   </button>
-                  {/* Option Utilisateur : Thème d'Affichage (Sombre / Clair & Épuré) */}
-                  <div className={`p-2.5 rounded-xl border ${isModernSleek
-                    ? "bg-slate-50 border-slate-200 text-slate-900"
-                    : "bg-[#121926] border-[#1f293d] text-slate-200"
-                    } my-1.5 shadow-2xs`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm">{isModernSleek ? "☀️" : "🌙"}</span>
-                        <span className="text-[10px] font-black uppercase tracking-wider">
-                          {isModernSleek ? t.userMenu.lightDesign : t.userMenu.darkDesign}
-                        </span>
-                      </div>
-                      <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded uppercase ${isModernSleek ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-slate-800 text-slate-400"
-                        }`}>
-                        {isModernSleek ? t.userMenu.themeActive : t.userMenu.themeClassic}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={toggleModernSleek}
-                      className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-between cursor-pointer border ${isModernSleek
-                        ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-800 shadow-2xs"
-                        : "bg-[#090d14] hover:bg-[#162030] border-[#1f293d] text-slate-300 hover:text-white"
-                        }`}
-                      title={isModernSleek ? t.userMenu.switchToDark : t.userMenu.switchToLight}
-                    >
-                      <span className="text-[10px] font-bold">
-                        {isModernSleek ? t.userMenu.switchToDark : t.userMenu.switchToLight}
-                      </span>
-
-                      {/* Switch Pill */}
-                      <div className={`w-8 h-4 rounded-full p-0.5 transition-colors duration-200 flex items-center ${isModernSleek ? "bg-emerald-600 justify-end shadow-inner" : "bg-slate-700 justify-start border border-slate-600"
-                        }`}>
-                        <div className="w-3 h-3 rounded-full bg-white shadow-sm transition-all transform" />
-                      </div>
-                    </button>
-                  </div>
-
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
@@ -9629,7 +9647,7 @@ export default function TacticsBoard({
                             ? halftimeSecondsLeft === 0 ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-amber-700" : "text-[#e9c349]")
                             : isPeriodOvertime ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-slate-600" : "text-slate-300")
                             }`}>
-                            {isHalftime ? `MT ${formatLiveTime(halftimeSecondsLeft)}` : formatLiveTime(liveTimerSeconds)}
+                            {isHalftime ? `${breakShortLabel} ${formatLiveTime(halftimeSecondsLeft)}` : formatLiveTime(liveTimerSeconds)}
                           </span>
                         </div>
                         <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
@@ -11138,16 +11156,16 @@ export default function TacticsBoard({
                         </div>
                       )}
 
-                      {/* Period Selector Buttons (1MT | PAUSE = mi-temps | 2MT) */}
+                      {/* Period Selector Buttons (football : 1MT | PAUSE | 2MT ; basket : QT1 | QT2 | PAUSE | QT3 | QT4) */}
                       <div className={`flex items-center justify-between gap-1 w-full p-1 rounded-xl border ${isModernSleek ? "bg-slate-100 border-slate-200" : "bg-[#080d14] border-[#1f293d]"}`}>
-                        {(["1MT", "MI-TEMPS", "2MT"] as const).map((periodKey) => (
+                        {livePeriodButtons.map((periodKey) => (
                           <button
                             key={periodKey}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSelectLivePeriod(periodKey);
                             }}
-                            title={periodKey === "MI-TEMPS" ? "Mi-temps : lance un compte à rebours de 15 minutes" : undefined}
+                            title={periodKey === "MI-TEMPS" ? `${breakLongLabel} : lance un compte à rebours de 15 minutes` : undefined}
                             className={`flex-1 py-1.5 rounded-lg text-[9.5px] font-black transition cursor-pointer text-center uppercase tracking-tight ${currentPeriod === periodKey
                               ? isModernSleek
                                 ? "bg-white text-slate-900 border border-slate-300 shadow-2xs"
@@ -11165,7 +11183,7 @@ export default function TacticsBoard({
                       {/* Timer Bar */}
                       <div className={`flex items-center justify-between gap-1.5 w-full p-2 rounded-xl border ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
                         {isHalftime ? (
-                          // Mi-temps : compte à rebours de 15 minutes
+                          // Pause (mi-temps) : compte à rebours de 15 minutes
                           <span
                             className={`text-sm font-mono font-black px-2.5 py-1 rounded-lg border ${halftimeSecondsLeft === 0
                               ? isModernSleek ? "bg-rose-50 text-rose-600 border-rose-200" : "bg-rose-500/10 text-rose-400 border-rose-500/40"
@@ -11216,7 +11234,7 @@ export default function TacticsBoard({
                               ? "bg-white hover:bg-slate-100 text-slate-600 border-slate-200"
                               : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
                               }`}
-                            title={isHalftime ? "Relancer les 15 minutes de mi-temps" : "Réinitialiser le chrono"}
+                            title={isHalftime ? `Relancer les 15 minutes de ${breakLongLabel.toLowerCase()}` : "Réinitialiser le chrono"}
                           >
                             🔄
                           </button>
