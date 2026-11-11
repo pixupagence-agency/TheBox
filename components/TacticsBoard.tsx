@@ -1747,7 +1747,7 @@ export default function TacticsBoard({
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             return parsed.map((m) =>
               m.awayTeam === "NOUVEL ADVERSAIRE" ? { ...m, awayTeam: "ADVERSAIRE" } : m
             );
@@ -1755,48 +1755,16 @@ export default function TacticsBoard({
         } catch (e) { }
       }
     }
-    return [
-      {
-        id: "match_1",
-        teamId: "team_1",
-        homeTeam: "SÉNIORS A",
-        awayTeam: "BORDEAUX FC",
-        competition: "RÉGIONAL 1",
-        dateTime: "DIM. 25 AVRIL • 15:00"
-      },
-      {
-        id: "match_2",
-        teamId: "team_1",
-        homeTeam: "SÉNIORS A",
-        awayTeam: "PARIS SG (B)",
-        competition: "COUPE DE FRANCE",
-        dateTime: "MER. 12 MAI • 21:00"
-      },
-      {
-        id: "match_3",
-        teamId: "team_2",
-        homeTeam: "SÉNIORS B",
-        awayTeam: "MARSEILLE (B)",
-        competition: "RÉGIONAL 2",
-        dateTime: "DIM. 23 MAI • 15:00"
-      },
-      {
-        id: "match_4",
-        teamId: "team_3",
-        homeTeam: "U19 REGIONAL 1",
-        awayTeam: "TOULOUSE FC U19",
-        competition: "CHAMPIONNAT U19",
-        dateTime: "SAM. 29 MAI • 16:00"
-      }
-    ];
+    // Aucun match par défaut : le coach crée ses matchs s'il le souhaite
+    return [];
   });
 
   const [activeMatchId, setActiveMatchId] = useState<string>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("thebox_active_match_id");
-      if (saved && saved !== "undefined") return saved;
+      if (saved !== null && saved !== "undefined") return saved;
     }
-    return "match_1";
+    return "";
   });
 
   // Synchronize setPieceRoles to localStorage whenever they change
@@ -1818,15 +1786,16 @@ export default function TacticsBoard({
   const activeMatch =
     filteredMatches.find((m) => m.id === activeMatchId) ||
     matchesList.find((m) => m.id === activeMatchId) ||
-    filteredMatches[0] ||
-    matchesList[0] || {
-      id: "match_1",
-      teamId: "team_1",
-      homeTeam: "SÉNIORS A",
-      awayTeam: "BORDEAUX FC",
-      competition: "RÉGIONAL 1",
-      dateTime: "DIM. 25 AVRIL • 15:00"
+    {
+      id: "",
+      teamId: activeTeamId,
+      homeTeam: activeTeam?.name || "MON EQUIPE",
+      awayTeam: "ADVERSAIRE",
+      competition: "",
+      dateTime: ""
     };
+  // false quand le coach n'a (encore) aucun match pour l'équipe active
+  const hasActiveMatch = Boolean(activeMatch.id);
 
   const displayClubTitle = activeMatch?.homeTeam || activeTeam?.name || "MON EQUIPE";
 
@@ -2165,12 +2134,13 @@ export default function TacticsBoard({
       if (editingMatchId === matchId) {
         setEditingMatchId(null);
       }
-      if (updatedList.length > 0) {
-        if (activeMatchId === matchId) {
-          selectMatch(updatedList[0].id);
+      if (activeMatchId === matchId) {
+        const nextForTeam = updatedList.find((m) => (m.teamId || "team_1") === activeTeamId);
+        if (nextForTeam) {
+          selectMatch(nextForTeam.id, updatedList);
+        } else {
+          clearActiveMatch();
         }
-      } else {
-        handleAddNewMatch(activeTeamId);
       }
       setSleekToastMessage("🗑️ Match supprimé avec succès.");
       setTimeout(() => setSleekToastMessage(null), 3000);
@@ -2213,6 +2183,27 @@ export default function TacticsBoard({
 
     setSleekToastMessage("✨ Nouveau match créé ! Vous pouvez éditer ses informations ci-dessous.");
     setTimeout(() => setSleekToastMessage(null), 3500);
+  };
+
+  // Aucun match sélectionné : on garde le terrain tel quel, on vide les données propres à un match
+  const clearActiveMatch = () => {
+    setActiveMatchId("");
+    setMatchEvents([]);
+    setHomeScore(0);
+    setAwayScore(0);
+    setLiveTimerSeconds(0);
+    setHalftimeSecondsLeft(HALFTIME_BREAK_SECONDS);
+    setIsHalftimeRunning(false);
+    setCurrentPeriod(firstLivePeriod);
+    setIsLiveMatchMode(false);
+    setIsLiveTimerRunning(false);
+    setLiveActionToken(null);
+    setTacticalNotes("");
+    setSetPieceRoles(defaultSetPieceRoles);
+    setOpponentSetPieceRoles(defaultSetPieceRoles);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("thebox_active_match_id", "");
+    }
   };
 
   const selectMatch = (matchId: string, customMatchesList?: any[]) => {
@@ -2377,26 +2368,9 @@ export default function TacticsBoard({
       if (!exists) {
         selectMatch(currentTeamMatches[0].id);
       }
-    } else {
-      // Auto-create initial match for newly selected team
-      const targetTeam = teams.find((t) => t.id === activeTeamId) || activeTeam;
-      const newId = `match_${Date.now()}`;
-      const newMatchObj = {
-        id: newId,
-        teamId: activeTeamId,
-        homeTeam: targetTeam?.name || "MON EQUIPE",
-        awayTeam: "ADVERSAIRE",
-        competition: "CHAMPIONNAT",
-        dateTime: "DIM. PROCHAIN • 15:00",
-      };
-      setMatchesList((prev) => {
-        const updated = [...prev, newMatchObj];
-        if (typeof window !== "undefined") {
-          localStorage.setItem("thebox_matches_list", JSON.stringify(updated));
-        }
-        return updated;
-      });
-      selectMatch(newId);
+    } else if (activeMatchId) {
+      // Aucun match pour cette équipe : aucun match actif (pas de création automatique)
+      clearActiveMatch();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTeamId]);
@@ -10950,7 +10924,31 @@ export default function TacticsBoard({
                 </div>
               </div>
 
-              {!isMatchSectionCollapsed && (
+              {!isMatchSectionCollapsed && !hasActiveMatch && (
+                <div className={`rounded-xl border border-dashed p-3 text-center ${isModernSleek ? "border-slate-300 bg-slate-50" : "border-[#26354d] bg-[#0d1117]/60"}`}>
+                  <p className={`text-[11px] font-black uppercase ${isModernSleek ? "text-slate-700" : "text-slate-200"}`}>Aucun match</p>
+                  <p className={`text-[10px] mt-0.5 leading-snug ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                    Les matchs sont facultatifs. Créez-en un pour suivre un adversaire, vos notes ou le mode live.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isProOrAdmin) {
+                        setSleekToastMessage("🔒 La gestion des matchs est réservée aux abonnés PRO & PRO+.");
+                        setIsCheckoutOpen(true);
+                        return;
+                      }
+                      handleAddNewMatch();
+                      setIsMatchEditOpen(true);
+                    }}
+                    className={`mt-2 h-7 px-3 rounded-lg text-[10px] font-black inline-flex items-center gap-1 transition cursor-pointer ${isModernSleek ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-[#00E599] hover:bg-[#00cc88] text-[#0d1117]"}`}
+                  >
+                    <Plus className="w-3 h-3" /> Créer un match
+                  </button>
+                </div>
+              )}
+
+              {!isMatchSectionCollapsed && hasActiveMatch && (
                 /* Match details & Live controls card */
                 <div
                   className={`tb-match-card ${isModernSleek ? "text-slate-800" : "text-white"} border rounded-xl ${isLiveMatchMode ? "p-3" : "p-2.5"} text-center relative overflow-hidden transition ${!isLiveMatchMode
@@ -12434,8 +12432,8 @@ export default function TacticsBoard({
                         </select>
                       ) : (
                         <div className={`w-full rounded-xl px-3 py-2.5 text-xs flex items-center justify-between gap-2 border ${pth.cardMuted}`}>
-                          <span className={`font-bold truncate ${pth.text}`}>{activeMatch ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}` : "Match en cours"}</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${pth.chip}`}>{activeMatch?.competition || "Match"}</span>
+                          <span className={`font-bold truncate ${pth.text}`}>{hasActiveMatch ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}` : "Aucun match — schéma non associé"}</span>
+                          {hasActiveMatch && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${pth.chip}`}>{activeMatch?.competition || "Match"}</span>}
                         </div>
                       )}
                     </div>
