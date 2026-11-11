@@ -454,7 +454,12 @@ export default function Home() {
         await workspaceRestore;
         startWorkspaceSync(uid);
 
-        setCoaches((prev) => {
+        setCoaches((prevAll) => {
+          // L'ancien profil local (« coach_… ») avec la même adresse est remplacé par le vrai compte
+          const sameEmail = (coachData.email || "").toLowerCase();
+          const prev = prevAll.filter(
+            (c) => !(c.id.startsWith("coach_") && sameEmail && c.email?.toLowerCase() === sameEmail)
+          );
           const exists = prev.some((c) => c.id === uid);
           if (exists) {
             return prev.map((c) => (c.id === uid ? { ...c, ...coachData } : c));
@@ -656,6 +661,32 @@ export default function Home() {
       setLoginPassword("");
     } catch (err: any) {
       console.error("Connexion impossible:", err);
+      // Profil créé avant les comptes sécurisés (id local « coach_… ») : aucun compte Firebase n'existe encore
+      const legacyProfile =
+        err?.code === "auth/invalid-credential" || err?.code === "auth/user-not-found"
+          ? coaches.find(
+              (c) =>
+                c.id.startsWith("coach_") &&
+                c.email?.toLowerCase() === loginEmail.trim().toLowerCase()
+            )
+          : undefined;
+      if (legacyProfile) {
+        alert(
+          "Ce profil a été créé avant la mise en place des comptes sécurisés : il n'a pas encore de mot de passe.\n\n" +
+          "Créez votre compte avec la même adresse e-mail (vos informations sont pré-remplies), puis choisissez votre mot de passe."
+        );
+        setNewFirstName(legacyProfile.firstName || "");
+        setNewLastName(legacyProfile.lastName || "");
+        setNewClub(legacyProfile.club || "");
+        if (legacyProfile.role) setNewRole(legacyProfile.role as any);
+        if (legacyProfile.preferredSport) setNewPrefSport(legacyProfile.preferredSport as any);
+        setNewEmail(legacyProfile.email);
+        setNewPassword(loginPassword);
+        setNewConfirmPassword("");
+        setIsLoginModalOpen(false);
+        setIsRegisterModalOpen(true);
+        return;
+      }
       alert(getAuthErrorMessage(err));
     } finally {
       setIsAuthSubmitting(false);
@@ -896,49 +927,6 @@ export default function Home() {
 
             {/* BODY */}
             <div className="p-5 sm:p-6 relative z-10 space-y-4">
-              {/* Quick Profile Selection */}
-              {coaches.length > 0 && (
-                <div>
-                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"}`}>
-                    <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Profils Enregistrés sur cet appareil :</span>
-                  </label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1 scrollbar-thin">
-                    {coaches.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => handleLoginAsCoach(c.id, c.preferredSport)}
-                        className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between transition cursor-pointer group ${
-                          isModernSleek 
-                            ? "bg-slate-50 hover:bg-slate-100 border-slate-200 hover:border-emerald-500" 
-                            : "bg-[#121926] hover:bg-[#1a253a] border-[#1f293d] hover:border-white"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full font-black text-xs flex items-center justify-center ${
-                            isModernSleek ? "bg-emerald-600 text-white" : "bg-white text-[#0d1117]"
-                          }`}>
-                            {c.firstName.charAt(0)}{c.lastName.charAt(0)}
-                          </div>
-                          <div>
-                            <p className={`text-xs font-black transition ${isModernSleek ? "text-slate-900 group-hover:text-emerald-700" : "text-white"}`}>
-                              {c.firstName} {c.lastName}
-                            </p>
-                            <p className={`text-[10px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
-                              {c.club} • <span className="capitalize text-[#00E599] font-bold">{c.preferredSport}</span>
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] bg-[#00E599] text-[#0d1117] font-black px-2.5 py-1 rounded-lg">
-                          Se connecter
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Google Fast Connect */}
               <div>
                 <button

@@ -212,15 +212,17 @@ export default function LegalAndFaqModal({
   const current = tabs.find((x) => x.id === activeTab) || tabs[0];
 
   const cguSections: { title: string; body: React.ReactNode }[] = [
+    { title: "Éditeur de la plateforme", body: <>La plateforme <strong>The Box</strong> est éditée, exploitée et gérée par la société <strong>PixUp</strong>, ci-après « l&apos;éditeur ». PixUp est responsable du fonctionnement du service ainsi que du traitement des données personnelles des utilisateurs.</> },
     { title: "Objet et présentation du service", body: <>La plateforme <strong>The Box</strong> est un service SaaS d&apos;animation tactique, de gestion d&apos;effectifs et de préparation de séances sportives destiné aux entraîneurs, éducateurs et clubs sportifs. L&apos;accès au service implique l&apos;acceptation pleine et entière des présentes CGU par l&apos;utilisateur.</> },
     { title: "Accès au service et création de compte", body: <>L&apos;accès aux fonctionnalités avancées nécessite la création d&apos;un compte utilisateur sécurisé. L&apos;utilisateur s&apos;engage à fournir des informations exactes et à préserver la confidentialité de ses identifiants de connexion. Toute action effectuée depuis son compte est présumée être réalisée par l&apos;utilisateur titulaire.</> },
-    { title: "Propriété intellectuelle", body: <>L&apos;ensemble de l&apos;application (interface, visuels, moteurs d&apos;animation, terrains vectoriels, codes sources et marques « The Box ») est la propriété exclusive de l&apos;éditeur. L&apos;utilisateur conserve la propriété intellectuelle de ses contenus créés (schémas tactiques, compositions et notes personnelles), mais concède à la plateforme une licence technique nécessaire au stockage et à la restitution du service.</> },
-    { title: "Protection des données personnelles (RGPD)", body: <>Conformément au Règlement Général sur la Protection des Données (RGPD), The Box s&apos;engage à protéger la vie privée des entraîneurs et de leurs effectifs. Les données collectées (nom, email, effectifs du club) sont uniquement utilisées pour l&apos;exécution du service et ne sont en aucun cas vendues ou cédées à des tiers. Vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression via support@thebox-tactique.com.</> },
-    { title: "Disponibilité et responsabilité", body: <>The Box met en œuvre tous les moyens raisonnables pour assurer un accès continu et fluide au service 24h/24 et 7j/7. Néanmoins, l&apos;accès peut être temporairement interrompu pour des raisons de maintenance technique ou de mise à jour des terrains. L&apos;éditeur ne saurait être tenu responsable des pertes indirectes liées à une interruption momentanée du réseau internet.</> },
-    { title: "Modification des CGU", body: <>L&apos;éditeur se réserve le droit de modifier les présentes CGU à tout moment afin de les adapter aux évolutions réglementaires et techniques. Les utilisateurs seront informés de toute modification majeure lors de leur connexion.</> },
+    { title: "Propriété intellectuelle", body: <>L&apos;ensemble de l&apos;application (interface, visuels, moteurs d&apos;animation, terrains vectoriels, codes sources et marques « The Box ») est la propriété exclusive de PixUp. L&apos;utilisateur conserve la propriété intellectuelle de ses contenus créés (schémas tactiques, compositions et notes personnelles), mais concède à la plateforme une licence technique nécessaire au stockage et à la restitution du service.</> },
+    { title: "Protection des données personnelles (RGPD)", body: <>Conformément au Règlement Général sur la Protection des Données (RGPD), PixUp, en tant que responsable du traitement, s&apos;engage à protéger la vie privée des entraîneurs et de leurs effectifs. Les données collectées (nom, email, effectifs du club) sont uniquement utilisées pour l&apos;exécution du service et ne sont en aucun cas vendues ou cédées à des tiers. Vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression via support@thebox-tactique.com.</> },
+    { title: "Disponibilité et responsabilité", body: <>The Box met en œuvre tous les moyens raisonnables pour assurer un accès continu et fluide au service 24h/24 et 7j/7. Néanmoins, l&apos;accès peut être temporairement interrompu pour des raisons de maintenance technique ou de mise à jour des terrains. PixUp ne saurait être tenue responsable des pertes indirectes liées à une interruption momentanée du réseau internet.</> },
+    { title: "Modification des CGU", body: <>PixUp se réserve le droit de modifier les présentes CGU à tout moment afin de les adapter aux évolutions réglementaires et techniques. Les utilisateurs seront informés de toute modification majeure lors de leur connexion.</> },
   ];
 
   const cgvSections: { title: string; body: React.ReactNode }[] = [
+    { title: "Éditeur de la plateforme", body: <>La plateforme <strong>The Box</strong> est éditée, exploitée et gérée par la société <strong>PixUp</strong>, ci-après « l&apos;éditeur ». Les abonnements payants sont conclus entre l&apos;utilisateur et PixUp, qui en assure la vente, l&apos;encaissement et la facturation.</> },
     {
       title: "Offres et tarifications",
       body: (
@@ -234,7 +236,7 @@ export default function LegalAndFaqModal({
         </>
       ),
     },
-    { title: "Période d'essai gratuite", body: <>Tout nouveau compte bénéficie automatiquement d&apos;une période d&apos;essai gratuite de 7 jours aux fonctionnalités de la formule PRO. À l&apos;issue des 7 jours, l&apos;utilisateur repasse automatiquement en Formule Gratuite sans aucuns frais prélevés si aucun abonnement payant n&apos;a été activé.</> },
+    { title: "Période d'essai gratuite", body: <>Tout nouveau compte bénéficie automatiquement d&apos;une période d&apos;essai gratuite de 14 jours à toutes les fonctionnalités de la formule PRO+ (y compris le Mode Live Match), sans carte bancaire. À l&apos;issue des 14 jours, l&apos;utilisateur repasse automatiquement en Formule Gratuite sans aucuns frais prélevés si aucun abonnement payant n&apos;a été activé.</> },
     { title: "Modalités de paiement", body: <>Les paiements s&apos;effectuent de manière mensuelle et récurrente par Carte Bancaire via une infrastructure de paiement hautement sécurisée et chiffrée. L&apos;abonnement est prélevé à la date anniversaire de la souscription.</> },
     { title: "Sans engagement & résiliation", body: <>Tous nos abonnements payants sont strictement <strong>sans engagement de durée</strong>. Vous pouvez mettre fin à votre renouvellement automatique à tout moment en un clic dans votre espace utilisateur. La résiliation prend effet à la fin de la période mensuelle en cours.</> },
     { title: "Droit de rétractation", body: <>Conformément aux dispositions de l&apos;article L.221-18 du Code de la Consommation, vous disposez d&apos;un délai de rétractation de 14 jours à compter de la souscription initiale pour annuler votre contrat et en demander le remboursement intégral en contactant support@thebox-tactique.com.</> },
@@ -453,13 +455,13 @@ export default function LegalAndFaqModal({
 
             {/* ---------- CGU ---------- */}
             {current.id === "cgu" && renderLegal(
-              "Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme web « The Box - Zone de décision tactique ».",
+              "Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme web « The Box - Zone de décision tactique », éditée par la société PixUp.",
               cguSections
             )}
 
             {/* ---------- CGV ---------- */}
             {current.id === "cgv" && renderLegal(
-              "Les présentes Conditions Générales de Vente (CGV) s'appliquent à toutes les souscriptions d'abonnements payants sur la plateforme The Box.",
+              "Les présentes Conditions Générales de Vente (CGV) s'appliquent à toutes les souscriptions d'abonnements payants sur la plateforme The Box, éditée et commercialisée par la société PixUp.",
               cgvSections
             )}
           </div>
