@@ -12,7 +12,8 @@ import {
   Download, 
   Sliders, 
   Layers, 
-  Play, 
+  Play,
+  Users,
   ArrowRight,
   Eye,
   Info
@@ -53,103 +54,116 @@ export default function OnboardingTutorialModal({
   const [dontShowAgain, setDontShowAgain] = useState(true);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const steps: InAppTourStep[] = [
+  const rawSteps: Omit<InAppTourStep, "id" | "badge">[] = [
     {
-      id: 1,
       targetId: "tour-top-header",
-      category: "En-Tête & Profil",
-      badge: "Étape 1/6 • Barre Supérieure",
+      category: "Barre Supérieure",
       icon: <Sparkles className="h-5 w-5 text-[#00E599]" />,
       title: `Bienvenue sur THE BOX, ${coachName} !`,
-      description: "Votre barre de commande supérieure regroupe votre identifiant coach, la sélection d'équipe et les accès aux fonctionnalités de votre compte.",
+      description: "La barre du haut regroupe votre formule, l'aide et l'accès à votre compte.",
       keyPoints: [
-        "Identifiant & Profil Coach : Visualisez votre statut et vos informations d'équipe",
-        "Espace Football : Préparez vos compositions et vos schémas de jeu",
-        "Bouton 🎓 Tuto Coach : Pour rouvrir ce guide interactif à tout moment"
+        "Badge de formule : Gratuite, essai PRO+ (14 jours) avec son compte à rebours, PRO ou PRO+",
+        "Votre profil (à droite) : guide d'utilisation, FAQ, support, configuration du profil et déconnexion",
+        "🎓 Tuto Coach : relancez ce tutoriel à tout moment"
       ],
-      proTip: "Cliquez sur votre profil en haut à droite pour accéder aux réglages ou changer de compte.",
+      proTip: "Vos équipes, matchs et schémas sont sauvegardés sur votre compte : retrouvez-les sur ordinateur, tablette ou smartphone.",
       preferredPlacement: "bottom"
     },
     {
-      id: 2,
-      targetId: "tour-drawing-tools",
-      category: "Boîte à Outils",
-      badge: "Étape 2/6 • Outils de Tracé",
-      icon: <PenTool className="h-5 w-5 text-blue-400" />,
-      title: "Boîte à Outils & Tracés Tactiques",
-      description: "La barre d'outils au-dessus du terrain rassemble tous vos instruments pour dessiner vos animations offensives et défensives.",
+      targetId: "tour-team-panel",
+      category: "Mon Équipe",
+      icon: <Users className="h-5 w-5 text-emerald-400" />,
+      title: "Votre Équipe & Votre Adversaire",
+      description: "Les panneaux « Mon Équipe » (à gauche) et « Mon Adversaire » (à droite) pilotent la composition de chaque camp.",
       keyPoints: [
-        "Flèche de course (↗️) et lignes de passes pointillées (--)",
-        "Dessin libre (✏️) et zones de pressing colorées",
-        "Palette de couleurs (vert fluo, rouge, bleu, blanc, jaune)"
+        "SCHÉMA : appliquez une formation en un clic (ex. 4-3-3, 4-4-2…)",
+        "Effectif : noms, numéros, postes, photos, titulaires et remplaçants",
+        "Rôles Tactiques : capitaine, tireurs de penalty, coups francs et corners",
+        "Dans leur camp / Effacer : regroupez ou retirez les joueurs du terrain"
       ],
-      proTip: "Le raccourci clavier Ctrl+Z ou le bouton Effacer vous permet d'effacer vos tracés sans toucher à vos joueurs.",
-      preferredPlacement: "bottom"
+      proTip: "L'effectif et les rôles de l'adversaire, ainsi que le bouton « + Adv », sont disponibles avec les formules PRO et PRO+.",
+      preferredPlacement: "right"
     },
     {
-      id: 3,
       targetId: "pitch-main-viewport",
       category: "Terrain Tactique",
-      badge: "Étape 3/6 • Le Terrain 2D",
       icon: <Layers className="h-5 w-5 text-emerald-400" />,
-      title: "Le Terrain Tactique & Pions Joueurs",
-      description: "Votre zone de travail principale. Manipulez vos joueurs avec fluidité pour préparer vos séances et compositions d'avant-match.",
+      title: "Le Terrain & les Joueurs",
+      description: "Votre zone de travail : placez vos joueurs, le ballon et vos tracés pour préparer séances et matchs.",
       keyPoints: [
-        "Glisser-déposer : Déplacez les pions librement sur la pelouse",
-        "Double-clic joueur : Modifiez son nom, son rôle ou son poste",
-        "Ballon déplaçable : Positionnez la balle sur les phases clés"
+        "Glisser-déposer : déplacez joueurs et ballon librement",
+        "Double-clic sur un joueur : modifiez son nom, son numéro, son poste ou sa photo",
+        "Football, basket, rugby et handball : terrain et formations adaptés au sport choisi"
       ],
-      proTip: "Vous pouvez alterner entre joueurs titulaires et adversaires pour travailler le bloc d'équipe.",
+      proTip: "Un remplaçant se fait entrer sur le terrain depuis la fiche du joueur ou depuis l'effectif.",
       preferredPlacement: "top"
     },
     {
-      id: 4,
-      targetId: "tour-pitch-controllers",
-      category: "Affichage & Zoom",
-      badge: "Étape 4/6 • Vues du Terrain",
-      icon: <Sliders className="h-5 w-5 text-cyan-400" />,
-      title: "Contrôles de Vue & Échelle",
-      description: "Adaptez l'affichage du terrain selon vos besoins tactiques et la taille de votre écran.",
+      targetId: "tour-drawing-tools",
+      category: "Outils de Dessin",
+      icon: <PenTool className="h-5 w-5 text-blue-400" />,
+      title: "Les Outils de Tracé",
+      description: "Au-dessus du terrain, dessinez vos consignes sans déplacer les joueurs.",
       keyPoints: [
-        "Terrain Complet / Demi-Terrain : Idéal pour travailler les coups de pied arrêtés",
-        "Zoom Terrain & Échelle Joueurs : Personnalisez la lisibilité",
-        "Mode Plein Écran (⛶) : Parfait pour les causeries vestiaire sur écran géant"
+        "Ligne pleine ou pointillée (un clic de plus pour basculer), Flèche, Zone rectangulaire et Dessin libre",
+        "Sélecteur : cliquez sur un tracé pour le supprimer ; Déplacer : faites glisser le terrain quand il est zoomé",
+        "Couleur et épaisseur du trait dans le groupe « TRAIT »",
+        "Corbeille : effacez tous les tracés d'un coup"
       ],
-      proTip: "Le mode Demi-Terrain offre un zoom parfait pour détailler les corners et coups francs aux abords de la surface.",
+      proTip: "Ctrl + Z (Cmd + Z sur Mac) annule le dernier tracé.",
       preferredPlacement: "bottom"
     },
     {
-      id: 5,
-      targetId: "tour-right-sidebar",
-      category: "Matchs & Notes",
-      badge: "Étape 5/6 • Panneau Latéral Droit",
-      icon: <Play className="h-5 w-5 text-amber-400" />,
-      title: "Gestion de Match, Notes & Causeries",
-      description: "Liez vos schémas à chaque match officiel, prenez vos notes tactiques écrites et enregistrez vos causeries vocales.",
+      targetId: "tour-pitch-controllers",
+      category: "Affichage",
+      icon: <Sliders className="h-5 w-5 text-cyan-400" />,
+      title: "Affichage & Zoom du Terrain",
+      description: "Adaptez la vue à ce que vous voulez montrer et à la taille de votre écran.",
       keyPoints: [
-        "🎙️ Enregistreur vocal : Consignez vos consignes orales en vestiaire",
-        "📝 Notes tactiques écrites : Saisissez vos consignes et observations de match",
-        "⏱️ Mode Live Match : Suivez le chronomètre, le score et les événements"
+        "Terrain complet ou demi-terrain, format paysage ou portrait",
+        "Joueurs en pastille, buste ou tête ; afficher ou masquer noms, adversaires et ballon",
+        "Échelle du terrain, taille des joueurs et mode plein écran"
       ],
-      proTip: "Vos schémas enregistrés sont classés par match pour les retrouver instantanément le week-end.",
+      proTip: "Le demi-terrain est idéal pour détailler corners et coups francs aux abords de la surface.",
+      preferredPlacement: "bottom"
+    },
+    {
+      targetId: "tour-right-sidebar",
+      category: "Schémas, Matchs & Notes",
+      icon: <Play className="h-5 w-5 text-amber-400" />,
+      title: "Schémas, Matchs & Mode Live",
+      description: "Le panneau de droite organise votre préparation match par match.",
+      keyPoints: [
+        "Équipe active (en haut du panneau) : changez d'équipe ou gérez plusieurs équipes (PRO)",
+        "Schémas : enregistrez vos compositions et animations, rattachées à un match (PRO)",
+        "Matchs : créez vos rencontres et retrouvez leurs schémas et notes (PRO)",
+        "Notes & causerie : consignes écrites, ou dictées à la voix (PRO)",
+        "⏱️ Mode Live Match : chrono par période, score, buteurs, cartons et remplacements (PRO+)"
+      ],
+      proTip: "En Live, double-cliquez sur un joueur puis utilisez B (but), P (passe), J (jaune) ou R (rouge).",
       preferredPlacement: "left"
     },
     {
-      id: 6,
       targetId: "tour-export-actions",
       category: "Export & Partage",
-      badge: "Étape 6/6 • Export HD",
       icon: <Download className="h-5 w-5 text-[#00E599]" />,
-      title: "Export PNG Haute Définition & Partage",
-      description: "Une fois votre stratégie prête, exportez-la en image nette pour l'envoyer à vos joueurs ou l'imprimer.",
+      title: "Export HD & Partage",
+      description: "Votre plan de jeu est prêt ? Diffusez-le à vos joueurs et à votre staff.",
       keyPoints: [
-        "Export PNG HD : Image nette du terrain avec les tracés et joueurs",
-        "Partage direct : Envoyez le plan de jeu par messagerie ou WhatsApp"
+        "Export PNG HD : image nette du terrain, des joueurs et des tracés",
+        "Vue Carte 3D : présentation de l'équipe en cartes ou en têtes, paysage ou portrait",
+        "Partage d'un schéma enregistré : image, GIF ou vidéo d'animation, WhatsApp et e-mail (PRO)"
       ],
-      proTip: "Bravo Coach ! Vous maîtrisez désormais l'essentiel de THE BOX. À vous de jouer sur le terrain !",
+      proTip: "Bravo Coach ! Retrouvez le détail de chaque fonction dans le Guide d'Utilisation, depuis votre profil.",
       preferredPlacement: "right"
     }
   ];
+
+  const steps: InAppTourStep[] = rawSteps.map((step, idx) => ({
+    ...step,
+    id: idx + 1,
+    badge: `Étape ${idx + 1}/${rawSteps.length} • ${step.category}`,
+  }));
 
   const current = steps[currentStep];
 

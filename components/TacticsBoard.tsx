@@ -8152,6 +8152,7 @@ export default function TacticsBoard({
   const renderTeamAPanel = (isFullscreenMode: boolean = false) => {
     return (
       <div
+        id={isFullscreenMode ? undefined : "tour-team-panel"}
         className={`${isFullscreenMode
           ? `relative shrink-0 flex flex-col justify-start z-30 transition-all duration-200 ${isTeamAPanelCollapsed
             ? "w-9 xl:w-10 p-1.5"

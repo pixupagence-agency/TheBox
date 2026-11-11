@@ -19,81 +19,91 @@ export interface GuideSectionItem {
 export const GUIDE_STORAGE_KEY = "thebox_guide_sections";
 export const GUIDE_UPDATED_EVENT = "thebox_guide_updated";
 
+// Version du contenu par défaut : à incrémenter à chaque refonte du guide pour remplacer
+// les anciennes copies enregistrées dans le navigateur.
+export const GUIDE_CONTENT_VERSION = "2026-11-guide-v2";
+const GUIDE_VERSION_KEY = "thebox_guide_version";
+
 export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
   {
     id: "section-1",
     number: "01",
-    title: "Vue d'ensemble & Prise en main",
+    title: "Prise en main & Compte Coach",
     iconName: "compass",
-    summary: "Découverte de l'interface, du profil coach et de la navigation.",
+    summary: "Création du compte, connexion, barre supérieure et installation sur mobile.",
     badge: "Essentiel",
     videoUrl: "/images/guide/parcours-coach-tactique.webp",
     content: [
       {
-        subtitle: "1.1 Inscription & Connexion Coach",
+        subtitle: "1.1 Créer son compte & se connecter",
         paragraphs: [
-          "TheBox est un tableau blanc tactique 2D de référence conçu pour les entraîneurs, préparateurs et éducateurs sportifs. Il vous permet de modéliser vos séances, préparer vos matchs et transmettre vos plans de jeu avec clarté.",
-          "Pour accéder au tableau tactique, deux possibilités s'offrent à vous depuis la page d'accueil :",
-          "1. Création d'un Compte Coach : Cliquez sur le bouton vert « Créer un Compte Coach » pour ouvrir le formulaire rapide.",
-          "2. Connexion rapide : Connectez-vous avec votre adresse Google ou vos identifiants e-mail existants."
+          "TheBox est un tableau tactique 2D pour les entraîneurs de football, basket, rugby et handball : préparez vos séances et vos matchs, gérez vos équipes et suivez vos rencontres en direct.",
+          "Depuis la page d'accueil, cliquez sur « Créer un Compte » ou « Se Connecter »."
         ],
         bullets: [
-          "Prénom & Nom : Personnalisez votre profil d'entraîneur.",
-          "Club / Structure : Indiquez le nom officiel de votre club (ex: FC TheBox).",
-          "Sport Principal : Le Football est disponible immédiatement par défaut en configuration officielle (11v11, 8v8, 5v5).",
-          "Période d'essai offerte : Tout nouveau compte bénéficie automatiquement d'une période d'essai pour tester l'ensemble des fonctionnalités avancées."
+          "Création de compte : prénom, nom, club, fonction, sport principal, adresse e-mail et mot de passe (6 caractères minimum).",
+          "Connexion avec Google : un clic sur le bouton Google, sans mot de passe à retenir.",
+          "Mot de passe oublié : dans la fenêtre de connexion, cliquez sur « Mot de passe oublié ? » pour recevoir un lien de réinitialisation par e-mail.",
+          "E-mail de bienvenue : envoyé automatiquement à la création du compte.",
+          "Essai offert : chaque nouveau compte dispose de 14 jours d'accès complet à la formule PRO+, sans carte bancaire."
         ],
-        tip: "L'inscription rapide prend moins de 30 secondes et active instantanément l'ensemble de votre tableau tactique."
+        tip: "Votre compte est le même sur tous vos appareils : connectez-vous sur ordinateur, tablette ou smartphone pour retrouver vos équipes, matchs et schémas."
       },
       {
-        subtitle: "1.2 La Barre Supérieure (Header & Navigation)",
+        subtitle: "1.2 La barre supérieure",
         paragraphs: [
-          "Une fois connecté au tableau tactique, la barre supérieure concentre les commandes essentielles de pilotage et d'accès rapide :"
+          "Une fois connecté, la barre du haut donne accès à votre formule, à l'aide et à votre compte :"
         ],
         bullets: [
-          "Identité Coach & Menu Utilisateur : Affiche votre nom, votre statut (Coach Principal) et le blason de votre club. En cliquant dessus, vous ouvrez le Menu Utilisateur qui donne accès au Guide d'Utilisation, au profil coach, au tutoriel interactif, au changement de thème et de langue.",
-          "Sport Actif : Badge indiquant la discipline active (Football 11).",
-          "Statut d'Abonnement : Indique votre formule en cours (Essai gratuit, Formule PRO ou PRO+). Un compte à rebours vous informe des jours restants.",
-          "🎓 Tuto Coach : Bouton interactif permettant de relancer à tout moment le tutoriel guidé en 6 étapes sur le terrain.",
-          "Langue & Aide : Bascule rapide entre Français (FR) et Anglais (EN), et accès direct à la FAQ et au support."
+          "Badge de formule : Gratuite, Essai PRO+ (avec le compte à rebours des jours restants), PRO ou PRO+. Un clic ouvre les offres.",
+          "🎓 Tuto Coach : relance la visite guidée de l'interface en 7 étapes.",
+          "Installer l'application : ajoute TheBox sur votre ordinateur ou votre écran d'accueil.",
+          "Votre profil (en haut à droite) : ouvre le menu utilisateur avec le Tutoriel, le Guide d'Utilisation, la FAQ, le contact du Support, la Configuration Profil & Sport et la Déconnexion."
         ],
-        tip: "Accès au Guide Utilisateur dans l'application : Cliquez sur votre Profil Coach (en haut à droite de l'écran) pour dérouler le Menu Utilisateur. Vous y trouverez l'entrée « Guide d'Utilisation » pour consulter à tout moment l'aide détaillée sans quitter votre tableau tactique."
+        tip: "Configuration Profil & Sport : modifiez vos informations, la langue (français / anglais), le thème clair ou sombre, votre sport et votre abonnement."
       },
       {
-        subtitle: "1.3 Installation sur Mobile & Tablette (PWA)",
+        subtitle: "1.3 Installation sur mobile & tablette",
         paragraphs: [
-          "TheBox est une Progressive Web App (PWA) entièrement optimisée pour le bord du terrain, les bancs de touche et les causeries de vestiaire :",
-          "L'application s'ouvre alors en mode plein écran sans barre d'adresse de navigateur, prête pour vos séances et vos matchs."
+          "TheBox s'installe comme une application, sans passer par un magasin d'applications. Elle s'ouvre ensuite en plein écran, sans barre d'adresse."
         ],
         bullets: [
-          "Sur iPad / iPhone (Safari) : Appuyez sur l'icône de partage ⎋ puis sur « Sur l'écran d'accueil ».",
-          "Sur Android (Chrome) : Appuyez sur le menu (⋮) puis sur « Installer l'application ».",
-          "Sur PC / Mac (Chrome / Edge) : Cliquez sur le bouton « Installer l'application » disponible directement dans la barre d'outils."
-        ],
-        tip: "Une fois installée sur votre écran d'accueil, TheBox démarre instantanément en plein écran et reste ultra fluide même avec un réseau faible au bord du terrain."
+          "iPad / iPhone (Safari) : bouton de partage ⎋ puis « Sur l'écran d'accueil ».",
+          "Android (Chrome) : menu ⋮ puis « Installer l'application ».",
+          "Ordinateur (Chrome / Edge) : bouton « Installer l'application » dans la barre supérieure."
+        ]
       }
     ]
   },
   {
     id: "section-2",
     number: "02",
-    title: "Le Terrain Tactique & Pions Joueurs",
-    iconName: "layers",
-    summary: "Manipulation des joueurs sur la pelouse, personnalisation et rôles.",
-    badge: "Terrain",
+    title: "Mon Équipe, Mon Adversaire & Effectifs",
+    iconName: "users",
+    summary: "Formations, effectifs, gestion de plusieurs équipes et passerelle entre équipes.",
+    badge: "Équipes",
     videoUrl: "/images/guide/capture-terrain-et-outils.webp",
     content: [
       {
-        subtitle: "Positionnement & Glisser-déposer",
+        subtitle: "Les panneaux d'équipe",
         paragraphs: [
-          "Déplacez librement vos 11 titulaires et les adversaires par simple glisser-déposer sur le terrain officiel de Football.",
-          "Le ballon est également déplaçable à volonté pour situer les actions clés."
+          "De part et d'autre du terrain, le panneau « Mon Équipe » (à gauche) et le panneau « Mon Adversaire » (à droite) pilotent chaque camp. Chaque panneau peut être réduit pour agrandir le terrain."
         ],
         bullets: [
-          "Équipe A (Domicile) : Vos joueurs titulaires et remplaçants.",
-          "Équipe B (Adversaires) : Pions dédiés pour simuler le bloc ou le pressing adverse.",
-          "Double-clic joueur : Ouvrez la fiche individuelle pour modifier son nom, numéro, poste ou photo.",
-          "États de forme : Gérez les statuts (En forme, Fatigué, Blessé, Cartons 🟨 / 🟥)."
+          "SCHÉMA : appliquez une formation en un clic (ex. 4-3-3, 4-4-2, 4-2-3-1 au football ; formations adaptées en basket, rugby et handball).",
+          "Effectif : gérez les noms, numéros de maillot, postes et photos, les titulaires et les remplaçants.",
+          "Rôles Tactiques : désignez capitaine et tireurs (voir la section « Rôles Tactiques »).",
+          "Dans leur camp : regroupe les joueurs dans leur moitié de terrain.",
+          "Effacer 🗑️ : retire les joueurs de ce camp du terrain.",
+          "+ Adv (panneau adverse) : ajoute un joueur dans l'équipe adverse."
+        ],
+        tip: "La gestion de l'effectif et des rôles de l'adversaire est disponible avec les formules PRO et PRO+."
+      },
+      {
+        subtitle: "Plusieurs équipes (PRO & PRO+)",
+        paragraphs: [
+          "En haut du panneau de droite, le sélecteur d'équipe permet de passer d'une équipe à l'autre (ex. Séniors, U17, Féminines) et d'en créer de nouvelles avec leur nom et leur catégorie. Chaque équipe a son propre effectif.",
+          "La passerelle inter-équipes permet d'échanger un joueur entre deux de vos équipes."
         ]
       }
     ]
@@ -101,73 +111,76 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
   {
     id: "section-3",
     number: "03",
-    title: "Boîte à Outils & Tracés Tactiques",
-    iconName: "pentool",
-    summary: "Flèches de course, passes, dessin libre et zones géométriques.",
-    badge: "Dessin",
+    title: "Le Terrain & les Joueurs",
+    iconName: "layers",
+    summary: "Déplacement des joueurs et du ballon, fiche joueur, remplacements et sports disponibles.",
+    badge: "Terrain",
     videoUrl: "/images/guide/capture-terrain-et-outils.webp",
     content: [
       {
-        subtitle: "Les instruments de schématisation",
+        subtitle: "Manipuler les joueurs",
         paragraphs: [
-          "La barre latérale gauche rassemble l'ensemble des tracés conventionnels pour expliquer vos consignes à l'équipe."
+          "Le terrain s'adapte au sport choisi (football, basket, rugby, handball) avec ses dimensions et ses formations.",
+          "Le football est disponible par défaut ; les autres sports sont ouverts par l'administrateur de la plateforme."
         ],
         bullets: [
-          "Flèche de course (↗️) : Déplacement sans ballon, appel en profondeur, dédoublement.",
-          "Flèche de passe (➔ pointillés) : Transmission au sol ou passe lobée.",
-          "Course incurvée (⤴️) : Appel courbé pour déjouer le piège du hors-jeu.",
-          "Dessin libre (✏️) : Annotations spontanées et tracés à main levée.",
-          "Formes (⭕ / ⬛) : Cadrage du porteur, zones de surnombre ou de pressing.",
-          "Gomme & Effacer : Effacez un tracé précis ou remettez à zéro la pelouse en 1 clic."
-        ],
-        tip: "Utilisez le raccourci Ctrl + Z pour annuler instantanément votre dernier tracé sans toucher aux joueurs."
+          "Glisser-déposer : déplacez joueurs et ballon à la souris ou au doigt.",
+          "Double-clic sur un joueur : ouvre sa fiche pour modifier son nom, son numéro, son poste ou sa photo.",
+          "État de forme : excellente forme, en forme, fatigué, blessé ou suspendu, affiché sur le joueur.",
+          "Remplacement : faites entrer un remplaçant du banc à la place d'un joueur du terrain."
+        ]
       }
     ]
   },
   {
     id: "section-4",
     number: "04",
-    title: "Coups de Pied Arrêtés (CPA) & Rôles Spécifiques",
-    iconName: "award",
-    summary: "Désignation des spécialistes pour les phases arrêtées décisives.",
-    badge: "CPA",
+    title: "Les Outils de Tracé",
+    iconName: "pentool",
+    summary: "Lignes, flèches, zones, dessin libre, couleurs et suppression des tracés.",
+    badge: "Dessin",
     videoUrl: "/images/guide/capture-terrain-et-outils.webp",
     content: [
       {
-        subtitle: "Attribution des tireurs",
+        subtitle: "La barre d'outils au-dessus du terrain",
         paragraphs: [
-          "Attribuez clairement les responsabilités avant le coup d'envoi pour éviter toute hésitation sur le terrain."
+          "Les tracés se dessinent par-dessus le terrain, sans déplacer les joueurs."
         ],
         bullets: [
-          "👑 Capitaine d'équipe",
-          "⚽ Tireur de Penalty officiel (11 mètres)",
-          "⚡ Coup Franc Direct (axe des 20-25m)",
-          "↪️ / ↩️ Coups Francs Excentrés Gauche & Droit",
-          "🚩 Corners Gauche & Droit"
+          "Ligne : ligne pleine ; un nouveau clic sur le bouton la transforme en ligne pointillée (et inversement).",
+          "Flèche : déplacement, course ou passe.",
+          "Zone : rectangle pour matérialiser une zone de pressing, de surnombre ou de couverture.",
+          "Dessin libre (pinceau) : annotations à main levée.",
+          "Sélecteur : cliquez sur un tracé pour le sélectionner puis le supprimer.",
+          "Déplacer : faites glisser le terrain lorsqu'il est zoomé.",
+          "TRAIT : couleur et épaisseur (fin, moyen, épais) du prochain tracé.",
+          "Corbeille : efface tous les tracés d'un coup."
         ],
-        tip: "Ces rôles sont automatiquement répercutés dans la fiche de match et lors de l'export de votre causerie."
+        tip: "Ctrl + Z (Cmd + Z sur Mac) annule le dernier tracé."
       }
     ]
   },
   {
     id: "section-5",
     number: "05",
-    title: "Contrôle de Vue, Zoom & Formats",
+    title: "Affichage & Zoom",
     iconName: "sliders",
-    summary: "Terrain complet, demi-terrain et adaptation aux écrans de vestiaire.",
+    summary: "Terrain complet ou demi-terrain, format, représentation des joueurs et plein écran.",
     badge: "Vue",
     videoUrl: "/images/guide/session-complete-navigation.webp",
     content: [
       {
-        subtitle: "Adapter la vue tactique",
+        subtitle: "Adapter la vue",
         paragraphs: [
-          "Basculez entre le terrain complet et la vue demi-terrain (Half-pitch) pour zoomer sur les phases offensives ou défensives.",
-          "Ajustez la taille des joueurs et l'échelle du terrain selon votre appareil."
+          "Les réglages d'affichage se trouvent dans la barre au-dessus du terrain. Quand la place manque, certains groupes passent dans le menu chevron (»)."
         ],
         bullets: [
-          "Mode Demi-terrain : Idéal pour travailler les sorties de balle ou les combinaisons de surface.",
-          "Mode Plein écran (⛶) : Supprime les barres de menus pour vos projections de vestiaire.",
-          "Bascule portrait / paysage : Adapté aux smartphones et tablettes."
+          "Terrain complet ou Demi-terrain : idéal pour détailler corners, coups francs et attaques placées.",
+          "Format Paysage ou Portrait : selon l'orientation de votre écran.",
+          "Représentation des joueurs : Pastille, Buste ou Tête.",
+          "Afficher / masquer : noms des joueurs (pour ne garder que les numéros), adversaires et ballon.",
+          "Échelle du terrain et taille des joueurs : boutons + / −, et retour à 100 %.",
+          "Plein écran : pour les causeries sur grand écran ; touche Échap pour en sortir."
         ]
       }
     ]
@@ -175,70 +188,72 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
   {
     id: "section-6",
     number: "06",
-    title: "Animation & Séquençage de Jeu",
+    title: "Animations de Phases de Jeu",
     iconName: "play",
-    summary: "Création d'animations fluides étape par étape pour décortiquer une action.",
-    badge: "Vidéo",
+    summary: "Création d'animations étape par étape, lecture et vitesse.",
+    badge: "Animation",
     videoUrl: "/images/guide/session-complete-navigation.webp",
     content: [
       {
-        subtitle: "Animer vos combinaisons",
+        subtitle: "Animer une combinaison",
         paragraphs: [
-          "Créez des animations multi-étapes pour montrer la trajectoire exacte du ballon et des joueurs."
+          "Le créateur d'animation enchaîne plusieurs positions du terrain pour montrer le déroulement d'une action."
         ],
         bullets: [
-          "Étape 1 : Placez les joueurs dans leur disposition initiale.",
-          "Étape 2 (+) : Déplacez les joueurs vers leur point de chute.",
-          "Lecture (▶ Play) : Visualisez le mouvement synchronisé en temps réel.",
-          "Vitesse réglable : Ralentissez la vitesse pour commenter le timing des courses."
-        ]
+          "Étape 1 : placez les joueurs et le ballon dans leur position de départ.",
+          "Nouvelle étape (+) : déplacez les joueurs vers leur position suivante. Répétez pour chaque temps de l'action.",
+          "Lecture ▶ / Pause : les joueurs se déplacent d'une étape à l'autre.",
+          "Vitesse : de 0,5 à 2 secondes par étape, pour commenter le timing des courses.",
+          "Supprimer une étape ou réinitialiser toute l'animation.",
+          "Enregistrer l'animation : elle rejoint vos schémas et peut être partagée en GIF ou en vidéo (PRO)."
+        ],
+        tip: "Le créateur d'animation n'est pas disponible pendant le Mode Live Match."
       }
     ]
   },
   {
     id: "section-7",
     number: "07",
-    title: "Gestion de l'Effectif & Causerie Vocale",
-    iconName: "users",
-    summary: "Compositions, bloc-notes et enregistreur vocal d'avant-match.",
-    badge: "Effectif",
-    videoUrl: "/images/guide/session-complete-navigation.webp",
+    title: "Rôles Tactiques & Coups de Pied Arrêtés",
+    iconName: "award",
+    summary: "Désignation du capitaine et des tireurs pour chaque équipe.",
+    badge: "Rôles",
+    videoUrl: "/images/guide/capture-terrain-et-outils.webp",
     content: [
       {
-        subtitle: "Préparation d'avant-match",
+        subtitle: "Désigner les spécialistes",
         paragraphs: [
-          "Le panneau latéral droit est votre carnet de préparation officiel :",
-          "Consignez la liste des 11 titulaires et des remplaçants pour chaque rencontre."
+          "Depuis le bouton « Rôles Tactiques » d'un panneau d'équipe, attribuez les responsabilités avant le coup d'envoi. Les rôles sont enregistrés pour chaque match."
         ],
         bullets: [
-          "🎙️ Enregistreur vocal de causerie : Enregistrez vos consignes orales directement rattachées au schéma.",
-          "📝 Bloc-notes tactique : Notez les points faibles de l'adversaire et les déclencheurs de pressing.",
-          "Remplaçants : Préparez les options tactiques du banc de touche."
-        ]
+          "👑 Capitaine",
+          "⚽ Tireur de penalty",
+          "⚡ Tireurs de coups francs",
+          "🚩 Tireurs de corners"
+        ],
+        tip: "Les rôles apparaissent sous forme de badges sur les joueurs du terrain. Les rôles de l'adversaire sont disponibles avec les formules PRO et PRO+."
       }
     ]
   },
   {
     id: "section-8",
     number: "08",
-    title: "Mode Live Match & Banc Connecté",
-    iconName: "timer",
-    summary: "Chronomètre officiel, saisie du score, événements et changements en direct.",
-    badge: "PRO+",
+    title: "Schémas, Matchs & Notes",
+    iconName: "sparkles",
+    summary: "Enregistrement des schémas, préparation match par match, notes et dictée vocale.",
+    badge: "Préparation",
     videoUrl: "/images/guide/session-complete-navigation.webp",
     content: [
       {
-        subtitle: "Le banc de touche connecté",
+        subtitle: "Le panneau de droite",
         paragraphs: [
-          "Le Mode Live Match transforme votre écran en console de bord du terrain pour suivre la rencontre en direct."
+          "Le panneau de droite (bouton « SCHÉMAS & MATCHS ») organise votre préparation. Sa largeur se règle en faisant glisser son bord."
         ],
         bullets: [
-          "⏱️ Chronomètre officiel : Start / Pause / Reset et périodes (1MT, PAUSE, 2MT, FIN).",
-          "📊 Tableau d'affichage : Saisie en direct du score (Domicile vs Extérieur).",
-          "⚽ Buts & Passes : Attribution du buteur et du passeur décisif.",
-          "🟨 / 🟥 Cartons & Discipline : Avertissements et expulsions avec impact visuel sur le terrain.",
-          "🔄 Remplacements : Horodatage automatique de la minute du match (sortant / entrant).",
-          "🏁 Terminer le match : Clôture officielle et sauvegarde des statistiques."
+          "Schémas (PRO) : enregistrez la composition et les tracés du terrain, ou une animation, rattachés à un match. Un clic recharge le schéma sur le terrain.",
+          "Matchs (PRO) : créez vos rencontres (équipe, adversaire, date) et retrouvez pour chacune ses schémas, ses notes et son score.",
+          "Notes & causerie : saisissez vos consignes et observations, enregistrées pour chaque match.",
+          "Dictée vocale (PRO) : parlez, vos consignes s'écrivent dans les notes (navigateurs compatibles : Chrome, Edge, Safari)."
         ]
       }
     ]
@@ -246,39 +261,62 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
   {
     id: "section-9",
     number: "09",
-    title: "Sauvegarde Cloud & Bibliothèque",
-    iconName: "cloud",
-    summary: "Persistance sécurisée Firebase et organisation par thématiques de séance.",
-    badge: "Cloud",
+    title: "Mode Live Match",
+    iconName: "timer",
+    summary: "Chronomètre par période, score, buteurs, cartons, remplacements et bilan du match.",
+    badge: "PRO+",
     videoUrl: "/images/guide/session-complete-navigation.webp",
     content: [
       {
-        subtitle: "Conserver vos créations tactiques",
+        subtitle: "Le chronomètre et les périodes",
         paragraphs: [
-          "Toutes vos stratégies sont sauvegardées sur votre compte cloud sécurisé.",
-          "Classez vos schémas dans la Bibliothèque de Stratégies par catégories (Attaque, Défense, CPA, Entraînements) pour les charger en un clic."
+          "Le Mode Live Match (formule PRO+) transforme votre écran en console de bord du terrain. Les périodes dépendent du sport :"
+        ],
+        bullets: [
+          "Football : 2 mi-temps de 45 minutes (1MT · PAUSE · 2MT).",
+          "Rugby : 2 mi-temps de 40 minutes.",
+          "Handball : 2 mi-temps de 30 minutes.",
+          "Basket : 4 quart-temps de 20 minutes (QT1 · QT2 · PAUSE · QT3 · QT4).",
+          "START / PAUSE / 🔄 : lancez, figez ou remettez à zéro le chrono. Au-delà du temps réglementaire, il passe en rouge (temps additionnel).",
+          "PAUSE (mi-temps) : lance un compte à rebours de 15 minutes avant la reprise."
         ]
+      },
+      {
+        subtitle: "Les actions de match",
+        paragraphs: [
+          "Double-cliquez sur un joueur pour ouvrir ses actions de match :"
+        ],
+        bullets: [
+          "But et passe décisive (au rugby : essai +5, transformation +2, drop +3 ; au basket : 3 points, 2 points, lancer franc).",
+          "Carton jaune (le 2e entraîne l'exclusion) et carton rouge.",
+          "Blessure et remplacement : choisissez le remplaçant qui entre ; la minute est enregistrée.",
+          "Fil des événements : historique de toutes les actions, avec suppression en cas d'erreur.",
+          "Terminer le match : fige le score et ouvre le bilan, exportable en image ou partageable sur WhatsApp."
+        ],
+        tip: "Raccourcis quand les actions d'un joueur sont ouvertes : B (but), P (passe), J (carton jaune), R (carton rouge), Échap (fermer)."
       }
     ]
   },
   {
     id: "section-10",
     number: "10",
-    title: "Export Haute Définition & Partage",
+    title: "Export & Partage",
     iconName: "download",
-    summary: "Export PNG haute résolution, diffusion WhatsApp et envoi par email.",
+    summary: "Image PNG HD, vue Carte 3D, partage WhatsApp et e-mail.",
     badge: "Partage",
     videoUrl: "/images/guide/session-complete-navigation.webp",
     content: [
       {
         subtitle: "Diffuser vos plans de jeu",
         paragraphs: [
-          "Exportez vos schémas en image nette et soignée pour vos joueurs et votre staff technique."
+          "Le groupe EXPORT de la barre d'outils et le partage des schémas enregistrés permettent d'envoyer vos consignes à vos joueurs et à votre staff."
         ],
         bullets: [
-          "Export PNG HD : Image nette du terrain avec les tracés et le logo du club.",
-          "Partage WhatsApp / Messagerie : Diffusion directe dans le groupe de discussion de l'équipe.",
-          "Envoi d'email automatique : Transmission instantanée sur la boîte mail des joueurs."
+          "Export PNG HD : image nette du terrain avec les joueurs et les tracés.",
+          "Vue Carte 3D : présentation de votre équipe en cartes (thèmes Or, Onyx, Argent, Émeraude) ou en têtes, au format paysage ou portrait, avec réglage de la taille du terrain et des joueurs.",
+          "Partage d'un schéma (PRO) : image, ou GIF et vidéo pour une animation.",
+          "WhatsApp : envoi direct dans le groupe de l'équipe.",
+          "E-mail : envoi du schéma à l'adresse de votre choix depuis l'application."
         ]
       }
     ]
@@ -286,26 +324,80 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
   {
     id: "section-11",
     number: "11",
-    title: "Raccourcis Clavier & Astuces Pro",
+    title: "Sauvegarde en Ligne",
+    iconName: "cloud",
+    summary: "Sauvegarde automatique de vos données et accès depuis tous vos appareils.",
+    badge: "Cloud",
+    videoUrl: "/images/guide/session-complete-navigation.webp",
+    content: [
+      {
+        subtitle: "Vos données vous suivent",
+        paragraphs: [
+          "Tout ce que vous créez est sauvegardé automatiquement sur votre compte, sans bouton à presser."
+        ],
+        bullets: [
+          "Données sauvegardées : équipes, effectifs, matchs, notes, rôles, remplaçants, événements et score des matchs, positions du terrain et schémas enregistrés.",
+          "Multi-appareils : connectez-vous sur un autre appareil pour tout retrouver.",
+          "Sans connexion internet : l'application continue de fonctionner ; vos modifications sont envoyées dès que la connexion revient.",
+          "Déconnexion : les dernières modifications sont envoyées avant la fermeture de la session."
+        ],
+        tip: "Sur un appareil partagé, chaque coach retrouve uniquement ses propres données après connexion à son compte."
+      }
+    ]
+  },
+  {
+    id: "section-12",
+    number: "12",
+    title: "Formules & Abonnement",
+    iconName: "shield",
+    summary: "Ce que comprend chaque formule, essai, facturation et résiliation.",
+    badge: "Abonnement",
+    videoUrl: "/images/guide/session-complete-navigation.webp",
+    content: [
+      {
+        subtitle: "Les formules",
+        paragraphs: [
+          "Les abonnements sont mensuels et sans engagement."
+        ],
+        bullets: [
+          "Gratuite : tableau tactique, outils de tracé, effectif de votre équipe, animations, export PNG et vue Carte 3D.",
+          "PRO : en plus, plusieurs équipes, création de matchs, enregistrement et partage des schémas, effectif et rôles de l'adversaire, dictée vocale.",
+          "PRO+ : toutes les fonctions PRO et le Mode Live Match.",
+          "Essai : 14 jours de PRO+ offerts à la création du compte, puis passage automatique en Gratuite."
+        ]
+      },
+      {
+        subtitle: "Facturation & résiliation",
+        paragraphs: [
+          "Le paiement est sécurisé par Stripe. Votre facture mensuelle vous est envoyée par e-mail à chaque prélèvement."
+        ],
+        bullets: [
+          "Portail Stripe : depuis votre espace Abonnement, consultez vos factures et modifiez votre moyen de paiement.",
+          "Résiliation : « Se désabonner » arrête les prélèvements. Vous gardez votre formule jusqu'à la fin du mois déjà payé, puis votre compte repasse en Gratuite. Un e-mail de confirmation vous est envoyé.",
+          "Vos données (équipes, matchs, schémas) sont conservées après la résiliation."
+        ]
+      }
+    ]
+  },
+  {
+    id: "section-13",
+    number: "13",
+    title: "Raccourcis Clavier",
     iconName: "keyboard",
-    summary: "Les raccourcis pour manipuler le tableau blanc à la vitesse de l'éclair.",
+    summary: "Les raccourcis disponibles dans l'application.",
     badge: "Astuces",
     videoUrl: "/images/guide/session-complete-navigation.webp",
     content: [
       {
-        subtitle: "Raccourcis clavier indispensables",
+        subtitle: "Raccourcis disponibles",
         paragraphs: [
-          "Gagnez un temps précieux lors de vos séances d'analyse tactique :"
+          "Quelques touches pour aller plus vite :"
         ],
         bullets: [
-          "Ctrl + Z : Annuler le dernier tracé.",
-          "Ctrl + Y : Rétablir le dernier tracé.",
-          "F : Basculer en mode Plein Écran vestiaire.",
-          "Échap (Escape) : Désélectionner l'outil de dessin actif.",
-          "Touche B : Ajouter un but en mode Live.",
-          "Touche P : Ajouter une passe décisive en mode Live.",
-          "Touche J : Attribuer un carton jaune en mode Live.",
-          "Touche R : Attribuer un carton rouge en mode Live."
+          "Ctrl + Z (Cmd + Z sur Mac) : annuler le dernier tracé.",
+          "Échap : quitter le plein écran, fermer une fenêtre ou les actions d'un joueur.",
+          "Mode Live, actions d'un joueur ouvertes : B (but), P (passe décisive), J (carton jaune), R (carton rouge).",
+          "Tuto Coach : flèches ← / → pour passer d'une étape à l'autre."
         ]
       }
     ]
@@ -320,25 +412,16 @@ export function loadGuideSections(): GuideSectionItem[] {
     return DEFAULT_GUIDE_SECTIONS;
   }
   try {
+    // Copie enregistrée avec une ancienne version du guide : remplacée par le contenu à jour
+    if (localStorage.getItem(GUIDE_VERSION_KEY) !== GUIDE_CONTENT_VERSION) {
+      localStorage.removeItem(GUIDE_STORAGE_KEY);
+      localStorage.setItem(GUIDE_VERSION_KEY, GUIDE_CONTENT_VERSION);
+      return DEFAULT_GUIDE_SECTIONS;
+    }
     const raw = localStorage.getItem(GUIDE_STORAGE_KEY);
     if (!raw) return DEFAULT_GUIDE_SECTIONS;
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      // Auto-migrate section-1 if it is still using the single-block legacy draft
-      const sec1Index = parsed.findIndex((s: GuideSectionItem) => s.id === "section-1");
-      if (sec1Index !== -1 && (!parsed[sec1Index].content || parsed[sec1Index].content.length < 3)) {
-        parsed[sec1Index] = {
-          ...parsed[sec1Index],
-          summary: DEFAULT_GUIDE_SECTIONS[0].summary,
-          videoUrl: parsed[sec1Index].videoUrl || DEFAULT_GUIDE_SECTIONS[0].videoUrl,
-          content: DEFAULT_GUIDE_SECTIONS[0].content
-        };
-        try {
-          localStorage.setItem(GUIDE_STORAGE_KEY, JSON.stringify(parsed));
-        } catch {
-          // ignore storage quota errors
-        }
-      }
       return parsed;
     }
   } catch (err) {
@@ -354,6 +437,7 @@ export function saveGuideSections(sections: GuideSectionItem[]): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(GUIDE_STORAGE_KEY, JSON.stringify(sections));
+    localStorage.setItem(GUIDE_VERSION_KEY, GUIDE_CONTENT_VERSION);
     window.dispatchEvent(new CustomEvent(GUIDE_UPDATED_EVENT, { detail: sections }));
   } catch (err) {
     console.error("Failed to save guide sections to localStorage:", err);

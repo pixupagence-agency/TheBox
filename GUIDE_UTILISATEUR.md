@@ -1,278 +1,243 @@
-# 📖 Guide Utilisateur - TheBox (Plateforme Tactique & Coaching)
+# 📖 Guide Utilisateur - TheBox
 
-Bienvenue sur le guide d'utilisation officiel de **TheBox**. Ce document récapitule les grandes fonctionnalités de l'application afin de vous permettre de créer, animer et partager vos schémas tactiques en toute simplicité.
+Bienvenue sur le guide d'utilisation de **TheBox**, le tableau tactique 2D pour les entraîneurs de football, basket, rugby et handball. Ce document présente chaque fonctionnalité de l'application.
+
+> Ce guide est aussi disponible dans l'application : cliquez sur votre profil (en haut à droite) puis sur **Guide d'Utilisation**.
 
 ---
 
 ## 📑 Sommaire
-1. [Vue d'ensemble & Prise en main](#1-vue-densemble--prise-en-main)
-2. [Le Terrain Tactique & Les Éléments](#2-le-terrain-tactique--les-éléments)
-3. [Boîte à Outils & Tracés Tactiques](#3-boîte-à-outils--tracés-tactiques)
-4. [Coups de Pied Arrêtés (CPA) & Rôles Spécifiques](#4-coups-de-pied-arrêtés-cpa--rôles-spécifiques)
-5. [Contrôle de Vue, Zoom & Formats de Terrain](#5-contrôle-de-vue-zoom--formats-de-terrain)
-6. [Animation & Séquençage de Phases de Jeu](#6-animation--séquençage-de-phases-de-jeu)
-7. [Gestion de l'Effectif & Causerie Vocale](#7-gestion-de-leffectif--causerie-vocale)
-8. [Mode Live Match & Banc de Touche Connecté](#8-mode-live-match--banc-de-touche-connecté)
-9. [Sauvegarde Cloud & Bibliothèque de Stratégies](#9-sauvegarde-cloud--bibliothèque-de-stratégies)
-10. [Export Haute Définition & Partage](#10-export-haute-définition--partage)
-11. [Raccourcis Clavier & Astuces Pro](#11-raccourcis-clavier--astuces-pro)
+1. [Prise en main & Compte Coach](#1-prise-en-main--compte-coach)
+2. [Mon Équipe, Mon Adversaire & Effectifs](#2-mon-équipe-mon-adversaire--effectifs)
+3. [Le Terrain & les Joueurs](#3-le-terrain--les-joueurs)
+4. [Les Outils de Tracé](#4-les-outils-de-tracé)
+5. [Affichage & Zoom](#5-affichage--zoom)
+6. [Animations de Phases de Jeu](#6-animations-de-phases-de-jeu)
+7. [Rôles Tactiques & Coups de Pied Arrêtés](#7-rôles-tactiques--coups-de-pied-arrêtés)
+8. [Schémas, Matchs & Notes](#8-schémas-matchs--notes)
+9. [Mode Live Match](#9-mode-live-match)
+10. [Export & Partage](#10-export--partage)
+11. [Sauvegarde en Ligne](#11-sauvegarde-en-ligne)
+12. [Formules & Abonnement](#12-formules--abonnement)
+13. [Raccourcis Clavier](#13-raccourcis-clavier)
 
 ---
 
-## 1. Vue d'ensemble & Prise en main
+## 1. Prise en main & Compte Coach
 
-**TheBox** est un tableau blanc tactique 2D de référence conçu pour les entraîneurs, préparateurs et éducateurs sportifs. Il vous permet de modéliser vos séances, préparer vos matchs et transmettre vos plans de jeu avec clarté.
+![Parcours coach et tableau tactique](./public/images/guide/parcours-coach-tactique.webp)
 
----
+### 1.1 Créer son compte & se connecter
+Depuis la page d'accueil, cliquez sur **« Créer un Compte »** ou **« Se Connecter »**.
 
-### 1.1 Inscription & Connexion Coach
-Pour accéder au tableau tactique, deux possibilités s'offrent à vous depuis la page d'accueil :
-1. **Création d'un Compte Coach** : Cliquez sur le bouton vert **« Créer un Compte Coach »** pour ouvrir le formulaire rapide.
-2. **Connexion rapide** : Connectez-vous avec votre adresse Google ou vos identifiants e-mail existants.
+* **Création de compte** : prénom, nom, club, fonction, sport principal, adresse e-mail et mot de passe (6 caractères minimum).
+* **Connexion avec Google** : un clic sur le bouton Google, sans mot de passe à retenir.
+* **Mot de passe oublié** : dans la fenêtre de connexion, cliquez sur **« Mot de passe oublié ? »** pour recevoir un lien de réinitialisation par e-mail.
+* **E-mail de bienvenue** : envoyé automatiquement à la création du compte.
+* **Essai offert** : chaque nouveau compte dispose de **14 jours d'accès complet à la formule PRO+**, sans carte bancaire.
 
-### 📹 Capture Vidéo - Prise en Main & Navigation
-![Démonstration du parcours Coach et du Tableau Tactique](./public/images/guide/parcours-coach-tactique.webp)
+> 💡 Votre compte est le même sur tous vos appareils : connectez-vous sur ordinateur, tablette ou smartphone pour retrouver vos équipes, matchs et schémas.
 
-*Capture vidéo animée : Inscription du profil coach, accès immédiat au tableau tactique et présentation des barres d'outils.*
+### 1.2 La barre supérieure
 
-**Champs du profil coach :**
-* **Prénom & Nom** : Personnalisez votre profil d'entraîneur.
-* **Club / Structure** : Indiquez le nom officiel de votre club (ex: *FC TheBox*).
-* **Sport Principal** : Le **Football** est disponible immédiatement par défaut en configuration officielle.
-* **Période d'essai offerte** : Tout nouveau compte bénéficie automatiquement d'une période d'essai pour tester l'ensemble des fonctionnalités avancées.
-
----
-
-### 1.2 La Barre Supérieure (Header & Navigation)
-Une fois connecté au tableau tactique, la barre supérieure concentre les commandes essentielles :
-
-| Élément | Description & Rôle |
+| Élément | Rôle |
 | :--- | :--- |
-| **Identité Coach & Menu Utilisateur** | Affiche votre nom, votre statut (*Coach Principal*) et le blason de votre club. **En cliquant dessus, vous ouvrez le Menu Utilisateur** qui donne accès au Guide d'Utilisation, au profil coach, au tutoriel interactif, au changement de thème et de langue. |
-| **Sport Actif** | Badge indiquant la discipline active (*Football 11*). |
-| **Statut d'Abonnement** | Indique votre formule en cours (*Essai gratuit*, *Formule PRO* ou *PRO+*). Un compte à rebours vous informe des jours restants. |
-| **🎓 Tuto Coach** | Bouton interactif permettant de relancer à tout moment le tutoriel guidé en 6 étapes sur le terrain. |
-| **Langue & Aide** | Bascule rapide entre Français (**FR**) et Anglais (**EN**), et accès direct à la FAQ et au support. |
+| **Badge de formule** | Gratuite, Essai PRO+ (avec le compte à rebours des jours restants), PRO ou PRO+. Un clic ouvre les offres. |
+| **🎓 Tuto Coach** | Relance la visite guidée de l'interface en 7 étapes. |
+| **Installer l'application** | Ajoute TheBox sur votre ordinateur ou votre écran d'accueil. |
+| **Votre profil** (en haut à droite) | Menu utilisateur : Tutoriel, Guide d'Utilisation, FAQ, contact du Support, Configuration Profil & Sport, Déconnexion. |
 
-> 📌 **Accès au Guide Utilisateur dans l'application :**  
-> Cliquez sur votre **Profil Coach** (en haut à droite de l'écran) pour dérouler le **Menu Utilisateur**. Vous y trouverez l'entrée **Guide d'Utilisation** pour consulter à tout moment l'aide détaillée et les astuces de jeu sans quitter votre tableau tactique.
+La **Configuration Profil & Sport** permet de modifier vos informations, la langue (français / anglais), le thème clair ou sombre, votre sport et votre abonnement.
 
----
-
-### 1.3 Installation sur Mobile & Tablette (PWA)
-TheBox est une **Progressive Web App (PWA)** entièrement optimisée pour le bord du terrain :
-* **Sur iPad / iPhone (Safari)** : Appuyez sur l'icône de partage ⎋ puis sur **« Sur l'écran d'accueil »**.
-* **Sur Android (Chrome)** : Appuyez sur le menu (⋮) puis sur **« Installer l'application »**.
-* **Sur PC / Mac (Chrome / Edge)** : Cliquez sur le bouton **« Installer l'application »** disponible directement dans la barre d'outils.
-
-L'application s'ouvre alors en mode plein écran sans barre d'adresse de navigateur, prête pour vos causeries de vestiaire et séances sur le terrain.
+### 1.3 Installation sur mobile & tablette
+TheBox s'installe comme une application, sans passer par un magasin d'applications, et s'ouvre ensuite en plein écran :
+* **iPad / iPhone (Safari)** : bouton de partage ⎋ puis **« Sur l'écran d'accueil »**.
+* **Android (Chrome)** : menu ⋮ puis **« Installer l'application »**.
+* **Ordinateur (Chrome / Edge)** : bouton **« Installer l'application »** dans la barre supérieure.
 
 ---
 
-## 2. Le Terrain Tactique & Les Éléments
+## 2. Mon Équipe, Mon Adversaire & Effectifs
 
-Le terrain central vous permet de positionner et manipuler tous les acteurs d'une séance ou d'un match.
+![Terrain et panneaux d'équipe](./public/images/guide/capture-terrain-et-outils.webp)
 
-### 📹 Capture Vidéo - Manipulation des Joueurs & Ballon
-![Démonstration du terrain et des éléments](./public/images/guide/capture-terrain-et-outils.webp)
+De part et d'autre du terrain, le panneau **« Mon Équipe »** (à gauche) et le panneau **« Mon Adversaire »** (à droite) pilotent chaque camp. Chaque panneau peut être réduit pour agrandir le terrain.
 
-*Capture vidéo animée : Positionnement des titulaires, glisser-déposer sur la pelouse et placement du ballon.*
+| Bouton | Rôle |
+| :--- | :--- |
+| **SCHÉMA** | Applique une formation en un clic (ex. 4-3-3, 4-4-2, 4-2-3-1 au football ; formations adaptées en basket, rugby et handball). |
+| **Effectif** | Noms, numéros de maillot, postes et photos ; titulaires et remplaçants. |
+| **Rôles Tactiques** | Capitaine et tireurs (voir section 7). |
+| **Dans leur camp** | Regroupe les joueurs dans leur moitié de terrain. |
+| **🗑️ Effacer** | Retire les joueurs de ce camp du terrain. |
+| **+ Adv** (panneau adverse) | Ajoute un joueur dans l'équipe adverse. |
 
-### Les Pions disponibles :
-* **Équipe A (Domicile / Vos joueurs)** : Pions personnalisables avec numéro, nom, poste et couleur.
-* **Équipe B (Adversaires)** : Pions distincts pour simuler le bloc ou le pressing adverse.
-* **Ballon de match** : Positionnable à la main sur n'importe quel point du terrain.
+> 🔒 La gestion de l'effectif et des rôles de l'adversaire est disponible avec les formules PRO et PRO+.
 
-### Représentation visuelle des joueurs (Options d'affichage) :
-Depuis la barre d'options du terrain, choisissez le style de représentation adapté à vos séances :
-* ⚪ **Pastille (Classique)** : Pastille circulaire épurée affichant le numéro ou le poste, idéale pour la clarté tactique rapide et la vision d'ensemble.
-* 👤 **Tête du joueur** : Avatar 3D stylisé sans fond par défaut distinct pour chaque équipe et chaque discipline :
-  * **Football** : joueur brun en maillot vert pour **MON ÉQUIPE** (maillot jaune éclatant pour son gardien de but) et joueur blond en maillot rouge pour **MON ADVERSAIRE** (maillot bleu roi pour son gardien).
-  * **Basketball** : joueur barbu en maillot vert #07 avec bandeau pour **MON ÉQUIPE** et joueur blond en maillot rouge #12 avec bandeau pour **MON ADVERSAIRE**.
-  * *(Ou photo réelle détourée automatiquement si vous importez votre propre cliché).*
-
-### Actions sur un joueur :
-* **Déplacement** : Glisser-déposer fluide à la souris ou au doigt sur écran tactile.
-* **Personnalisation (Double-clic)** : Modifiez le nom, le numéro, la photo ou le poste du joueur.
-* **État de forme & discipline** : Indiquez les statuts (En forme, Fatigué, Blessé, Averti 🟨, Expulsé 🟥).
+### Plusieurs équipes (PRO & PRO+)
+En haut du panneau de droite, le **sélecteur d'équipe** permet de passer d'une équipe à l'autre (ex. Séniors, U17, Féminines) et d'en créer de nouvelles avec leur nom et leur catégorie. Chaque équipe a son propre effectif. La **passerelle inter-équipes** permet d'échanger un joueur entre deux de vos équipes.
 
 ---
 
-## 3. Boîte à Outils & Tracés Tactiques
+## 3. Le Terrain & les Joueurs
 
-La barre d'outils latérale gauche met à votre disposition l'ensemble des tracés conventionnels du football et des sports collectifs :
+Le terrain s'adapte au sport choisi (football, basket, rugby, handball) avec ses dimensions et ses formations. Le football est disponible par défaut ; les autres sports sont ouverts par l'administrateur de la plateforme.
 
-### 📹 Capture Vidéo - Tracés & Outils de Schématisation
-![Démonstration des outils de tracé](./public/images/guide/capture-terrain-et-outils.webp)
+* **Glisser-déposer** : déplacez joueurs et ballon à la souris ou au doigt.
+* **Double-clic sur un joueur** : ouvre sa fiche pour modifier son nom, son numéro, son poste ou sa photo.
+* **État de forme** : excellente forme, en forme, fatigué, blessé ou suspendu, affiché sur le joueur.
+* **Remplacement** : faites entrer un remplaçant du banc à la place d'un joueur du terrain.
 
-*Capture vidéo animée : Utilisation des flèches de course, passes en pointillés, courbes, dessin libre et zones géométriques.*
+---
 
-| Outil | Icône | Utilisation tactique |
+## 4. Les Outils de Tracé
+
+Les tracés se dessinent par-dessus le terrain, depuis la barre d'outils au-dessus de celui-ci, sans déplacer les joueurs.
+
+| Outil | Utilisation |
+| :--- | :--- |
+| **Ligne** | Ligne pleine ; un nouveau clic sur le bouton la transforme en ligne pointillée (et inversement). |
+| **Flèche** | Déplacement, course ou passe. |
+| **Zone** | Rectangle pour matérialiser une zone de pressing, de surnombre ou de couverture. |
+| **Dessin libre** (pinceau) | Annotations à main levée. |
+| **Sélecteur** | Cliquez sur un tracé pour le sélectionner puis le supprimer. |
+| **Déplacer** | Fait glisser le terrain lorsqu'il est zoomé. |
+| **TRAIT** | Couleur et épaisseur (fin, moyen, épais) du prochain tracé. |
+| **Corbeille** | Efface tous les tracés d'un coup. |
+
+> 💡 `Ctrl + Z` (`Cmd + Z` sur Mac) annule le dernier tracé.
+
+---
+
+## 5. Affichage & Zoom
+
+![Navigation et affichage](./public/images/guide/session-complete-navigation.webp)
+
+Les réglages d'affichage se trouvent dans la barre au-dessus du terrain. Quand la place manque, certains groupes passent dans le menu chevron (»).
+
+* **Terrain complet ou Demi-terrain** : idéal pour détailler corners, coups francs et attaques placées.
+* **Format Paysage ou Portrait** : selon l'orientation de votre écran.
+* **Représentation des joueurs** : Pastille, Buste ou Tête.
+* **Afficher / masquer** : noms des joueurs (pour ne garder que les numéros), adversaires et ballon.
+* **Échelle du terrain et taille des joueurs** : boutons + / −, et retour à 100 %.
+* **Plein écran** : pour les causeries sur grand écran ; touche `Échap` pour en sortir.
+
+---
+
+## 6. Animations de Phases de Jeu
+
+Le créateur d'animation enchaîne plusieurs positions du terrain pour montrer le déroulement d'une action.
+
+1. **Étape 1** : placez les joueurs et le ballon dans leur position de départ.
+2. **Nouvelle étape (+)** : déplacez les joueurs vers leur position suivante. Répétez pour chaque temps de l'action.
+3. **Lecture ▶ / Pause** : les joueurs se déplacent d'une étape à l'autre.
+4. **Vitesse** : de 0,5 à 2 secondes par étape, pour commenter le timing des courses.
+5. **Supprimer une étape** ou **réinitialiser** toute l'animation.
+6. **Enregistrer l'animation** : elle rejoint vos schémas et peut être partagée en GIF ou en vidéo (PRO).
+
+> ℹ️ Le créateur d'animation n'est pas disponible pendant le Mode Live Match.
+
+---
+
+## 7. Rôles Tactiques & Coups de Pied Arrêtés
+
+Depuis le bouton **« Rôles Tactiques »** d'un panneau d'équipe, attribuez les responsabilités avant le coup d'envoi. Les rôles sont enregistrés pour chaque match :
+
+* 👑 **Capitaine**
+* ⚽ **Tireur de penalty**
+* ⚡ **Tireurs de coups francs**
+* 🚩 **Tireurs de corners**
+
+Les rôles apparaissent sous forme de badges sur les joueurs du terrain. Les rôles de l'adversaire sont disponibles avec les formules PRO et PRO+.
+
+---
+
+## 8. Schémas, Matchs & Notes
+
+Le panneau de droite (bouton **« SCHÉMAS & MATCHS »**) organise votre préparation. Sa largeur se règle en faisant glisser son bord.
+
+* **Schémas (PRO)** : enregistrez la composition et les tracés du terrain, ou une animation, rattachés à un match. Un clic recharge le schéma sur le terrain.
+* **Matchs (PRO)** : créez vos rencontres (équipe, adversaire, date) et retrouvez pour chacune ses schémas, ses notes et son score.
+* **Notes & causerie** : saisissez vos consignes et observations, enregistrées pour chaque match.
+* **Dictée vocale (PRO)** : parlez, vos consignes s'écrivent dans les notes (navigateurs compatibles : Chrome, Edge, Safari).
+
+---
+
+## 9. Mode Live Match
+
+Le **Mode Live Match** (formule **PRO+**) transforme votre écran en console de bord du terrain.
+
+### Le chronomètre et les périodes
+
+| Sport | Périodes | Boutons |
 | :--- | :--- | :--- |
-| **Flèche de course** | ↗️ | Déplacement d'un joueur sans ballon (appel en profondeur, dédoublement). |
-| **Flèche de passe** | ➔ (pointillés) | Transmission au sol ou passe lobée. |
-| **Course incurvée** | ⤴️ | Appel en arc de cercle pour contourner la ligne de hors-jeu. |
-| **Dessin libre (Crayon)** | ✏️ | Tracé spontané ou schématisation rapide à main levée. |
-| **Formes géométriques** | ⭕ / ⬛ | Zones de pressing, cadrage du porteur, zones de surnombre. |
-| **Gomme & Annulation** | ⌫ / ↺ | Effacement ciblé d'un tracé ou annulation du dernier geste (`Ctrl + Z`). |
-| **Effacer (remise à zéro)** | 🗑️ | Efface tous les tracés en un clic sans déplacer les joueurs. |
+| Football | 2 mi-temps de 45 min | 1MT · PAUSE · 2MT |
+| Rugby | 2 mi-temps de 40 min | 1MT · PAUSE · 2MT |
+| Handball | 2 mi-temps de 30 min | 1MT · PAUSE · 2MT |
+| Basket | 4 quart-temps de 20 min | QT1 · QT2 · PAUSE · QT3 · QT4 |
+
+* **START / PAUSE / 🔄** : lancez, figez ou remettez à zéro le chrono. Au-delà du temps réglementaire, il passe en rouge (temps additionnel).
+* **PAUSE** (mi-temps) : lance un compte à rebours de 15 minutes avant la reprise.
+
+### Les actions de match
+Double-cliquez sur un joueur pour ouvrir ses actions de match :
+* **But et passe décisive** (au rugby : essai +5, transformation +2, drop +3 ; au basket : 3 points, 2 points, lancer franc).
+* **Carton jaune** (le 2e entraîne l'exclusion) et **carton rouge**.
+* **Blessure et remplacement** : choisissez le remplaçant qui entre ; la minute est enregistrée.
+* **Fil des événements** : historique de toutes les actions, avec suppression en cas d'erreur.
+* **Terminer le match** : fige le score et ouvre le bilan, exportable en image ou partageable sur WhatsApp.
+
+> ⌨️ Quand les actions d'un joueur sont ouvertes : `B` (but), `P` (passe), `J` (carton jaune), `R` (carton rouge), `Échap` (fermer).
 
 ---
 
-## 4. Coups de Pied Arrêtés (CPA) & Rôles Spécifiques
+## 10. Export & Partage
 
-TheBox intègre un module dédié à la désignation des spécialistes sur phases arrêtées :
-
-### 📹 Capture Vidéo - Spécialistes & Rôles CPA
-![Démonstration des rôles et tireurs de CPA](./public/images/guide/capture-terrain-et-outils.webp)
-
-*Capture vidéo animée : Désignation des tireurs de corners, penalties, coups francs et capitaine.*
-
-* 👑 **Capitaine d'équipe**
-* ⚽ **Tireur de Penalty (11 mètres)**
-* ⚡ **Coup Franc Direct** (axe des 20-25m)
-* ↪️ **Coup Franc Excentré Gauche & Droit**
-* 🚩 **Corner Gauche & Corner Droit**
-
-> 💡 *Astuce : Ces désignations apparaissent clairement dans vos fiches de match et vos exports pour les vestiaires.*
+* **Export PNG HD** : image nette du terrain avec les joueurs et les tracés.
+* **Vue Carte 3D** : présentation de votre équipe en cartes (thèmes Or, Onyx, Argent, Émeraude) ou en têtes, au format paysage ou portrait, avec réglage de la taille du terrain et des joueurs.
+* **Partage d'un schéma (PRO)** : image, ou GIF et vidéo pour une animation.
+* **WhatsApp** : envoi direct dans le groupe de l'équipe.
+* **E-mail** : envoi du schéma à l'adresse de votre choix depuis l'application.
 
 ---
 
-## 5. Contrôle de Vue, Zoom & Formats de Terrain
+## 11. Sauvegarde en Ligne
 
-Adaptez l'affichage du terrain selon la phase tactique travaillée :
+Tout ce que vous créez est sauvegardé automatiquement sur votre compte, sans bouton à presser.
 
-### 📹 Capture Vidéo - Changement de Vue & Plein Écran
-![Démonstration du zoom et des formats de terrain](./public/images/guide/session-complete-navigation.webp)
+* **Données sauvegardées** : équipes, effectifs, matchs, notes, rôles, remplaçants, événements et score des matchs, positions du terrain et schémas enregistrés.
+* **Multi-appareils** : connectez-vous sur un autre appareil pour tout retrouver.
+* **Sans connexion internet** : l'application continue de fonctionner ; vos modifications sont envoyées dès que la connexion revient.
+* **Déconnexion** : les dernières modifications sont envoyées avant la fermeture de la session.
 
-*Capture vidéo animée : Bascule terrain complet / demi-terrain offensif et activation du mode plein écran vestiaire.*
-
-* **Vue Terrain Complet** : Idéal pour travailler les blocs d'équipe (bloc haut, bloc médian, bloc bas) et les relances de 6 mètres.
-* **Vue Demi-Terrain (Half-Pitch)** : Zoom automatique sur la zone offensive ou défensive pour préparer les corners, combinaisons d'attaques placées ou sorties de balle.
-* **Zoom & Échelle des Joueurs** : Ajustez la taille des pions selon la résolution de votre écran.
-* **Mode Plein Écran (⛶)** : Supprime les barres de menus pour projeter la causerie sur grand écran ou vidéo-projecteur de vestiaire.
+> 🔐 Sur un appareil partagé, chaque coach retrouve uniquement ses propres données après connexion à son compte.
 
 ---
 
-## 6. Animation & Séquençage de Phases de Jeu
+## 12. Formules & Abonnement
 
-Créez des animations multi-étapes pour expliquer le déroulement d'une action :
+Les abonnements sont mensuels et sans engagement.
 
-### 📹 Capture Vidéo - Séquençage & Moteur d'Animation
-![Démonstration du moteur d'animation](./public/images/guide/session-complete-navigation.webp)
+| Formule | Contenu |
+| :--- | :--- |
+| **Gratuite** | Tableau tactique, outils de tracé, effectif de votre équipe, animations, export PNG et vue Carte 3D. |
+| **PRO** | En plus : plusieurs équipes, création de matchs, enregistrement et partage des schémas, effectif et rôles de l'adversaire, dictée vocale. |
+| **PRO+** | Toutes les fonctions PRO et le Mode Live Match. |
+| **Essai** | 14 jours de PRO+ offerts à la création du compte, puis passage automatique en Gratuite. |
 
-*Capture vidéo animée : Création de phases de jeu pas-à-pas et lecture fluide des trajectoires des joueurs.*
-
-1. **Étape 1 (Départ)** : Placez les joueurs dans leur position initiale.
-2. **Ajout d'une étape (+)** : Déplacez les joueurs vers leur point de chute (passe, appel).
-3. **Lecture (▶ Play / Pause)** : TheBox anime la trajectoire fluide des joueurs et du ballon d'une position à l'autre.
-4. **Vitesse réglable** : Ralentissez la vitesse pour analyser la synchronisation des courses.
-
----
-
-## 7. Gestion de l'Effectif & Causerie Vocale
-
-Le panneau latéral droit est votre carnet de préparation tactique d'avant-match :
-
-### 📹 Capture Vidéo - Effectif, Causerie & Notes
-![Démonstration de la feuille de match et causerie vocale](./public/images/guide/session-complete-navigation.webp)
-
-*Capture vidéo animée : Saisie des compositions, organisation du banc et enregistreur vocal de causerie.*
-
-* 📋 **Feuille de match & Compositions** :
-  * Sélection des 11 titulaires et de la liste des remplaçants.
-  * Répartition des rôles et organisation du banc de touche.
-* 🎙️ **Enregistreur vocal de causerie** :
-  * Enregistrez vos consignes orales directement rattachées au schéma tactique (explication d'une sortie de balle, consignes individuelles par poste).
-  * Les joueurs et le staff peuvent réécouter la causerie directement depuis le lien partagé.
-* 📝 **Bloc-notes tactique d'avant-match** :
-  * Consignes collectives (ex: *"Déclencher le pressing dès la passe au latéral"*).
-  * Observations sur l'adversaire (points forts, faiblesses, joueurs clés).
+### Facturation & résiliation
+Le paiement est sécurisé par Stripe. Votre facture mensuelle vous est envoyée par e-mail à chaque prélèvement.
+* **Portail Stripe** : depuis votre espace Abonnement, consultez vos factures et modifiez votre moyen de paiement.
+* **Résiliation** : « Se désabonner » arrête les prélèvements. Vous gardez votre formule jusqu'à la fin du mois déjà payé, puis votre compte repasse en Gratuite. Un e-mail de confirmation vous est envoyé.
+* Vos données (équipes, matchs, schémas) sont conservées après la résiliation.
 
 ---
 
-## 8. Mode Live Match & Banc de Touche Connecté
-
-Le **Mode Live Match** transforme votre tablette ou ordinateur en véritable **banc de touche connecté** pendant la rencontre pour piloter et consigner le match en temps réel.
-
-### 📹 Capture Vidéo - Banc Connecté & Mode Live Match
-![Démonstration du Mode Live Match](./public/images/guide/session-complete-navigation.webp)
-
-*Capture vidéo animée : Lancement du chronomètre officiel, saisie instantanée des buts, cartons et remplacements.*
-
-### Fonctionnalités du Mode Live :
-* ⏱️ **Chronomètre officiel & Contrôle du temps** :
-  * Boutons **START / PAUSE / RESET** pour lancer ou figer le chronomètre officiel de match.
-  * Sélecteur de périodes en 1 clic : **1MT** (1ère mi-temps), **PAUSE** (mi-temps), **2MT** (2ème mi-temps) et **FIN**.
-* 📊 **Tableau d'affichage & Score en direct** :
-  * Saisie instantanée des buts pour l'équipe à domicile et l'équipe adverse.
-* ⚽ **Enregistrement des Buts & Passes décisives** :
-  * Attribution du but au joueur concerné.
-  * Sélection du passeur décisif pour enrichir les statistiques d'équipe.
-* 🟨 / 🟥 **Gestion de la discipline (Cartons jaunes & rouges)** :
-  * Attribution d'un avertissement (🟨) ou d'une expulsion directe (🟥).
-  * Mise à jour visuelle immédiate du statut du joueur sur le terrain (gestion automatique du cumul des cartons et exclusions).
-* 🔄 **Remplacements en direct** :
-  * Réalisation des changements tactiques ou des sorties sur blessure en direct.
-  * Horodatage automatique à la minute précise du match avec indication du joueur sortant et entrant.
-* 📜 **Fil d'événements du match (Live Feed)** :
-  * Historique chronologique et détaillé de tous les faits de jeu (ex: `⚽ Dupont (Passe : Martin) 2MT 58'`).
-  * Possibilité de supprimer ou corriger un événement en cas d'erreur de saisie.
-* 🏁 **Clôture officielle de la rencontre (Terminer le match)** :
-  * Bouton dédié pour figer le résultat, archiver les statistiques du match et enregistrer le bilan dans l'historique du club.
-
----
-
-## 9. Sauvegarde Cloud & Bibliothèque de Stratégies
-
-Vos créations ne sont jamais perdues :
-
-### 📹 Capture Vidéo - Bibliothèque & Sauvegarde Cloud
-![Démonstration de la bibliothèque tactique](./public/images/guide/session-complete-navigation.webp)
-
-*Capture vidéo animée : Sauvegarde sécurisée sur le cloud et réutilisation instantanée des fiches tactiques.*
-
-* **Sauvegarde Cloud (Firebase)** : Enregistrez vos exercices et compositions sur votre compte sécurisé.
-* **Bibliothèque de schémas (Strategy Library)** :
-  * Classement par catégorie : *Phase Offensive, Bloc Défensif, Coups de pied arrêtés, Séances d'entraînement*.
-  * Recherche par mot-clé et chargement instantané sur le terrain.
-
----
-
-## 10. Export Haute Définition & Partage
-
-Communiquez vos plans de jeu facilement à vos joueurs et à votre staff :
-
-### 📹 Capture Vidéo - Export Image HD & Partage
-![Démonstration de l'export haute définition](./public/images/guide/session-complete-navigation.webp)
-
-*Capture vidéo animée : Génération de l'image PNG haute résolution et partage immédiat pour les vestiaires.*
-
-* **Export Image PNG HD** : Télécharge une image nette et propre du terrain avec vos tracés et le logo de votre club.
-* **Vue Export 3D (Studio HD)** :
-  * **Choix de la vue** : Affichage au choix en **Cartes 3D** (style Squad Card avec thèmes Or, Onyx, Argent, Émeraude) ou en **Têtes 3D** (avatars 3D stylisés détourés sans cadre avec ombre sur la pelouse et pastille tactique).
-  * **Agrandissement modulable** : Curseur pour agrandir le terrain (70% à 150%) et curseur dédié pour ajuster la taille des joueurs (60% à 160%).
-  * **Formats disponibles** : Paysage (16:9) ou Portrait (9:16 pour smartphones et stories).
-* **Partage par Messagerie / WhatsApp** : Génère un lien ou une image optimisée pour diffusion rapide dans les groupes d'équipe.
-* **Envoi d'email automatique** : Envoyez le schéma directement sur l'adresse email des joueurs ou dirigeants depuis la plateforme.
-
----
-
-## 11. Raccourcis Clavier & Astuces Pro
-
-### 📹 Capture Vidéo - Raccourcis Clavier & Fluidité Pro
-![Démonstration des raccourcis clavier et astuces](./public/images/guide/session-complete-navigation.webp)
-
-*Capture vidéo animée : Démonstration des raccourcis rapides pour manipuler le tableau sans interruption.*
+## 13. Raccourcis Clavier
 
 | Action | Raccourci |
 | :--- | :--- |
-| **Annuler le dernier tracé** | `Ctrl + Z` (ou `Cmd + Z` sur Mac) |
-| **Rétablir un tracé** | `Ctrl + Y` (ou `Cmd + Shift + Z`) |
-| **Plein écran** | `F` ou bouton ⛶ |
-| **Passer au demi-terrain** | Bouton vue terrain |
-| **Désélectionner un outil** | Échap (`Escape`) |
-
----
-
-*Document généré pour TheBox. Vous pouvez éditer et enrichir ce fichier au fur et à mesure des évolutions de l'application.*
+| Annuler le dernier tracé | `Ctrl + Z` (`Cmd + Z` sur Mac) |
+| Quitter le plein écran, fermer une fenêtre ou les actions d'un joueur | `Échap` |
+| Mode Live, actions d'un joueur ouvertes | `B` but · `P` passe décisive · `J` carton jaune · `R` carton rouge |
+| Passer d'une étape à l'autre du Tuto Coach | `←` / `→` |
