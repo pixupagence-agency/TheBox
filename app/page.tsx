@@ -669,7 +669,7 @@ export default function Home() {
       await resetPassword(email);
     } catch (err: any) {
       // On ne révèle pas si l'adresse existe ou non (sauf adresse invalide)
-      if (err?.code === "auth/invalid-email") {
+      if (err?.code === "auth/invalid-email" || err?.code === "auth/too-many-requests") {
         alert(getAuthErrorMessage(err));
         return;
       }

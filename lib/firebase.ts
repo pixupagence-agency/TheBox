@@ -139,8 +139,29 @@ export async function loginWithEmail(email: string, password: string): Promise<U
 }
 
 export async function resetPassword(email: string): Promise<void> {
+  const cleanEmail = email.trim();
+  // 1) E-mail personnalisé The Box, envoyé par notre serveur
+  try {
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: cleanEmail }),
+    });
+    if (res.ok) return;
+    if (res.status === 400) {
+      throw Object.assign(new Error("invalid-email"), { code: "auth/invalid-email" });
+    }
+    if (res.status === 429) {
+      throw Object.assign(new Error("too-many-requests"), { code: "auth/too-many-requests" });
+    }
+    // 503 (envoi personnalisé indisponible) ou autre : on bascule sur Firebase
+  } catch (err: any) {
+    if (err?.code) throw err;
+    // erreur réseau vers notre API : on tente quand même Firebase
+  }
+  // 2) Repli : e-mail standard de Firebase (en français)
   auth.languageCode = "fr";
-  await sendPasswordResetEmail(auth, email.trim());
+  await sendPasswordResetEmail(auth, cleanEmail);
 }
 
 /** Traduit les erreurs Firebase Auth en messages compréhensibles pour le coach. */

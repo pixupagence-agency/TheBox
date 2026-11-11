@@ -226,3 +226,30 @@ export async function releaseStripeEvent(eventId: string): Promise<void> {
     /* ignore */
   }
 }
+
+/**
+ * Génère un lien de réinitialisation du mot de passe via Firebase Admin.
+ * Renvoie { link, name } ; link = null si aucun compte n'existe pour cet email.
+ * Lève une erreur si l'Admin SDK n'est pas configuré (l'appelant bascule alors sur l'envoi Firebase).
+ */
+export async function generatePasswordResetLinkFor(
+  email: string,
+  continueUrl: string
+): Promise<{ link: string | null; name: string | null }> {
+  if (!getAdminFirestore()) {
+    throw new Error("Firebase Admin non configuré");
+  }
+  const adminAuth = getAuth();
+  let displayName: string | null = null;
+  try {
+    const user = await adminAuth.getUserByEmail(email);
+    displayName = user.displayName || null;
+  } catch (err: any) {
+    if (err?.code === "auth/user-not-found") return { link: null, name: null };
+    throw err;
+  }
+  const rawLink = await adminAuth.generatePasswordResetLink(email, { url: continueUrl });
+  // Page d'action Firebase affichée en français
+  const link = rawLink.includes("lang=") ? rawLink : `${rawLink}&lang=fr`;
+  return { link, name: displayName };
+}

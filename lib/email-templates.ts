@@ -195,3 +195,45 @@ ${paymentIssue ? "Reprendre mon abonnement" : "Revenir sur The Box"} : ${APP_PUB
 
   return { subject, html, text };
 }
+
+/**
+ * E-mail n°3 — réinitialisation du mot de passe (« Mot de passe oublié ? »).
+ * Le lien est généré par Firebase (sécurisé, usage unique, expire au bout d'1 heure).
+ */
+export function passwordResetEmail(params: { name?: string | null; resetLink: string }): RenderedEmail {
+  const name = params.name || "Coach";
+  const link = params.resetLink;
+  const subject = "Réinitialisez votre mot de passe - The Box";
+
+  const html = layout({
+    title: subject,
+    badge: "Mot de passe oublié",
+    accent: "#00e599",
+    body: `
+      <h1 ${H1}>Choisissez un nouveau mot de passe</h1>
+      <p ${P}>Bonjour ${esc(name)},</p>
+      <p ${P}>Nous avons reçu une demande de réinitialisation du mot de passe de votre compte The Box. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.</p>
+      ${cta("Réinitialiser mon mot de passe", esc(link))}
+      <div ${BOX}>
+        <p ${LI}>⏱ Ce lien est valable <strong>1 heure</strong> et ne peut être utilisé qu'une seule fois.</p>
+        <p style="color:#e2e8f0;font-size:14px;line-height:1.5;margin:0;">🔒 Vous n'êtes pas à l'origine de cette demande ? Ignorez simplement cet e-mail : votre mot de passe actuel reste inchangé.</p>
+      </div>
+      <p style="color:#64748b;font-size:12px;line-height:1.6;margin:0;">Le bouton ne fonctionne pas ? Copiez ce lien dans votre navigateur :<br><a href="${esc(link)}" style="color:#00e599;word-break:break-all;">${esc(link)}</a></p>
+    `,
+  });
+
+  const text = `THE BOX - Mot de passe oublié
+
+Bonjour ${name},
+
+Nous avons reçu une demande de réinitialisation du mot de passe de votre compte The Box.
+Pour choisir un nouveau mot de passe, ouvrez ce lien :
+
+${link}
+
+Ce lien est valable 1 heure et ne peut être utilisé qu'une seule fois.
+
+Vous n'êtes pas à l'origine de cette demande ? Ignorez simplement cet e-mail : votre mot de passe actuel reste inchangé.`;
+
+  return { subject, html, text };
+}
