@@ -13,3 +13,6 @@ coverage/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# TypeScript (cache de compilation incrémentale)
+*.tsbuildinfo
