@@ -1,20 +1,50 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# The Box — Zone de décision tactique
 
-# Run and deploy your AI Studio app
+Tableau blanc tactique pour les entraîneurs : schémas et animations sur terrain officiel, gestion de l'effectif, mode Live Match, partage et export HD. Plusieurs sports (football, basketball, rugby, handball).
 
-This contains everything you need to run your app locally.
+Édité par PixUp.
 
-View your app in AI Studio: https://ai.studio/apps/9c9a5282-957d-42a3-90a8-5ca71201b52d
+## Stack
 
-## Run Locally
+- Next.js 15 (App Router), React 19, Tailwind CSS 4
+- Firebase (Authentification, Firestore) et Firebase Admin côté serveur
+- Stripe pour les abonnements PRO et PRO+
+- Nodemailer (SMTP) pour les e-mails transactionnels
+- Playwright pour les tests end-to-end
 
-**Prerequisites:**  Node.js
+## Lancer en local
 
+**Prérequis :** Node.js 20 ou plus.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. Installer les dépendances : `npm install`
+2. Copier `.env.example` vers `.env.local`, puis renseigner les clés (Stripe, SMTP, compte de service Firebase).
+3. Démarrer : `npm run dev`, puis ouvrir http://localhost:3000
+
+## Scripts
+
+| Commande | Rôle |
+|---|---|
+| `npm run dev` | Serveur de développement |
+| `npm run build` / `npm start` | Build et serveur de production |
+| `npm run lint` | Lint |
+| `npm run test:e2e` | Tests end-to-end (Playwright) |
+
+## Tests end-to-end
+
+Les tests qui demandent une connexion utilisent un compte de test, déclaré dans `.env.local` :
+
+```
+E2E_EMAIL=...
+E2E_PASSWORD=...
+# facultatif, compte avec isAdmin: true pour les tests d'administration
+E2E_ADMIN_EMAIL=...
+E2E_ADMIN_PASSWORD=...
+```
+
+Sans ces variables, ces tests sont ignorés. Les autres s'exécutent normalement.
+
+## Documentation
+
+- [GUIDE_UTILISATEUR.md](GUIDE_UTILISATEUR.md) : guide d'utilisation
+- [CAHIER_DE_TESTS.md](CAHIER_DE_TESTS.md) : scénarios de test
+- [SECURITY.md](SECURITY.md) : sécurité

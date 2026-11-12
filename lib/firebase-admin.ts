@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp, cert, App } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
-import firebaseConfig from "../firebase-applet-config.json";
+import firebaseConfig from "../firebase-config.json";
 
 let adminApp: App | null = null;
 let adminDb: Firestore | null = null;

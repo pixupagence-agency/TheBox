@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import firebaseConfig from "../firebase-applet-config.json" with { type: "json" };
+import firebaseConfig from "../firebase-config.json" with { type: "json" };
 
 console.log("Testing connection to Firebase Firestore...");
 console.log("Project ID:", firebaseConfig.projectId);
