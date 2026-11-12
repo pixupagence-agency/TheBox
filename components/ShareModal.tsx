@@ -116,6 +116,8 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
   // Modular selection toggles (User selects what to include in the single message)
   const [includePlayers, setIncludePlayers] = useState<boolean>(true);
+  // Vue 3D : « joueurs » = titulaires + remplaçants ; « groupe » = liste unique sans distinction
+  const [playersListMode, setPlayersListMode] = useState<"joueurs" | "groupe">("joueurs");
   const [includeSchemas, setIncludeSchemas] = useState<boolean>(true);
   const [includeNotes, setIncludeNotes] = useState<boolean>(true);
 
@@ -262,6 +264,8 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
   const allGroupPlayers: SharePlayerItem[] = [...activeStarters, ...activeSubstitutes];
   const totalPlayersCount = allGroupPlayers.length;
+  const isGroupList = is3D && playersListMode === "groupe";
+  const groupPlayersSorted: SharePlayerItem[] = [...allGroupPlayers].sort((a, b) => (Number(a.number) || 0) - (Number(b.number) || 0));
 
   // Multi-schema selection toggle
   const toggleSchemaSelection = (schemaId: string) => {
@@ -288,8 +292,16 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
       // 1. Header spécifique Vue 3D
       sections.push(`🛡️ *COMPOSITION DU GROUPE*\n⚽ *Équipe :* ${clubLabel}`);
 
-      // 2. Joueurs (Titulaires et Remplaçants)
-      if (includePlayers) {
+      // 2. Joueurs : liste unique « Groupe » ou Titulaires / Remplaçants
+      if (includePlayers && isGroupList) {
+        if (groupPlayersSorted.length > 0) {
+          const groupLines: string[] = [`👥 *GROUPE  (${groupPlayersSorted.length}) :*`];
+          groupPlayersSorted.forEach((p, idx) => {
+            groupLines.push(`  ${idx + 1}. #${p.number} ${p.name || "Joueur"}${p.position && p.position !== "SUB" ? ` (${p.position})` : ""}`);
+          });
+          sections.push(groupLines.join("\n"));
+        }
+      } else if (includePlayers) {
         if (activeStarters.length > 0) {
           const starterLines: string[] = [];
           starterLines.push(`👥 *TITULAIRES  (${activeStarters.length}) :*`);
@@ -835,7 +847,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               <p className={`px-3 pb-2 text-[10px] font-black uppercase tracking-[0.18em] ${th.faint}`}>Contenu du message</p>
               <div className="space-y-1.5">
                 {[
-                  { key: "players", on: includePlayers, set: setIncludePlayers, icon: Users, label: "Joueurs", desc: `${activeStarters.length} titulaires${activeSubstitutes.length > 0 ? ` · ${activeSubstitutes.length} remplaçants` : ""}` },
+                  { key: "players", on: includePlayers, set: setIncludePlayers, icon: Users, label: "Joueurs", desc: isGroupList ? `Groupe de ${totalPlayersCount} joueurs` : `${activeStarters.length} titulaires${activeSubstitutes.length > 0 ? ` · ${activeSubstitutes.length} remplaçants` : ""}` },
                   { key: "schemas", on: includeSchemas, set: setIncludeSchemas, icon: Layers, label: isAnimMode ? "Animation" : "Schémas", desc: hasMultipleSchemas ? `${selectedSchemaIds.length}/${data.matchSchemas?.length} sélectionnés` : isAnimMode ? "GIF, vidéo ou image fixe" : "Visuel HD du terrain" },
                   { key: "notes", on: includeNotes, set: setIncludeNotes, icon: FileText, label: "Consignes", desc: customCoachNote.trim() ? "Note personnalisée" : "Mot du coach" },
                 ].map((opt) => {
@@ -863,6 +875,27 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                   );
                 })}
               </div>
+              {is3D && includePlayers && (
+                <div className={`mt-2 flex gap-1 p-1 rounded-xl border ${th.segment}`} role="radiogroup" aria-label="Présentation des joueurs">
+                  {([
+                    { v: "joueurs", l: "Joueurs", t: "Titulaires et remplaçants" },
+                    { v: "groupe", l: "Groupe", t: "Liste unique, sans distinction titulaire / remplaçant" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      role="radio"
+                      aria-checked={playersListMode === o.v}
+                      title={o.t}
+                      onClick={() => setPlayersListMode(o.v)}
+                      className={`flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer ${playersListMode === o.v ? th.segmentActive : th.segmentIdle}`}
+                    >
+                      {playersListMode === o.v && <Check className={`w-3 h-3 ${th.accent}`} />}
+                      {o.l}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Sélection des schémas */}
@@ -980,6 +1013,27 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                 </button>
               ))}
             </div>
+            {is3D && includePlayers && (
+                <div className={`md:hidden mt-2 flex gap-1 p-1 rounded-xl border ${th.segment}`} role="radiogroup" aria-label="Présentation des joueurs">
+                  {([
+                    { v: "joueurs", l: "Joueurs", t: "Titulaires et remplaçants" },
+                    { v: "groupe", l: "Groupe", t: "Liste unique, sans distinction titulaire / remplaçant" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      role="radio"
+                      aria-checked={playersListMode === o.v}
+                      title={o.t}
+                      onClick={() => setPlayersListMode(o.v)}
+                      className={`flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer ${playersListMode === o.v ? th.segmentActive : th.segmentIdle}`}
+                    >
+                      {playersListMode === o.v && <Check className={`w-3 h-3 ${th.accent}`} />}
+                      {o.l}
+                    </button>
+                  ))}
+                </div>
+              )}
           </header>
 
           <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-5 sm:py-6 space-y-5 scrollbar-thin">
@@ -1115,10 +1169,13 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             {/* Joueurs convoqués */}
             {includePlayers && allGroupPlayers.length > 0 && (
               <div className={`rounded-2xl border p-4 space-y-4 ${th.card}`}>
-                {[
-                  { list: activeStarters, label: "Titulaires", dot: th.accentDot, numCls: th.accent, tag: "Sur le schéma" },
-                  { list: activeSubstitutes, label: "Remplaçants", dot: "bg-amber-500", numCls: th.gold, tag: "Banc" },
-                ].filter((g) => g.list.length > 0).map((g) => (
+                {(isGroupList
+                  ? [{ list: groupPlayersSorted, label: "Groupe", dot: th.accentDot, numCls: th.accent, tag: "Convoqués" }]
+                  : [
+                      { list: activeStarters, label: "Titulaires", dot: th.accentDot, numCls: th.accent, tag: "Sur le schéma" },
+                      { list: activeSubstitutes, label: "Remplaçants", dot: "bg-amber-500", numCls: th.gold, tag: "Banc" },
+                    ]
+                ).filter((g) => g.list.length > 0).map((g) => (
                   <div key={g.label}>
                     <div className="flex items-center justify-between mb-2">
                       <p className={`text-[11px] font-black uppercase tracking-[0.14em] flex items-center gap-2 ${th.text}`}>
@@ -1133,7 +1190,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                         <span key={i} className={`text-[11px] font-semibold px-2 py-1 rounded-lg border flex items-center gap-1.5 ${th.cardMuted} ${th.body}`}>
                           <strong className={`font-black tabular-nums ${g.numCls}`}>{p.number}</strong>
                           <span>{p.name || "Joueur"}</span>
-                          {p.position && <span className={`text-[10px] ${th.faint}`}>{p.position}</span>}
+                          {p.position && p.position !== "SUB" && <span className={`text-[10px] ${th.faint}`}>{p.position}</span>}
                         </span>
                       ))}
                     </div>
