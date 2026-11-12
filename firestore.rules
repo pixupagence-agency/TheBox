@@ -102,7 +102,7 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // --- Tactics / Playbooks ---
+    // --- Anciens schémas v1 (copiés vers users/{uid}/schemas, supprimés 60 jours après la migration) ---
     match /tactics/{tacticId} {
       allow get: if isSignedIn() && (existing().userId == request.auth.uid || isSuperAdmin());
       allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
@@ -128,55 +128,22 @@ service cloud.firestore {
         (existing().userId == request.auth.uid || isSuperAdmin());
     }
 
-    // --- Matches & Live Match Sheets ---
-    match /matches/{matchId} {
-      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isSuperAdmin());
-      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
+    // --- Données structurées du coach (v2) : users/{uid}/teams, players, matches, matchData, settings, schemas ---
+    // Privées par construction : seul le propriétaire (ou un super admin) y accède.
+    match /users/{userId}/{coll}/{docId} {
+      allow read, delete: if isOwner(userId) || isSuperAdmin();
 
-      allow create: if isSignedIn() &&
-        isValidId(matchId) &&
-        (incoming().userId == request.auth.uid || isSuperAdmin()) &&
-        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200)) &&
-        (!('tacticalNotes' in incoming()) || (incoming().tacticalNotes is string && incoming().tacticalNotes.size() <= 10000)) &&
-        (!('dataPayload' in incoming()) || (incoming().dataPayload is string && incoming().dataPayload.size() <= 1048576));
-
-      allow update: if isSignedIn() &&
-        isValidId(matchId) &&
-        (existing().userId == request.auth.uid || isSuperAdmin()) &&
-        (incoming().userId == existing().userId || isSuperAdmin()) &&
-        hasUnchangedCreatedAt() &&
-        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200)) &&
-        (!('tacticalNotes' in incoming()) || (incoming().tacticalNotes is string && incoming().tacticalNotes.size() <= 10000)) &&
-        (!('dataPayload' in incoming()) || (incoming().dataPayload is string && incoming().dataPayload.size() <= 1048576));
-
-      allow delete: if isSignedIn() &&
-        isValidId(matchId) &&
-        (existing().userId == request.auth.uid || isSuperAdmin());
+      allow create, update: if (isOwner(userId) || isSuperAdmin()) &&
+        isValidId(docId) &&
+        coll in ['teams', 'players', 'matches', 'matchData', 'settings', 'schemas'] &&
+        (!('key' in incoming()) || (incoming().key is string && incoming().key.size() <= 200)) &&
+        (!('raw' in incoming()) || (incoming().raw is string && incoming().raw.size() <= 1000000)) &&
+        (!('payload' in incoming()) || (incoming().payload is string && incoming().payload.size() <= 1048576)) &&
+        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 500)) &&
+        (!('userId' in incoming()) || incoming().userId == userId);
     }
 
-    // --- Teams & Rosters ---
-    match /teams/{teamId} {
-      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isSuperAdmin());
-      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
-
-      allow create: if isSignedIn() &&
-        isValidId(teamId) &&
-        (incoming().userId == request.auth.uid || isSuperAdmin()) &&
-        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200));
-
-      allow update: if isSignedIn() &&
-        isValidId(teamId) &&
-        (existing().userId == request.auth.uid || isSuperAdmin()) &&
-        (incoming().userId == existing().userId || isSuperAdmin()) &&
-        hasUnchangedCreatedAt() &&
-        (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200));
-
-      allow delete: if isSignedIn() &&
-        isValidId(teamId) &&
-        (existing().userId == request.auth.uid || isSuperAdmin());
-    }
-
-    // --- Données du coach synchronisées (équipes, effectifs, matchs, notes, événements…) ---
+    // --- Anciennes données v1 (blocs bruts) : conservées 60 jours après la migration, puis supprimées ---
     // Une clé = un ou plusieurs documents {key, part, parts, value, updatedAt} (découpage < 1 Mo).
     match /userData/{userId}/entries/{entryId} {
       allow read, delete: if isOwner(userId) || isSuperAdmin();

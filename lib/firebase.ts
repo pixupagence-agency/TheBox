@@ -282,6 +282,11 @@ export interface FirebaseTactic {
   updatedAt: string;
 }
 
+// Schémas : users/{uid}/schemas/{id} (structure v2).
+// L'ancienne collection globale « tactics » est encore lue pendant la période de migration :
+// ses schémas absents de la nouvelle structure y sont recopiés automatiquement.
+const schemaDoc = (uid: string, id: string) => doc(db, "users", uid, "schemas", id);
+
 export async function saveTacticToFirestore(tactic: FirebaseTactic) {
   if (!auth.currentUser) {
     // Unauthenticated sessions store tactics locally in localStorage.
@@ -289,7 +294,7 @@ export async function saveTacticToFirestore(tactic: FirebaseTactic) {
     return;
   }
   const currentUid = auth.currentUser.uid;
-  const path = `tactics/${tactic.id}`;
+  const path = `users/${currentUid}/schemas/${tactic.id}`;
   try {
     const rawData = {
       ...tactic,
@@ -297,7 +302,7 @@ export async function saveTacticToFirestore(tactic: FirebaseTactic) {
       updatedAt: new Date().toISOString(),
     };
     const cleaned = cleanFirestoreData(rawData);
-    await setDoc(doc(db, "tactics", tactic.id), cleaned, { merge: true });
+    await setDoc(schemaDoc(currentUid, tactic.id), cleaned, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
@@ -308,11 +313,33 @@ export async function getTacticsForUser(userId: string): Promise<FirebaseTactic[
     return [];
   }
   const currentUid = auth.currentUser.uid;
-  const path = "tactics";
+  const path = `users/${currentUid}/schemas`;
   try {
-    const q = query(collection(db, "tactics"), where("userId", "==", currentUid));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as FirebaseTactic);
+    const snap = await getDocs(collection(db, "users", currentUid, "schemas"));
+    const schemas = snap.docs.map((d) => d.data() as FirebaseTactic);
+    const known = new Set(schemas.map((s) => s.id));
+
+    // Migration : schémas encore présents uniquement dans l'ancienne collection « tactics »
+    try {
+      const legacySnap = await getDocs(query(collection(db, "tactics"), where("userId", "==", currentUid)));
+      for (const d of legacySnap.docs) {
+        const legacy = d.data() as FirebaseTactic;
+        const id = legacy.id || d.id;
+        if (known.has(id)) continue;
+        const copy = cleanFirestoreData({ ...legacy, id, userId: currentUid });
+        try {
+          await setDoc(schemaDoc(currentUid, id), copy);
+        } catch (copyErr) {
+          console.warn("[Schémas] Copie vers la nouvelle structure reportée :", copyErr);
+        }
+        schemas.push({ ...legacy, id });
+        known.add(id);
+      }
+    } catch {
+      /* ancienne collection supprimée ou inaccessible : rien à reprendre */
+    }
+
+    return schemas;
   } catch (err) {
     handleFirestoreError(err, OperationType.LIST, path);
   }
@@ -322,11 +349,18 @@ export async function deleteTacticFromFirestore(tacticId: string) {
   if (!auth.currentUser) {
     return;
   }
-  const path = `tactics/${tacticId}`;
+  const currentUid = auth.currentUser.uid;
+  const path = `users/${currentUid}/schemas/${tacticId}`;
   try {
-    await deleteDoc(doc(db, "tactics", tacticId));
+    await deleteDoc(schemaDoc(currentUid, tacticId));
   } catch (err) {
     handleFirestoreError(err, OperationType.DELETE, path);
+  }
+  // Ancienne copie éventuelle (sinon le schéma réapparaîtrait à la prochaine connexion)
+  try {
+    await deleteDoc(doc(db, "tactics", tacticId));
+  } catch {
+    /* pas d'ancienne copie */
   }
 }
 
