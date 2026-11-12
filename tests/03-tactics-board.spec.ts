@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { ADMIN, COACH, requireTestAccount } from './e2e-credentials';
+import { login, openMoreTools, setSport } from './helpers';
+
+requireTestAccount();
 
 // Fonction utilitaire pour se connecter rapidement au tableau tactique
 async function connectToTacticsBoard(page: any) {
@@ -9,8 +13,8 @@ async function connectToTacticsBoard(page: any) {
 
   // Soumission du formulaire avec un compte coach démo
   const loginForm = page.locator('form').filter({ hasText: /OU AVEC IDENTIFIANTS/i });
-  await loginForm.locator('input[type="email"]').fill('coach.demo@thebox.com');
-  await loginForm.locator('input[type="password"]').fill('Secur3P@ssw0rd!');
+  await loginForm.locator('input[type="email"]').fill(COACH.email);
+  await loginForm.locator('input[type="password"]').fill(COACH.password);
   await loginForm.locator('button[type="submit"]').click();
 
   // Attente de l'affichage du terrain de football
@@ -37,13 +41,15 @@ test.describe('Section 3 : Tableau Tactique 2D & Manipulation des Éléments (FT
     await expect(fullPitchBtn).toBeVisible();
     await fullPitchBtn.click();
 
-    // 4. Contrôles de zoom (+ et -)
-    const zoomInBtn = page.locator('button[title*="Zoom avant (Terrain)"], button:has-text("+")').first();
-    if (await zoomInBtn.isVisible()) {
-      await zoomInBtn.click();
-      // L'indicateur d'échelle augmente
-      await expect(page.locator('text=%').first()).toBeVisible();
-    }
+    // 4. Contrôles de zoom (+ et -), rangés dans « Plus d'outils » sur les écrans étroits
+    await openMoreTools(page);
+    const zoomLevel = page.getByRole('button', { name: /^\d+%$/ }).first();
+    await expect(zoomLevel).toHaveText('100%');
+    await zoomLevel.locator('xpath=following-sibling::button[1]').click();
+    // L'indicateur d'échelle augmente
+    await expect(zoomLevel).not.toHaveText('100%');
+    await zoomLevel.locator('xpath=preceding-sibling::button[1]').click();
+    await expect(zoomLevel).toHaveText('100%');
   });
 
   test('FT-TAC-02 : Présence des Pions Joueurs et du Ballon sur la Pelouse', async ({ page }) => {
@@ -84,64 +90,40 @@ test.describe('Section 3 : Tableau Tactique 2D & Manipulation des Éléments (FT
       await expect(page.locator('svg[viewBox="0 0 44 48"]').first()).toBeVisible();
     }
   });
+});
+
+// Changement de sport : réservé à un compte admin (les autres sports sont verrouillés pour les coachs).
+test.describe('Section 3 : Ballon selon le sport (FT-TAC-04)', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page, ADMIN);
+  });
+
+  test.afterEach(async ({ page }) => {
+    // Le sport est enregistré sur le compte : on revient au football pour les tests suivants
+    if (!(await page.locator('#pitch-football').isVisible().catch(() => false))) {
+      await setSport(page, 'football').catch(() => {});
+    }
+  });
 
   test('FT-TAC-04 : Adaptation de la Représentation du Ballon selon le Sport (Football, Rugby, Basket, Hand)', async ({ page }) => {
+    test.setTimeout(90000);
     // 1. En football par défaut : vérifier la présence du ballon de football sur le terrain
     const footballBall = page.locator('[data-testid="ball-football"]');
     await expect(footballBall).toBeVisible({ timeout: 10000 });
 
-    // 2. Vérifier le bouton de masquage / affichage du ballon dans la barre d'outils
-    const hideBallBtn = page.locator('button[title*="ballon"]').first();
-    await expect(hideBallBtn).toBeVisible();
-    await hideBallBtn.click();
-
-    // Le ballon est masqué
+    // 2. Masquer puis réafficher le ballon (bouton rangé dans « Plus d'outils » sur les écrans étroits)
+    await openMoreTools(page);
+    await page.getByRole('button', { name: /Masquer le ballon/ }).click();
     await expect(footballBall).not.toBeVisible();
 
-    // Réafficher le ballon
-    await hideBallBtn.click();
+    await openMoreTools(page);
+    await page.getByRole('button', { name: /Afficher le ballon/ }).click();
     await expect(footballBall).toBeVisible();
 
-    // 3. Basculer vers Rugby via le menu utilisateur
-    const userMenuTrigger = page.locator('button:visible').filter({ hasText: /COACH DÉMO|DEMO|ADMIN/i }).first();
-    if (await userMenuTrigger.isVisible()) {
-      await userMenuTrigger.click();
-      const configItem = page.locator('button:has-text("Configuration Profil & Sport")').first();
-      if (await configItem.isVisible()) {
-        await configItem.click();
-
-        const sportSelect = page.locator('select').filter({ hasText: 'Rugby' }).first();
-        await sportSelect.selectOption('rugby');
-
-        await page.locator('button[type="submit"]').filter({ hasText: /Enregistrer/i }).first().click();
-        await page.waitForTimeout(400);
-
-        // Vérification de la représentation ballon de rugby (ovale)
-        const rugbyBall = page.locator('[data-testid="ball-rugby"]');
-        await expect(rugbyBall).toBeVisible({ timeout: 10000 });
-
-        // 4. Basculer vers Basketball
-        await userMenuTrigger.click();
-        await configItem.click();
-        await sportSelect.selectOption('basketball');
-        await page.locator('button[type="submit"]').filter({ hasText: /Enregistrer/i }).first().click();
-        await page.waitForTimeout(400);
-
-        // Vérification de la représentation ballon de basketball
-        const basketBall = page.locator('[data-testid="ball-basketball"]');
-        await expect(basketBall).toBeVisible({ timeout: 10000 });
-
-        // 5. Basculer vers Handball
-        await userMenuTrigger.click();
-        await configItem.click();
-        await sportSelect.selectOption('handball');
-        await page.locator('button[type="submit"]').filter({ hasText: /Enregistrer/i }).first().click();
-        await page.waitForTimeout(400);
-
-        // Vérification de la représentation ballon de handball
-        const handballBall = page.locator('[data-testid="ball-handball"]');
-        await expect(handballBall).toBeVisible({ timeout: 10000 });
-      }
+    // 3. Chaque sport affiche son propre ballon
+    for (const sport of ['rugby', 'basketball', 'handball'] as const) {
+      await setSport(page, sport);
+      await expect(page.locator(`[data-testid="ball-${sport}"]`)).toBeVisible({ timeout: 10000 });
     }
   });
 });

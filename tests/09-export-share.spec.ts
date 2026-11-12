@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { ADMIN, requireTestAccount } from './e2e-credentials';
+
+requireTestAccount();
 
 async function connectToTacticsBoard(page: any) {
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.addInitScript(() => {
-    localStorage.setItem('thebox_admin_mode', 'true');
     localStorage.setItem('thebox_tutorial_seen', 'true');
   });
 
@@ -18,8 +20,8 @@ async function connectToTacticsBoard(page: any) {
   }
   await expect(loginForm).toBeVisible({ timeout: 10000 });
 
-  await loginForm.locator('input[type="email"]').fill('pixup.agence@gmail.com');
-  await loginForm.locator('input[type="password"]').fill('Secur3P@ssw0rd!');
+  await loginForm.locator('input[type="email"]').fill(ADMIN.email);
+  await loginForm.locator('input[type="password"]').fill(ADMIN.password);
   await loginForm.locator('button[type="submit"]').click();
 
   await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 15000 });

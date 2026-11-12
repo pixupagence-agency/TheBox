@@ -496,6 +496,8 @@ interface TacticsBoardProps {
   sportsConfig?: any[];
   onOpenAdminPlatform?: (tab?: any, sectionId?: string) => void;
   onOpenTrialModal?: () => void;
+  /** Incrémenté par la page pour ouvrir la fenêtre des formules (ex. depuis la modale d'essai). */
+  checkoutRequest?: number;
   onOpenTutorial?: () => void;
   onOpenLegalModal?: (tab?: any) => void;
   isFirstLogin?: boolean;
@@ -768,6 +770,7 @@ export default function TacticsBoard({
   sportsConfig = [],
   onOpenAdminPlatform,
   onOpenTrialModal,
+  checkoutRequest = 0,
   onOpenTutorial,
   onOpenLegalModal,
   isFirstLogin,
@@ -1625,6 +1628,11 @@ export default function TacticsBoard({
   // Subscription Checkout Modal
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
+  // Ouverture demandée depuis l'extérieur du tableau (bouton « Découvrir les Offres Pro » de la modale d'essai)
+  useEffect(() => {
+    if (checkoutRequest > 0) setIsCheckoutOpen(true);
+  }, [checkoutRequest]);
+
   // User Profile & Sport Configuration Modal State
   const [isUserConfigModalOpen, setIsUserConfigModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -1794,6 +1802,14 @@ export default function TacticsBoard({
     };
   // false quand le coach n'a (encore) aucun match pour l'équipe active
   const hasActiveMatch = Boolean(activeMatch.id);
+
+  // Un schéma appartient au match donné. Sans match (matchId vide, les matchs étant facultatifs),
+  // on rattache les schémas enregistrés hors match, ainsi que ceux dont le match a été supprimé.
+  // Les anciens schémas sans matchId restent rattachés au match historique "match_1".
+  const schemaBelongsToMatch = (sc: { matchId?: string }, matchId: string) => {
+    if (!matchId) return !sc.matchId || !matchesList.some((m) => m.id === sc.matchId);
+    return (sc.matchId || "match_1") === matchId;
+  };
 
   const displayClubTitle = activeMatch?.homeTeam || activeTeam?.name || "MON EQUIPE";
 
@@ -2302,7 +2318,7 @@ export default function TacticsBoard({
     }
 
     // Filter schemas specifically linked to this match
-    const matchSchemas = savedTactics.filter(sc => (sc.matchId || "match_1") === matchId);
+    const matchSchemas = savedTactics.filter(sc => schemaBelongsToMatch(sc, matchId));
     if (matchSchemas.length > 0) {
       // Load the first schema of this match
       const schema = matchSchemas[0];
@@ -4906,7 +4922,7 @@ export default function TacticsBoard({
         schema?.sport || activeSport
       ),
       ...savedTactics
-        .filter((s) => (s.matchId || "match_1") === activeMatchId)
+        .filter((s) => schemaBelongsToMatch(s, activeMatchId))
         .map((s) => preloadExportPortraits(collectFrameTokens(s.keyframes).concat(s.players || [], s.tokens || []), s.sport || activeSport)),
     ]);
 
@@ -4921,7 +4937,7 @@ export default function TacticsBoard({
 
     // Match-associated saved schemas
     const matchSavedSchemas = savedTactics
-      .filter((s) => (s.matchId || "match_1") === activeMatchId)
+      .filter((s) => schemaBelongsToMatch(s, activeMatchId))
       .map((s) => ({
         id: s.id,
         name: s.name,
@@ -5998,7 +6014,7 @@ export default function TacticsBoard({
       ctx.fillText(`Date & Heure : ${activeMatch?.dateTime || activeMatch?.date || "Non renseignée"}`, p2X + 15, footerY + 126);
       ctx.fillText(`Temps de Jeu : ${formatLiveTime(liveTimerSeconds)}`, p2X + 15, footerY + 154);
       ctx.fillText(`Buts enregistrés : ${matchEvents.filter(e => e.type === "goal").length}`, p2X + 15, footerY + 182);
-      ctx.fillText(`Schémas tactiques liés : ${savedTactics.filter(sc => (sc.matchId || "match_1") === activeMatchId).length}`, p2X + 15, footerY + 210);
+      ctx.fillText(`Schémas tactiques liés : ${savedTactics.filter(sc => schemaBelongsToMatch(sc, activeMatchId)).length}`, p2X + 15, footerY + 210);
 
       // Panel 3: Tactical Notes & Remarks
       ctx.fillStyle = "#111827";
@@ -11429,14 +11445,14 @@ export default function TacticsBoard({
                     </span>
                     <span className={`px-1.5 py-0.2 rounded text-[7.5px] font-extrabold shrink-0 ${isModernSleek ? "bg-emerald-100 text-emerald-800" : "bg-[#00E599]/20 text-[#00E599]"
                       }`}>
-                      {savedTactics.filter(sc => (sc.matchId || "match_1") === activeMatchId).length}
+                      {savedTactics.filter(sc => schemaBelongsToMatch(sc, activeMatchId)).length}
                     </span>
                   </div>
 
                   {/* Saved Playbooks scroll list */}
                   <div className="space-y-1.5 max-h-56 overflow-y-auto scrollbar-thin">
                     {(() => {
-                      const matchSchemas = savedTactics.filter(sc => (sc.matchId || "match_1") === activeMatchId);
+                      const matchSchemas = savedTactics.filter(sc => schemaBelongsToMatch(sc, activeMatchId));
 
                       if (matchSchemas.length === 0) {
                         return (

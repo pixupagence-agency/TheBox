@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { COACH, requireTestAccount } from './e2e-credentials';
 
 test.describe('Section 12 : Installation PWA, Mode Plein Écran & Ergonomie Tactile (FT-PWA)', () => {
   test('FT-PWA-01 : Présence du Web App Manifest pour Installation PWA', async ({ page }) => {
@@ -14,10 +15,10 @@ test.describe('Section 12 : Installation PWA, Mode Plein Écran & Ergonomie Tact
   });
 
   test('FT-PWA-02 : Mode Plein Écran & Bouton Dédié à la Projection Vestiaire', async ({ page }) => {
+    requireTestAccount();
     // Connexion rapide au tableau tactique
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.addInitScript(() => {
-      localStorage.setItem('thebox_admin_mode', 'true');
       localStorage.setItem('thebox_tutorial_seen', 'true');
     });
 
@@ -32,8 +33,8 @@ test.describe('Section 12 : Installation PWA, Mode Plein Écran & Ergonomie Tact
     }
     await expect(loginForm).toBeVisible({ timeout: 10000 });
 
-    await loginForm.locator('input[type="email"]').fill('coach.demo@thebox.com');
-    await loginForm.locator('input[type="password"]').fill('Secur3P@ssw0rd!');
+    await loginForm.locator('input[type="email"]').fill(COACH.email);
+    await loginForm.locator('input[type="password"]').fill(COACH.password);
     await loginForm.locator('button[type="submit"]').click();
 
     await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 15000 });

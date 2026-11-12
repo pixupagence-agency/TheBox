@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { COACH, requireTestAccount } from './e2e-credentials';
+
+requireTestAccount();
 
 // Connexion rapide au tableau tactique
 async function connectToTacticsBoard(page: any) {
@@ -7,8 +10,8 @@ async function connectToTacticsBoard(page: any) {
   await loginBtn.click();
 
   const loginForm = page.locator('form').filter({ hasText: /OU AVEC IDENTIFIANTS/i });
-  await loginForm.locator('input[type="email"]').fill('coach.demo@thebox.com');
-  await loginForm.locator('input[type="password"]').fill('Secur3P@ssw0rd!');
+  await loginForm.locator('input[type="email"]').fill(COACH.email);
+  await loginForm.locator('input[type="password"]').fill(COACH.password);
   await loginForm.locator('button[type="submit"]').click();
 
   await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 15000 });
@@ -41,14 +44,16 @@ test.describe('Section 6 : Gestion de l\'Effectif, Formations & Causerie Vocale 
   });
 
   test('FT-ROST-02 : Panneau d\'Effectif & Rôles (Affichage des têtes de joueurs par défaut)', async ({ page }) => {
-    // 1. Ouvrir le panneau d'effectif ("Rôles" / "Effectif")
-    const rosterBtn = page.locator('button:has-text("Rôles"), button:has-text("Effectif")').first();
+    // 1. Ouvrir le panneau d'effectif (bouton « Effectif (26) » du panneau Mon Équipe)
+    const rosterBtn = page.getByRole('button', { name: /^Effectif/ }).first();
     await expect(rosterBtn).toBeVisible();
     await rosterBtn.click();
 
-    // 2. La modale d'effectif et rôles s'affiche
-    const rosterModalTitle = page.locator('h3:has-text("EFFECTIF & RÔLES")').first();
+    // 2. La modale d'effectif s'affiche, avec ses filtres Titulaires / Banc
+    const rosterModalTitle = page.getByRole('heading', { name: 'Effectif', exact: true });
     await expect(rosterModalTitle).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Titulaires \d+$/ }).filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Banc \d+$/ }).filter({ visible: true }).first()).toBeVisible();
 
     // 3. Vérifier que la tête du joueur par défaut s'affiche sur chaque joueur (titulaires + remplaçants)
     const defaultAvatars = page.locator('img[src*="/images/avatars/"]');
@@ -57,12 +62,8 @@ test.describe('Section 6 : Gestion de l\'Effectif, Formations & Causerie Vocale 
     await expect(defaultAvatars.first()).toBeVisible();
 
     // 4. Fermeture par le bouton Fermer
-    const closeBtn = page.locator('button[title="Fermer"]').last();
-    if (await closeBtn.isVisible()) {
-      await closeBtn.click();
-    } else {
-      await page.keyboard.press('Escape');
-    }
+    await page.getByRole('button', { name: 'Fermer', exact: true }).first().click();
+    await expect(rosterModalTitle).not.toBeVisible();
   });
 
   test('FT-ROST-03 : Bloc-Notes Tactique & Consignes du Coach', async ({ page }) => {

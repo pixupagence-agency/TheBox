@@ -1,96 +1,49 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+import { ADMIN, requireTestAccount } from './e2e-credentials';
+import { login } from './helpers';
 
-// Utilitaire de connexion coach PRO
-async function connectAsProCoach(page: any) {
-  await page.setViewportSize({ width: 1600, height: 900 });
-  await page.addInitScript(() => {
-    localStorage.setItem('thebox_admin_mode', 'true');
-    localStorage.setItem('thebox_tutorial_seen', 'true');
-  });
+requireTestAccount();
 
-  await page.goto('/');
-  const loginBtn = page.getByRole('button', { name: /Se Connecter/i }).first();
-  await expect(loginBtn).toBeVisible({ timeout: 10000 });
-  await loginBtn.click();
+/** Ouvre « Enregistrer sous », nomme le schéma et l'enregistre. Vérifie aussi que la copie en ligne n'a pas échoué. */
+async function saveSchema(page: Page, name: string, notes?: string) {
+  await page.getByRole('button', { name: /Enregistrer sous/ }).click();
+  await expect(page.getByRole('heading', { name: 'Sauvegarder ce schéma' })).toBeVisible({ timeout: 5000 });
 
-  const loginForm = page.locator('form').filter({ hasText: /OU AVEC IDENTIFIANTS/i });
-  if (!(await loginForm.isVisible({ timeout: 2000 }).catch(() => false))) {
-    await loginBtn.click();
+  const nameInput = page.locator('input[type="text"]').last();
+  await nameInput.fill(name);
+  if (notes) {
+    await page.getByPlaceholder(/Consignes, objectifs/).fill(notes);
   }
-  await expect(loginForm).toBeVisible({ timeout: 10000 });
 
-  await loginForm.locator('input[type="email"]').fill('pixup.agence@gmail.com');
-  await loginForm.locator('input[type="password"]').fill('Secur3P@ssw0rd!');
-  await loginForm.locator('button[type="submit"]').click();
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).last().click();
+  await expect(page.locator('text=sauvegardé avec succès').first()).toBeVisible({ timeout: 5000 });
 
-  await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 15000 });
-
-  // Ouvrir le volet latéral droit s'il est replié
-  const openSidebarBtn = page.locator('button:has-text("SCHÉMAS & MATCHS")').first();
-  if (await openSidebarBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await openSidebarBtn.click();
-    await page.waitForTimeout(400);
-  }
+  // La sauvegarde en ligne (Firestore) ne doit pas avoir échoué
+  await page.waitForTimeout(2000);
+  await expect(page.locator('text=La sauvegarde en ligne du schéma a échoué')).toHaveCount(0);
+  await expect(page.locator('text=trop volumineux pour la sauvegarde en ligne')).toHaveCount(0);
 }
 
 test.describe('Section 8 : Sauvegarde Cloud & Bibliothèque de Stratégies (FT-LIB)', () => {
   test.beforeEach(async ({ page }) => {
-    await connectAsProCoach(page);
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await login(page, ADMIN);
   });
 
   test('FT-LIB-01 : Sauvegarde d\'un Schéma Tactique Personnalisé', async ({ page }) => {
-    // 1. Ouvrir la modale d'enregistrement de schéma (bouton disquette dans le panneau droit)
-    const saveTriggerBtn = page.locator('button[title*="Enregistrer sous"], button[title*="Sauvegarder"]').first();
-    await expect(saveTriggerBtn).toBeVisible({ timeout: 5000 });
-    await saveTriggerBtn.click();
-
-    // 2. Vérifier que la modale d'enregistrement s'affiche
-    const saveModalHeading = page.locator('h3:has-text("Sauvegarder"), h3:has-text("Enregistrer")').first();
-    await expect(saveModalHeading).toBeVisible({ timeout: 5000 });
-
-    // 3. Saisir les détails de la tactique
-    const nameInput = page.locator('input[type="text"]').last();
-    await nameInput.fill('Corner Court Combiné 1er Poteau');
-
-    const descTextarea = page.locator('textarea[placeholder*="Consignes"]').first();
-    if (await descTextarea.isVisible()) {
-      await descTextarea.fill('Appel au premier poteau du N°9 suivi d\'une remise.');
-    }
-
-    // 4. Confirmer l'enregistrement
-    const confirmBtn = page.locator('button:has-text("Confirmer l\'enregistrement")').first();
-    await expect(confirmBtn).toBeVisible();
-    await confirmBtn.click();
-
-    // 5. Vérifier la confirmation de succès
-    await expect(page.locator('text=succès').first()).toBeVisible({ timeout: 5000 });
+    await saveSchema(page, 'Corner Court Combiné 1er Poteau', 'Appel au premier poteau du N°9 suivi d\'une remise.');
   });
 
   test('FT-LIB-02 : Consultation et Chargement d\'un Schéma Sauvegardé', async ({ page }) => {
-    // 1. Sauvegarder d'abord un schéma pour le test
-    const saveTriggerBtn = page.locator('button[title*="Enregistrer sous"], button[title*="Sauvegarder"]').first();
-    await expect(saveTriggerBtn).toBeVisible({ timeout: 5000 });
-    await saveTriggerBtn.click();
+    const testSchemaName = `Attaque Rapide ${Date.now()}`;
+    await saveSchema(page, testSchemaName);
 
-    const nameInput = page.locator('input[type="text"]').last();
-    const testSchemaName = 'Attaque Rapide Couloir Droit';
-    await nameInput.fill(testSchemaName);
+    // Le schéma apparaît dans la liste des schémas du panneau droit
+    const savedSchemaItem = page.getByText(testSchemaName).first();
+    await expect(savedSchemaItem).toBeVisible({ timeout: 8000 });
 
-    const confirmBtn = page.locator('button:has-text("Confirmer l\'enregistrement")').first();
-    await confirmBtn.click();
-    await expect(page.locator('text=succès').first()).toBeVisible({ timeout: 5000 });
-
-    // Attendre la fermeture automatique de la modale
-    await page.waitForTimeout(1500);
-
-    // 2. Vérifier que le schéma apparaît dans la liste des schémas sauvegardés
-    const savedSchemaItem = page.locator(`text=${testSchemaName}`).first();
-    await expect(savedSchemaItem).toBeVisible({ timeout: 5000 });
-
-    // 3. Cliquer sur le schéma pour le charger sur le terrain
+    // On le recharge sur le terrain
     await savedSchemaItem.click();
-
-    // 4. Vérifier la confirmation de chargement (toast informatif)
-    await expect(page.locator(`text=${testSchemaName}`).first()).toBeVisible();
+    await expect(page.getByText(testSchemaName).first()).toBeVisible();
   });
 });

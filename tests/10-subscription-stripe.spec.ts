@@ -1,75 +1,47 @@
 import { test, expect } from '@playwright/test';
+import { ADMIN, COACH, requireTestAccount } from './e2e-credentials';
+import { login } from './helpers';
 
-// Connexion en coach standard avec période d'essai active (14 jours)
-async function connectAsStandardCoach(page: any) {
-  await page.setViewportSize({ width: 1600, height: 900 });
-  await page.addInitScript(() => {
-    localStorage.removeItem('thebox_admin_mode');
-    localStorage.setItem('thebox_tutorial_seen', 'true');
-  });
+requireTestAccount();
 
-  await page.goto('/');
-  const loginBtn = page.getByRole('button', { name: /Se Connecter/i }).first();
-  await expect(loginBtn).toBeVisible({ timeout: 10000 });
-  await loginBtn.click();
-
-  const loginForm = page.locator('form').filter({ hasText: /OU AVEC IDENTIFIANTS/i });
-  if (!(await loginForm.isVisible({ timeout: 2000 }).catch(() => false))) {
-    await loginBtn.click();
-  }
-  await expect(loginForm).toBeVisible({ timeout: 10000 });
-
-  await loginForm.locator('input[type="email"]').fill('coach.demo@thebox.com');
-  await loginForm.locator('input[type="password"]').fill('Secur3P@ssw0rd!');
-  await loginForm.locator('button[type="submit"]').click();
-
-  await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 15000 });
-}
+// Ces tests demandent un coach standard en période d'essai : un compte admin n'a ni décompte ni offres à souscrire.
+test.skip(
+  COACH.email === ADMIN.email,
+  'E2E_EMAIL doit être un compte coach non admin (distinct de E2E_ADMIN_EMAIL)'
+);
 
 test.describe('Section 10 : Abonnements, Période d\'Essai & Paiement Stripe (FT-SUB)', () => {
   test.beforeEach(async ({ page }) => {
-    await connectAsStandardCoach(page);
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await login(page, COACH);
   });
 
   test('FT-SUB-01 : Badge de Décompte d\'Essai & Modale TrialCountdownModal', async ({ page }) => {
-    // 1. Repérer le badge du compte à rebours d'essai dans le header
-    const trialBadge = page.locator('button[title*="Période d\'essai"], button:has-text("Démo Pro")').first();
+    // 1. Badge « Démo Pro : 13j 23h… » dans l'en-tête
+    const trialBadge = page.locator('button:has-text("Démo Pro")').first();
     await expect(trialBadge).toBeVisible({ timeout: 5000 });
-
-    // 2. Cliquer sur le badge pour ouvrir la modale TrialCountdownModal
     await trialBadge.click();
 
-    // 3. Vérifier les informations de la modale d'essai
-    const trialModalHeading = page.locator('text=Période d\'Essai Pro').first();
-    await expect(trialModalHeading).toBeVisible({ timeout: 5000 });
+    // 2. Modale de période d'essai
+    await expect(page.getByRole('heading', { name: "Période d'Essai Pro" })).toBeVisible({ timeout: 5000 });
 
-    // 4. Fermer la modale
-    const closeBtn = page.locator('button:has-text("Continuer mon entraînement"), button:has(svg.lucide-x)').last();
-    if (await closeBtn.isVisible()) {
-      await closeBtn.click();
-    }
+    // 3. Fermeture
+    await page.getByRole('button', { name: /Continuer mon entraînement|Commencer à utiliser THE BOX/ }).click();
+    await expect(page.getByRole('heading', { name: "Période d'Essai Pro" })).not.toBeVisible();
   });
 
   test('FT-SUB-02 : Consultation des Offres et Plans d\'Abonnement PRO & PRO+', async ({ page }) => {
     // 1. Ouvrir la modale d'essai
-    const trialBadge = page.locator('button[title*="Période d\'essai"], button:has-text("Démo Pro")').first();
-    await expect(trialBadge).toBeVisible({ timeout: 5000 });
-    await trialBadge.click();
+    await page.locator('button:has-text("Démo Pro")').first().click();
 
-    // 2. Cliquer sur le CTA vers les offres Pro (intercepter la boîte de dialogue d'information)
-    page.once('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-    const choosePlanBtn = page.locator('button:has-text("Découvrir les Offres Pro")').first();
+    // 2. « Découvrir les Offres Pro » ouvre les formules
+    const choosePlanBtn = page.getByRole('button', { name: /Découvrir les Offres Pro/ });
     await expect(choosePlanBtn).toBeVisible({ timeout: 5000 });
     await choosePlanBtn.click();
 
-    // 3. Cliquer sur le badge Formule PRO dans le header pour ouvrir la modale d'abonnements
-    const proBadge = page.locator('button:has-text("Formule PRO")').first();
-    await expect(proBadge).toBeVisible({ timeout: 5000 });
-    await proBadge.click();
-
-    // 4. Vérification de l'ouverture de la modale d'abonnements
-    await expect(page.locator('text=ABONNEMENTS & FORMULES THE BOX').first()).toBeVisible({ timeout: 5000 });
+    // 3. Les deux formules sont proposées
+    await expect(page.getByText(/Abonnements & (Licences Club|Formules The Box)/i).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Formule PRO', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Formule PRO+', { exact: true }).first()).toBeVisible();
   });
 });

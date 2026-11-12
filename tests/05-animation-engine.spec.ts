@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { COACH, requireTestAccount } from './e2e-credentials';
+
+requireTestAccount();
 
 // Connexion rapide au tableau tactique
 async function connectToTacticsBoard(page: any) {
@@ -7,8 +10,8 @@ async function connectToTacticsBoard(page: any) {
   await loginBtn.click();
 
   const loginForm = page.locator('form').filter({ hasText: /OU AVEC IDENTIFIANTS/i });
-  await loginForm.locator('input[type="email"]').fill('coach.demo@thebox.com');
-  await loginForm.locator('input[type="password"]').fill('Secur3P@ssw0rd!');
+  await loginForm.locator('input[type="email"]').fill(COACH.email);
+  await loginForm.locator('input[type="password"]').fill(COACH.password);
   await loginForm.locator('button[type="submit"]').click();
 
   await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 15000 });

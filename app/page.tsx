@@ -293,6 +293,8 @@ export default function Home() {
 
   // Trial 14 days states & Onboarding Tutorial
   const [isTrialModalOpen, setIsTrialModalOpen] = useState<boolean>(false);
+  // Demande d'ouverture de la fenêtre des formules dans le tableau tactique
+  const [checkoutRequest, setCheckoutRequest] = useState(0);
   const [isNewAccountWelcome, setIsNewAccountWelcome] = useState<boolean>(false);
   const [isOnboardingTutorialOpen, setIsOnboardingTutorialOpen] = useState<boolean>(false);
 
@@ -749,6 +751,7 @@ export default function Home() {
             setIsNewAccountWelcome(false);
             setIsTrialModalOpen(true);
           }}
+          checkoutRequest={checkoutRequest}
           onOpenTutorial={() => setIsOnboardingTutorialOpen(true)}
           onOpenLegalModal={handleOpenLegalModal}
           isFirstLogin={isFirstLogin}
@@ -832,9 +835,9 @@ export default function Home() {
           }
         }}
         onOpenCheckout={() => {
+          // Ouvre les formules PRO / PRO+. La formule ne change qu'après paiement (webhook Stripe).
           setIsTrialModalOpen(false);
-          setActivePlan("pro");
-          alert("Offres Pro & Pro+ : Vous bénéficiez déjà d'un accès Pro & Pro+ pendant vos 14 jours d'essai offert !");
+          setCheckoutRequest((n) => n + 1);
         }}
       />
 
