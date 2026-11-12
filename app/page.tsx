@@ -112,16 +112,6 @@ export default function Home() {
   const [newPassword, setNewPassword] = useState("");
   const [newConfirmPassword, setNewConfirmPassword] = useState("");
 
-  // Drapeaux admin stockés localement : lus après le montage pour éviter une erreur d'hydratation
-  const [hasLocalAdminFlag, setHasLocalAdminFlag] = useState(false);
-  useEffect(() => {
-    try {
-      setHasLocalAdminFlag(localStorage.getItem("thebox_admin_mode") === "true" || localStorage.getItem("thebox_guide_admin") === "true");
-    } catch {
-      // stockage indisponible (navigation privée) : on garde false
-    }
-  }, []);
-
   // Derived active state - compute admin status with safe fallback
   const activeCoach = coaches.find(c => c.id === activeCoachId) || coaches[0] || {
     id: "",
@@ -137,9 +127,7 @@ export default function Home() {
     activeCoach && (
       activeCoach.isAdmin ||
       activeCoach.role === "Super Admin" ||
-      isSuperAdminEmail(activeCoach.email) ||
-      activeCoach.email?.toLowerCase().includes("pixup") ||
-      hasLocalAdminFlag
+      isSuperAdminEmail(activeCoach.email)
     )
   );
 
@@ -382,15 +370,18 @@ export default function Home() {
 
         // Send welcome email if new account created (retried at next login if the send failed)
         if (isNewUser && email) {
-          fetch("/api/send-welcome-email", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: email,
-              firstName: coachData.firstName,
-              lastName: coachData.lastName,
-            }),
-          })
+          firebaseUser
+            .getIdToken()
+            .then((idToken) =>
+              fetch("/api/send-welcome-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+                body: JSON.stringify({
+                  firstName: coachData.firstName,
+                  lastName: coachData.lastName,
+                }),
+              })
+            )
             .then(async (res) => {
               const data = await res.json().catch(() => ({}));
               if (!res.ok || !data?.success) {

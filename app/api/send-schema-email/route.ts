@@ -9,6 +9,7 @@ import {
   getClientIp,
   isAllowedOrigin
 } from "@/lib/security";
+import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,6 +28,29 @@ export async function POST(req: NextRequest) {
           status: 429, 
           headers: { "Retry-After": String(rateCheck.retryAfterSeconds || 60) } 
         }
+      );
+    }
+
+    // Réservé aux coachs connectés, avec un plafond d'envois par compte (le destinataire est libre :
+    // le coach peut viser un joueur ou un adjoint).
+    const authHeader = req.headers.get("authorization") || "";
+    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const user = await verifyFirebaseIdToken(idToken);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Veuillez vous connecter à votre compte coach pour envoyer un schéma par e-mail.", requiresAuth: true },
+        { status: 401 }
+      );
+    }
+
+    const hourCheck = checkRateLimit(`schema_uid_h_${user.uid}`, 20, 60 * 60_000);
+    const dayCheck = hourCheck.allowed
+      ? checkRateLimit(`schema_uid_d_${user.uid}`, 60, 24 * 60 * 60_000)
+      : hourCheck;
+    if (!dayCheck.allowed) {
+      return NextResponse.json(
+        { error: `Limite d'envois atteinte. Réessayez dans ${Math.ceil((dayCheck.retryAfterSeconds || 60) / 60)} min.` },
+        { status: 429, headers: { "Retry-After": String(dayCheck.retryAfterSeconds || 60) } }
       );
     }
 

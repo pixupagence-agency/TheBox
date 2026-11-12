@@ -233,8 +233,8 @@ export default function TrialCountdownModal({
             </div>
           )}
 
-          {/* Quick Demo Simulator / Extension Controls */}
-          {(onAddBonusDays || onResetDemo) && (
+          {/* Quick Demo Simulator / Extension Controls : réservé aux admins (sinon un coach prolongerait son essai) */}
+          {isCreatorAdmin && (onAddBonusDays || onResetDemo) && (
             <div className={`mt-3 pt-3 border-t flex flex-wrap items-center justify-between gap-2 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
               <span className={`text-[10px] font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>Actions Démo :</span>
               <div className="flex items-center gap-1.5">

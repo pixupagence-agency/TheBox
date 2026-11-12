@@ -27,6 +27,7 @@ import {
   Video
 } from "lucide-react";
 import { toPng } from "html-to-image";
+import { auth } from "@/lib/firebase";
 import { clampStepDuration, getAnimationDuration, getPositionAtTime } from "@/lib/animationExport";
 import { encodeCanvasToMp4 } from "@/lib/canvasMp4Encoder";
 import { getPremiumTheme, premiumOverlay, premiumShell } from "@/lib/premiumModalTheme";
@@ -721,9 +722,13 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
     try {
       const { subject, body } = generateEmailData();
       const mediaToSend = (isAnimMode && (dynamicGifUrl || data.gifUrl)) ? (dynamicGifUrl || data.gifUrl) : activeImageUrl;
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
       const res = await fetch("/api/send-schema-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
         body: JSON.stringify({
           email: target,
           subject,

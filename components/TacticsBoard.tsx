@@ -829,9 +829,7 @@ export default function TacticsBoard({
     isAdmin ||
     activeCoach?.isAdmin ||
     activeCoach?.role === "Super Admin" ||
-    isSuperAdminEmail(activeCoach?.email) ||
-    activeCoach?.email?.toLowerCase().includes("pixup") ||
-    (typeof window !== "undefined" && (localStorage.getItem("thebox_admin_mode") === "true" || localStorage.getItem("thebox_guide_admin") === "true"))
+    isSuperAdminEmail(activeCoach?.email)
   );
 
   const currentPlan = (activeCoach as any)?.activePlan || activePlan || "free";

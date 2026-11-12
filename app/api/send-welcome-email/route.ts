@@ -8,6 +8,7 @@ import {
   getClientIp, 
   isAllowedOrigin 
 } from "@/lib/security";
+import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,10 +35,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Données de bienvenue invalides." }, { status: 400 });
     }
 
-    const { email, firstName, lastName } = body;
+    // Seul un coach connecté peut déclencher l'e-mail, et uniquement vers sa propre adresse :
+    // l'adresse envoyée par le navigateur est ignorée (sinon la route servirait à envoyer du spam).
+    const authHeader = req.headers.get("authorization") || "";
+    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const user = await verifyFirebaseIdToken(idToken);
+    if (!user) {
+      return NextResponse.json({ error: "Connexion requise.", requiresAuth: true }, { status: 401 });
+    }
+
+    const userCheck = checkRateLimit(`welcome_uid_${user.uid}`, 3, 24 * 60 * 60_000);
+    if (!userCheck.allowed) {
+      return NextResponse.json({ error: "E-mail de bienvenue déjà envoyé récemment." }, { status: 429 });
+    }
+
+    const { firstName, lastName } = body;
+    const email = user.email;
 
     if (!email || !isValidEmail(email)) {
-      return NextResponse.json({ error: "Une adresse email valide est requise." }, { status: 400 });
+      return NextResponse.json({ error: "Aucune adresse e-mail valide sur ce compte." }, { status: 400 });
     }
 
     const cleanEmail = email.trim().slice(0, 254);
@@ -46,7 +62,7 @@ export async function POST(req: NextRequest) {
     const rawName = cleanFirst ? `${cleanFirst}${cleanLast ? ` ${cleanLast}` : ""}` : "Coach";
     const safeName = escapeHtml(rawName);
 
-    // Build the gorgeous HTML template for "The Box" applet
+    // Gabarit HTML de l'e-mail de bienvenue The Box
     const htmlContent = `
       <!DOCTYPE html>
       <html>
