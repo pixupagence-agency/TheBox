@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-remixthebox-9c9a5282-957d-42a3-90a8-5ca71201b52d",
+      "rules": "firestore.rules"
+    }
+  ]
+}

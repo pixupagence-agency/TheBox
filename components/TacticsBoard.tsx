@@ -29,6 +29,11 @@ import { isSuperAdminEmail } from "@/lib/security";
 import { Language, translations, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 import { confirmAction } from "@/components/ConfirmDialog";
 import { useToolbarOverflow } from "@/lib/useToolbarOverflow";
+import {
+  getGameFormatOptions, getGameFormatOption, resolveGameFormat,
+  getFormatDefaultPlayers, getFormatFormations, getFormatFormationCoords, getFormatPeriodSeconds,
+  getFormatPitchRatio, getSmallPitchSpec, smallPitchBox, drawSmallFootballPitch,
+} from "@/lib/gameFormats";
 
 // Mode live : durée de la pause (mi-temps) entre les deux moitiés du match
 const HALFTIME_BREAK_SECONDS = 15 * 60;
@@ -41,7 +46,10 @@ interface LivePeriodConfig {
   periodSeconds: number;
   breakAfterIndex: number;
 }
-const getLivePeriodConfig = (sport: string): LivePeriodConfig => {
+const getLivePeriodConfig = (sport: string, format?: string): LivePeriodConfig => {
+  // Formats réduits (foot à 8 / à 5, rugby à 7) : 2 mi-temps de durée propre au format
+  const formatSeconds = getFormatPeriodSeconds(sport, format);
+  if (formatSeconds) return { periods: ["1MT", "2MT"], periodSeconds: formatSeconds, breakAfterIndex: 0 };
   switch (sport) {
     case "basketball":
       // 4 quart-temps de 20 minutes, pause entre QT2 et QT3
@@ -104,7 +112,9 @@ export const defaultSetPieceRoles: SetPieceRoleConfig = {
   cornerRight: "",
 };
 
-const getSportRatioNum = (sport: string): number => {
+const getSportRatioNum = (sport: string, format?: string): number => {
+  const formatRatio = getFormatPitchRatio(sport, format);
+  if (formatRatio) return formatRatio;
   if (sport === "basketball") return 28 / 15; // 1.866 (matches 28x15 viewBox)
   if (sport === "rugby") return 144 / 70; // 2.057 (matches 144x70 viewBox)
   if (sport === "handball") return 40 / 20; // 2.0 (matches 40x20 viewBox)
@@ -388,6 +398,8 @@ export interface TeamCategory {
   category: string;
   color?: string;
   isDefault?: boolean;
+  /** Format de jeu de l'équipe (football : "11" | "8" | "5" ; rugby : "15" | "7"). Absent = format standard. */
+  format?: string;
 }
 
 export interface TeamRosterPlayer {
@@ -918,8 +930,47 @@ export default function TacticsBoard({
   const [teamAColor, setTeamAColor] = useState("#00E599"); // Neon Emerald
   const [teamBColor, setTeamBColor] = useState("#ef4444"); // Red
 
+  // Multi-Team Management States (PRO / PRO+ feature)
+  const [teams, setTeams] = useState<TeamCategory[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("thebox_teams");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) { }
+      }
+    }
+    return defaultTeams;
+  });
+
+  const [activeTeamId, setActiveTeamId] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("thebox_active_team_id");
+      if (saved) return saved;
+    }
+    return "team_1";
+  });
+
+  // Format de jeu (foot à 11 / 8 / 5, rugby à XV / 7) : choisi à la création de l'équipe.
+  // Un schéma enregistré dans un autre format s'affiche dans son format, jusqu'au prochain changement d'équipe.
+  const [schemaFormatOverride, setSchemaFormatOverride] = useState<{ sport: string; format: string } | null>(null);
+  const teamForFormat = teams.find((t) => t.id === activeTeamId) || teams[0];
+  const formatFor = (sport: string) =>
+    schemaFormatOverride && schemaFormatOverride.sport === sport
+      ? resolveGameFormat(sport, schemaFormatOverride.format)
+      : resolveGameFormat(sport, teamForFormat?.format);
+  const activeFormat = formatFor(activeSport);
+  const applySchemaFormat = (sport: string, format?: string) => {
+    if (getGameFormatOptions(sport).length === 0) return;
+    const resolved = resolveGameFormat(sport, format);
+    setSchemaFormatOverride(resolved === resolveGameFormat(sport, teamForFormat?.format) ? null : { sport, format: resolved });
+  };
+
   // Sport-specific default player generators & formation helpers
-  const getDefaultPlayersForSport = (sport: string): Token[] => {
+  const getDefaultPlayersForSport = (sport: string, format: string = formatFor(sport)): Token[] => {
+    const formatPlayers = getFormatDefaultPlayers(sport, format);
+    if (formatPlayers) return formatPlayers as Token[];
     switch (sport) {
       case "basketball":
         return [
@@ -1020,7 +1071,9 @@ export default function TacticsBoard({
     }
   };
 
-  const getAvailableFormationsForSport = (sport: string): string[] => {
+  const getAvailableFormationsForSport = (sport: string, format: string = formatFor(sport)): string[] => {
+    const formatFormations = getFormatFormations(sport, format);
+    if (formatFormations) return formatFormations;
     switch (sport) {
       case "basketball":
         return ["2-3", "1-2-2", "1-3-1", "3-2", "5-Out"];
@@ -1054,6 +1107,12 @@ export default function TacticsBoard({
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [currentActionPoints, setCurrentActionPoints] = useState<{ x: number; y: number }[]>([]);
+  // Crayon (dessin libre) : les points du trait en cours sont gardés hors de l'état React et dessinés
+  // directement sur le canevas. Sans cela, chaque mouvement re-rendait tout le tableau et, sur tablette,
+  // les mouvements arrivaient trop espacés : le trait ne gardait que quelques points (segments droits).
+  const brushPointsRef = useRef<{ x: number; y: number }[]>([]);
+  // Dernier appui sur un joueur (détection du double appui qui ouvre la fiche)
+  const lastTokenTapRef = useRef<{ id: string; at: number } | null>(null);
 
   // Viewport Settings
   const [terrainComplet, setTerrainComplet] = useState<boolean>(true);
@@ -1322,27 +1381,6 @@ export default function TacticsBoard({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [confirmDeleteSchemaId, setConfirmDeleteSchemaId] = useState<string | null>(null);
 
-  // Multi-Team Management States (PRO / PRO+ feature)
-  const [teams, setTeams] = useState<TeamCategory[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("thebox_teams");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch (e) { }
-      }
-    }
-    return defaultTeams;
-  });
-
-  const [activeTeamId, setActiveTeamId] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("thebox_active_team_id");
-      if (saved) return saved;
-    }
-    return "team_1";
-  });
 
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>("all");
   const [saveTacticMatchId, setSaveTacticMatchId] = useState<string>("");
@@ -1351,6 +1389,7 @@ export default function TacticsBoard({
   const [isLiveMatchUpgradeModalOpen, setIsLiveMatchUpgradeModalOpen] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamCategory, setNewTeamCategory] = useState("Séniors");
+  const [newTeamFormat, setNewTeamFormat] = useState<string>("");
 
   // Fenêtre de gestion des équipes : fermeture avec Échap
   useEffect(() => {
@@ -1463,6 +1502,7 @@ export default function TacticsBoard({
       name: newTeamName.trim(),
       category: newTeamCategory,
       color: "#00E599",
+      ...(getGameFormatOptions(activeSport).length > 0 ? { format: resolveGameFormat(activeSport, newTeamFormat) } : {}),
     };
 
     const newRoster = generateDefaultRosterForCustomTeam(newTeamObj.id, newTeamObj.name, newTeamObj.category);
@@ -1471,6 +1511,7 @@ export default function TacticsBoard({
     setTeams((prev) => [...prev, newTeamObj]);
     setActiveTeamId(newTeamObj.id);
     setNewTeamName("");
+    setNewTeamFormat("");
   };
 
   const handleDeleteTeam = async (teamId: string) => {
@@ -1819,11 +1860,11 @@ export default function TacticsBoard({
   const [isMatchFinishedModalOpen, setIsMatchFinishedModalOpen] = useState<boolean>(false);
 
   // Périodes de jeu du sport actif (football : 2 MT de 45 min ; basket : 4 QT de 20 min)
-  const livePeriodConfig = useMemo(() => getLivePeriodConfig(activeSport), [activeSport]);
+  const livePeriodConfig = useMemo(() => getLivePeriodConfig(activeSport, activeFormat), [activeSport, activeFormat]);
   const firstLivePeriod = livePeriodConfig.periods[0];
 
   const [currentPeriod, setCurrentPeriod] = useState<LivePeriod>(() => {
-    const first = getLivePeriodConfig(activeSport).periods[0];
+    const first = getLivePeriodConfig(activeSport, activeFormat).periods[0];
     if (typeof window !== "undefined") {
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
       const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
@@ -2325,6 +2366,7 @@ export default function TacticsBoard({
       if (schema.keyframes) setKeyframes(schema.keyframes);
       if (schema.drawings) setDrawingActions(schema.drawings);
       if (schema.sport) setActiveSport(schema.sport);
+      applySchemaFormat(schema.sport || activeSport, schema.format);
       setCurrentFrameIdx(0);
     } else {
       // Reset pitch to default players for activeSport for new match
@@ -2373,6 +2415,40 @@ export default function TacticsBoard({
       setDrawingActions([]);
     }
   }, [activeSport]);
+
+  // Changement d'équipe : le format de l'équipe reprend la main sur celui d'un schéma chargé
+  useEffect(() => {
+    setSchemaFormatOverride(null);
+  }, [activeTeamId]);
+
+  // Changement de format (autre équipe, format modifié) : effectif de départ du nouveau format,
+  // sauf si le terrain affiche déjà un effectif de la bonne taille (match ou schéma rechargé)
+  const prevFormatRef = useRef(activeFormat);
+  useEffect(() => {
+    const prevFormat = prevFormatRef.current;
+    prevFormatRef.current = activeFormat;
+    if (prevFormat === activeFormat) return;
+    const prevCount = getGameFormatOption(activeSport, prevFormat)?.players;
+    const nextCount = getGameFormatOption(activeSport, activeFormat)?.players;
+    if (!prevCount || !nextCount) return;
+    setKeyframes((prev) => {
+      const countA = (prev[0] || []).filter((t) => t.type === "player_a").length;
+      if (countA === nextCount || countA !== prevCount) return prev;
+      return [getDefaultPlayersForSport(activeSport, activeFormat)];
+    });
+    const formations = getAvailableFormationsForSport(activeSport, activeFormat);
+    if (formations[0]) {
+      setSelectedFormationA(formations[0]);
+      setSelectedFormationB(formations[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFormat]);
+
+  // L'étape affichée reste dans les bornes de l'animation (après une remise à zéro du terrain)
+  useEffect(() => {
+    if (currentFrameIdx > keyframes.length - 1) setCurrentFrameIdx(Math.max(0, keyframes.length - 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyframes.length]);
 
   // Synchronize matches list and active match when activeTeamId changes
   useEffect(() => {
@@ -2689,12 +2765,13 @@ export default function TacticsBoard({
       }
     });
 
-    if (isDrawing && currentActionPoints.length > 0) {
+    const inProgressPoints = drawingTool === "brush" ? brushPointsRef.current : currentActionPoints;
+    if (isDrawing && inProgressPoints.length > 0) {
       renderStroke({
         tool: drawingTool,
         color: drawColor,
         size: drawSize,
-        points: currentActionPoints,
+        points: inProgressPoints,
       });
     }
   };
@@ -2948,6 +3025,7 @@ export default function TacticsBoard({
 
     e.stopPropagation();
     setIsDrawing(true);
+    brushPointsRef.current = [coords];
     setCurrentActionPoints([coords]);
   };
 
@@ -2956,7 +3034,31 @@ export default function TacticsBoard({
     const coords = getRelativeMouseCoords(e);
 
     if (drawingTool === "brush") {
-      setCurrentActionPoints((prev) => [...prev, coords]);
+      const pts = brushPointsRef.current;
+      const prev = pts[pts.length - 1];
+      pts.push(coords);
+      // Segment dessiné tout de suite, sans re-rendu du tableau
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext("2d");
+      if (canvas && ctx && prev) {
+        const toPx = (pt: { x: number; y: number }) =>
+          aspectRatioMode === "mobile"
+            ? { x: (pt.y / 100) * canvas.width, y: ((100 - pt.x) / 100) * canvas.height }
+            : { x: (pt.x / 100) * canvas.width, y: (pt.y / 100) * canvas.height };
+        const a = toPx(prev);
+        const b = toPx(coords);
+        ctx.save();
+        ctx.strokeStyle = drawColor;
+        ctx.lineWidth = drawSize;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.restore();
+      }
     } else {
       setCurrentActionPoints((prev) => [prev[0], coords]);
     }
@@ -2966,12 +3068,14 @@ export default function TacticsBoard({
     if (!isDrawing) return;
     setIsDrawing(false);
 
-    if (currentActionPoints.length > 0) {
+    const finalPoints = drawingTool === "brush" ? brushPointsRef.current : currentActionPoints;
+    brushPointsRef.current = [];
+    if (finalPoints.length > 0) {
       const newAction: DrawingAction = {
         tool: drawingTool,
         color: drawColor,
         size: drawSize,
-        points: currentActionPoints,
+        points: finalPoints,
       };
 
       setDrawingHistory((prev) => [...prev, drawingActions]);
@@ -2985,8 +3089,11 @@ export default function TacticsBoard({
   const getFormationCoordinates = (sport: string, formationName: string, isOpponent: boolean): { x: number; y: number }[] => {
     const flipX = (val: number) => isOpponent ? 100 - val : val;
     let coords: { x: number; y: number }[] = [];
+    const formatCoords = getFormatFormationCoords(sport, formatFor(sport), formationName);
 
-    if (sport === "basketball") {
+    if (formatCoords) {
+      coords = formatCoords.map((c) => ({ x: flipX(c.x), y: c.y }));
+    } else if (sport === "basketball") {
       switch (formationName) {
         case "2-3":
           coords = [
@@ -4572,7 +4679,8 @@ export default function TacticsBoard({
   // Add an opponent player to the pitch deterministically
   const handleAddOpponent = () => {
     const count = currentTokens.filter(t => t.type === "player_b").length;
-    const maxPlayers = activeSport === "rugby" ? 15 : activeSport === "football" ? 11 : activeSport === "handball" ? 7 : activeSport === "basketball" ? 5 : 6;
+    const maxPlayers = getGameFormatOption(activeSport, activeFormat)?.players
+      || (activeSport === "rugby" ? 15 : activeSport === "football" ? 11 : activeSport === "handball" ? 7 : activeSport === "basketball" ? 5 : 6);
     if (count >= maxPlayers) {
       alert(`Nombre maximum d'adversaires atteint (${maxPlayers}/${maxPlayers}).`);
       return;
@@ -4666,6 +4774,35 @@ export default function TacticsBoard({
     }
   };
 
+  // Format de jeu d'une équipe (foot à 11 / 8 / 5, rugby à XV / 7)
+  const handleChangeTeamFormat = async (teamId: string, format: string) => {
+    const team = teams.find((t) => t.id === teamId);
+    const option = getGameFormatOption(activeSport, format);
+    if (!team || !option || resolveGameFormat(activeSport, team.format) === option.id) return;
+    const isActive = teamId === activeTeamId;
+    if (
+      isActive &&
+      (drawingActions.length > 0 || keyframes.length > 1) &&
+      !(await confirmAction({
+        title: `Passer ${team.name} en ${option.label} ?`,
+        message: "Le terrain sera réinitialisé : les joueurs reprendront leur position de départ, les tracés et les étapes d'animation seront effacés.",
+        confirmLabel: "Changer de format",
+        tone: "warning",
+      }))
+    ) return;
+    setTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, format: option.id } : t)));
+    if (isActive) {
+      setSchemaFormatOverride(null);
+      setIsPlaying(false);
+      setDrawingActions([]);
+      setDrawingHistory([]);
+      setKeyframes([getDefaultPlayersForSport(activeSport, option.id)]);
+      setCurrentFrameIdx(0);
+    }
+    setSleekToastMessage(`✅ ${team.name} : ${currentLang === "en" ? option.labelEn : option.label} (${option.players} ${currentLang === "en" ? "players" : "joueurs"})`);
+    setTimeout(() => setSleekToastMessage(null), 2500);
+  };
+
   // Saved tactical strategies handlers
   const handleTriggerSaveModal = () => {
     if (!isProOrAdmin) {
@@ -4697,6 +4834,7 @@ export default function TacticsBoard({
       name: tacticName,
       description: tacticDesc || (isAnim ? "Animation tactique séquentielle" : "Schéma tactique de référence"),
       sport: activeSport,
+      format: activeFormat,
       keyframes: keyframes,
       drawings: drawingActions,
       isAnimation: isAnim,
@@ -4809,6 +4947,7 @@ export default function TacticsBoard({
     if (schema.sport) {
       setActiveSport(schema.sport);
     }
+    applySchemaFormat(schema.sport || activeSport, schema.format);
     // Rétablit l'affichage des adversaires tel qu'il était à l'enregistrement
     setShowOpponents(schema.showOpponents !== false);
     if (schema.id && activeMatchId && schema.matchId !== activeMatchId) {
@@ -5128,7 +5267,10 @@ export default function TacticsBoard({
     const isMatchReport = !schemaOverride && (isLiveMatchMode || matchEvents.length > 0);
     const targetSport = schemaOverride?.sport || activeSport;
     const sportKey = targetSport.toLowerCase();
-    const sportRatio = getSportRatioNum(targetSport);
+    // Un schéma enregistré garde son format ; sans format, c'est le format historique (à 11 / à XV)
+    const targetFormat = schemaOverride?.sport ? resolveGameFormat(targetSport, schemaOverride.format) : formatFor(targetSport);
+    const exportSmallPitch = getSmallPitchSpec(targetSport, targetFormat);
+    const sportRatio = getSportRatioNum(targetSport, targetFormat);
 
     // Compute standard, mathematically exact pitch dimensions based on the sport ratio
     const pitchH = 760;
@@ -5445,6 +5587,9 @@ export default function TacticsBoard({
       ctx.lineTo(pitchX + pitchW - tryZoneW, pitchY + pitchH * 0.58);
       ctx.stroke();
 
+    } else if (exportSmallPitch) {
+      // Foot à 8 / foot à 5 : petit terrain tracé à partir de ses dimensions
+      drawSmallFootballPitch(ctx, exportSmallPitch, pitchX, pitchY, pitchW, pitchH);
     } else {
       // DEFAULT / FOOTBALL FULL PITCH MARKINGS (Standard FIFA proportions matching 0 0 110 73 viewBox)
       // 1. Grass gradient background matching the actual board
@@ -6800,8 +6945,16 @@ export default function TacticsBoard({
   const isToolboxVisible = Boolean(isLiveMatchMode && liveActionToken);
 
   const currentPitchRatio = aspectRatioMode === "mobile"
-    ? (terrainComplet ? 1 / getSportRatioNum(activeSport) : 2 / getSportRatioNum(activeSport))
-    : (terrainComplet ? getSportRatioNum(activeSport) : getSportRatioNum(activeSport) / 2);
+    ? (terrainComplet ? 1 / getSportRatioNum(activeSport, activeFormat) : 2 / getSportRatioNum(activeSport, activeFormat))
+    : (terrainComplet ? getSportRatioNum(activeSport, activeFormat) : getSportRatioNum(activeSport, activeFormat) / 2);
+
+  // Position des drapeaux de coin (en %) selon le dégagement autour du terrain du format
+  const cornerFlagVars = (() => {
+    const spec = getSmallPitchSpec(activeSport, activeFormat);
+    const { W, H } = spec ? smallPitchBox(spec) : { W: 110, H: 73 };
+    const m = spec ? spec.margin : 2.5;
+    return { "--cf-x": `${(m / W) * 100}%`, "--cf-y": `${(m / H) * 100}%` } as React.CSSProperties;
+  })();
 
   const pitchTargetVh = isBoardFullscreen
     ? (!isLiveMatchMode && isAnimationCreatorOpen ? 50 : (isToolboxVisible ? 62 : 78))
@@ -9187,6 +9340,20 @@ export default function TacticsBoard({
               >
                 <Smartphone className="h-[18px] w-[18px] shrink-0" />
               </button>
+
+              {/* Format de jeu de l'équipe active (choisi à la création de l'équipe) */}
+              {getGameFormatOption(activeSport, activeFormat) && getGameFormatOptions(activeSport).length > 1 && (
+                <>
+                  <div className={`h-4 w-px mx-0.5 ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
+                  <span
+                    className={`h-7 px-2 rounded-lg flex items-center gap-1 text-[11px] font-black whitespace-nowrap ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}
+                    title={currentLang === "en" ? "Game format of the active team (set in team management)" : "Format de jeu de l'équipe active (défini dans la gestion des équipes)"}
+                  >
+                    <Users className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    {currentLang === "en" ? getGameFormatOption(activeSport, activeFormat)!.labelEn : getGameFormatOption(activeSport, activeFormat)!.label}
+                  </span>
+                </>
+              )}
             </div>
             )}
 
@@ -10291,28 +10458,29 @@ export default function TacticsBoard({
                           height: terrainComplet ? "100%" : (aspectRatioMode === "mobile" ? "200%" : "100%"),
                           left: 0,
                           top: 0,
+                          ...cornerFlagVars,
                         }}
                       >
                         {/* Ground pitch texture lines rendering */}
-                        <Pitch sport={activeSport} isPortrait={aspectRatioMode === "mobile"} />
+                        <Pitch sport={activeSport} format={activeFormat} isPortrait={aspectRatioMode === "mobile"} />
 
                         {/* Corner Flags Overlay */}
                         {activeSport === "football" && !(aspectRatioMode === "mobile") && (
                           <>
-                            <div className="absolute top-[3.42%] left-[2.27%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
-                            <div className="absolute top-[3.42%] right-[2.27%] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
-                            <div className="absolute bottom-[3.42%] left-[2.27%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
-                            <div className="absolute bottom-[3.42%] right-[2.27%] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
+                            <div className="absolute top-[var(--cf-y)] left-[var(--cf-x)] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
+                            <div className="absolute top-[var(--cf-y)] right-[var(--cf-x)] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
+                            <div className="absolute bottom-[var(--cf-y)] left-[var(--cf-x)] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
+                            <div className="absolute bottom-[var(--cf-y)] right-[var(--cf-x)] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" title={t.tactics.pitchBadges.cornerFlag} />
                           </>
                         )}
 
                         {activeSport === "football" && aspectRatioMode === "mobile" && (
                           <>
                             {/* Portrait Corner flags */}
-                            <div className="absolute top-[2.27%] left-[3.42%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
-                            <div className="absolute top-[2.27%] right-[3.42%] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
-                            <div className="absolute bottom-[2.27%] left-[3.42%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
-                            <div className="absolute bottom-[2.27%] right-[3.42%] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
+                            <div className="absolute top-[var(--cf-x)] left-[var(--cf-y)] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
+                            <div className="absolute top-[var(--cf-x)] right-[var(--cf-y)] translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
+                            <div className="absolute bottom-[var(--cf-x)] left-[var(--cf-y)] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
+                            <div className="absolute bottom-[var(--cf-x)] right-[var(--cf-y)] translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-red-600 border border-yellow-500 rounded-sm shadow-sm pointer-events-none" />
                           </>
                         )}
 
@@ -10389,10 +10557,19 @@ export default function TacticsBoard({
                                   if (token.type.startsWith("player")) {
                                     if (isLiveMatchMode) {
                                       setLiveActionToken(token);
-                                    } else {
+                                      return;
+                                    }
+                                    // Hors mode live, un simple appui ne fait que sélectionner le joueur :
+                                    // la fiche s'ouvre au double appui (le double-clic natif n'est pas fiable sur tablette)
+                                    const now = Date.now();
+                                    const last = lastTokenTapRef.current;
+                                    if (last && last.id === token.id && now - last.at < 350) {
+                                      lastTokenTapRef.current = null;
                                       setEditingToken(token);
                                       setQuickActionToken(token);
-                                      setSubPickerToken(token);
+                                      setSubPickerToken(null);
+                                    } else {
+                                      lastTokenTapRef.current = { id: token.id, at: now };
                                     }
                                   }
                                 }}
@@ -10401,13 +10578,10 @@ export default function TacticsBoard({
                                     e.preventDefault();
                                     e.stopPropagation();
                                     if (isDraggingTokenRef.current || Date.now() - dragEndTimeRef.current < 250) return;
+                                    // Clic droit / appui long : fiche du joueur seule (le remplacement passe par « Remplacer ce joueur »)
                                     setEditingToken(token);
                                     setQuickActionToken(token);
-                                    if (isLiveMatchMode) {
-                                      setLiveActionToken(token);
-                                    } else {
-                                      setSubPickerToken(token);
-                                    }
+                                    setSubPickerToken(null);
                                   }
                                 }}
                                 onDoubleClick={(e) => {
@@ -12592,6 +12766,21 @@ export default function TacticsBoard({
                               <div className="min-w-0 flex-1">
                                 <p className={`text-sm font-black truncate ${pth.text}`}>{team.name}</p>
                                 <p className={`text-[10px] font-bold uppercase tracking-[0.12em] mt-0.5 truncate ${pth.faint}`}>{team.category}</p>
+                              {getGameFormatOptions(activeSport).length > 1 && (
+                                <select
+                                  value={resolveGameFormat(activeSport, team.format)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                  onChange={(e) => handleChangeTeamFormat(team.id, e.target.value)}
+                                  className={`mt-1.5 border rounded-lg px-1.5 py-0.5 text-[11px] font-bold outline-none cursor-pointer ${pth.input} ${pth.option}`}
+                                  title="Nombre de joueurs de l'équipe"
+                                  aria-label={`Format de jeu de l'équipe ${team.name}`}
+                                >
+                                  {getGameFormatOptions(activeSport).map((opt) => (
+                                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                  ))}
+                                </select>
+                              )}
                               </div>
                               {isActive ? (
                                 <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.12em] px-2 py-1 rounded-md border shrink-0 ${pth.accentChip}`}>
@@ -12671,6 +12860,30 @@ export default function TacticsBoard({
                         </select>
                       </div>
                     </div>
+
+                    {getGameFormatOptions(activeSport).length > 1 && (
+                      <div>
+                        <span className={`${premiumLabel} ${pth.sub}`}>Nombre de joueurs</span>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Nombre de joueurs">
+                          {getGameFormatOptions(activeSport).map((opt) => {
+                            const isSel = resolveGameFormat(activeSport, newTeamFormat) === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                role="radio"
+                                aria-checked={isSel}
+                                onClick={() => setNewTeamFormat(opt.id)}
+                                className={`px-3 py-2.5 rounded-xl border text-left transition cursor-pointer ${isSel ? pth.selected : pth.selectable}`}
+                              >
+                                <span className={`block text-sm font-black ${pth.text}`}>{opt.label}</span>
+                                <span className={`block text-[11px] font-semibold ${pth.sub}`}>{opt.players} joueurs</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex justify-end">
                       <button
@@ -14532,8 +14745,8 @@ export default function TacticsBoard({
                     }}
                   >
                     {/* Terrain du sport de l'utilisateur : rendu 3D détaillé pour le football, tracés officiels du sport sinon */}
-                    {activeSport === "basketball" || activeSport === "rugby" || activeSport === "handball" ? (
-                      <Pitch sport={activeSport} isPortrait={squad3DOrientation === "portrait"} />
+                    {activeSport === "basketball" || activeSport === "rugby" || activeSport === "handball" || getSmallPitchSpec(activeSport, activeFormat) ? (
+                      <Pitch sport={activeSport} format={activeFormat} isPortrait={squad3DOrientation === "portrait"} />
                     ) : (
                     <>
                     {/* Mower Stripes parallel to goal lines */}

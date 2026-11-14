@@ -1,13 +1,85 @@
 "use client";
 
 import React from "react";
+import { getSmallPitchSpec, smallPitchBox, SmallPitchSpec } from "@/lib/gameFormats";
 
 interface PitchProps {
   sport: string;
+  /** Format de jeu (foot à 11 / 8 / 5, rugby à XV / 7) */
+  format?: string;
   isPortrait?: boolean;
 }
 
-export default function Pitch({ sport, isPortrait }: PitchProps) {
+// Petit terrain de football (foot à 8, foot à 5), tracé à partir de ses dimensions en mètres.
+// Les lignes sont dessinées en paysage puis pivotées d'un quart de tour en portrait.
+function SmallFootballPitch({ spec, isPortrait }: { spec: SmallPitchSpec; isPortrait?: boolean }) {
+  const { W, H } = smallPitchBox(spec);
+  const m = spec.margin;
+  const cy = H / 2;
+  const sw = (W * 0.25) / 110;
+  const line = { fill: "none", stroke: "white", strokeWidth: sw, strokeOpacity: 0.85 };
+  const g = spec.goalWidth / 2;
+  const logo = spec.centerRadius * 2;
+
+  // Une moitié de terrain (côté gauche) ; l'autre est son reflet
+  const half = (
+    <>
+      <rect x={m - spec.goalDepth} y={cy - g} width={spec.goalDepth} height={spec.goalWidth} fill="rgba(255,255,255,0.06)" stroke="white" strokeWidth={sw * 0.8} />
+      {spec.area.kind === "rect" ? (
+        <rect x={m} y={cy - spec.area.width / 2} width={spec.area.depth} height={spec.area.width} {...line} />
+      ) : (
+        <path
+          d={`M ${m} ${cy - g - spec.area.radius} A ${spec.area.radius} ${spec.area.radius} 0 0 1 ${m + spec.area.radius} ${cy - g} L ${m + spec.area.radius} ${cy + g} A ${spec.area.radius} ${spec.area.radius} 0 0 1 ${m} ${cy + g + spec.area.radius}`}
+          {...line}
+        />
+      )}
+      <circle cx={m + spec.spot} cy={cy} r={sw * 1.5} fill="white" />
+      {spec.secondSpot && <circle cx={m + spec.secondSpot} cy={cy} r={sw * 1.5} fill="white" />}
+      <path d={`M ${m} ${m + 1} A 1 1 0 0 0 ${m + 1} ${m}`} {...line} strokeWidth={sw * 0.8} strokeOpacity={0.7} />
+      <path d={`M ${m} ${H - m - 1} A 1 1 0 0 1 ${m + 1} ${H - m}`} {...line} strokeWidth={sw * 0.8} strokeOpacity={0.7} />
+    </>
+  );
+
+  const markings = (
+    <>
+      <rect x={m} y={m} width={spec.length} height={spec.width} {...line} />
+      <line x1={W / 2} y1={m} x2={W / 2} y2={H - m} {...line} />
+      <circle cx={W / 2} cy={cy} r={spec.centerRadius} {...line} />
+      <circle cx={W / 2} cy={cy} r={sw * 1.6} fill="white" />
+      <svg x={W / 2 - logo / 2} y={cy - logo / 2} width={logo} height={logo} viewBox="0 0 100 100" className="pointer-events-none">
+        <g stroke="white" strokeOpacity="0.4" fill="none">
+          <circle cx="50" cy="50" r="44" strokeWidth="4.5" />
+          <path d="M 19 19 L 81 81" strokeWidth="4.5" strokeLinecap="square" />
+          <path d="M 81 19 L 19 81" strokeWidth="4.5" strokeLinecap="square" />
+          <path d="M 32 21 L 50 39 L 68 21" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
+          <path d="M 32 79 L 50 61 L 68 79" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
+          <path d="M 21 32 L 39 50 L 21 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
+          <path d="M 79 32 L 61 50 L 79 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
+        </g>
+      </svg>
+      {half}
+      <g transform={`translate(${W} 0) scale(-1 1)`}>{half}</g>
+    </>
+  );
+
+  return (
+    <div className="absolute inset-0 w-full h-full bg-emerald-950 overflow-hidden select-none" id="pitch-football">
+      <div className={`absolute inset-0 flex ${isPortrait ? "flex-col" : "flex-row"} h-full w-full opacity-15 pointer-events-none`}>
+        {Array.from({ length: 12 }).map((_, idx) => (
+          <div key={idx} className={`flex-1 ${isPortrait ? "w-full" : "h-full"} ${idx % 2 === 0 ? "bg-emerald-900" : "bg-transparent"}`} />
+        ))}
+      </div>
+      <svg className="absolute inset-0 w-full h-full" viewBox={isPortrait ? `0 0 ${H} ${W}` : `0 0 ${W} ${H}`} preserveAspectRatio="none">
+        {isPortrait ? <g transform={`translate(${H} 0) rotate(90)`}>{markings}</g> : markings}
+      </svg>
+    </div>
+  );
+}
+
+export default function Pitch({ sport, format, isPortrait }: PitchProps) {
+  const smallPitch = getSmallPitchSpec(sport, format);
+  if (smallPitch) return <SmallFootballPitch spec={smallPitch} isPortrait={isPortrait} />;
+
   // Render high-fidelity tactical field based on sport type in portrait or landscape
   if (isPortrait) {
     switch (sport.toLowerCase()) {
