@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { CoachProfile } from "@/app/page";
-import { calculateTrialRemaining } from "@/components/TrialCountdownModal";
+import { calculateTrialRemaining, TRIAL_DURATION_DAYS } from "@/components/TrialCountdownModal";
 import { isSuperAdminEmail } from "@/lib/security";
+import { listAllUserProfiles, adminUpdateUserProfile, type FirebaseCoachProfile } from "@/lib/firebase";
 import {
   ShieldCheck,
   Users,
@@ -141,8 +142,77 @@ export default function AdminPlatform({
     return initial;
   });
 
+  // Comptes réels enregistrés en base (users/{uid}) : chargés à chaque ouverture de la plateforme
+  const [remoteProfiles, setRemoteProfiles] = useState<FirebaseCoachProfile[]>([]);
+  const [remoteStatus, setRemoteStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [remoteError, setRemoteError] = useState<string | null>(null);
+
+  const loadRemoteProfiles = React.useCallback(async () => {
+    setRemoteStatus("loading");
+    setRemoteError(null);
+    try {
+      const list = await listAllUserProfiles();
+      setRemoteProfiles(list);
+      setRemoteStatus("ok");
+    } catch (e: any) {
+      console.error("Chargement des comptes impossible", e);
+      setRemoteError(
+        String(e?.message || "").includes("permission")
+          ? "Accès refusé par Firestore : connectez-vous avec le compte super admin."
+          : "Impossible de charger les comptes en ligne."
+      );
+      setRemoteStatus("error");
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (isOpen) void loadRemoteProfiles();
+  }, [isOpen, loadRemoteProfiles]);
+
+  const remoteById = React.useMemo(() => new Map(remoteProfiles.map((p) => [p.id, p])), [remoteProfiles]);
+  const isRemoteCoach = (coachId: string) => remoteById.has(coachId);
+
+  // Liste affichée : comptes en base (qui font foi) + profils locaux de cet appareil absents de la base
+  const allCoaches: CoachProfile[] = React.useMemo(() => {
+    const remoteEmails = new Set(remoteProfiles.map((p) => (p.email || "").toLowerCase()).filter(Boolean));
+    const fromDb: CoachProfile[] = remoteProfiles.map((p) => ({
+      id: p.id,
+      firstName: p.firstName || "",
+      lastName: p.lastName || "",
+      club: p.club || "",
+      role: p.role || "",
+      preferredSport: p.preferredSport || "football",
+      email: p.email || "",
+      isAdmin: p.isAdmin,
+      createdAt: p.createdAt,
+      trialBonusDays: p.trialBonusDays || 0,
+    }));
+    const localOnly = coaches.filter(
+      (c) => !remoteById.has(c.id) && !(c.email && remoteEmails.has(c.email.toLowerCase()))
+    );
+    return [...fromDb, ...localOnly].sort(
+      (a, b) => (new Date(b.createdAt || 0).getTime() || 0) - (new Date(a.createdAt || 0).getTime() || 0)
+    );
+  }, [remoteProfiles, remoteById, coaches]);
+
+  const patchRemote = async (coachId: string, patch: Partial<Pick<FirebaseCoachProfile, "activePlan" | "trialBonusDays">>) => {
+    await adminUpdateUserProfile(coachId, patch);
+    setRemoteProfiles((prev) => prev.map((p) => (p.id === coachId ? { ...p, ...patch } : p)));
+  };
+
   // Handle plan change for a specific coach
-  const handleChangeUserPlan = (coachId: string, plan: string) => {
+  const handleChangeUserPlan = async (coachId: string, plan: string) => {
+    if (isRemoteCoach(coachId)) {
+      try {
+        await patchRemote(coachId, { activePlan: plan });
+      } catch (e) {
+        console.error(e);
+        alert("⚠️ La formule n'a pas pu être enregistrée en base.");
+        return;
+      }
+      if (coachId === activeCoach.id) setActivePlan(plan);
+      return;
+    }
     const updated = { ...userPlans, [coachId]: plan };
     setUserPlans(updated);
     if (typeof window !== "undefined") {
@@ -156,8 +226,22 @@ export default function AdminPlatform({
   };
 
   // Add demo time (days) for a specific user
-  const handleApplyExtendDemo = (coachId: string, daysToAdd: number) => {
+  const handleApplyExtendDemo = async (coachId: string, daysToAdd: number) => {
     if (daysToAdd <= 0) return;
+    const remote = remoteById.get(coachId);
+    if (remote) {
+      try {
+        await patchRemote(coachId, { trialBonusDays: (remote.trialBonusDays || 0) + daysToAdd });
+      } catch (e) {
+        console.error(e);
+        alert("⚠️ Les jours d'essai n'ont pas pu être enregistrés en base.");
+        return;
+      }
+      setExtendNotification(`🎉 +${daysToAdd} jours de démo ajoutés avec succès à ${remote.firstName} ${remote.lastName} !`);
+      setTimeout(() => setExtendNotification(null), 5000);
+      setSelectedCoachForExtend(null);
+      return;
+    }
     const updated = coaches.map((c) => {
       if (c.id === coachId) {
         const currentBonus = c.trialBonusDays || 0;
@@ -179,7 +263,28 @@ export default function AdminPlatform({
   };
 
   // Reset user's trial to 14 days from today
-  const handleResetTrial = (coachId: string) => {
+  const handleResetTrial = async (coachId: string) => {
+    const remote = remoteById.get(coachId);
+    if (remote) {
+      // La date de création est verrouillée par les règles Firestore : on recale l'essai avec les jours offerts
+      // pour qu'il se termine dans 14 jours (voir calculateTrialRemaining).
+      const start = new Date(remote.createdAt || "").getTime();
+      const dayMs = 24 * 60 * 60 * 1000;
+      const elapsedDays = isNaN(start) ? 0 : Math.max(0, Math.ceil((Date.now() - start) / dayMs));
+      const isBaseExpired = !isNaN(start) && start + TRIAL_DURATION_DAYS * dayMs < Date.now();
+      const bonus = isBaseExpired ? TRIAL_DURATION_DAYS : elapsedDays;
+      try {
+        await patchRemote(coachId, { trialBonusDays: bonus });
+      } catch (e) {
+        console.error(e);
+        alert("⚠️ L'essai n'a pas pu être réinitialisé en base.");
+        return;
+      }
+      setExtendNotification(`🔄 Essai de 14 jours réinitialisé avec succès pour ${remote.firstName} ${remote.lastName} !`);
+      setTimeout(() => setExtendNotification(null), 5000);
+      setSelectedCoachForExtend(null);
+      return;
+    }
     const updated = coaches.map((c) => {
       if (c.id === coachId) {
         return {
@@ -306,11 +411,15 @@ export default function AdminPlatform({
   };
 
   // Formule effective d'un coach (les admins sont sur PRO+ par défaut)
-  const planOf = (c: CoachProfile) =>
-    userPlans[c.id] || ((isSuperAdminEmail(c.email) || c.isAdmin) ? "club" : "free");
+  const planOf = (c: CoachProfile) => {
+    const remotePlan = remoteById.get(c.id)?.activePlan;
+    const raw = remotePlan || userPlans[c.id] || ((isSuperAdminEmail(c.email) || c.isAdmin) ? "club" : "free");
+    // « pro_plus » (valeur posée pour les admins à la connexion) = PRO+
+    return raw === "pro_plus" ? "club" : raw;
+  };
 
   // Calculate statistics
-  const filteredCoaches = coaches.filter((c) => {
+  const filteredCoaches = allCoaches.filter((c) => {
     const q = searchTerm.toLowerCase();
     const matchesSearch =
       c.firstName.toLowerCase().includes(q) ||
@@ -321,9 +430,9 @@ export default function AdminPlatform({
     return matchesSearch && matchesPlan;
   });
 
-  const totalCoaches = coaches.length;
-  const proCount = coaches.filter((c) => planOf(c) === "pro").length;
-  const clubCount = coaches.filter((c) => planOf(c) === "club").length;
+  const totalCoaches = allCoaches.length;
+  const proCount = allCoaches.filter((c) => planOf(c) === "pro").length;
+  const clubCount = allCoaches.filter((c) => planOf(c) === "club").length;
   const freeCount = totalCoaches - proCount - clubCount;
   // Tarifs en vigueur : PRO 9,90 € • PRO+ 14,90 €
   const estimatedMRR = proCount * 9.9 + clubCount * 14.9;
@@ -787,7 +896,7 @@ export default function AdminPlatform({
                                     <Clock className="h-3.5 w-3.5" />
                                     Prolonger
                                   </button>
-                                  {!isPixupAdmin && (
+                                  {!isPixupAdmin && !isRemoteCoach(coach.id) && (
                                     <button
                                       onClick={() => handleDeleteCoach(coach.id, coach.email)}
                                       className={`p-1.5 rounded-lg border transition cursor-pointer ${isModernSleek
@@ -808,8 +917,23 @@ export default function AdminPlatform({
                       </tbody>
                     </table>
                   </div>
-                  <div className={`px-4 py-2.5 border-t text-[10px] font-bold ${th.border} ${th.faint}`}>
-                    {filteredCoaches.length} coach{filteredCoaches.length > 1 ? "s" : ""} affiché{filteredCoaches.length > 1 ? "s" : ""} sur {totalCoaches}
+                  <div className={`px-4 py-2.5 border-t text-[10px] font-bold flex items-center justify-between gap-3 flex-wrap ${th.border} ${th.faint}`}>
+                    <span>
+                      {filteredCoaches.length} coach{filteredCoaches.length > 1 ? "s" : ""} affiché{filteredCoaches.length > 1 ? "s" : ""} sur {totalCoaches}
+                      {remoteStatus === "ok" && ` · ${remoteProfiles.length} compte${remoteProfiles.length > 1 ? "s" : ""} en base`}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      {remoteStatus === "loading" && <span>Chargement des comptes en ligne…</span>}
+                      {remoteStatus === "error" && <span className="text-rose-400">⚠️ {remoteError}</span>}
+                      <button
+                        type="button"
+                        onClick={() => void loadRemoteProfiles()}
+                        disabled={remoteStatus === "loading"}
+                        className={`px-2 py-1 rounded-lg border inline-flex items-center gap-1 transition cursor-pointer disabled:opacity-50 ${th.ghostBtn}`}
+                      >
+                        <RotateCcw className="h-3 w-3" /> Actualiser
+                      </button>
+                    </span>
                   </div>
                 </div>
               </>

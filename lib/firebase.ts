@@ -273,6 +273,35 @@ export async function getUserProfileFromFirestore(userId: string): Promise<Fireb
   }
 }
 
+/**
+ * Plateforme admin : tous les profils coachs enregistrés en base (users/{uid}).
+ * Autorisé par les règles Firestore uniquement pour un super admin.
+ */
+export async function listAllUserProfiles(): Promise<FirebaseCoachProfile[]> {
+  if (!auth.currentUser) {
+    throw new Error("Connexion requise pour lister les comptes.");
+  }
+  try {
+    const snap = await getDocs(collection(db, "users"));
+    return snap.docs.map((d) => ({ ...(d.data() as FirebaseCoachProfile), id: d.id }));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, "users");
+  }
+}
+
+/** Plateforme admin : modifie la formule ou l'essai d'un coach (réservé au super admin par les règles). */
+export async function adminUpdateUserProfile(
+  userId: string,
+  patch: Partial<Pick<FirebaseCoachProfile, "activePlan" | "trialBonusDays">>
+) {
+  const path = `users/${userId}`;
+  try {
+    await updateDoc(doc(db, "users", userId), cleanFirestoreData({ ...patch, updatedAt: new Date().toISOString() }));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}
+
 export interface FirebaseTactic {
   id: string;
   userId: string;
