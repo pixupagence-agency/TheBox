@@ -11866,16 +11866,6 @@ export default function TacticsBoard({
                     <Share2 className="h-4 w-4 shrink-0" />
                   </button>
                   <button
-                    type="button"
-                    onClick={handleExportMatchPdf}
-                    disabled={isExportingMatchPdf}
-                    className={`h-8 w-8 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-wait`}
-                    title="Exporter le match en PDF : schémas et notes tactiques (PRO)"
-                    aria-label="Exporter le match en PDF"
-                  >
-                    {isExportingMatchPdf ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <FileText className="h-4 w-4 shrink-0" />}
-                  </button>
-                  <button
                     onClick={handleTriggerSaveModal}
                     className={`h-8 w-8 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-emerald-800 hover:text-emerald-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#00E599] hover:text-brand-cream"} border rounded transition cursor-pointer shrink-0`}
                     title="Enregistrer sous (PRO)"
@@ -12130,6 +12120,26 @@ export default function TacticsBoard({
               )}
             </div>
 
+          </div>
+
+          {/* Export PDF du match (schémas + notes tactiques) — réservé PRO & PRO+ */}
+          <div className={`p-2 px-3 shrink-0 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+            <button
+              type="button"
+              onClick={handleExportMatchPdf}
+              disabled={isExportingMatchPdf}
+              className="w-full h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-[#00E599] hover:bg-[#00cc88] text-slate-950 text-xs font-black uppercase tracking-wider shadow-sm transition cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+              title={isProOrAdmin ? "Exporter le match en PDF : schémas et notes tactiques" : "Réservé aux formules PRO & PRO+"}
+            >
+              {isExportingMatchPdf ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+              ) : isProOrAdmin ? (
+                <FileText className="h-4 w-4 shrink-0" />
+              ) : (
+                <Lock className="h-4 w-4 shrink-0" />
+              )}
+              <span>{isExportingMatchPdf ? "Export en cours…" : "Exporter le match en PDF"}</span>
+            </button>
           </div>
 
           {/* Quick coaching quotes footer watermark */}
