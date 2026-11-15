@@ -1,11 +1,14 @@
 // Module Recording : bibliothèque enregistrée SUR L'APPAREIL (IndexedDB).
 // Les fichiers vidéo restent sur l'appareil : rien n'est envoyé en ligne tant qu'on ne partage pas.
-import type { Sequence } from "./types";
+import type { LibraryImage, Sequence } from "./types";
 
 const DB_NAME = "thebox_recording";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const SEQUENCES = "sequences";
 const VIDEOS = "videos";
+/** Images extraites : fiche (avec vignette) et fichier image complet, séparés pour lister vite */
+const IMAGES = "images";
+const IMAGE_FILES = "imageFiles";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -18,8 +21,15 @@ function openDb(): Promise<IDBDatabase> {
         const db = req.result;
         if (!db.objectStoreNames.contains(SEQUENCES)) db.createObjectStore(SEQUENCES, { keyPath: "id" });
         if (!db.objectStoreNames.contains(VIDEOS)) db.createObjectStore(VIDEOS);
+        if (!db.objectStoreNames.contains(IMAGES)) db.createObjectStore(IMAGES, { keyPath: "id" });
+        if (!db.objectStoreNames.contains(IMAGE_FILES)) db.createObjectStore(IMAGE_FILES);
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        // Nouvelle version ouverte dans un autre onglet : on libère la base pour qu'elle puisse se mettre à jour
+        db.onversionchange = () => { db.close(); dbPromise = null; };
+        resolve(db);
+      };
       req.onerror = () => {
         dbPromise = null;
         reject(req.error || new Error("Ouverture du stockage local impossible."));
@@ -64,6 +74,24 @@ export const deleteSequence = async (seq: Sequence) => {
 export const saveVideoBlob = (videoId: string, blob: Blob) => run(VIDEOS, "readwrite", (s) => s.put(blob, videoId));
 
 export const loadVideoBlob = (videoId: string) => run<Blob | undefined>(VIDEOS, "readonly", (s) => s.get(videoId) as IDBRequest<Blob | undefined>);
+
+export const listImages = async (): Promise<LibraryImage[]> => {
+  const all = await run<LibraryImage[]>(IMAGES, "readonly", (s) => s.getAll() as IDBRequest<LibraryImage[]>);
+  return all.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+};
+
+/** Le fichier est écrit avant la fiche : une fiche listée a toujours son image */
+export const saveImage = async (image: LibraryImage, file: Blob) => {
+  await run(IMAGE_FILES, "readwrite", (s) => s.put(file, image.id));
+  await run(IMAGES, "readwrite", (s) => s.put(image));
+};
+
+export const loadImageFile = (id: string) => run<Blob | undefined>(IMAGE_FILES, "readonly", (s) => s.get(id) as IDBRequest<Blob | undefined>);
+
+export const deleteImage = async (id: string) => {
+  await run(IMAGES, "readwrite", (s) => s.delete(id));
+  await run(IMAGE_FILES, "readwrite", (s) => s.delete(id));
+};
 
 /** Demande au navigateur de ne pas effacer la bibliothèque en cas de manque d'espace */
 export async function requestPersistentStorage() {

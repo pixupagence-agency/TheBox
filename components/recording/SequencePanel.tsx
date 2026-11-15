@@ -2,10 +2,11 @@
 
 // Module Recording : panneau de la séquence ouverte (titre, tags, notes, arrêts sur image, export).
 import React, { useState } from "react";
-import { Clapperboard, Crosshair, ImageDown, Pause, Plus, Snowflake, Square, Tag, Trash2, Users, Wand2 } from "lucide-react";
+import { Camera, ChevronDown, ChevronsLeft, Clapperboard, Crosshair, Download, ImageDown, Pause, Plus, Scissors, Snowflake, Square, Tag, Trash2, Users, Wand2 } from "lucide-react";
 import { formatTime } from "@/lib/recording/sources";
 import { DRAW_COLORS, GAME_PHASES, SET_PIECES } from "@/lib/recording/tags";
 import { useRecordingTheme } from "@/lib/recording/theme";
+import { TRACK_SIZE_MAX, TRACK_SIZE_MIN, type TrackDirection } from "@/lib/recording/tracker";
 import type { Freeze, Sequence, SequenceTags, Track } from "@/lib/recording/types";
 import type { RosterPlayer } from "@/lib/training/storage";
 
@@ -20,6 +21,11 @@ interface Props {
   onDeleteFreeze: (id: string) => void;
   onExportImage: () => void;
   canExportFrame: boolean;
+  onExtractClip: () => void;
+  onCaptureImage: () => void;
+  /** Export du passage (Entrée → Sortie, ou vidéo entière) en fichier vidéo */
+  onExportVideo: () => void;
+  exportFormat: "mp4" | "webm" | null;
   tracks: Track[];
   selectedTrackId: string | null;
   tracking: { trackId: string; t: number } | null;
@@ -28,21 +34,59 @@ interface Props {
   onNewTrack: () => void;
   onUpdateTrack: (id: string, patch: Partial<Track>) => void;
   onDeleteTrack: (id: string) => void;
-  onAutoTrack: (id: string) => void;
+  onAutoTrack: (id: string, direction: TrackDirection) => void;
   onCancelTracking: () => void;
 }
 
 const labelOf = (pl: RosterPlayer) => `${pl.number ? `${pl.number} · ` : ""}${pl.name}`;
 
-function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
+/** Taille du marqueur par paliers de 20 % (fin pour les plans larges, où les joueurs sont petits) */
+const resize = (size: number, factor: number) => Math.round(Math.min(TRACK_SIZE_MAX, Math.max(TRACK_SIZE_MIN, size * factor)) * 10000) / 10000;
+
+/** Sections repliées, mémorisées sur l'appareil (comme les sections du tableau tactique) */
+const COLLAPSED_KEY = "thebox_recording_collapsed_sections";
+
+function readCollapsed(id: string): boolean {
+  try {
+    return (JSON.parse(localStorage.getItem(COLLAPSED_KEY) || "[]") as string[]).includes(id);
+  } catch {
+    return false;
+  }
+}
+
+function storeCollapsed(id: string, collapsed: boolean) {
+  try {
+    const list = (JSON.parse(localStorage.getItem(COLLAPSED_KEY) || "[]") as string[]).filter((x) => x !== id);
+    localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsed ? [...list, id] : list));
+  } catch {
+    /* stockage indisponible : l'état vaut pour la session */
+  }
+}
+
+function Section({ id, icon: Icon, title, children }: { id: string; icon: React.ElementType; title: string; children: React.ReactNode }) {
   const th = useRecordingTheme();
+  const [collapsed, setCollapsed] = useState(() => readCollapsed(id));
+  const toggle = () => setCollapsed((v) => { storeCollapsed(id, !v); return !v; });
+  const label = `${collapsed ? "Déplier" : "Réduire"} la section ${title.split(" (")[0]}`;
   return (
-    <section className={`px-3 py-3 border-b ${th.sectionBorder}`}>
-      <div className="flex items-center gap-1.5 mb-2.5">
-        <Icon className={`w-4 h-4 shrink-0 ${th.sectionIcon}`} aria-hidden="true" />
-        <span className={`text-xs font-black uppercase tracking-wider ${th.sectionTitle}`}>{title}</span>
+    <section className={`px-3 py-2.5 border-b ${th.sectionBorder}`}>
+      <div className={`flex items-center gap-1.5 ${collapsed ? "" : "mb-2.5"}`}>
+        <button type="button" onClick={toggle} className="flex-1 min-w-0 flex items-center gap-1.5 text-left cursor-pointer select-none" aria-expanded={!collapsed} title={label}>
+          <Icon className={`w-4 h-4 shrink-0 ${th.sectionIcon}`} aria-hidden="true" />
+          <span className={`text-xs font-black uppercase tracking-wider truncate ${th.sectionTitle}`}>{title}</span>
+        </button>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={!collapsed}
+          aria-label={label}
+          title={label}
+          className={`h-8 w-8 shrink-0 rounded-lg border flex items-center justify-center cursor-pointer transition ${th.idleBtn}`}
+        >
+          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`} />
+        </button>
       </div>
-      {children}
+      {!collapsed && children}
     </section>
   );
 }
@@ -65,7 +109,7 @@ export default function SequencePanel(p: Props) {
 
   return (
     <div>
-      <Section icon={Clapperboard} title="Séquence">
+      <Section id="sequence" icon={Clapperboard} title="Séquence">
         <label className={th.label} htmlFor="rec-title">Titre</label>
         <input id="rec-title" className={th.input} maxLength={80} value={seq.title} onChange={(e) => p.onChange({ title: e.target.value })} />
         <label className={`${th.label} mt-3`} htmlFor="rec-notes">Notes / causerie</label>
@@ -78,6 +122,9 @@ export default function SequencePanel(p: Props) {
           placeholder="Ce qu'il faut retenir de l'action…"
           className={`${th.input} h-auto py-2.5 text-sm leading-relaxed resize-y`}
         />
+        {seq.parentTitle && (
+          <p className={`mt-2 text-[12px] font-semibold ${th.accentText}`}>Extrait de « {seq.parentTitle} »</p>
+        )}
         <p className={`mt-2 text-[12px] font-semibold ${th.faint}`}>
           Clip : {seq.inPoint !== undefined || seq.outPoint !== undefined
             ? `${formatTime(seq.inPoint ?? 0, true, seq.fps)} → ${seq.outPoint !== undefined ? formatTime(seq.outPoint, true, seq.fps) : "fin"}`
@@ -85,7 +132,7 @@ export default function SequencePanel(p: Props) {
         </p>
       </Section>
 
-      <Section icon={Tag} title="Tags">
+      <Section id="tags" icon={Tag} title="Tags">
         <span className={th.label}>Phase de jeu</span>
         <div className="flex flex-wrap gap-1.5">
           {GAME_PHASES.map((ph) => (
@@ -121,7 +168,7 @@ export default function SequencePanel(p: Props) {
         )}
       </Section>
 
-      <Section icon={Users} title={`Joueurs${p.roster.teamName ? ` · ${p.roster.teamName}` : ""}`}>
+      <Section id="players" icon={Users} title={`Joueurs${p.roster.teamName ? ` · ${p.roster.teamName}` : ""}`}>
         {p.roster.players.length === 0 ? (
           <p className={`text-[13px] ${th.sub}`}>L&apos;effectif de l&apos;équipe active du tableau tactique apparaîtra ici.</p>
         ) : (
@@ -135,7 +182,7 @@ export default function SequencePanel(p: Props) {
         )}
       </Section>
 
-      <Section icon={Snowflake} title={`Arrêts sur image (${seq.freezes.length})`}>
+      <Section id="freezes" icon={Snowflake} title={`Arrêts sur image (${seq.freezes.length})`}>
         {seq.freezes.length === 0 ? (
           <p className={`text-[13px] leading-relaxed ${th.sub}`}>
             Choisissez un outil de dessin puis tracez sur l&apos;image : la vidéo se fige et un arrêt sur image est créé à cet instant.
@@ -166,13 +213,13 @@ export default function SequencePanel(p: Props) {
         )}
       </Section>
 
-      <Section icon={Crosshair} title={`Suivi de joueurs (${p.tracks.length})`}>
+      <Section id="tracks" icon={Crosshair} title={`Suivi de joueurs (${p.tracks.length})`}>
         <button type="button" onClick={p.onNewTrack} disabled={Boolean(p.tracking)} className={`w-full h-11 rounded-xl border text-sm font-black flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 ${th.idleBtn}`}>
           <Plus className="w-4 h-4" />Suivre un joueur
         </button>
         <p className={`mt-2 text-[12px] leading-relaxed ${th.faint}`}>
           {p.canAutoTrack
-            ? "Cliquez sur les pieds du joueur, puis « Suivi auto » : son marqueur le suit image par image. Corrigez sa position à tout instant d'un clic."
+            ? "Cliquez sur les pieds du joueur, puis « Suivi auto » : son marqueur le suit image par image, même masqué un court instant. S'il décroche, replacez-le d'un clic et relancez ; « Arrière » le suit vers le début de l'action."
             : "Placez le joueur à plusieurs instants (clic sur ses pieds) : son déplacement est calculé entre ces positions. Le suivi automatique demande un fichier vidéo importé."}
         </p>
         {p.tracks.length > 0 && (
@@ -210,8 +257,8 @@ export default function SequencePanel(p: Props) {
                     <button type="button" aria-pressed={tr.style === "spotlight"} onClick={() => p.onUpdateTrack(tr.id, { style: "spotlight" })} className={`h-8 rounded-lg border text-[12px] font-bold cursor-pointer ${tr.style === "spotlight" ? th.activeBtn : th.idleBtn}`}>Spotlight</button>
                     <button type="button" aria-pressed={tr.trail} onClick={() => p.onUpdateTrack(tr.id, { trail: !tr.trail })} className={`h-8 rounded-lg border text-[12px] font-bold cursor-pointer ${tr.trail ? th.activeBtn : th.idleBtn}`}>Traînée</button>
                     <div className="flex items-center gap-1">
-                      <button type="button" onClick={() => p.onUpdateTrack(tr.id, { size: Math.max(0.01, Math.round((tr.size - 0.004) * 1000) / 1000) })} className={`h-8 flex-1 rounded-lg border text-[13px] font-black cursor-pointer ${th.idleBtn}`} aria-label="Marqueur plus petit">−</button>
-                      <button type="button" onClick={() => p.onUpdateTrack(tr.id, { size: Math.min(0.08, Math.round((tr.size + 0.004) * 1000) / 1000) })} className={`h-8 flex-1 rounded-lg border text-[13px] font-black cursor-pointer ${th.idleBtn}`} aria-label="Marqueur plus grand">+</button>
+                      <button type="button" disabled={tr.size <= TRACK_SIZE_MIN} onClick={() => p.onUpdateTrack(tr.id, { size: resize(tr.size, 1 / 1.2) })} className={`h-8 flex-1 rounded-lg border text-[13px] font-black cursor-pointer disabled:opacity-40 ${th.idleBtn}`} aria-label="Marqueur plus petit">−</button>
+                      <button type="button" disabled={tr.size >= TRACK_SIZE_MAX} onClick={() => p.onUpdateTrack(tr.id, { size: resize(tr.size, 1.2) })} className={`h-8 flex-1 rounded-lg border text-[13px] font-black cursor-pointer disabled:opacity-40 ${th.idleBtn}`} aria-label="Marqueur plus grand">+</button>
                     </div>
                   </div>
                   {isRunning ? (
@@ -219,15 +266,27 @@ export default function SequencePanel(p: Props) {
                       <Square className="w-4 h-4" />Arrêter ({formatTime(p.tracking!.t, true, seq.fps)})
                     </button>
                   ) : (
-                    <button
-                      type="button"
-                      disabled={!p.canAutoTrack || Boolean(p.tracking)}
-                      onClick={() => p.onAutoTrack(tr.id)}
-                      title={p.canAutoTrack ? "Suivre le joueur automatiquement à partir de l'instant affiché" : "Disponible avec un fichier vidéo importé"}
-                      className={`w-full h-10 rounded-lg border text-[13px] font-black flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${th.primaryBtn}`}
-                    >
-                      <Wand2 className="w-4 h-4" />Suivi auto depuis cet instant
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        disabled={!p.canAutoTrack || Boolean(p.tracking)}
+                        onClick={() => p.onAutoTrack(tr.id, -1)}
+                        title={p.canAutoTrack ? "Suivre le joueur vers le début de la vidéo, à partir de l'instant affiché" : "Disponible avec un fichier vidéo importé"}
+                        aria-label="Suivi automatique vers l'arrière"
+                        className={`h-10 px-2.5 rounded-lg border text-[13px] font-black flex items-center justify-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${th.idleBtn}`}
+                      >
+                        <ChevronsLeft className="w-4 h-4" />Arrière
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!p.canAutoTrack || Boolean(p.tracking)}
+                        onClick={() => p.onAutoTrack(tr.id, 1)}
+                        title={p.canAutoTrack ? "Suivre le joueur automatiquement à partir de l'instant affiché" : "Disponible avec un fichier vidéo importé"}
+                        className={`flex-1 h-10 rounded-lg border text-[13px] font-black flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${th.primaryBtn}`}
+                      >
+                        <Wand2 className="w-4 h-4" />Suivi auto depuis cet instant
+                      </button>
+                    </div>
                   )}
                 </div>
               );
@@ -236,9 +295,42 @@ export default function SequencePanel(p: Props) {
         )}
       </Section>
 
-      <Section icon={ImageDown} title="Export">
+      <Section id="export" icon={ImageDown} title="Extraits et export">
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            disabled={seq.inPoint === undefined && seq.outPoint === undefined}
+            onClick={p.onExtractClip}
+            title="Ranger le passage Entrée → Sortie dans la bibliothèque (E)"
+            className={`h-12 rounded-xl border text-[13px] font-black flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${th.idleBtn}`}
+          >
+            <Scissors className="w-4 h-4" />Extrait vidéo
+          </button>
+          <button
+            type="button"
+            disabled={!p.canExportFrame}
+            onClick={p.onCaptureImage}
+            title="Ranger l'image affichée (avec ses consignes) dans la bibliothèque"
+            className={`h-12 rounded-xl border text-[13px] font-black flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${th.idleBtn}`}
+          >
+            <Camera className="w-4 h-4" />Image
+          </button>
+        </div>
+        <p className={`mt-2 mb-3 text-[12px] leading-relaxed ${th.faint}`}>
+          Placez l&apos;Entrée (I) et la Sortie (O) pour extraire un passage : il rejoint la bibliothèque avec ses consignes,
+          sans copier la vidéo. L&apos;image rangée reprend les consignes et joueurs suivis affichés.
+        </p>
+        <button
+          type="button"
+          disabled={!p.canExportFrame || !p.exportFormat}
+          onClick={p.onExportVideo}
+          title={!p.canExportFrame ? "YouTube et Vimeo ne permettent pas d'exporter la vidéo : importez le fichier" : !p.exportFormat ? "Ce navigateur ne sait pas enregistrer de vidéo" : "Enregistrer le passage dans un fichier vidéo, avec joueurs suivis et arrêts sur image"}
+          className={`w-full h-12 mb-1.5 rounded-xl border text-sm font-black flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${th.primaryBtn}`}
+        >
+          <Download className="w-5 h-5" />{seq.inPoint !== undefined || seq.outPoint !== undefined ? "Vidéo du passage" : "Vidéo entière"} ({(p.exportFormat || "mp4").toUpperCase()})
+        </button>
         <button type="button" onClick={p.onExportImage} className={`w-full h-12 rounded-xl border text-sm font-black flex items-center justify-center gap-2 cursor-pointer ${th.primaryBtn}`}>
-          <ImageDown className="w-5 h-5" />Image annotée (PNG)
+          <ImageDown className="w-5 h-5" />Télécharger l&apos;image annotée (PNG)
         </button>
         <p className={`mt-2 text-[12px] leading-relaxed ${th.faint}`}>
           {p.canExportFrame

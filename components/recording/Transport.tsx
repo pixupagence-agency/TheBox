@@ -3,7 +3,7 @@
 // Module Recording : barre de lecture (lecture, image par image, ralenti, clip entrée / sortie, boucle, frise).
 import React, { useRef } from "react";
 import {
-  ChevronFirst, ChevronLast, Pause, Play, Repeat, SkipBack, SkipForward, StepBack, StepForward,
+  Camera, ChevronFirst, ChevronLast, Pause, Play, Repeat, Scissors, SkipBack, SkipForward, StepBack, StepForward,
 } from "lucide-react";
 import { formatTime } from "@/lib/recording/sources";
 import { FPS_OPTIONS, PLAYBACK_RATES } from "@/lib/recording/tags";
@@ -32,6 +32,11 @@ interface Props {
   onSetOut: () => void;
   onClearClip: () => void;
   onToggleLoop: () => void;
+  /** Range le passage Entrée → Sortie dans la bibliothèque */
+  onExtract: () => void;
+  /** Range l'image affichée (annotée) dans la bibliothèque ; indisponible pour YouTube / Vimeo */
+  onCapture: () => void;
+  canCapture: boolean;
 }
 
 export default function Transport(p: Props) {
@@ -113,6 +118,29 @@ export default function Transport(p: Props) {
           {(p.inPoint !== undefined || p.outPoint !== undefined) && (
             <button type="button" className={`${btn} text-xs ${th.toolIdle}`} onClick={p.onClearClip} title="Retirer les points d'entrée et de sortie">Clip ✕</button>
           )}
+        </div>
+
+        <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`} role="group" aria-label="Bibliothèque">
+          <button
+            type="button"
+            disabled={p.disabled || (p.inPoint === undefined && p.outPoint === undefined)}
+            className={`${btn} ${th.toolIdle}`}
+            onClick={p.onExtract}
+            title="Ranger le passage Entrée → Sortie dans la bibliothèque (E)"
+            aria-label="Extraire le passage dans la bibliothèque"
+          >
+            <Scissors className="w-5 h-5" /><span className="hidden xl:inline">Extraire</span>
+          </button>
+          <button
+            type="button"
+            disabled={p.disabled || !p.canCapture}
+            className={`${btn} ${th.toolIdle}`}
+            onClick={p.onCapture}
+            title={p.canCapture ? "Ranger l'image affichée (avec ses consignes) dans la bibliothèque" : "Capture d'image indisponible pour YouTube et Vimeo : importez le fichier vidéo"}
+            aria-label="Ranger l'image dans la bibliothèque"
+          >
+            <Camera className="w-5 h-5" /><span className="hidden xl:inline">Image</span>
+          </button>
         </div>
 
         <label className={`ml-auto shrink-0 flex items-center gap-1.5 text-xs font-bold ${th.sub}`}>

@@ -83,6 +83,27 @@ export interface Sequence {
   tracks?: Track[];
   /** Vignette (data URL JPEG) ou URL d'aperçu */
   thumbnail?: string;
+  /** Extrait : séquence d'origine (la vidéo est partagée, seule la plage Entrée → Sortie est gardée) */
+  parentId?: string;
+  parentTitle?: string;
+}
+
+/** Image extraite d'une séquence (image annotée), rangée dans la bibliothèque */
+export interface LibraryImage {
+  id: string;
+  version: 1;
+  title: string;
+  createdAt: string;
+  /** Séquence et instant d'origine */
+  sequenceId: string;
+  sequenceTitle: string;
+  time: number;
+  fps: number;
+  width: number;
+  height: number;
+  tags: SequenceTags;
+  /** Vignette (data URL JPEG) ; l'image complète est stockée à part */
+  thumbnail: string;
 }
 
 export const emptyTags = (): SequenceTags => ({ players: [], custom: [] });

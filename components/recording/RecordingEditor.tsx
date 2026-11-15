@@ -5,8 +5,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, ArrowUpRight, Circle, Crosshair, Eraser, Focus, Link2, Moon, MousePointer2, PenTool, Plus, Save, SlidersHorizontal,
-  Spline, Sun, Type, Undo2, Upload, X,
+  ArrowLeft, ArrowUpRight, ChevronsLeft, Circle, Crosshair, Download, Eraser, Film, Focus, Link2, Moon, MousePointer2, PenTool, Plus, Save,
+  SlidersHorizontal, Spline, Square, Sun, Trash2, Type, Undo2, Upload, Wand2, X,
 } from "lucide-react";
 import LogoIcon from "@/components/LogoIcon";
 import { confirmAction } from "@/components/ConfirmDialog";
@@ -15,16 +15,22 @@ import Transport from "./Transport";
 import LibraryPanel from "./LibraryPanel";
 import SequencePanel from "./SequencePanel";
 import {
-  deleteSequence, listSequences, loadVideoBlob, newId, requestPersistentStorage, saveSequence, saveVideoBlob, storageEstimate,
+  deleteImage, deleteSequence, listImages, listSequences, loadImageFile, loadVideoBlob, newId, requestPersistentStorage, saveImage, saveSequence,
+  saveVideoBlob, storageEstimate,
 } from "@/lib/recording/db";
 import { renderShapes, renderTracks, trackPosition } from "@/lib/recording/draw";
-import { autoTrack } from "@/lib/recording/tracker";
+import { autoTrack, measurePlayer, type TrackDirection } from "@/lib/recording/tracker";
+import { clipExportFormat, exportClip } from "@/lib/recording/exportVideo";
 import { formatTime, parseVideoLink } from "@/lib/recording/sources";
 import { DRAW_COLORS, DRAW_WIDTHS, TOOL_LABELS } from "@/lib/recording/tags";
 import { RecordingThemeContext, getRecordingTheme, readThemePreference, storeThemePreference } from "@/lib/recording/theme";
-import { emptyTags, type Freeze, type Sequence, type Shape, type SequenceTags, type StageTool, type Track } from "@/lib/recording/types";
+import {
+  emptyTags, type Freeze, type LibraryImage, type Sequence, type Shape, type SequenceTags, type StageTool, type Track, type TrackKey,
+} from "@/lib/recording/types";
 import { readActiveRoster } from "@/lib/training/storage";
 
+/** Boutons de la barre d'outils : même gabarit compact que la barre d'outils du tableau tactique */
+const barBtn = "h-7 min-w-7 sm:min-w-8 px-1.5 rounded-lg flex items-center justify-center gap-1 text-xs font-bold transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed";
 const toolBtn = "h-11 min-w-11 px-2.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-black transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed";
 
 const TOOLS: Array<{ id: StageTool; icon: React.ElementType; label: string; key: string }> = [
@@ -40,6 +46,40 @@ const TOOLS: Array<{ id: StageTool; icon: React.ElementType; label: string; key:
 
 const fileTitle = (name: string) => name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim().slice(0, 80) || "Séquence";
 
+/** Rayon de marqueur par défaut d'un joueur suivi (rapporté à la largeur de l'image) */
+const DEFAULT_TRACK_SIZE = 0.022;
+/** Durée maximale d'un suivi automatique (s) : au-delà, on relance depuis la dernière position */
+const MAX_TRACK_SECONDS = 30;
+
+interface TrackingState {
+  trackId: string;
+  /** Instant de l'image analysée */
+  t: number;
+  direction: TrackDirection;
+  progress: number;
+  /** Joueur momentanément introuvable (masqué) : position extrapolée */
+  searching: boolean;
+}
+
+/** Nom de fichier sûr à partir d'un titre */
+const fileName = (title: string) => `TheBox_${title.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "export"}`;
+
+const downloadFile = (url: string, name: string) => {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+};
+
+/** Insère une position en gardant l'ordre chronologique (remplace celle du même instant) */
+const insertKey = (keys: TrackKey[], key: TrackKey): TrackKey[] => {
+  const out = keys.filter((k) => Math.abs(k.t - key.t) > 0.0005);
+  let i = out.length;
+  while (i > 0 && out[i - 1].t > key.t) i--;
+  out.splice(i, 0, key);
+  return out;
+};
+
 export default function RecordingEditor() {
   const [isLight, setIsLight] = useState<boolean>(() => readThemePreference());
   const th = getRecordingTheme(isLight);
@@ -48,6 +88,16 @@ export default function RecordingEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [library, setLibrary] = useState<Sequence[]>([]);
+  const [images, setImages] = useState<LibraryImage[]>([]);
+  /** Aperçu d'une image de la bibliothèque */
+  const [imageView, setImageView] = useState<{ image: LibraryImage; url: string } | null>(null);
+  /** Export vidéo en cours (titre, avancement) */
+  const [exporting, setExporting] = useState<{ title: string; progress: number } | null>(null);
+  const exportCancel = useRef(false);
+  /** Format du fichier vidéo exporté (MP4, ou WebM sur Firefox ; null si impossible) */
+  const videoFormat = useMemo(() => clipExportFormat()?.extension ?? null, []);
+  /** Instant où placer la vidéo à l'ouverture d'une séquence (retour depuis une image) */
+  const pendingSeek = useRef<number | null>(null);
   const [storage, setStorage] = useState<{ usedMb: number; quotaMb: number } | null>(null);
   const [seq, setSeq] = useState<Sequence | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -71,9 +121,12 @@ export default function RecordingEditor() {
   const history = useRef<Snapshot[]>([]);
   const moveSnapshot = useRef<Snapshot | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
-  const trackDrag = useRef<{ id: string; t: number } | null>(null);
-  const [tracking, setTracking] = useState<{ trackId: string; t: number } | null>(null);
+  /** Glissé en cours sur un joueur suivi : point d'appui, pour ignorer les micro-mouvements du doigt */
+  const trackDrag = useRef<{ id: string; t: number; x: number; y: number; moved: boolean } | null>(null);
+  const [tracking, setTracking] = useState<TrackingState | null>(null);
   const trackingCancel = useRef(false);
+  /** Image analysée par le suivi automatique, affichée en direct par-dessus la vidéo */
+  const liveCanvasRef = useRef<HTMLCanvasElement>(null);
   const pendingFreezeId = useRef<string | null>(null);
 
   const [linkOpen, setLinkOpen] = useState(false);
@@ -87,14 +140,19 @@ export default function RecordingEditor() {
   const fps = seq?.fps || 25;
   const tolerance = Math.max(0.5 / fps, 0.06);
 
-  const showToast = (msg: string) => {
+  const toastTimer = useRef<number | null>(null);
+  const showToast = (msg: string | null) => {
     setToast(msg);
-    window.setTimeout(() => setToast(null), 2600);
+    // Un nouveau message remplace le précédent (son minuteur ne doit pas l'effacer en avance)
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    toastTimer.current = msg ? window.setTimeout(() => setToast(null), 2600) : null;
   };
 
   const refreshLibrary = useCallback(async () => {
     try {
-      setLibrary(await listSequences());
+      const [sequences, stills] = await Promise.all([listSequences(), listImages()]);
+      setLibrary(sequences);
+      setImages(stills);
       setStorage(await storageEstimate());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Bibliothèque indisponible.");
@@ -268,7 +326,8 @@ export default function RecordingEditor() {
     setLinkError(null);
   };
 
-  const openSequence = async (s: Sequence) => {
+  /** `at` : instant où placer la vidéo une fois prête (sinon le début du clip) */
+  const openSequence = async (s: Sequence, at?: number) => {
     if (seq?.id === s.id) return;
     if (!(await confirmLeave())) return;
     if (s.source.kind === "file") {
@@ -276,6 +335,7 @@ export default function RecordingEditor() {
         const blob = await loadVideoBlob(s.source.videoId);
         if (!blob) { setError("La vidéo de cette séquence n'est plus sur cet appareil."); return; }
         const url = setFileUrl(blob)!;
+        pendingSeek.current = at ?? null;
         startSequence(s, { kind: "file", url }, null);
       } catch {
         setError("Lecture de la vidéo impossible depuis la bibliothèque.");
@@ -283,6 +343,7 @@ export default function RecordingEditor() {
       }
     } else {
       setFileUrl(null);
+      pendingSeek.current = at ?? null;
       startSequence(s, { kind: s.source.kind, ref: s.source.ref }, null);
     }
     setDirty(false);
@@ -300,10 +361,16 @@ export default function RecordingEditor() {
   };
 
   const removeSequence = async (s: Sequence) => {
+    const source = s.source;
+    const shared = source.kind === "file" && library.some((o) => o.id !== s.id && o.source.kind === "file" && o.source.videoId === source.videoId);
     const ok = await confirmAction({
-      title: "Supprimer la séquence ?",
+      title: s.parentId ? "Supprimer l'extrait ?" : "Supprimer la séquence ?",
       subject: s.title,
-      message: s.source.kind === "file" ? "La séquence et sa vidéo seront effacées de cet appareil." : "La séquence et ses consignes seront effacées de cet appareil.",
+      message: source.kind !== "file"
+        ? "La séquence et ses consignes seront effacées de cet appareil."
+        : shared
+          ? "Ses consignes seront effacées. La vidéo est conservée : d'autres séquences ou extraits l'utilisent."
+          : "La séquence et sa vidéo seront effacées de cet appareil.",
       confirmLabel: "Supprimer",
     });
     if (!ok) return;
@@ -471,7 +538,7 @@ export default function RecordingEditor() {
       if (hitId) {
         // Appui sur un joueur suivi : sélection, et glisser corrige sa position à cet instant
         setSelectedTrackId(hitId);
-        trackDrag.current = { id: hitId, t };
+        trackDrag.current = { id: hitId, t, x: p.x, y: p.y, moved: false };
         history.current = [...history.current.slice(-49), { freezes: seq.freezes, tracks }];
         return;
       }
@@ -479,61 +546,129 @@ export default function RecordingEditor() {
       if (selected) {
         // Joueur sélectionné : nouvelle position à cet instant (correction manuelle)
         setTracks((list) => list.map((tr) => (tr.id === selected.id ? upsertKey(tr, t, p.x, p.y) : tr)));
-        trackDrag.current = { id: selected.id, t };
+        trackDrag.current = { id: selected.id, t, x: p.x, y: p.y, moved: false };
         return;
       }
-      const track: Track = { id: newId("track"), color, style: "ring", size: 0.022, trail: true, keys: [{ t, x: p.x, y: p.y }] };
+      // Nouveau joueur : marqueur calé sous ses pieds et à sa taille quand sa silhouette se détache nettement
+      const video = pl.videoElement();
+      const measured = video ? measurePlayer(video, p, DEFAULT_TRACK_SIZE) : null;
+      const start = measured ? { x: measured.x, y: measured.y } : { x: p.x, y: p.y };
+      const track: Track = { id: newId("track"), color, style: "ring", size: measured?.size ?? DEFAULT_TRACK_SIZE, trail: true, keys: [{ t, ...start }] };
       setTracks((list) => [...list, track]);
       setSelectedTrackId(track.id);
-      trackDrag.current = { id: track.id, t };
-      showToast("Joueur suivi : lancez le suivi automatique ou placez-le à d'autres instants");
+      trackDrag.current = { id: track.id, t, x: p.x, y: p.y, moved: false };
+      showToast(seq.source.kind === "file" ? "Joueur placé : lancez « Suivi auto » ou placez-le à d'autres instants" : "Joueur placé : placez-le à d'autres instants pour suivre sa course");
       return;
     }
-    if (phase === "move" && trackDrag.current) {
-      const { id, t } = trackDrag.current;
-      setTracks((list) => list.map((tr) => (tr.id === id ? upsertKey(tr, t, p.x, p.y) : tr)), false);
+    const drag = trackDrag.current;
+    if (phase === "move" && drag) {
+      // Glissé volontaire uniquement (un doigt bouge toujours un peu en appuyant)
+      if (!drag.moved && Math.hypot(p.x - drag.x, p.y - drag.y) < 0.006) return;
+      drag.moved = true;
+      setTracks((list) => list.map((tr) => (tr.id === drag.id ? upsertKey(tr, drag.t, p.x, p.y) : tr)), false);
       return;
     }
     if (phase === "up") trackDrag.current = null;
   };
 
-  const runAutoTrack = async (trackId: string) => {
+  /** Affiche en direct l'image analysée par le suivi (la vidéo principale reste à son instant) */
+  const drawLiveFrame = (frame: HTMLVideoElement) => {
+    const canvas = liveCanvasRef.current;
+    if (!canvas || !frame.videoWidth) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = Math.round(canvas.clientWidth * dpr);
+    const h = Math.round(canvas.clientHeight * dpr);
+    if (!w || !h) return;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    canvas.getContext("2d")?.drawImage(frame, 0, 0, w, h);
+  };
+
+  const runAutoTrack = async (trackId: string, direction: TrackDirection = 1) => {
     const tr = tracks.find((x) => x.id === trackId);
     const pl = playerRef.current;
-    if (!tr || !pl || !seq || !objectUrlRef.current || tracking) return;
+    const src = objectUrlRef.current;
+    if (!tr || !tr.keys.length || !pl || !seq || !src || tracking) return;
     pl.pause();
+    setPaused(true);
     const now = snap(pl.getTime());
-    const from = trackPosition(tr, now) ? { t: now, ...trackPosition(tr, now)! } : tr.keys[tr.keys.length - 1];
-    const until = Math.min(seq.outPoint ?? duration, from.t + 30);
-    if (until - from.t < 1 / fps) { showToast("Placez-vous avant la fin de la vidéo pour suivre le joueur"); return; }
+    // Départ : position du joueur à l'instant affiché, sinon l'extrémité de sa trajectoire dans le sens du suivi
+    const here = trackPosition(tr, now);
+    const from: TrackKey = here ? { t: now, ...here } : direction > 0 ? tr.keys[tr.keys.length - 1] : tr.keys[0];
+    const until = direction > 0
+      ? Math.min(seq.outPoint ?? duration, from.t + MAX_TRACK_SECONDS)
+      : Math.max(seq.inPoint ?? 0, from.t - MAX_TRACK_SECONDS);
+    if (direction > 0 ? until - from.t < 1 / fps : from.t - until < 1 / fps) {
+      showToast(direction > 0 ? "Placez-vous avant la fin de la vidéo (ou du clip) pour suivre le joueur" : "Placez-vous après le début de la vidéo (ou du clip) pour suivre le joueur vers l'arrière");
+      return;
+    }
+    const seqId = seq.id;
+    const tol = 0.5 / fps;
+    const original = tr.keys;
     history.current = [...history.current.slice(-49), { freezes: seq.freezes, tracks }];
-    // Les positions déjà présentes après le point de départ sont recalculées
-    setTracks((list) => list.map((x) => (x.id === trackId ? { ...x, keys: [...x.keys.filter((k) => k.t < from.t - 0.5 / fps), { t: from.t, x: from.x, y: from.y }] } : x)), false);
+    // Les positions situées au-delà du point de départ (dans le sens du suivi) sont recalculées
+    const kept = (keys: TrackKey[]) => insertKey(keys.filter((k) => (direction > 0 ? k.t < from.t - tol : k.t > from.t + tol)), { t: from.t, x: from.x, y: from.y });
+    setTracks((list) => list.map((x) => (x.id === trackId ? { ...x, keys: kept(x.keys) } : x)), false);
+    setSelectedTrackId(trackId);
+    setTool("track");
+    showToast(null); // le bouton « Arrêter » de la bannière doit rester visible
     trackingCancel.current = false;
-    setTracking({ trackId, t: from.t });
+    setTracking({ trackId, t: from.t, direction, progress: 0, searching: false });
+    let endT = from.t;
+    // Affichage en direct ~15 fois par seconde : image, marqueur et progression restent synchrones
+    const pending: TrackKey[] = [];
+    let shownAt = 0;
     try {
-      const result = await autoTrack(objectUrlRef.current, {
+      const result = await autoTrack(src, {
         fps,
         from,
         size: tr.size,
         until,
+        direction,
         keyEvery: 2,
         isCancelled: () => trackingCancel.current,
-        onProgress: (key) => {
-          setTracking({ trackId, t: key.t });
-          setTracks((list) => list.map((x) => (x.id === trackId ? { ...x, keys: [...x.keys, key] } : x)), false);
+        onProgress: ({ t, key, progress, frame }) => {
+          if (key) pending.push(key);
+          const now = performance.now();
+          if (now - shownAt < 66) return;
+          shownAt = now;
+          drawLiveFrame(frame);
+          const batch = pending.splice(0);
+          setTracking((cur) => (cur ? { ...cur, t, progress, searching: !key } : cur));
+          if (batch.length) setTracks((list) => list.map((x) => (x.id === trackId ? { ...x, keys: batch.reduce(insertKey, x.keys) } : x)), false);
         },
       });
-      const last = result.keys[result.keys.length - 1];
-      if (last) setTracks((list) => list.map((x) => (x.id === trackId && x.keys[x.keys.length - 1]?.t !== last.t ? { ...x, keys: [...x.keys, last] } : x)), false);
-      const reached = last ? formatTime(last.t, true, fps) : formatTime(from.t, true, fps);
-      if (result.reason === "lost") showToast(`Joueur perdu à ${reached} : replacez-le puis relancez le suivi`);
-      else if (result.reason === "cancel") showToast(`Suivi arrêté à ${reached}`);
-      else showToast(`Suivi terminé jusqu'à ${reached}`);
-      if (last) { pl.seek(last.t); setTime(last.t); }
+      if (seqRef.current?.id !== seqId) return;
+      // Les positions provisoires sont remplacées par la trajectoire lissée. Arrêt manuel ou plage atteinte :
+      // les positions d'origine au-delà de la partie recalculée sont conservées (joueur perdu : elles sont douteuses)
+      const restore = result.reason === "cancel" || result.reason === "end";
+      const beyond = restore ? original.filter((k) => (direction > 0 ? k.t > result.endT + tol : k.t < result.endT - tol)) : [];
+      setTracks((list) => list.map((x) => (x.id === trackId ? { ...x, keys: [...kept(x.keys), ...result.keys, ...beyond].sort((a, b) => a.t - b.t) } : x)), false);
+      endT = result.lastT;
+      const at = formatTime(endT, true, fps);
+      if (result.reason === "lost") showToast(`Joueur perdu vers ${at} : replacez-le d'un clic puis relancez le suivi`);
+      else if (result.reason === "edge") showToast(`Joueur sorti de l'image à ${at}`);
+      else if (result.reason === "cancel") showToast(`Suivi arrêté à ${at}`);
+      else if (Math.abs(until - from.t) >= MAX_TRACK_SECONDS - 0.01) showToast(`${MAX_TRACK_SECONDS} s suivies (${at}) : relancez pour continuer`);
+      else showToast(`Suivi terminé jusqu'à ${at}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Suivi automatique impossible.");
     } finally {
+      if (seqRef.current?.id === seqId) {
+        // La vidéo se cale là où le joueur a été vu en dernier (vérification / correction) ;
+        // l'image en direct reste affichée le temps que la vidéo principale y arrive
+        pl.seek(endT);
+        setTime(endT);
+        const video = pl.videoElement();
+        if (video?.seeking) {
+          await new Promise<void>((resolve) => {
+            const timer = window.setTimeout(resolve, 600);
+            video.addEventListener("seeked", () => { window.clearTimeout(timer); resolve(); }, { once: true });
+          });
+        }
+      }
       setTracking(null);
     }
   };
@@ -541,8 +676,9 @@ export default function RecordingEditor() {
   // ---------------------------------------------------------------------------
   // Export
   // ---------------------------------------------------------------------------
-  const exportImage = () => {
-    if (!seq) return;
+  /** Image affichée (jusqu'à 1920 px de large) avec ses joueurs suivis et ses consignes */
+  const renderAnnotatedFrame = (): HTMLCanvasElement | null => {
+    if (!seq) return null;
     const video = playerRef.current?.videoElement();
     const hasFrame = Boolean(video && video.videoWidth);
     const scale = hasFrame ? Math.min(1, 1920 / video!.videoWidth) : 1;
@@ -552,7 +688,7 @@ export default function RecordingEditor() {
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return null;
     if (hasFrame) ctx.drawImage(video!, 0, 0, w, h);
     else {
       ctx.fillStyle = "#07090e";
@@ -563,6 +699,15 @@ export default function RecordingEditor() {
     }
     if (seq.tracks?.length) renderTracks(ctx, seq.tracks, { x: 0, y: 0, w, h }, time);
     if (activeFreeze) renderShapes(ctx, activeFreeze.shapes, { x: 0, y: 0, w, h });
+    return canvas;
+  };
+
+  const exportImage = () => {
+    if (!seq) return;
+    const canvas = renderAnnotatedFrame();
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const { width: w, height: h } = canvas;
     // Signature
     const label = `The Box - Recording · ${seq.title} · ${formatTime(time, true, fps)}`;
     ctx.font = `800 ${Math.round(w / 70)}px Inter, system-ui, sans-serif`;
@@ -585,15 +730,237 @@ export default function RecordingEditor() {
   };
 
   // ---------------------------------------------------------------------------
+  // Bibliothèque : extraits vidéo (Entrée → Sortie) et images
+  // ---------------------------------------------------------------------------
+  const storageError = (e: unknown, what: string) =>
+    setError(e instanceof Error && /quota|plein/i.test(e.message) ? "Espace de stockage plein sur cet appareil : supprimez d'anciennes séquences ou images." : `${what} impossible sur cet appareil.`);
+
+  /**
+   * Extrait = nouvelle séquence de la bibliothèque limitée à Entrée → Sortie. La vidéo n'est pas copiée : l'extrait
+   * partage le fichier de la séquence d'origine (il reste disponible tant qu'une séquence l'utilise).
+   */
+  const extractClip = async () => {
+    if (!seq || tracking) return;
+    if (seq.inPoint === undefined && seq.outPoint === undefined) {
+      showToast("Placez l'Entrée (I) et la Sortie (O) du passage à extraire");
+      return;
+    }
+    const start = seq.inPoint ?? 0;
+    const end = seq.outPoint ?? duration;
+    if (end - start < 0.2) {
+      showToast("Extrait trop court : écartez l'Entrée et la Sortie");
+      return;
+    }
+    const tol = 0.5 / fps;
+    const inRange = (t: number) => t >= start - tol && t <= end + tol;
+    // Joueurs suivis : positions de la plage, avec la position exacte aux bornes s'il était déjà en course
+    const tracksIn = (seq.tracks || [])
+      .map((tr) => {
+        let keys = tr.keys.filter((k) => inRange(k.t));
+        for (const t of [start, end]) {
+          const p = trackPosition(tr, t);
+          if (p && !keys.some((k) => Math.abs(k.t - t) <= tol)) keys = insertKey(keys, { t, x: p.x, y: p.y });
+        }
+        return { ...tr, keys };
+      })
+      .filter((tr) => tr.keys.length > 0);
+    const now = new Date().toISOString();
+    const base = seq.title.trim() || "Séquence";
+    const clip: Sequence = {
+      ...seq,
+      id: newId("seq"),
+      title: `${base} · ${formatTime(start)}–${formatTime(end)}`.slice(0, 80),
+      createdAt: now,
+      updatedAt: now,
+      inPoint: start,
+      outPoint: end,
+      tags: { ...seq.tags, players: [...seq.tags.players], custom: [...seq.tags.custom] },
+      freezes: seq.freezes.filter((f) => inRange(f.time)),
+      tracks: tracksIn,
+      thumbnail: inRange(time) ? makeThumbnail() : seq.thumbnail,
+      parentId: seq.parentId ?? seq.id,
+      parentTitle: seq.parentTitle ?? base,
+    };
+    try {
+      // Vidéo pas encore enregistrée (import en cours) : elle l'est maintenant, pour l'extrait
+      if (seq.source.kind === "file" && pendingBlob) {
+        await saveVideoBlob(seq.source.videoId, pendingBlob);
+        setPendingBlob(null);
+      }
+      await saveSequence(clip);
+      await refreshLibrary();
+      showToast(`Extrait ${formatTime(start, true, fps)} → ${formatTime(end, true, fps)} ajouté à la bibliothèque`);
+    } catch (e) {
+      storageError(e, "Extraction");
+    }
+  };
+
+  /** Image affichée (avec joueurs suivis et consignes) rangée dans la bibliothèque */
+  const captureImage = async () => {
+    if (!seq || tracking) return;
+    if (seq.source.kind !== "file") {
+      showToast("YouTube et Vimeo ne permettent pas de capturer l'image : importez le fichier vidéo");
+      return;
+    }
+    const canvas = renderAnnotatedFrame();
+    if (!canvas) return;
+    try {
+      const file = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+      if (!file) throw new Error("capture");
+      const thumb = document.createElement("canvas");
+      thumb.width = 320;
+      thumb.height = Math.round((canvas.height / canvas.width) * 320);
+      thumb.getContext("2d")?.drawImage(canvas, 0, 0, thumb.width, thumb.height);
+      const base = seq.title.trim() || "Séquence";
+      await saveImage(
+        {
+          id: newId("img"),
+          version: 1,
+          title: `${base} · ${formatTime(time, true, fps)}`.slice(0, 80),
+          createdAt: new Date().toISOString(),
+          sequenceId: seq.id,
+          sequenceTitle: base,
+          time,
+          fps,
+          width: canvas.width,
+          height: canvas.height,
+          tags: { ...seq.tags, players: [...seq.tags.players], custom: [...seq.tags.custom] },
+          thumbnail: thumb.toDataURL("image/jpeg", 0.72),
+        },
+        file
+      );
+      await refreshLibrary();
+      showToast(`Image ${formatTime(time, true, fps)} ajoutée à la bibliothèque`);
+    } catch (e) {
+      if (e instanceof Error && e.name === "SecurityError") setError("Capture impossible : l'image de cette vidéo est protégée.");
+      else storageError(e, "Capture");
+    }
+  };
+
+  const closeImageView = () => setImageView((v) => { if (v) URL.revokeObjectURL(v.url); return null; });
+  const openImage = async (image: LibraryImage) => {
+    try {
+      const file = await loadImageFile(image.id);
+      if (!file) { setError("Le fichier de cette image n'est plus sur cet appareil."); return; }
+      setImageView((v) => { if (v) URL.revokeObjectURL(v.url); return { image, url: URL.createObjectURL(file) }; });
+    } catch {
+      setError("Lecture de l'image impossible depuis la bibliothèque.");
+    }
+  };
+  const downloadImage = (view: { image: LibraryImage; url: string }) => downloadFile(view.url, `${fileName(view.image.title)}.jpg`);
+  /** Téléchargement direct depuis la bibliothèque (sans ouvrir l'aperçu) */
+  const downloadImageFile = async (image: LibraryImage) => {
+    try {
+      const file = await loadImageFile(image.id);
+      if (!file) { setError("Le fichier de cette image n'est plus sur cet appareil."); return; }
+      const url = URL.createObjectURL(file);
+      downloadFile(url, `${fileName(image.title)}.jpg`);
+      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch {
+      setError("Lecture de l'image impossible depuis la bibliothèque.");
+    }
+  };
+
+  /**
+   * Export d'une séquence ou d'un extrait en fichier vidéo (passage Entrée → Sortie, joueurs suivis incrustés,
+   * arrêts sur image annotés tenus 3 s). L'enregistrement dure à peu près le temps du passage.
+   */
+  const exportVideoFile = async (s: Sequence) => {
+    if (exporting || tracking) return;
+    if (s.source.kind !== "file") {
+      showToast("YouTube et Vimeo ne permettent pas d'exporter la vidéo : importez le fichier");
+      return;
+    }
+    if (!clipExportFormat()) {
+      setError("Ce navigateur ne sait pas enregistrer de vidéo : utilisez Chrome, Edge ou Safari.");
+      return;
+    }
+    const isOpen = seq?.id === s.id;
+    // Séquence ouverte : son état actuel (même non enregistré) ; sinon la version de la bibliothèque
+    const current = isOpen && seq ? seq : s;
+    let src = isOpen ? objectUrlRef.current : null;
+    let ownUrl: string | null = null;
+    try {
+      if (!src && s.source.kind === "file") {
+        const blob = await loadVideoBlob(s.source.videoId);
+        if (!blob) { setError("La vidéo de cette séquence n'est plus sur cet appareil."); return; }
+        ownUrl = URL.createObjectURL(blob);
+        src = ownUrl;
+      }
+      if (!src) return;
+      if (isOpen) { playerRef.current?.pause(); setPaused(true); }
+      exportCancel.current = false;
+      setExporting({ title: current.title, progress: 0 });
+      const result = await exportClip({
+        src,
+        start: current.inPoint ?? 0,
+        end: current.outPoint ?? Infinity,
+        tracks: current.tracks || [],
+        freezes: current.freezes,
+        isCancelled: () => exportCancel.current,
+        onProgress: (progress) => setExporting((e) => (e && Math.abs(e.progress - progress) > 0.005 ? { ...e, progress } : e)),
+      });
+      if (!result) { showToast("Export de la vidéo annulé"); return; }
+      const url = URL.createObjectURL(result.blob);
+      downloadFile(url, `${fileName(current.title)}.${result.extension}`);
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      showToast(`Vidéo ${result.extension.toUpperCase()} exportée (${Math.max(1, Math.round(result.blob.size / 1048576))} Mo)`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Export de la vidéo impossible.");
+    } finally {
+      if (ownUrl) URL.revokeObjectURL(ownUrl);
+      setExporting(null);
+    }
+  };
+  const removeImage = async (image: LibraryImage) => {
+    const ok = await confirmAction({ title: "Supprimer l'image ?", subject: image.title, message: "L'image sera effacée de cet appareil.", confirmLabel: "Supprimer" });
+    if (!ok) return;
+    try {
+      await deleteImage(image.id);
+    } catch {
+      setError("Suppression impossible sur cet appareil.");
+    }
+    if (imageView?.image.id === image.id) closeImageView();
+    await refreshLibrary();
+  };
+  /** Retour à la séquence d'origine, à l'instant de l'image */
+  const goToImageSource = async (image: LibraryImage) => {
+    const source = library.find((s) => s.id === image.sequenceId);
+    if (!source) return;
+    closeImageView();
+    if (seq?.id === source.id) {
+      playerRef.current?.pause();
+      seek(image.time);
+      return;
+    }
+    await openSequence(source, image.time);
+  };
+
+  // ---------------------------------------------------------------------------
   // Raccourcis clavier
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) return;
+      if (exporting) {
+        // Export vidéo en cours : seule Échap (annuler) est active
+        if (e.key === "Escape") { e.preventDefault(); exportCancel.current = true; }
+        return;
+      }
+      if (imageView) {
+        // Aperçu d'image ouvert : seule Échap (fermer) est active
+        if (e.key === "Escape") { e.preventDefault(); closeImageView(); }
+        return;
+      }
       if (!seq) return;
       const key = e.key.toLowerCase();
       const mod = e.ctrlKey || e.metaKey;
+      if (tracking) {
+        // Pendant le suivi automatique, seule Échap (arrêter) est active
+        if (key === "escape") { e.preventDefault(); trackingCancel.current = true; }
+        return;
+      }
       if (key === " ") { e.preventDefault(); togglePlay(); }
       else if (key === "arrowleft") { e.preventDefault(); if (e.shiftKey) seek(time - 5); else step(-1); }
       else if (key === "arrowright") { e.preventDefault(); if (e.shiftKey) seek(time + 5); else step(1); }
@@ -603,6 +970,7 @@ export default function RecordingEditor() {
       else if (key === "escape") { setSelectedId(null); setSelectedTrackId(null); if (tool !== "track") setTool("select"); }
       else if (!mod && key === "i") updateSeq({ inPoint: snap(time) });
       else if (!mod && key === "o") updateSeq({ outPoint: snap(time) });
+      else if (!mod && key === "e") void extractClip();
       else if (!mod && key === "l") setLoop((v) => !v);
       else if (!mod) {
         const t = TOOLS.find((x) => x.key.toLowerCase() === key);
@@ -648,44 +1016,44 @@ export default function RecordingEditor() {
         </header>
 
         {/* Barre d'outils */}
-        <div className={`shrink-0 flex items-center gap-1.5 px-2 sm:px-3 py-2 border-b overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${th.toolbar}`}>
-          <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`}>
-            <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => fileInputRef.current?.click()} title="Importer un fichier vidéo de l'appareil" aria-label="Importer une vidéo"><Upload className="w-5 h-5" /><span className="hidden sm:inline">Importer</span></button>
-            <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => { setLinkOpen(true); setLinkError(null); }} title="Lien YouTube ou Vimeo" aria-label="Lien vidéo"><Link2 className="w-5 h-5" /><span className="hidden sm:inline">Lien</span></button>
+        <div className={`shrink-0 flex items-center gap-1.5 px-2 sm:px-3 py-1.5 border-b overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${th.toolbar}`}>
+          <div className={`flex items-center gap-1 h-8 shrink-0 ${th.toolGroup}`}>
+            <button type="button" className={`${barBtn} ${toolIdle}`} onClick={() => fileInputRef.current?.click()} title="Importer un fichier vidéo de l'appareil" aria-label="Importer une vidéo"><Upload className="h-[18px] w-[18px] shrink-0" /><span className="hidden sm:inline">Importer</span></button>
+            <button type="button" className={`${barBtn} ${toolIdle}`} onClick={() => { setLinkOpen(true); setLinkError(null); }} title="Lien YouTube ou Vimeo" aria-label="Lien vidéo"><Link2 className="h-[18px] w-[18px] shrink-0" /><span className="hidden sm:inline">Lien</span></button>
           </div>
           {separator}
-          <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`} role="group" aria-label="Outils de dessin">
+          <div className={`flex items-center gap-1 h-8 shrink-0 ${th.toolGroup}`} role="group" aria-label="Outils de dessin">
             {TOOLS.map((t) => (
-              <button key={t.id} type="button" disabled={!seq} className={`${toolBtn} ${tool === t.id ? toolOn : toolIdle}`} onClick={() => setTool(t.id)} aria-pressed={tool === t.id} title={`${t.label} (${t.key})`} aria-label={t.label}>
-                <t.icon className="w-5 h-5" />
+              <button key={t.id} type="button" disabled={!seq || Boolean(tracking)} className={`${barBtn} ${tool === t.id ? toolOn : toolIdle}`} onClick={() => setTool(t.id)} aria-pressed={tool === t.id} title={`${t.label} (${t.key})`} aria-label={t.label}>
+                <t.icon className="h-[18px] w-[18px] shrink-0" />
               </button>
             ))}
           </div>
           {separator}
-          <div className={`flex items-center gap-1 shrink-0 px-1 ${th.toolGroup}`} role="group" aria-label="Couleur">
+          <div className={`flex items-center gap-1.5 h-8 shrink-0 px-1.5 ${th.toolGroup}`} role="group" aria-label="Couleur">
             {DRAW_COLORS.map((c) => (
-              <button key={c.id} type="button" onClick={() => setColor(c.hex)} aria-pressed={color === c.hex} title={c.label} aria-label={`Couleur ${c.label.toLowerCase()}`} className={`w-8 h-8 m-0.5 rounded-full border-2 cursor-pointer transition ${color === c.hex ? `${th.swatchOn} scale-110` : th.swatchIdle}`} style={{ background: c.hex }} />
+              <button key={c.id} type="button" onClick={() => setColor(c.hex)} aria-pressed={color === c.hex} title={c.label} aria-label={`Couleur ${c.label.toLowerCase()}`} className={`w-4 h-4 rounded-full border cursor-pointer transition ${color === c.hex ? `${th.swatchOn} ring-2 ring-offset-1 ${th.light ? "ring-rose-500 ring-offset-white" : "ring-white ring-offset-[#090d14]"} scale-110` : th.swatchIdle}`} style={{ background: c.hex }} />
             ))}
           </div>
-          <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`} role="group" aria-label="Épaisseur">
+          <div className={`flex items-center gap-1 h-8 shrink-0 ${th.toolGroup}`} role="group" aria-label="Épaisseur">
             {DRAW_WIDTHS.map((wd) => (
-              <button key={wd.value} type="button" onClick={() => setWidth(wd.value)} aria-pressed={width === wd.value} title={`Trait ${wd.label.toLowerCase()}`} aria-label={`Trait ${wd.label.toLowerCase()}`} className={`${toolBtn} ${width === wd.value ? toolOn : toolIdle}`}>
-                <span className="block w-6 rounded-full bg-current" style={{ height: wd.value * 0.7 }} />
+              <button key={wd.value} type="button" onClick={() => setWidth(wd.value)} aria-pressed={width === wd.value} title={`Trait ${wd.label.toLowerCase()}`} aria-label={`Trait ${wd.label.toLowerCase()}`} className={`${barBtn} ${width === wd.value ? toolOn : toolIdle}`}>
+                <span className="block w-4 rounded-full bg-current" style={{ height: Math.max(1.5, wd.value * 0.5) }} />
               </button>
             ))}
-            <button type="button" onClick={() => setDashed((v) => !v)} aria-pressed={dashed} title="Trait en pointillés (course sans ballon)" aria-label="Pointillés" className={`${toolBtn} ${dashed ? toolOn : toolIdle}`}>
-              <span className="block w-6 border-t-[3px] border-dashed border-current" />
+            <button type="button" onClick={() => setDashed((v) => !v)} aria-pressed={dashed} title="Trait en pointillés (course sans ballon)" aria-label="Pointillés" className={`${barBtn} ${dashed ? toolOn : toolIdle}`}>
+              <span className="block w-4 border-t-2 border-dashed border-current" />
             </button>
           </div>
           {separator}
-          <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`}>
-            <button type="button" disabled={!seq || history.current.length === 0} className={`${toolBtn} ${toolIdle}`} onClick={undo} title="Annuler (Ctrl+Z)" aria-label="Annuler"><Undo2 className="w-5 h-5" /></button>
-            <button type="button" disabled={!activeFreeze} className={`${toolBtn} ${toolIdle}`} onClick={clearFreeze} title="Effacer les consignes de cette image" aria-label="Effacer l'image"><Eraser className="w-5 h-5" /></button>
+          <div className={`flex items-center gap-1 h-8 shrink-0 ${th.toolGroup}`}>
+            <button type="button" disabled={!seq || Boolean(tracking) || history.current.length === 0} className={`${barBtn} ${toolIdle}`} onClick={undo} title="Annuler (Ctrl+Z)" aria-label="Annuler"><Undo2 className="h-[18px] w-[18px] shrink-0" /></button>
+            <button type="button" disabled={!activeFreeze} className={`${barBtn} ${toolIdle}`} onClick={clearFreeze} title="Effacer les consignes de cette image" aria-label="Effacer l'image"><Eraser className="h-[18px] w-[18px] shrink-0" /></button>
           </div>
           <span className="flex-1" />
-          <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`}>
-            <button type="button" disabled={!seq} className={`${toolBtn} ${toolIdle}`} onClick={closeSequence} title="Fermer la séquence" aria-label="Nouvelle séquence"><Plus className="w-5 h-5" /><span className="hidden md:inline">Nouvelle</span></button>
-            <button type="button" disabled={!seq} className={`${toolBtn} border ${dirty ? th.primaryBtn : toolIdle}`} onClick={() => void save()} title="Enregistrer dans la bibliothèque (Ctrl+S)" aria-label="Enregistrer"><Save className="w-5 h-5" /><span className="hidden md:inline">Enregistrer</span></button>
+          <div className={`flex items-center gap-1 h-8 shrink-0 ${th.toolGroup}`}>
+            <button type="button" disabled={!seq} className={`${barBtn} ${toolIdle}`} onClick={closeSequence} title="Fermer la séquence" aria-label="Nouvelle séquence"><Plus className="h-[18px] w-[18px] shrink-0" /><span className="hidden md:inline">Nouvelle</span></button>
+            <button type="button" disabled={!seq || Boolean(tracking)} className={`${barBtn} border ${dirty ? th.primaryBtn : toolIdle}`} onClick={() => void save()} title="Enregistrer dans la bibliothèque (Ctrl+S)" aria-label="Enregistrer"><Save className="h-[18px] w-[18px] shrink-0" /><span className="hidden md:inline">Enregistrer</span></button>
           </div>
         </div>
 
@@ -700,7 +1068,7 @@ export default function RecordingEditor() {
         <div className="relative flex-1 flex min-h-0">
           {/* Bibliothèque */}
           <aside className={`w-[250px] shrink-0 border-r ${th.sidebar} max-xl:hidden`}>
-            <LibraryPanel sequences={library} activeId={seq?.id ?? null} storage={storage} onOpen={(s) => void openSequence(s)} onDelete={(s) => void removeSequence(s)} />
+            <LibraryPanel sequences={library} images={images} activeId={seq?.id ?? null} storage={storage} onOpen={(s) => void openSequence(s)} onDelete={(s) => void removeSequence(s)} onOpenImage={(i) => void openImage(i)} onDeleteImage={(i) => void removeImage(i)} onExport={(s) => void exportVideoFile(s)} onDownloadImage={(i) => void downloadImageFile(i)} exportFormat={videoFormat} />
           </aside>
 
           {/* Scène + lecture */}
@@ -718,7 +1086,9 @@ export default function RecordingEditor() {
                   shapes={stageShapes}
                   tool={tool}
                   tracks={tracks}
-                  time={time}
+                  time={tracking ? tracking.t : time}
+                  live={Boolean(tracking)}
+                  liveCanvasRef={liveCanvasRef}
                   selectedTrackId={selectedTrackId}
                   onTrackPointer={onTrackPointer}
                   color={color}
@@ -732,7 +1102,12 @@ export default function RecordingEditor() {
                   onReady={({ duration: d }) => {
                     setDuration(d);
                     setReady(true);
-                    if (seqRef.current?.inPoint !== undefined) playerRef.current?.seek(seqRef.current.inPoint);
+                    const at = pendingSeek.current ?? seqRef.current?.inPoint;
+                    pendingSeek.current = null;
+                    if (at !== undefined) {
+                      playerRef.current?.seek(at);
+                      setTime(at);
+                    }
                   }}
                   onError={(m) => setError(m)}
                 />
@@ -756,11 +1131,35 @@ export default function RecordingEditor() {
 
               {seq && ready && tool === "track" && (
                 <div className={`absolute left-1/2 -translate-x-1/2 top-3 z-10 rounded-2xl border px-3 py-2 text-sm font-bold shadow-xl pointer-events-none max-w-[calc(100%-24px)] text-center ${th.banner}`}>
-                  {tracking
-                    ? `Suivi automatique en cours… ${formatTime(tracking.t, true, fps)}`
-                    : selectedTrackId
-                      ? "Cliquez sur les pieds du joueur pour corriger sa position à cet instant (Échap : nouveau joueur)"
-                      : "Suivi : cliquez sur les pieds d'un joueur pour le suivre"}
+                  {tracking ? (
+                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5" role="status">
+                      <span className="tabular-nums">
+                        {tracking.searching ? "Joueur masqué, recherche…" : tracking.direction > 0 ? "Suivi automatique…" : "Suivi vers l'arrière…"} {formatTime(tracking.t, true, fps)}
+                      </span>
+                      <span className={`relative h-1.5 w-24 rounded-full overflow-hidden ${th.light ? "bg-slate-200" : "bg-white/15"}`} aria-hidden="true">
+                        <span className="absolute inset-y-0 left-0 bg-[#FF5A4E]" style={{ width: `${Math.round(tracking.progress * 100)}%` }} />
+                      </span>
+                      <button type="button" onClick={() => { trackingCancel.current = true; }} className={`pointer-events-auto h-9 px-3 rounded-lg border text-[13px] font-black flex items-center gap-1.5 cursor-pointer ${th.dangerBtn}`}>
+                        <Square className="w-3.5 h-3.5" />Arrêter<span className="hidden sm:inline opacity-70">(Échap)</span>
+                      </button>
+                    </div>
+                  ) : selectedTrackId ? (
+                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
+                      <span>Cliquez sur les pieds du joueur pour corriger sa position à cet instant (Échap : nouveau joueur)</span>
+                      {seq.source.kind === "file" && (
+                        <span className="flex gap-1.5">
+                          <button type="button" onClick={() => void runAutoTrack(selectedTrackId, -1)} title="Suivre le joueur vers le début de la vidéo, à partir de cet instant" className={`pointer-events-auto h-9 px-2.5 rounded-lg border text-[13px] font-black flex items-center gap-1 cursor-pointer ${th.idleBtn}`}>
+                            <ChevronsLeft className="w-4 h-4" />Arrière
+                          </button>
+                          <button type="button" onClick={() => void runAutoTrack(selectedTrackId, 1)} title="Suivre le joueur automatiquement à partir de cet instant" className={`pointer-events-auto h-9 px-3 rounded-lg border text-[13px] font-black flex items-center gap-1.5 cursor-pointer ${th.primaryBtn}`}>
+                            <Wand2 className="w-4 h-4" />Suivi auto
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    "Suivi : cliquez sur les pieds d'un joueur pour le suivre"
+                  )}
                 </div>
               )}
               {seq && !activeFreeze && paused && ready && tool !== "select" && tool !== "track" && (
@@ -785,7 +1184,7 @@ export default function RecordingEditor() {
             </div>
 
             <Transport
-              disabled={!seq || !ready}
+              disabled={!seq || !ready || Boolean(tracking)}
               time={time}
               duration={duration}
               paused={paused}
@@ -806,6 +1205,9 @@ export default function RecordingEditor() {
               onSetOut={() => updateSeq((s) => ({ outPoint: snap(time), inPoint: s.inPoint !== undefined && s.inPoint >= time ? undefined : s.inPoint }))}
               onClearClip={() => updateSeq({ inPoint: undefined, outPoint: undefined })}
               onToggleLoop={() => setLoop((v) => !v)}
+              onExtract={() => void extractClip()}
+              onCapture={() => void captureImage()}
+              canCapture={seq?.source.kind === "file"}
             />
           </main>
 
@@ -830,6 +1232,10 @@ export default function RecordingEditor() {
                 onUpdateFreeze={(id, patch) => setFreezes((list) => list.map((f) => (f.id === id ? { ...f, ...patch } : f)))}
                 onDeleteFreeze={(id) => setFreezes((list) => list.filter((f) => f.id !== id))}
                 onExportImage={exportImage}
+                onExtractClip={() => void extractClip()}
+                onCaptureImage={() => void captureImage()}
+                onExportVideo={() => void exportVideoFile(seq)}
+                exportFormat={videoFormat}
                 canExportFrame={seq.source.kind === "file"}
                 tracks={tracks}
                 selectedTrackId={selectedTrackId}
@@ -839,7 +1245,7 @@ export default function RecordingEditor() {
                 onNewTrack={() => { setSelectedTrackId(null); setTool("track"); }}
                 onUpdateTrack={(id, patch) => setTracks((list) => list.map((tr) => (tr.id === id ? { ...tr, ...patch } : tr)))}
                 onDeleteTrack={(id) => { setTracks((list) => list.filter((tr) => tr.id !== id)); if (selectedTrackId === id) setSelectedTrackId(null); }}
-                onAutoTrack={(id) => void runAutoTrack(id)}
+                onAutoTrack={(id, direction) => void runAutoTrack(id, direction)}
                 onCancelTracking={() => { trackingCancel.current = true; }}
               />
             ) : (
@@ -848,10 +1254,58 @@ export default function RecordingEditor() {
               </p>
             )}
             <div className="xl:hidden border-t h-[60vh]">
-              <LibraryPanel sequences={library} activeId={seq?.id ?? null} storage={storage} onOpen={(s) => void openSequence(s)} onDelete={(s) => void removeSequence(s)} />
+              <LibraryPanel sequences={library} images={images} activeId={seq?.id ?? null} storage={storage} onOpen={(s) => void openSequence(s)} onDelete={(s) => void removeSequence(s)} onOpenImage={(i) => void openImage(i)} onDeleteImage={(i) => void removeImage(i)} onExport={(s) => void exportVideoFile(s)} onDownloadImage={(i) => void downloadImageFile(i)} exportFormat={videoFormat} />
             </div>
           </aside>
         </div>
+
+        {/* Export vidéo en cours */}
+        {exporting && (
+          <div className="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3">
+            <div role="dialog" aria-modal="true" aria-labelledby="export-title" className={`w-full max-w-md rounded-3xl border p-5 space-y-4 shadow-2xl ${th.dialog}`}>
+              <div>
+                <h2 id="export-title" className="text-lg font-black">Export de la vidéo…</h2>
+                <p className={`text-[13px] font-semibold truncate ${th.sub}`}>{exporting.title}</p>
+              </div>
+              <div className={`h-2.5 rounded-full overflow-hidden ${th.light ? "bg-slate-200" : "bg-white/10"}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(exporting.progress * 100)}>
+                <div className="h-full bg-[#FF5A4E] transition-[width] duration-200" style={{ width: `${Math.round(exporting.progress * 100)}%` }} />
+              </div>
+              <p className={`text-[12px] leading-relaxed ${th.faint}`}>
+                Le passage est rejoué puis enregistré avec les joueurs suivis et les arrêts sur image annotés : l&apos;export dure
+                environ le temps du passage. Gardez cet onglet affiché.
+              </p>
+              <div className="flex justify-end">
+                <button type="button" onClick={() => { exportCancel.current = true; }} className={`h-11 px-5 rounded-xl border text-sm font-black cursor-pointer ${th.idleBtn}`}>Annuler (Échap)</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Image de la bibliothèque */}
+        {imageView && (
+          <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3" onPointerDown={(e) => { if (e.target === e.currentTarget) closeImageView(); }}>
+            <div role="dialog" aria-modal="true" aria-labelledby="image-title" className={`w-full max-w-5xl max-h-full flex flex-col rounded-3xl border p-4 gap-3 shadow-2xl ${th.dialog}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 id="image-title" className="text-lg font-black truncate">{imageView.image.title}</h2>
+                  <p className={`text-[13px] font-semibold ${th.sub}`}>
+                    « {imageView.image.sequenceTitle} » à {formatTime(imageView.image.time, true, imageView.image.fps)} · {new Date(imageView.image.createdAt).toLocaleDateString("fr-FR")}
+                  </p>
+                </div>
+                <button type="button" onClick={closeImageView} aria-label="Fermer" className={`w-11 h-11 shrink-0 rounded-xl border flex items-center justify-center cursor-pointer ${th.idleBtn}`}><X className="w-5 h-5" /></button>
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageView.url} alt={imageView.image.title} className="min-h-0 w-full object-contain rounded-xl bg-black" style={{ maxHeight: "calc(100vh - 220px)" }} />
+              <div className="flex flex-wrap justify-end gap-2">
+                <button type="button" onClick={() => void removeImage(imageView.image)} className={`h-11 px-4 rounded-xl border text-sm font-black flex items-center gap-2 cursor-pointer ${th.dangerBtn}`}><Trash2 className="w-4 h-4" />Supprimer</button>
+                {library.some((s) => s.id === imageView.image.sequenceId) && (
+                  <button type="button" onClick={() => void goToImageSource(imageView.image)} className={`h-11 px-4 rounded-xl border text-sm font-black flex items-center gap-2 cursor-pointer ${th.idleBtn}`}><Film className="w-4 h-4" />Ouvrir la séquence à cet instant</button>
+                )}
+                <button type="button" onClick={() => downloadImage(imageView)} className={`h-11 px-5 rounded-xl border text-sm font-black flex items-center gap-2 cursor-pointer ${th.primaryBtn}`}><Download className="w-4 h-4" />Télécharger</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Lien YouTube / Vimeo */}
         {linkOpen && (

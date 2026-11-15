@@ -78,6 +78,9 @@ interface Props {
   /** Joueurs suivis, affichés à l'instant `time` (pendant la lecture comme à l'arrêt) */
   tracks: Track[];
   time: number;
+  /** Suivi automatique en cours : l'image analysée (dessinée par l'éditeur) recouvre la vidéo, la scène est verrouillée */
+  live?: boolean;
+  liveCanvasRef?: React.RefObject<HTMLCanvasElement | null>;
   selectedTrackId: string | null;
   /** Outil de suivi : appui / glissé / relâché sur l'image (coordonnées normalisées) */
   onTrackPointer: (p: { x: number; y: number }, phase: "down" | "move" | "up", hitTrackId: string | null) => void;
@@ -95,7 +98,7 @@ interface Props {
 }
 
 const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
-  { source, shapes, tool, tracks, time, selectedTrackId, onTrackPointer, color, width, dashed, selectedId, onSelect, onBeginDraw, onAddShape, onMoveShape, onReady, onError },
+  { source, shapes, tool, tracks, time, live = false, liveCanvasRef, selectedTrackId, onTrackPointer, color, width, dashed, selectedId, onSelect, onBeginDraw, onAddShape, onMoveShape, onReady, onError },
   ref
 ) {
   const boxRef = useRef<HTMLDivElement>(null);
@@ -272,7 +275,7 @@ const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
   }, []);
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!source || e.button !== 0 || textEdit) return;
+    if (!source || e.button !== 0 || textEdit || live) return;
     const p = toNorm(e.clientX, e.clientY);
     if (tool === "track") {
       const hit = hitTrack(tracks, p.px, p.py, rectRef.current, time);
@@ -350,7 +353,7 @@ const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
     setTextEdit(null);
   };
 
-  const cursor = !source ? "default" : tool === "select" ? "default" : tool === "text" ? "text" : tool === "track" ? "cell" : "crosshair";
+  const cursor = !source ? "default" : live ? "progress" : tool === "select" ? "default" : tool === "text" ? "text" : tool === "track" ? "cell" : "crosshair";
 
   return (
     <div ref={boxRef} className="absolute inset-0 overflow-hidden bg-black select-none" data-testid="recording-stage">
@@ -372,6 +375,9 @@ const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
       )}
       {source && source.kind !== "file" && (
         <div ref={embedHostRef} className="absolute pointer-events-none" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }} />
+      )}
+      {live && liveCanvasRef && (
+        <canvas ref={liveCanvasRef} aria-hidden="true" className="absolute pointer-events-none" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }} />
       )}
       <canvas
         ref={canvasRef}
