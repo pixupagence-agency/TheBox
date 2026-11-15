@@ -24,6 +24,12 @@ export type EquipmentKind =
   | "miniGoal"
   | "goal"
   | "mannequin"
+  | "hurdle"
+  | "numberCone"
+  | "popupGoal"
+  | "rebounder"
+  | "net"
+  | "ballBag"
   | "player"
   | "ball";
 
@@ -44,12 +50,24 @@ interface BaseElement {
 
 export interface FlatConeElement extends BaseElement { kind: "flatCone"; color: string }
 export interface TallConeElement extends BaseElement { kind: "tallCone"; color: string }
-export interface PoleElement extends BaseElement { kind: "pole"; color: string; /** hauteur (m) */ height: number }
+export interface PoleElement extends BaseElement { kind: "pole"; color: string; /** hauteur (m) */ height: number; /** piquet avec drapeau */ flag?: boolean }
 export interface LadderElement extends BaseElement { kind: "ladder"; rungs: number }
 export interface HoopElement extends BaseElement { kind: "hoop"; color: string; /** diamètre (m) */ diameter: number }
 export interface MiniGoalElement extends BaseElement { kind: "miniGoal"; /** largeur (m) */ size: number }
 export interface GoalElement extends BaseElement { kind: "goal"; /** largeur (m) : 7,32 / 6 / 5 / 3 */ size: number }
 export interface MannequinElement extends BaseElement { kind: "mannequin"; count: number }
+/** Haie de coordination : largeur 0,9 m, hauteur 15 / 30 / 50 cm */
+export interface HurdleElement extends BaseElement { kind: "hurdle"; color: string; /** hauteur (m) */ height: number }
+/** Plot (coupelle) numéroté */
+export interface NumberConeElement extends BaseElement { kind: "numberCone"; color: string; value: number }
+/** But pliable (pop-up) */
+export interface PopupGoalElement extends BaseElement { kind: "popupGoal"; /** largeur (m) */ size: number }
+/** Rebondisseur (cadre à filet tendu) */
+export interface RebounderElement extends BaseElement { kind: "rebounder"; /** largeur (m) */ size: number }
+/** Filet de tennis-ballon / mini-filet */
+export interface NetElement extends BaseElement { kind: "net"; /** longueur (m) */ length: number }
+/** Réserve de ballons (sac ou caisse) */
+export interface BallBagElement extends BaseElement { kind: "ballBag"; count: number }
 
 export type PlayerRole = "player" | "goalkeeper" | "coach";
 export interface PlayerElement extends BaseElement {
@@ -97,6 +115,12 @@ export type TrainingElement =
   | MiniGoalElement
   | GoalElement
   | MannequinElement
+  | HurdleElement
+  | NumberConeElement
+  | PopupGoalElement
+  | RebounderElement
+  | NetElement
+  | BallBagElement
   | PlayerElement
   | BallElement
   | ArrowElement
@@ -119,6 +143,12 @@ export const LAYER_OF: Record<ElementKind, LayerId> = {
   miniGoal: "equipment",
   goal: "equipment",
   mannequin: "equipment",
+  hurdle: "equipment",
+  numberCone: "equipment",
+  popupGoal: "equipment",
+  rebounder: "equipment",
+  net: "equipment",
+  ballBag: "equipment",
   ball: "equipment",
   player: "players",
   arrow: "annotations",

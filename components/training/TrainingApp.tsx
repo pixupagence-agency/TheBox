@@ -24,10 +24,10 @@ export default function TrainingApp() {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-[#07090e] p-6">
         <div className="max-w-sm w-full rounded-3xl border border-[#1a2130] bg-[#0b0f17] p-6 text-center space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#00E599]">Training</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#3B82F6]">Training</p>
           <h1 className="text-lg font-black text-white">Connectez-vous pour créer vos ateliers</h1>
           <p className="text-sm text-slate-400">Le module Training utilise votre compte The Box.</p>
-          <Link href="/" className="inline-flex h-12 items-center justify-center rounded-xl bg-[#00E599] px-6 text-sm font-black text-[#04120c]">
+          <Link href="/" className="inline-flex h-12 items-center justify-center rounded-xl bg-[#3B82F6] px-6 text-sm font-black text-white">
             Se connecter
           </Link>
         </div>

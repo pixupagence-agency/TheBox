@@ -30,6 +30,20 @@ export function saveDraft(diagram: TrainingDiagram) {
   }
 }
 
+/** Logo du club du coach connecté, s'il doit figurer dans le rond central (même réglage que le tableau tactique) */
+export function readClubCenterLogo(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const coaches = JSON.parse(localStorage.getItem("thebox_coaches") || "[]") as Array<{ id: string; clubLogo?: string; showLogoOnPitch?: boolean }>;
+    const activeId = localStorage.getItem("thebox_active_coach_id");
+    const coach = coaches.find((c) => c.id === activeId) || coaches[0];
+    if (!coach?.clubLogo || coach.showLogoOnPitch === false) return null;
+    return coach.clubLogo.startsWith("data:image/") ? coach.clubLogo : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface RosterPlayer {
   id: string;
   name: string;

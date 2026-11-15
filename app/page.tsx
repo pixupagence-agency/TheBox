@@ -39,6 +39,9 @@ export interface CoachProfile {
   createdAt?: string;
   trialBonusDays?: number;
   language?: Language;
+  /** Logo du club (data URL) : carte du match, rond central, exports image et PDF */
+  clubLogo?: string;
+  showLogoOnPitch?: boolean;
 }
 
 const defaultCoaches: CoachProfile[] = [];
@@ -349,6 +352,8 @@ export default function Home() {
           createdAt: profileFromDb?.createdAt || new Date().toISOString(),
           trialBonusDays: profileFromDb?.trialBonusDays || 0,
           language: resolvedLang,
+          clubLogo: profileFromDb?.clubLogo || undefined,
+          showLogoOnPitch: profileFromDb?.showLogoOnPitch ?? true,
         };
 
         // La formule vient uniquement de la base (écrite par le webhook Stripe), jamais du navigateur

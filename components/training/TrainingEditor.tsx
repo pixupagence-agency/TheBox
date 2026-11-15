@@ -5,9 +5,10 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, BoxSelect, ClipboardPaste, Copy, FilePlus2, Grid3x3, Hand, Magnet, Maximize, MousePointer2, Redo2, Rows3, SlidersHorizontal,
-  Undo2, X, ZoomIn, ZoomOut,
+  ArrowLeft, BoxSelect, ClipboardPaste, Copy, Dumbbell, FilePlus2, Grid3x3, Hand, Magnet, Maximize, Moon, MousePointer2, Redo2, Rows3,
+  SlidersHorizontal, Sun, Undo2, X, ZoomIn, ZoomOut,
 } from "lucide-react";
+import LogoIcon from "@/components/LogoIcon";
 import TrainingCanvas, { type CanvasMode, type TrainingCanvasHandle } from "./TrainingCanvas";
 import Palette from "./Palette";
 import PropertiesPanel from "./PropertiesPanel";
@@ -18,10 +19,10 @@ import { editorReducer, initialEditorState, round2, seriesPositions, snapValue }
 import { pitchFormatOption } from "@/lib/training/pitch";
 import { loadDraft, readActiveRoster, saveDraft } from "@/lib/training/storage";
 import type { TrainingElement } from "@/lib/training/types";
+import { TrainingThemeContext, getTrainingTheme, readThemePreference, storeThemePreference } from "@/lib/training/theme";
 
-const toolBtn = "h-11 min-w-11 px-2.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-black transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed";
-const toolIdle = "border-[#1a2130] bg-[#0b0f17] text-slate-200 hover:border-[#00E599]/50";
-const toolOn = "border-[#00E599] bg-[#00E599]/12 text-[#00E599]";
+// Boutons de la barre d'outils : même forme que ceux du tableau tactique, en plus grand (usage tactile au bord du terrain)
+const toolBtn = "h-11 min-w-11 px-2.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-black transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed";
 
 export default function TrainingEditor() {
   const [state, dispatch] = useReducer(editorReducer, undefined, () => initialEditorState(loadDraft()));
@@ -34,6 +35,12 @@ export default function TrainingEditor() {
   const [polygonCommand, setPolygonCommand] = useState<{ id: number; action: "finish" | "cancel" } | null>(null);
   const canvasRef = useRef<TrainingCanvasHandle>(null);
   const roster = useMemo(() => readActiveRoster(), []);
+  // Même thème (sombre « cockpit » / clair) que le tableau tactique, accent bleu
+  const [isLight, setIsLight] = useState<boolean>(() => readThemePreference());
+  const th = getTrainingTheme(isLight);
+  const toolIdle = th.toolIdle;
+  const toolOn = th.toolOn;
+  const toggleTheme = () => setIsLight((v) => { storeThemePreference(!v); return !v; });
 
   // Brouillon enregistré sur l'appareil (le schéma reste disponible hors ligne au bord du terrain)
   useEffect(() => {
@@ -138,58 +145,78 @@ export default function TrainingEditor() {
 
   const pitchLabel = pitchFormatOption(state.diagram.pitch.format).label;
   const isFree = state.diagram.pitch.format === "free";
+  const separator = <span aria-hidden="true" className={`h-6 w-px mx-0.5 shrink-0 ${th.separator}`} />;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#07090e] text-white" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
-      {/* Barre d'outils */}
-      <header className="shrink-0 flex items-center gap-1.5 px-2 py-2 border-b border-[#1a2130] bg-[#0b0e14]">
-        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <Link href="/" className={`${toolBtn} ${toolIdle}`} title="Retour au tableau tactique" aria-label="Retour au tableau tactique">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div className="px-1.5 mr-1 leading-tight shrink-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#00E599]">Training</p>
-          <p className="text-xs font-bold text-slate-300 whitespace-nowrap">{pitchLabel}{isFree ? ` · ${state.diagram.pitch.length} × ${state.diagram.pitch.width} m` : ""}</p>
+    <TrainingThemeContext.Provider value={th}>
+    <div id="training-command-center" className={`fixed inset-0 flex flex-col transition-colors duration-300 ${th.page}`} style={{ fontFamily: '"Plus Jakarta Sans", Inter, system-ui, sans-serif' }}>
+      {/* En-tête : identique au tableau tactique (logo the box), signature « zone d'entraînement » en bleu */}
+      <header className={`h-16 shrink-0 px-3 sm:px-6 border-b flex items-center justify-between gap-3 relative z-40 ${th.header}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <LogoIcon className={`w-10 h-10 shrink-0 ${th.logo}`} />
+          <div className="text-left select-none min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className={`text-2xl font-black tracking-wider leading-none lowercase whitespace-nowrap ${th.brand}`}>the box</h1>
+              <span className={`hidden sm:inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${th.accentChip}`}>
+                <Dumbbell className="w-3 h-3" aria-hidden="true" />Training
+              </span>
+            </div>
+            <p className={`whitespace-nowrap text-[8.5px] font-black uppercase tracking-[0.22em] leading-none mt-1 ${th.accentText}`}>zone d&apos;entraînement</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <span className={`hidden md:inline text-sm font-bold whitespace-nowrap ${th.sub}`}>{pitchLabel}{isFree ? ` · ${state.diagram.pitch.length} × ${state.diagram.pitch.width} m` : ""}</span>
+          <button type="button" onClick={toggleTheme} className={`${toolBtn} ${toolIdle}`} title={isLight ? "Passer au thème sombre" : "Passer au thème clair"} aria-label={isLight ? "Thème sombre" : "Thème clair"}>
+            {isLight ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+          </button>
+          <Link href="/" className={`${toolBtn} ${toolIdle}`} title="Retour au tableau tactique" aria-label="Retour au tableau tactique">
+            <ArrowLeft className="w-5 h-5" /><span className="hidden lg:inline">Tableau tactique</span>
+          </Link>
+          <button type="button" className={`${toolBtn} ${panelOpen ? toolOn : toolIdle} lg:hidden`} onClick={() => setPanelOpen((v) => !v)} title="Propriétés et terrain" aria-label="Propriétés et terrain" aria-pressed={panelOpen}><SlidersHorizontal className="w-5 h-5" /></button>
+        </div>
+      </header>
+
+      {/* Barre d'outils : groupes d'outils comme sur le tableau tactique */}
+      <div className={`shrink-0 flex items-center gap-1.5 px-2 sm:px-3 py-2 border-b overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${th.toolbar}`}>
+        <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`}>
           <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => dispatch({ type: "undo" })} disabled={state.past.length === 0} title="Annuler (Ctrl+Z)" aria-label="Annuler"><Undo2 className="w-5 h-5" /></button>
           <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => dispatch({ type: "redo" })} disabled={state.future.length === 0} title="Rétablir (Ctrl+Y)" aria-label="Rétablir"><Redo2 className="w-5 h-5" /></button>
           <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => dispatch({ type: "copy" })} disabled={state.selectedIds.length === 0} title="Copier la sélection (Ctrl+C)" aria-label="Copier"><Copy className="w-5 h-5" /></button>
           <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => dispatch({ type: "paste" })} disabled={state.clipboard.length === 0} title="Coller (Ctrl+V)" aria-label="Coller"><ClipboardPaste className="w-5 h-5" /></button>
         </div>
-        <span className="w-px h-7 bg-[#1a2130] shrink-0" />
-        <div className="flex items-center gap-1.5 shrink-0">
+        {separator}
+        <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`}>
           <button type="button" className={`${toolBtn} ${mode === "select" && !armed ? toolOn : toolIdle}`} onClick={() => { setArmed(null); setMode("select"); }} title="Sélectionner et déplacer" aria-label="Outil sélection" aria-pressed={mode === "select" && !armed}><MousePointer2 className="w-5 h-5" /></button>
           <button type="button" className={`${toolBtn} ${mode === "pan" && !armed ? toolOn : toolIdle}`} onClick={() => { setArmed(null); setMode("pan"); }} title="Déplacer la vue" aria-label="Outil déplacement de la vue" aria-pressed={mode === "pan" && !armed}><Hand className="w-5 h-5" /></button>
           <button type="button" className={`${toolBtn} ${multiSelect ? toolOn : toolIdle}`} onClick={() => setMultiSelect((v) => !v)} title="Sélection multiple : chaque appui ajoute ou retire un élément ; glisser dans le vide trace un cadre" aria-label="Sélection multiple" aria-pressed={multiSelect}><BoxSelect className="w-5 h-5" /><span className="hidden sm:inline">Multi</span></button>
         </div>
-        <span className="w-px h-7 bg-[#1a2130] shrink-0" />
-        <div className="flex items-center gap-1.5 shrink-0">
+        {separator}
+        <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`}>
           <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => setSeriesOpen(true)} title="Poser une série d'éléments" aria-label="Poser une série"><Rows3 className="w-5 h-5" /><span className="hidden sm:inline">Série</span></button>
           <button type="button" className={`${toolBtn} ${state.grid.visible ? toolOn : toolIdle}`} onClick={() => dispatch({ type: "setGrid", grid: { visible: !state.grid.visible } })} title="Afficher la grille" aria-label="Grille" aria-pressed={state.grid.visible}><Grid3x3 className="w-5 h-5" /></button>
           <button type="button" className={`${toolBtn} ${state.grid.snap ? toolOn : toolIdle}`} onClick={() => dispatch({ type: "setGrid", grid: { snap: !state.grid.snap } })} title={`Magnétisme (pas de ${String(state.grid.size).replace(".", ",")} m)`} aria-label="Magnétisme" aria-pressed={state.grid.snap}><Magnet className="w-5 h-5" /></button>
         </div>
-        <span className="w-px h-7 bg-[#1a2130] shrink-0" />
-        <div className="flex items-center gap-1.5 shrink-0">
+        {separator}
+        <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`}>
           <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => canvasRef.current?.zoomBy(1 / 1.25)} title="Dézoomer" aria-label="Dézoomer"><ZoomOut className="w-5 h-5" /></button>
           <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => canvasRef.current?.fit()} title="Voir tout le terrain" aria-label="Voir tout le terrain"><Maximize className="w-5 h-5" /></button>
           <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => canvasRef.current?.zoomBy(1.25)} title="Zoomer" aria-label="Zoomer"><ZoomIn className="w-5 h-5" /></button>
         </div>
         <span className="flex-1" />
-        <button type="button" className={`${toolBtn} ${toolIdle} shrink-0`} onClick={newDiagram} disabled={state.diagram.elements.length === 0} title="Nouveau schéma" aria-label="Nouveau schéma"><FilePlus2 className="w-5 h-5" /><span className="hidden md:inline">Nouveau</span></button>
+        <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`}>
+          <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={newDiagram} disabled={state.diagram.elements.length === 0} title="Nouveau schéma" aria-label="Nouveau schéma"><FilePlus2 className="w-5 h-5" /><span className="hidden md:inline">Nouveau</span></button>
         </div>
-        <button type="button" className={`${toolBtn} ${panelOpen ? toolOn : toolIdle} lg:hidden shrink-0`} onClick={() => setPanelOpen((v) => !v)} title="Propriétés et terrain" aria-label="Propriétés et terrain" aria-pressed={panelOpen}><SlidersHorizontal className="w-5 h-5" /></button>
-      </header>
+      </div>
 
-      <div className="flex-1 flex min-h-0">
-        {/* Palette */}
-        <aside className="shrink-0 w-[148px] sm:w-[164px] border-r border-[#1a2130] bg-[#090c12]">
+      <div className="relative flex-1 flex min-h-0">
+        {/* Palette : sections repliables comme la colonne du tableau tactique */}
+        <aside className={`shrink-0 w-[172px] sm:w-[200px] border-r ${th.sidebar}`}>
           <Palette armedId={armed?.id ?? null} onArm={onArm} onDrop={onDrop} />
         </aside>
 
         {/* Terrain */}
-        <main className="relative flex-1 min-w-0 bg-[#05070b]">
+        <main className={`relative flex-1 min-w-0 ${th.stage}`}>
           <TrainingCanvas
             ref={canvasRef}
             state={state}
@@ -203,36 +230,43 @@ export default function TrainingEditor() {
           />
 
           {armed && (
-            <div className="absolute left-1/2 -translate-x-1/2 top-2 z-10 flex items-center gap-2 rounded-2xl border border-[#00E599]/40 bg-[#0b0f17]/95 px-3 py-2 shadow-xl max-w-[calc(100%-16px)]">
-              <span className="text-xs font-bold text-slate-200 truncate">
+            <div className={`absolute left-1/2 -translate-x-1/2 top-2 z-10 flex items-center gap-2 rounded-2xl border px-3 py-2 shadow-xl max-w-[calc(100%-16px)] ${th.banner}`}>
+              <span className="text-sm font-bold truncate">
                 {armed.drawTool?.kind === "arrow" && `${armed.label} : glissez sur le terrain`}
                 {armed.drawTool?.kind === "zone" && armed.drawTool.shape !== "polygon" && `${armed.label} : glissez pour tracer`}
                 {armed.drawTool?.kind === "zone" && armed.drawTool.shape === "polygon" && (polygonPoints === 0 ? "Polygone : appuyez pour placer les sommets" : `${polygonPoints} sommet${polygonPoints > 1 ? "s" : ""}`)}
                 {armed.template && `${armed.label} : appuyez sur le terrain pour poser`}
               </span>
               {armed.drawTool?.kind === "zone" && armed.drawTool.shape === "polygon" && polygonPoints >= 3 && (
-                <button type="button" onClick={() => setPolygonCommand({ id: Date.now(), action: "finish" })} className="h-10 px-3 rounded-xl bg-[#00E599] text-[#04120c] text-xs font-black cursor-pointer">Terminer</button>
+                <button type="button" onClick={() => setPolygonCommand({ id: Date.now(), action: "finish" })} className={`h-11 px-4 rounded-xl border text-sm font-black cursor-pointer ${th.primaryBtn}`}>Terminer</button>
               )}
-              <button type="button" onClick={() => { setPolygonCommand({ id: Date.now(), action: "cancel" }); setArmed(null); }} aria-label="Arrêter de poser" className="h-10 w-10 rounded-xl border border-[#1f2937] flex items-center justify-center cursor-pointer hover:border-[#00E599]/50"><X className="w-4 h-4" /></button>
+              <button type="button" onClick={() => { setPolygonCommand({ id: Date.now(), action: "cancel" }); setArmed(null); }} aria-label="Arrêter de poser" className={`h-11 w-11 rounded-xl border flex items-center justify-center cursor-pointer ${th.idleBtn}`}><X className="w-5 h-5" /></button>
             </div>
           )}
         </main>
 
         {/* Propriétés : colonne sur grand écran, tiroir sur tablette et téléphone */}
         <aside
-          className={`bg-[#090c12] border-l border-[#1a2130] overflow-y-auto overscroll-contain p-3 w-[300px] shrink-0
-            max-lg:fixed max-lg:right-0 max-lg:top-[61px] max-lg:bottom-0 max-lg:z-40 max-lg:w-[min(340px,88vw)] max-lg:shadow-2xl max-lg:transition-transform
+          className={`border-l overflow-y-auto overscroll-contain w-[340px] shrink-0 ${th.sidebar}
+            max-lg:absolute max-lg:right-0 max-lg:top-0 max-lg:bottom-0 max-lg:z-40 max-lg:w-[min(380px,90vw)] max-lg:shadow-2xl max-lg:transition-transform
             ${panelOpen ? "max-lg:translate-x-0" : "max-lg:translate-x-full max-lg:pointer-events-none"}`}
           aria-label="Propriétés"
         >
-          <div className="lg:hidden flex justify-end mb-2">
-            <button type="button" onClick={() => setPanelOpen(false)} aria-label="Fermer le panneau" className={`${toolBtn} ${toolIdle}`}><X className="w-5 h-5" /></button>
+          <div className={`sticky top-0 z-10 px-3 py-2.5 border-b flex items-center gap-1.5 ${th.sidebar}`}>
+            <SlidersHorizontal className={`w-4 h-4 shrink-0 ${th.sectionIcon}`} aria-hidden="true" />
+            <span className={`flex-1 text-xs font-black uppercase tracking-wider ${th.sectionTitle}`}>
+              {state.selectedIds.length === 0 ? "Terrain & affichage" : state.selectedIds.length === 1 ? "Élément sélectionné" : "Sélection"}
+            </span>
+            <button type="button" onClick={() => setPanelOpen(false)} aria-label="Fermer le panneau" className={`lg:hidden h-9 w-9 rounded-lg flex items-center justify-center cursor-pointer ${toolIdle}`}><X className="w-4 h-4" /></button>
           </div>
-          <PropertiesPanel state={state} dispatch={dispatch} roster={roster} />
+          <div className="p-3">
+            <PropertiesPanel state={state} dispatch={dispatch} roster={roster} />
+          </div>
         </aside>
       </div>
 
       <SeriesDialog open={seriesOpen} onClose={() => setSeriesOpen(false)} onApply={applySeries} />
     </div>
+    </TrainingThemeContext.Provider>
   );
 }

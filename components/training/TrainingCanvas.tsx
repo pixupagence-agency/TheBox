@@ -9,6 +9,8 @@ import { ElementShape, ZoneBody, arrowPath, boostFor } from "./ElementShape";
 import { createElement, type PaletteItem } from "@/lib/training/catalog";
 import { isElementVisible, round2, snapValue, type EditorAction, type EditorState } from "@/lib/training/editorState";
 import { PITCH_MARGIN, pitchMarkings } from "@/lib/training/pitch";
+import { readClubCenterLogo } from "@/lib/training/storage";
+import { useTrainingTheme } from "@/lib/training/theme";
 import type { ArrowElement, PitchConfig, TrainingElement, ZoneElement } from "@/lib/training/types";
 
 Konva.dragDistance = 4;
@@ -49,46 +51,119 @@ type Gesture =
   | { type: "pinch"; dist: number; cx: number; cy: number };
 
 const ORDER: Record<TrainingElement["kind"], number> = {
-  zone: 0, ladder: 1, hoop: 1, goal: 1, miniGoal: 1, flatCone: 2, tallCone: 2, pole: 2, mannequin: 2, ball: 3,
+  zone: 0, ladder: 1, hoop: 1, goal: 1, miniGoal: 1, popupGoal: 1, rebounder: 1, net: 1, hurdle: 1,
+  flatCone: 2, numberCone: 2, tallCone: 2, pole: 2, mannequin: 2, ballBag: 2, ball: 3,
   player: 4, arrow: 5, step: 6, text: 6,
 };
 
-/** Dessine l'herbe et les lignes du terrain (une seule forme, sans interaction) */
-function drawPitch(ctx: Konva.Context, pitch: PitchConfig, scale: number) {
+/** Emblème The Box (public/logo.svg, repère 0-100) dans le rond central, comme sur le terrain tactique */
+function drawEmblem(c: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  const k = (r * 2) / 100;
+  const P = (x: number, y: number): [number, number] => [cx - r + x * k, cy - r + y * k];
+  c.save();
+  c.strokeStyle = "rgba(255,255,255,0.4)";
+  c.lineWidth = 4.5 * k;
+  c.lineCap = "square";
+  c.lineJoin = "miter";
+  c.beginPath();
+  c.arc(cx, cy, 44 * k, 0, Math.PI * 2);
+  c.stroke();
+  const paths: Array<Array<[number, number]>> = [
+    [[19, 19], [81, 81]], [[81, 19], [19, 81]],
+    [[32, 21], [50, 39], [68, 21]], [[32, 79], [50, 61], [68, 79]],
+    [[21, 32], [39, 50], [21, 68]], [[79, 32], [61, 50], [79, 68]],
+  ];
+  for (const path of paths) {
+    c.beginPath();
+    path.forEach(([x, y], i) => (i === 0 ? c.moveTo(...P(x, y)) : c.lineTo(...P(x, y))));
+    c.stroke();
+  }
+  c.restore();
+}
+
+/** Logo du club découpé en rond au diamètre du rond central (remplace l'emblème) */
+function drawClubLogo(c: CanvasRenderingContext2D, img: HTMLImageElement, cx: number, cy: number, r: number, lw: number) {
+  c.save();
+  c.beginPath();
+  c.arc(cx, cy, r, 0, Math.PI * 2);
+  c.clip();
+  c.fillStyle = "rgba(255,255,255,0.92)";
+  c.fillRect(cx - r, cy - r, r * 2, r * 2);
+  const s = Math.max((r * 2) / img.naturalWidth, (r * 2) / img.naturalHeight);
+  c.drawImage(img, cx - (img.naturalWidth * s) / 2, cy - (img.naturalHeight * s) / 2, img.naturalWidth * s, img.naturalHeight * s);
+  c.restore();
+  c.beginPath();
+  c.arc(cx, cy, r, 0, Math.PI * 2);
+  c.lineWidth = lw;
+  c.stroke();
+}
+
+/**
+ * Dessine l'herbe et les lignes du terrain (une seule forme, sans interaction).
+ * Rendu identique au terrain du tableau tactique : herbe foncée, bandes émeraude discrètes,
+ * lignes blanches fines à 85 %, filets de but légers, emblème The Box (ou logo du club) au centre.
+ */
+function drawPitch(ctx: Konva.Context, pitch: PitchConfig, scale: number, light: boolean, centerLogo: HTMLImageElement | null) {
   const L = pitch.length, W = pitch.width, M = PITCH_MARGIN;
   const c = ctx._context;
-  c.fillStyle = "#0a3d2b";
-  c.fillRect(-M, -M, L + 2 * M, W + 2 * M);
-  const stripes = Math.max(6, Math.round(L / 5.25));
-  const sw = L / stripes;
-  for (let i = 0; i < stripes; i++) {
-    c.fillStyle = i % 2 === 0 ? "#0f4a33" : "#0c432e";
-    c.fillRect(i * sw, 0, sw, W);
-  }
-  const lw = Math.max(0.12, 1.4 / scale);
-  c.strokeStyle = "rgba(255,255,255,0.88)";
-  c.fillStyle = "rgba(255,255,255,0.9)";
+  const totalW = L + 2 * M;
+  // Fond : #06140f en thème sombre, emerald-950 en thème clair (comme #pitch-football)
+  c.fillStyle = light ? "#022c22" : "#06140f";
+  c.fillRect(-M, -M, totalW, W + 2 * M);
+  // 12 bandes parallèles aux lignes de but sur toute la largeur, emerald-900 en transparence
+  c.fillStyle = light ? "rgba(6,78,59,0.15)" : "rgba(6,78,59,0.28)";
+  const bands = 12;
+  const bw = totalW / bands;
+  for (let i = 0; i < bands; i += 2) c.fillRect(-M + i * bw, -M, bw, W + 2 * M);
+
+  const lw = Math.max(0.25, 1 / scale);
+  c.strokeStyle = "rgba(255,255,255,0.85)";
+  c.fillStyle = "#ffffff";
   c.lineWidth = lw;
   c.lineJoin = "miter";
+  let center: { x: number; y: number; r: number } | null = null;
   for (const m of pitchMarkings(pitch)) {
     c.beginPath();
     switch (m.t) {
       case "rect": c.rect(m.x, m.y, m.w, m.h); c.stroke(); break;
       case "line": c.moveTo(m.points[0], m.points[1]); for (let i = 2; i < m.points.length; i += 2) c.lineTo(m.points[i], m.points[i + 1]); c.stroke(); break;
-      case "circle": c.arc(m.x, m.y, m.r, 0, Math.PI * 2); c.stroke(); break;
+      case "circle":
+        c.arc(m.x, m.y, m.r, 0, Math.PI * 2); c.stroke();
+        if (Math.abs(m.x - L / 2) < 0.01 && Math.abs(m.y - W / 2) < 0.01) center = { x: m.x, y: m.y, r: m.r };
+        break;
       case "arc": c.arc(m.x, m.y, m.r, (m.from * Math.PI) / 180, (m.to * Math.PI) / 180); c.stroke(); break;
-      case "spot": c.arc(m.x, m.y, Math.max(0.2, 2 / scale), 0, Math.PI * 2); c.fill(); break;
+      case "spot": c.arc(m.x, m.y, Math.max(0.35, 1.5 / scale), 0, Math.PI * 2); c.fill(); break;
       case "goal": {
         const x = m.depth < 0 ? m.x + m.depth : m.x;
         c.save();
-        c.fillStyle = "rgba(255,255,255,0.12)";
+        c.fillStyle = "rgba(255,255,255,0.06)";
         c.fillRect(x, m.y, Math.abs(m.depth), m.w);
+        c.strokeStyle = "#ffffff";
+        c.lineWidth = Math.max(0.2, 0.8 / scale);
+        c.strokeRect(x, m.y, Math.abs(m.depth), m.w);
         c.restore();
-        c.rect(x, m.y, Math.abs(m.depth), m.w);
-        c.stroke();
         break;
       }
     }
+  }
+  if (center) {
+    if (centerLogo && centerLogo.naturalWidth > 0) drawClubLogo(c, centerLogo, center.x, center.y, center.r, lw);
+    else drawEmblem(c, center.x, center.y, center.r);
+  }
+  // Drapeaux de corner (rouge bordé de jaune), comme sur le terrain tactique
+  const corners: Array<[number, number]> =
+    pitch.format === "foot11" || pitch.format === "foot8" || pitch.format === "foot5" ? [[0, 0], [L, 0], [0, W], [L, W]]
+      : pitch.format === "half" ? [[0, 0], [0, W]]
+        : pitch.format === "quarter" ? [[0, 0]] : [];
+  const flag = Math.max(0.6, 6 / scale);
+  for (const [fx, fy] of corners) {
+    c.save();
+    c.fillStyle = "#dc2626";
+    c.strokeStyle = "#eab308";
+    c.lineWidth = Math.max(0.12, 1 / scale);
+    c.fillRect(fx - flag / 2, fy - flag / 2, flag, flag);
+    c.strokeRect(fx - flag / 2, fy - flag / 2, flag, flag);
+    c.restore();
   }
 }
 
@@ -128,6 +203,16 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const th = useTrainingTheme();
+  // Logo du club dans le rond central (réglage du profil, comme le terrain tactique)
+  const [centerLogo, setCenterLogo] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    const src = readClubCenterLogo();
+    if (!src) return;
+    const img = new Image();
+    img.onload = () => setCenterLogo(img);
+    img.src = src;
+  }, []);
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -547,7 +632,7 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
           onWheel={onWheel}
         >
           <Layer listening={false}>
-            <Shape sceneFunc={(ctx) => drawPitch(ctx, pitch, view.scale)} />
+            <Shape sceneFunc={(ctx) => drawPitch(ctx, pitch, view.scale, th.light, centerLogo)} />
             {grid.visible && <Shape sceneFunc={(ctx) => drawGrid(ctx, pitch, grid.size, view.scale)} />}
           </Layer>
           <Layer>
@@ -556,9 +641,9 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
             {/* Repères de sélection des éléments sans cadre de transformation */}
             {selectionRings.map((el) =>
               el.kind === "arrow" ? (
-                <Line key={`sel-${el.id}`} points={absPoints(el, arrowPath(el.points, el.style, 0))} stroke="#00E599" strokeWidth={3 / view.scale} dash={[6 / view.scale, 5 / view.scale]} opacity={0.9} listening={false} />
+                <Line key={`sel-${el.id}`} points={absPoints(el, arrowPath(el.points, el.style, 0))} stroke="#3B82F6" strokeWidth={3 / view.scale} dash={[6 / view.scale, 5 / view.scale]} opacity={0.9} listening={false} />
               ) : el.kind === "zone" && el.points ? (
-                <Line key={`sel-${el.id}`} points={absPoints(el, el.points)} closed stroke="#00E599" strokeWidth={3 / view.scale} dash={[6 / view.scale, 5 / view.scale]} listening={false} />
+                <Line key={`sel-${el.id}`} points={absPoints(el, el.points)} closed stroke="#3B82F6" strokeWidth={3 / view.scale} dash={[6 / view.scale, 5 / view.scale]} listening={false} />
               ) : (
                 <Circle key={`sel-${el.id}`} x={el.x} y={el.y} radius={24 / view.scale} stroke="#f59e0b" strokeWidth={2 / view.scale} dash={[5 / view.scale, 4 / view.scale]} listening={false} />
               )
@@ -575,7 +660,7 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
               <>
                 <Line points={polygon} stroke="#facc15" strokeWidth={3 / view.scale} dash={[8 / view.scale, 6 / view.scale]} listening={false} />
                 {Array.from({ length: polygon.length / 2 }, (_, i) => (
-                  <Circle key={i} x={polygon[i * 2]} y={polygon[i * 2 + 1]} radius={(i === 0 ? 9 : 6) / view.scale} fill={i === 0 ? "#00E599" : "#facc15"} listening={false} />
+                  <Circle key={i} x={polygon[i * 2]} y={polygon[i * 2 + 1]} radius={(i === 0 ? 9 : 6) / view.scale} fill={i === 0 ? "#3B82F6" : "#facc15"} listening={false} />
                 ))}
               </>
             )}
@@ -588,8 +673,8 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
                   x={pointEditable.x + editPoints[i * 2]}
                   y={pointEditable.y + editPoints[i * 2 + 1]}
                   radius={handleRadius}
-                  fill={pointEditable.kind === "arrow" && i === 1 ? "#0f172a" : "#00E599"}
-                  stroke={pointEditable.kind === "arrow" && i === 1 ? "#00E599" : "#0f172a"}
+                  fill={pointEditable.kind === "arrow" && i === 1 ? "#0f172a" : "#3B82F6"}
+                  stroke={pointEditable.kind === "arrow" && i === 1 ? "#3B82F6" : "#0f172a"}
                   strokeWidth={2 / view.scale}
                   draggable
                   onPointerDown={(e) => { e.cancelBubble = true; }}
@@ -608,9 +693,9 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
               rotationSnapTolerance={6}
               anchorSize={16}
               anchorCornerRadius={8}
-              anchorStroke="#00E599"
+              anchorStroke="#3B82F6"
               anchorFill="#0f172a"
-              borderStroke="#00E599"
+              borderStroke="#3B82F6"
               borderDash={[6, 4]}
               rotateAnchorOffset={28}
               ignoreStroke
@@ -619,7 +704,7 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
             />
 
             {marquee && (
-              <Rect x={marquee.x} y={marquee.y} width={marquee.w} height={marquee.h} fill="rgba(0,229,153,0.08)" stroke="#00E599" strokeWidth={1.5 / view.scale} dash={[6 / view.scale, 4 / view.scale]} listening={false} />
+              <Rect x={marquee.x} y={marquee.y} width={marquee.w} height={marquee.h} fill="rgba(59,130,246,0.08)" stroke="#3B82F6" strokeWidth={1.5 / view.scale} dash={[6 / view.scale, 4 / view.scale]} listening={false} />
             )}
           </Layer>
         </Stage>

@@ -231,6 +231,10 @@ export interface FirebaseCoachProfile {
   createdAt?: string;
   updatedAt?: string;
   language?: "fr" | "en";
+  /** Logo du club (data URL PNG redimensionnée, 512 px max) */
+  clubLogo?: string;
+  /** Afficher le logo du club dans le rond central du terrain */
+  showLogoOnPitch?: boolean;
 }
 
 export async function saveUserProfileToFirestore(profile: FirebaseCoachProfile) {

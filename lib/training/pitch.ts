@@ -21,7 +21,7 @@ export const PITCH_FORMATS: PitchFormatOption[] = [
 export const FREE_PITCH_LIMITS = { min: 5, max: 120 };
 
 /** Dégagement dessiné autour de l'aire de jeu (m) */
-export const PITCH_MARGIN = 3;
+export const PITCH_MARGIN = 2.5;
 
 export const pitchFormatOption = (id: PitchFormatId): PitchFormatOption =>
   PITCH_FORMATS.find((f) => f.id === id) || PITCH_FORMATS[0];
@@ -62,7 +62,7 @@ interface EndSpec {
 const END_SPECS: Record<"foot11" | "foot8" | "foot5", EndSpec & { centerR: number }> = {
   foot11: { goalW: 7.32, goalDepth: 2, area: { depth: 16.5, width: 40.32 }, box: { depth: 5.5, width: 18.32 }, spot: 11, penaltyArc: 9.15, centerR: 9.15 },
   foot8: { goalW: 6, goalDepth: 1.5, area: { depth: 13, width: 26 }, spot: 9, centerR: 6 },
-  foot5: { goalW: 3, goalDepth: 1, area: { arcRadius: 6 }, spot: 6, secondSpot: 10, centerR: 3 },
+  foot5: { goalW: 3, goalDepth: 1, area: { depth: 6, width: 12 }, spot: 6, secondSpot: 10, centerR: 3 },
 };
 
 /** Tracés d'une extrémité (côté gauche si dir = 1, droit si dir = -1) */

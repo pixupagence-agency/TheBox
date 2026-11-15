@@ -81,7 +81,9 @@ service cloud.firestore {
         hasSafeBillingOnCreate() &&
         (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 254)) &&
         (!('firstName' in incoming()) || (incoming().firstName is string && incoming().firstName.size() <= 100)) &&
-        (!('lastName' in incoming()) || (incoming().lastName is string && incoming().lastName.size() <= 100));
+        (!('lastName' in incoming()) || (incoming().lastName is string && incoming().lastName.size() <= 100)) &&
+        (!('clubLogo' in incoming()) || (incoming().clubLogo is string && incoming().clubLogo.size() <= 300000 && (incoming().clubLogo == '' || incoming().clubLogo.matches('^data:image/(png|jpeg|webp);base64,.*')))) &&
+        (!('showLogoOnPitch' in incoming()) || incoming().showLogoOnPitch is bool);
 
       allow update: if (isOwner(userId) || isSuperAdmin()) &&
         isValidId(userId) &&
@@ -91,7 +93,9 @@ service cloud.firestore {
         hasUnchangedCreatedAt() &&
         (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 254)) &&
         (!('firstName' in incoming()) || (incoming().firstName is string && incoming().firstName.size() <= 100)) &&
-        (!('lastName' in incoming()) || (incoming().lastName is string && incoming().lastName.size() <= 100));
+        (!('lastName' in incoming()) || (incoming().lastName is string && incoming().lastName.size() <= 100)) &&
+        (!('clubLogo' in incoming()) || (incoming().clubLogo is string && incoming().clubLogo.size() <= 300000 && (incoming().clubLogo == '' || incoming().clubLogo.matches('^data:image/(png|jpeg|webp);base64,.*')))) &&
+        (!('showLogoOnPitch' in incoming()) || incoming().showLogoOnPitch is bool);
 
       allow delete: if isSuperAdmin();
     }

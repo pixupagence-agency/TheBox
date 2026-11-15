@@ -163,7 +163,7 @@ export interface SmallPitchSpec {
   goalWidth: number;
   goalDepth: number;
   centerRadius: number;
-  /** Surface de réparation : rectangle (foot à 8) ou zone arrondie type futsal (foot à 5) */
+  /** Surface de réparation : rectangle (foot à 8 et à 5) ou zone arrondie type futsal */
   area: { kind: "rect"; depth: number; width: number } | { kind: "arc"; radius: number };
   /** Distance du point de penalty à la ligne de but */
   spot: number;
@@ -178,11 +178,11 @@ const SMALL_PITCHES: Record<string, SmallPitchSpec> = {
     area: { kind: "rect", depth: 13, width: 26 },
     spot: 9,
   },
-  // Foot à 5 : terrain de 40 x 20 m, buts de 3 m, zone arrondie de 6 m, points à 6 et 10 m
+  // Foot à 5 : terrain de 40 x 20 m, buts de 3 m, surface rectangulaire de 12 x 6 m, points à 6 et 10 m
   "football:5": {
     length: 40, width: 20, margin: 1.5,
     goalWidth: 3, goalDepth: 1, centerRadius: 3,
-    area: { kind: "arc", radius: 6 },
+    area: { kind: "rect", depth: 6, width: 12 },
     spot: 6, secondSpot: 10,
   },
 };
@@ -195,6 +195,18 @@ export const smallPitchBox = (spec: SmallPitchSpec) => ({
   W: spec.length + spec.margin * 2,
   H: spec.width + spec.margin * 2,
 });
+
+/**
+ * Rayon du rond central rapporté à la hauteur totale du terrain en paysage
+ * (null = pas de rond central : rugby, handball). Sert à y placer le logo du club.
+ */
+export const getCenterCircleRadiusRatio = (sport: string, format?: string | null): number | null => {
+  const small = getSmallPitchSpec(sport, format);
+  if (small) return small.centerRadius / smallPitchBox(small).H;
+  if (sport === "football") return 9.15 / 73;
+  if (sport === "basketball") return 1.85 / 15;
+  return null;
+};
 
 /** Rapport largeur / hauteur du terrain en paysage (null = rapport du sport). */
 export const getFormatPitchRatio = (sport: string, format?: string | null): number | null => {

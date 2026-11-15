@@ -8,21 +8,25 @@ import {
   RotateCcw, RotateCw, Trash2, Unlock,
 } from "lucide-react";
 import {
-  ANNOTATION_COLORS, ARROW_STYLES, BIB_COLORS, CONE_COLORS, GOAL_SIZES, KIND_LABELS, MINI_GOAL_SIZES, PLAYER_ROLES,
+  ANNOTATION_COLORS, ARROW_STYLES, BIB_COLORS, CONE_COLORS, GOAL_SIZES, HURDLE_HEIGHTS, KIND_LABELS, MINI_GOAL_SIZES, PLAYER_ROLES,
+  POPUP_GOAL_SIZES, REBOUNDER_SIZES,
 } from "@/lib/training/catalog";
 import type { AlignMode, EditorAction, EditorState } from "@/lib/training/editorState";
 import { FREE_PITCH_LIMITS, PITCH_FORMATS, makePitchConfig } from "@/lib/training/pitch";
 import type { RosterPlayer } from "@/lib/training/storage";
+import { useTrainingTheme } from "@/lib/training/theme";
 import { LAYER_LABELS, LAYER_OF, type LayerId, type PitchFormatId, type TrainingElement } from "@/lib/training/types";
 
-const card = "rounded-2xl border border-[#1a2130] bg-[#0b0f17] p-3 space-y-3";
-const label = "block text-[10px] font-black uppercase tracking-[0.14em] text-[#62728f] mb-1.5";
-const input = "w-full h-11 rounded-xl border border-[#1f2937] bg-[#070a10] px-3 text-sm font-semibold text-white outline-none focus:border-[#00E599]/70";
-const bigBtn = "h-11 rounded-xl border text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5";
-const idleBtn = "border-[#1f2937] bg-[#0f141d] text-slate-200 hover:border-[#00E599]/50";
-const activeBtn = "border-[#00E599] bg-[#00E599]/12 text-[#00E599]";
+const bigBtn = "h-12 rounded-xl border text-sm font-black transition cursor-pointer flex items-center justify-center gap-1.5";
+
+/** Classes du panneau selon le thème (sombre / clair) du module */
+function useStyles() {
+  const th = useTrainingTheme();
+  return { th, card: th.card, label: th.label, input: th.input, idleBtn: th.idleBtn, activeBtn: th.activeBtn };
+}
 
 function Swatches({ colors, value, onChange }: { colors: Array<{ id: string; label: string; hex: string }>; value: string; onChange: (hex: string) => void }) {
+  const { th } = useStyles();
   return (
     <div className="flex flex-wrap gap-2">
       {colors.map((c) => (
@@ -33,7 +37,7 @@ function Swatches({ colors, value, onChange }: { colors: Array<{ id: string; lab
           aria-label={c.label}
           aria-pressed={value.toLowerCase() === c.hex.toLowerCase()}
           onClick={() => onChange(c.hex)}
-          className={`w-10 h-10 rounded-full border-2 cursor-pointer transition ${value.toLowerCase() === c.hex.toLowerCase() ? "border-[#00E599] scale-110" : "border-[#1f2937]"}`}
+          className={`w-12 h-12 rounded-full border-2 cursor-pointer transition ${value.toLowerCase() === c.hex.toLowerCase() ? `${th.swatchOn} scale-110` : th.swatchIdle}`}
           style={{ background: c.hex }}
         />
       ))}
@@ -42,17 +46,19 @@ function Swatches({ colors, value, onChange }: { colors: Array<{ id: string; lab
 }
 
 function Stepper({ value, min, max, step = 1, suffix, onChange }: { value: number; min: number; max: number; step?: number; suffix?: string; onChange: (v: number) => void }) {
+  const { th, idleBtn } = useStyles();
   const set = (v: number) => onChange(Math.min(max, Math.max(min, Math.round(v * 100) / 100)));
   return (
     <div className="flex items-center gap-2">
-      <button type="button" aria-label="Diminuer" onClick={() => set(value - step)} disabled={value <= min} className={`${bigBtn} ${idleBtn} w-11 disabled:opacity-40`}><Minus className="w-4 h-4" /></button>
-      <span className="flex-1 text-center text-base font-black text-white tabular-nums">{String(value).replace(".", ",")}{suffix ? ` ${suffix}` : ""}</span>
-      <button type="button" aria-label="Augmenter" onClick={() => set(value + step)} disabled={value >= max} className={`${bigBtn} ${idleBtn} w-11 disabled:opacity-40`}><Plus className="w-4 h-4" /></button>
+      <button type="button" aria-label="Diminuer" onClick={() => set(value - step)} disabled={value <= min} className={`${bigBtn} ${idleBtn} w-12 disabled:opacity-40`}><Minus className="w-5 h-5" /></button>
+      <span className={`flex-1 text-center text-lg font-black tabular-nums ${th.text}`}>{String(value).replace(".", ",")}{suffix ? ` ${suffix}` : ""}</span>
+      <button type="button" aria-label="Augmenter" onClick={() => set(value + step)} disabled={value >= max} className={`${bigBtn} ${idleBtn} w-12 disabled:opacity-40`}><Plus className="w-5 h-5" /></button>
     </div>
   );
 }
 
 function Choice<T extends string | number>({ options, value, onChange, cols = 2 }: { options: Array<{ value: T; label: string }>; value: T; onChange: (v: T) => void; cols?: number }) {
+  const { idleBtn, activeBtn } = useStyles();
   return (
     <div className={`grid gap-1.5 ${cols === 3 ? "grid-cols-3" : cols === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
       {options.map((o) => (
@@ -71,6 +77,7 @@ interface Props {
 }
 
 export default function PropertiesPanel({ state, dispatch, roster }: Props) {
+  const { th, card, label, input, idleBtn, activeBtn } = useStyles();
   const selected = useMemo(() => state.diagram.elements.filter((e) => state.selectedIds.includes(e.id)), [state.diagram.elements, state.selectedIds]);
   // Saisie continue (texte, nom) : une seule entrée d'historique par champ
   const lastEdit = useRef<{ key: string; at: number } | null>(null);
@@ -87,11 +94,11 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
 
   const actions = (
     <div className="grid grid-cols-3 gap-1.5">
-      <button type="button" onClick={() => dispatch({ type: "duplicate" })} className={`${bigBtn} ${idleBtn}`} title="Dupliquer (Ctrl+D)"><Copy className="w-4 h-4" />Dupliquer</button>
+      <button type="button" onClick={() => dispatch({ type: "duplicate" })} className={`${bigBtn} ${idleBtn}`} title="Dupliquer (Ctrl+D)"><Copy className="w-5 h-5" />Dupliquer</button>
       <button type="button" onClick={() => dispatch({ type: "toggleLock" })} className={`${bigBtn} ${idleBtn}`} title="Verrouiller / déverrouiller">
-        {selected.every((e) => e.locked) ? <><Unlock className="w-4 h-4" />Déverr.</> : <><Lock className="w-4 h-4" />Verrouiller</>}
+        {selected.every((e) => e.locked) ? <><Unlock className="w-5 h-5" />Déverr.</> : <><Lock className="w-5 h-5" />Verrouiller</>}
       </button>
-      <button type="button" onClick={() => dispatch({ type: "delete" })} disabled={selected.every((e) => e.locked)} className={`${bigBtn} border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 disabled:opacity-40`} title="Supprimer (Suppr)"><Trash2 className="w-4 h-4" />Suppr.</button>
+      <button type="button" onClick={() => dispatch({ type: "delete" })} disabled={selected.every((e) => e.locked)} className={`${bigBtn} ${th.dangerBtn} disabled:opacity-40`} title="Supprimer (Suppr)"><Trash2 className="w-5 h-5" />Suppr.</button>
     </div>
   );
 
@@ -109,7 +116,7 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
     return (
       <div className="space-y-3">
         <div className={card}>
-          <p className="text-sm font-black text-white">{selected.length} éléments sélectionnés</p>
+          <p className={`text-base font-black ${th.text}`}>{selected.length} éléments sélectionnés</p>
           {actions}
         </div>
         <div className={card}>
@@ -117,7 +124,7 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
           <div className="grid grid-cols-4 gap-1.5">
             {align.map((a) => (
               <button key={a.mode} type="button" title={a.label} aria-label={a.label} onClick={() => dispatch({ type: "align", mode: a.mode })} disabled={a.mode.startsWith("distribute") && selected.length < 3} className={`${bigBtn} ${idleBtn} disabled:opacity-40`}>
-                <a.icon className="w-5 h-5" />
+                <a.icon className="w-6 h-6" />
               </button>
             ))}
           </div>
@@ -133,15 +140,15 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
     <div className="space-y-3">
       <div className={card}>
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-black text-white">{KIND_LABELS[el.kind]}</p>
-          <span className="text-[10px] font-bold text-[#62728f]">{LAYER_LABELS[LAYER_OF[el.kind]]} · {String(el.x.toFixed(1)).replace(".", ",")} ; {String(el.y.toFixed(1)).replace(".", ",")} m</span>
+          <p className={`text-base font-black ${th.text}`}>{KIND_LABELS[el.kind]}</p>
+          <span className={`text-[12px] font-bold ${th.sub}`}>{LAYER_LABELS[LAYER_OF[el.kind]]} · {String(el.x.toFixed(1)).replace(".", ",")} ; {String(el.y.toFixed(1)).replace(".", ",")} m</span>
         </div>
-        {el.locked && <p className="text-[11px] font-semibold text-amber-300">Élément verrouillé : déverrouillez-le pour le déplacer ou le modifier.</p>}
+        {el.locked && <p className={`text-[13px] font-semibold ${th.light ? "text-amber-700" : "text-amber-300"}`}>Élément verrouillé : déverrouillez-le pour le déplacer ou le modifier.</p>}
         {actions}
       </div>
 
       <fieldset disabled={el.locked} className="space-y-3 disabled:opacity-50">
-        {(el.kind === "flatCone" || el.kind === "tallCone" || el.kind === "pole" || el.kind === "hoop") && (
+        {(el.kind === "flatCone" || el.kind === "numberCone" || el.kind === "tallCone" || el.kind === "pole" || el.kind === "hoop" || el.kind === "hurdle") && (
           <div className={card}>
             <span className={label}>Couleur</span>
             <Swatches colors={CONE_COLORS} value={el.color} onChange={(color) => update(el, { color })} />
@@ -157,7 +164,7 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
           <div className={card}>
             <span className={label}>Nombre de barreaux</span>
             <Stepper value={el.rungs} min={3} max={20} onChange={(rungs) => update(el, { rungs })} />
-            <p className="text-[11px] text-slate-400">Longueur : {String(((el.rungs - 1) * 0.45).toFixed(2)).replace(".", ",")} m — orientation avec la rotation.</p>
+            <p className={`text-[13px] ${th.sub}`}>Longueur : {String(((el.rungs - 1) * 0.45).toFixed(2)).replace(".", ",")} m — orientation avec la rotation.</p>
           </div>
         )}
         {el.kind === "hoop" && (
@@ -184,6 +191,49 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
             <Stepper value={el.count} min={1} max={8} onChange={(count) => update(el, { count })} />
           </div>
         )}
+        {el.kind === "pole" && (
+          <div className={card}>
+            <span className={label}>Drapeau</span>
+            <Choice options={[{ value: "non", label: "Sans drapeau" }, { value: "oui", label: "Avec drapeau" }]} value={el.flag ? "oui" : "non"} onChange={(v) => update(el, { flag: v === "oui" })} />
+          </div>
+        )}
+        {el.kind === "hurdle" && (
+          <div className={card}>
+            <span className={label}>Hauteur</span>
+            <Choice cols={1} options={HURDLE_HEIGHTS.map((h) => ({ value: h.height, label: h.label }))} value={el.height} onChange={(height) => update(el, { height })} />
+            <p className={`text-[13px] ${th.sub}`}>Largeur 0,9 m — orientez la haie avec la rotation.</p>
+          </div>
+        )}
+        {el.kind === "numberCone" && (
+          <div className={card}>
+            <span className={label}>Numéro du plot</span>
+            <Stepper value={el.value} min={0} max={99} onChange={(value) => update(el, { value })} />
+          </div>
+        )}
+        {el.kind === "popupGoal" && (
+          <div className={card}>
+            <span className={label}>Taille</span>
+            <Choice cols={1} options={POPUP_GOAL_SIZES.map((g) => ({ value: g.size, label: g.label }))} value={el.size} onChange={(size) => update(el, { size })} />
+          </div>
+        )}
+        {el.kind === "rebounder" && (
+          <div className={card}>
+            <span className={label}>Largeur</span>
+            <Choice cols={1} options={REBOUNDER_SIZES.map((g) => ({ value: g.size, label: g.label }))} value={el.size} onChange={(size) => update(el, { size })} />
+          </div>
+        )}
+        {el.kind === "net" && (
+          <div className={card}>
+            <span className={label}>Longueur du filet</span>
+            <Stepper value={el.length} min={2} max={12} step={0.5} suffix="m" onChange={(length) => update(el, { length })} />
+          </div>
+        )}
+        {el.kind === "ballBag" && (
+          <div className={card}>
+            <span className={label}>Nombre de ballons</span>
+            <Stepper value={el.count} min={1} max={40} onChange={(count) => update(el, { count })} />
+          </div>
+        )}
         {el.kind === "player" && (
           <>
             <div className={card}>
@@ -195,7 +245,7 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
             <div className={card}>
               <span className={label}>Joueur de l&apos;effectif{roster.teamName ? ` (${roster.teamName})` : ""}</span>
               <select
-                className={`${input} cursor-pointer`}
+                className={`${input} cursor-pointer ${th.option}`}
                 value={el.rosterId || ""}
                 onChange={(e) => {
                   const p = roster.players.find((x) => x.id === e.target.value);
@@ -207,7 +257,7 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
                   <option key={p.id} value={p.id}>{p.number ? `${p.number} · ` : ""}{p.name}{p.role ? ` (${p.role})` : ""}</option>
                 ))}
               </select>
-              <div className="grid grid-cols-[88px_1fr] gap-2">
+              <div className="grid grid-cols-[100px_1fr] gap-2">
                 <div>
                   <label className={label} htmlFor="tr-num">Numéro</label>
                   <input id="tr-num" className={input} inputMode="numeric" value={el.number ?? ""} onChange={(e) => {
@@ -229,7 +279,7 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
             <Choice options={ARROW_STYLES.map((s) => ({ value: s.id, label: s.label }))} value={el.style} onChange={(style) => update(el, { style })} />
             <span className={label}>Couleur</span>
             <Swatches colors={ANNOTATION_COLORS} value={el.color} onChange={(color) => update(el, { color })} />
-            <p className="text-[11px] text-slate-400">Déplacez les poignées vertes pour les extrémités, la poignée centrale pour courber la flèche.</p>
+            <p className={`text-[13px] ${th.sub}`}>Déplacez les poignées bleues pour les extrémités, la poignée centrale pour courber la flèche.</p>
           </div>
         )}
         {el.kind === "zone" && (
@@ -247,7 +297,7 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
             {el.shape === "circle" && (
               <div><span className={label}>Diamètre</span><Stepper value={el.width} min={0.5} max={120} step={0.5} suffix="m" onChange={(width) => update(el, { width, height: width })} /></div>
             )}
-            {el.shape === "polygon" && <p className="text-[11px] text-slate-400">Déplacez les sommets avec les poignées vertes.</p>}
+            {el.shape === "polygon" && <p className={`text-[13px] ${th.sub}`}>Déplacez les sommets avec les poignées bleues.</p>}
           </div>
         )}
         {el.kind === "text" && (
@@ -273,9 +323,9 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
           <div className={card}>
             <span className={label}>Rotation : {el.rotation}°</span>
             <div className="flex items-center gap-2">
-              <button type="button" aria-label="Pivoter de 15° à gauche" onClick={() => update(el, { rotation: (el.rotation + 345) % 360 })} className={`${bigBtn} ${idleBtn} w-11`}><RotateCcw className="w-4 h-4" /></button>
-              <input type="range" min={0} max={359} value={el.rotation} onChange={(e) => update(el, { rotation: Number(e.target.value) }, "rotation")} className="flex-1 accent-[#00E599] h-11" aria-label="Rotation" />
-              <button type="button" aria-label="Pivoter de 15° à droite" onClick={() => update(el, { rotation: (el.rotation + 15) % 360 })} className={`${bigBtn} ${idleBtn} w-11`}><RotateCw className="w-4 h-4" /></button>
+              <button type="button" aria-label="Pivoter de 15° à gauche" onClick={() => update(el, { rotation: (el.rotation + 345) % 360 })} className={`${bigBtn} ${idleBtn} w-12`}><RotateCcw className="w-5 h-5" /></button>
+              <input type="range" min={0} max={359} value={el.rotation} onChange={(e) => update(el, { rotation: Number(e.target.value) }, "rotation")} className="flex-1 accent-blue-500 h-12" aria-label="Rotation" />
+              <button type="button" aria-label="Pivoter de 15° à droite" onClick={() => update(el, { rotation: (el.rotation + 15) % 360 })} className={`${bigBtn} ${idleBtn} w-12`}><RotateCw className="w-5 h-5" /></button>
             </div>
           </div>
         )}
@@ -285,6 +335,7 @@ export default function PropertiesPanel({ state, dispatch, roster }: Props) {
 }
 
 function PitchSettings({ state, dispatch }: { state: EditorState; dispatch: React.Dispatch<EditorAction> }) {
+  const { th, card, label, idleBtn, activeBtn } = useStyles();
   const { pitch } = state.diagram;
   const counts = useMemo(() => {
     const c: Record<LayerId, number> = { equipment: 0, players: 0, annotations: 0 };
@@ -301,9 +352,9 @@ function PitchSettings({ state, dispatch }: { state: EditorState; dispatch: Reac
         <span className={label}>Terrain</span>
         <div className="grid grid-cols-2 gap-1.5">
           {PITCH_FORMATS.map((f) => (
-            <button key={f.id} type="button" aria-pressed={pitch.format === f.id} onClick={() => setFormat(f.id)} className={`${bigBtn} h-14 flex-col gap-0 px-2 ${pitch.format === f.id ? activeBtn : idleBtn}`}>
+            <button key={f.id} type="button" aria-pressed={pitch.format === f.id} onClick={() => setFormat(f.id)} className={`${bigBtn} h-16 flex-col gap-0 px-2 ${pitch.format === f.id ? activeBtn : idleBtn}`}>
               <span>{f.label}</span>
-              <span className="text-[10px] font-semibold opacity-70">{f.hint}</span>
+              <span className="text-[12px] font-semibold opacity-70">{f.hint}</span>
             </button>
           ))}
         </div>
@@ -331,17 +382,17 @@ function PitchSettings({ state, dispatch }: { state: EditorState; dispatch: Reac
           const hidden = state.hiddenLayers.includes(layer);
           return (
             <button key={layer} type="button" aria-pressed={!hidden} onClick={() => dispatch({ type: "toggleLayer", layer })} className={`${bigBtn} w-full justify-between px-3 ${hidden ? idleBtn : activeBtn}`}>
-              <span className="flex items-center gap-2">{hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}{LAYER_LABELS[layer]}</span>
-              <span className="text-[11px] opacity-70">{counts[layer]}</span>
+              <span className="flex items-center gap-2">{hidden ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}{LAYER_LABELS[layer]}</span>
+              <span className="text-[13px] opacity-70">{counts[layer]}</span>
             </button>
           );
         })}
       </div>
 
-      <div className="rounded-2xl border border-dashed border-[#1a2130] p-3 text-[11px] leading-relaxed text-slate-400 space-y-1">
-        <p><b className="text-slate-200">Poser :</b> appuyez sur un élément de la palette puis sur le terrain (ou glissez-le).</p>
-        <p><b className="text-slate-200">Tracer :</b> flèches et zones se dessinent en glissant ; le polygone, point par point.</p>
-        <p><b className="text-slate-200">Vue :</b> pincez pour zoomer ; glissez dans le vide pour déplacer le terrain.</p>
+      <div className={`rounded-xl border border-dashed p-3 text-[13px] leading-relaxed space-y-1 ${th.hint}`}>
+        <p><b className={th.text}>Poser :</b> appuyez sur un élément de la palette puis sur le terrain (ou glissez-le).</p>
+        <p><b className={th.text}>Tracer :</b> flèches et zones se dessinent en glissant ; le polygone, point par point.</p>
+        <p><b className={th.text}>Vue :</b> pincez pour zoomer ; glissez dans le vide pour déplacer le terrain.</p>
       </div>
     </div>
   );

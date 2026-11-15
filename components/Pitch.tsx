@@ -8,18 +8,55 @@ interface PitchProps {
   /** Format de jeu (foot à 11 / 8 / 5, rugby à XV / 7) */
   format?: string;
   isPortrait?: boolean;
+  /** Logo du club (data URL) : remplace l'emblème The Box dans le rond central, découpé en rond */
+  centerLogo?: string;
+}
+
+// Rond central : emblème The Box par défaut, ou logo du club découpé en rond au diamètre du rond central
+function CenterEmblem({ cx, cy, r, lineWidth, logo, counterRotate }: { cx: number; cy: number; r: number; lineWidth: number; logo?: string; counterRotate?: boolean }) {
+  const clipId = "center-logo-" + React.useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!logo) {
+    return (
+      <svg x={cx - r} y={cy - r} width={r * 2} height={r * 2} viewBox="0 0 100 100" className="pointer-events-none">
+        <g stroke="white" strokeOpacity="0.4" fill="none">
+          <circle cx="50" cy="50" r="44" strokeWidth="4.5" />
+          <path d="M 19 19 L 81 81" strokeWidth="4.5" strokeLinecap="square" />
+          <path d="M 81 19 L 19 81" strokeWidth="4.5" strokeLinecap="square" />
+          <path d="M 32 21 L 50 39 L 68 21" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
+          <path d="M 32 79 L 50 61 L 68 79" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
+          <path d="M 21 32 L 39 50 L 21 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
+          <path d="M 79 32 L 61 50 L 79 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
+        </g>
+      </svg>
+    );
+  }
+  // Épaisseur du trait du rond central, exprimée dans le repère 0-100 du logo
+  const stroke = (lineWidth * 50) / r;
+  return (
+    <svg x={cx - r} y={cy - r} width={r * 2} height={r * 2} viewBox="0 0 100 100" className="pointer-events-none">
+      <defs>
+        <clipPath id={clipId}>
+          <circle cx="50" cy="50" r={50 - stroke / 2} />
+        </clipPath>
+      </defs>
+      <g clipPath={"url(#" + clipId + ")"} transform={counterRotate ? "rotate(-90 50 50)" : undefined}>
+        <circle cx="50" cy="50" r="50" fill="rgba(255,255,255,0.92)" />
+        <image href={logo} x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid slice" />
+      </g>
+      <circle cx="50" cy="50" r={50 - stroke / 2} fill="none" stroke="white" strokeWidth={stroke} strokeOpacity="0.85" />
+    </svg>
+  );
 }
 
 // Petit terrain de football (foot à 8, foot à 5), tracé à partir de ses dimensions en mètres.
 // Les lignes sont dessinées en paysage puis pivotées d'un quart de tour en portrait.
-function SmallFootballPitch({ spec, isPortrait }: { spec: SmallPitchSpec; isPortrait?: boolean }) {
+function SmallFootballPitch({ spec, isPortrait, centerLogo }: { spec: SmallPitchSpec; isPortrait?: boolean; centerLogo?: string }) {
   const { W, H } = smallPitchBox(spec);
   const m = spec.margin;
   const cy = H / 2;
   const sw = (W * 0.25) / 110;
   const line = { fill: "none", stroke: "white", strokeWidth: sw, strokeOpacity: 0.85 };
   const g = spec.goalWidth / 2;
-  const logo = spec.centerRadius * 2;
 
   // Une moitié de terrain (côté gauche) ; l'autre est son reflet
   const half = (
@@ -46,17 +83,7 @@ function SmallFootballPitch({ spec, isPortrait }: { spec: SmallPitchSpec; isPort
       <line x1={W / 2} y1={m} x2={W / 2} y2={H - m} {...line} />
       <circle cx={W / 2} cy={cy} r={spec.centerRadius} {...line} />
       <circle cx={W / 2} cy={cy} r={sw * 1.6} fill="white" />
-      <svg x={W / 2 - logo / 2} y={cy - logo / 2} width={logo} height={logo} viewBox="0 0 100 100" className="pointer-events-none">
-        <g stroke="white" strokeOpacity="0.4" fill="none">
-          <circle cx="50" cy="50" r="44" strokeWidth="4.5" />
-          <path d="M 19 19 L 81 81" strokeWidth="4.5" strokeLinecap="square" />
-          <path d="M 81 19 L 19 81" strokeWidth="4.5" strokeLinecap="square" />
-          <path d="M 32 21 L 50 39 L 68 21" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-          <path d="M 32 79 L 50 61 L 68 79" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-          <path d="M 21 32 L 39 50 L 21 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-          <path d="M 79 32 L 61 50 L 79 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-        </g>
-      </svg>
+      <CenterEmblem cx={W / 2} cy={cy} r={spec.centerRadius} lineWidth={sw} logo={centerLogo} counterRotate={isPortrait} />
       {half}
       <g transform={`translate(${W} 0) scale(-1 1)`}>{half}</g>
     </>
@@ -76,9 +103,9 @@ function SmallFootballPitch({ spec, isPortrait }: { spec: SmallPitchSpec; isPort
   );
 }
 
-export default function Pitch({ sport, format, isPortrait }: PitchProps) {
+export default function Pitch({ sport, format, isPortrait, centerLogo }: PitchProps) {
   const smallPitch = getSmallPitchSpec(sport, format);
-  if (smallPitch) return <SmallFootballPitch spec={smallPitch} isPortrait={isPortrait} />;
+  if (smallPitch) return <SmallFootballPitch spec={smallPitch} isPortrait={isPortrait} centerLogo={centerLogo} />;
 
   // Render high-fidelity tactical field based on sport type in portrait or landscape
   if (isPortrait) {
@@ -109,18 +136,8 @@ export default function Pitch({ sport, format, isPortrait }: PitchProps) {
               <circle cx="36.5" cy="55" r="9.15" fill="none" stroke="white" strokeWidth="0.25" strokeOpacity="0.85" />
               <circle cx="36.5" cy="55" r="0.4" fill="white" />
 
-              {/* The Box Official Logo Emblem on Turf (100% Identical to Navbar) */}
-              <svg x="27.35" y="45.85" width="18.3" height="18.3" viewBox="0 0 100 100" className="pointer-events-none">
-                <g stroke="white" strokeOpacity="0.4" fill="none">
-                  <circle cx="50" cy="50" r="44" strokeWidth="4.5" />
-                  <path d="M 19 19 L 81 81" strokeWidth="4.5" strokeLinecap="square" />
-                  <path d="M 81 19 L 19 81" strokeWidth="4.5" strokeLinecap="square" />
-                  <path d="M 32 21 L 50 39 L 68 21" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-                  <path d="M 32 79 L 50 61 L 68 79" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-                  <path d="M 21 32 L 39 50 L 21 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-                  <path d="M 79 32 L 61 50 L 79 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-                </g>
-              </svg>
+              {/* Rond central : emblème The Box, ou logo du club s'il est paramétré */}
+              <CenterEmblem cx={36.5} cy={55} r={9.15} lineWidth={0.25} logo={centerLogo} />
 
               {/* Goal nets outside endlines (7.32m wide, 2.2m deep) */}
               <rect x="32.84" y="0.3" width="7.32" height="2.2" fill="rgba(255,255,255,0.06)" stroke="white" strokeWidth="0.2" />
@@ -194,6 +211,7 @@ export default function Pitch({ sport, format, isPortrait }: PitchProps) {
 
               {/* Center Circle (full crisp white circle) */}
               <circle cx="7.5" cy="14" r="1.85" fill="none" stroke="white" strokeWidth="0.16" />
+              {centerLogo && <CenterEmblem cx={7.5} cy={14} r={1.85} lineWidth={0.16} logo={centerLogo} />}
 
               {/* Top Key (white rectangle - placed completely inside the 3-point arc) */}
               <rect x="5.4" y="0.6" width="4.2" height="4.6" fill="none" stroke="white" strokeWidth="0.16" />
@@ -462,18 +480,8 @@ export default function Pitch({ sport, format, isPortrait }: PitchProps) {
             <circle cx="55" cy="36.5" r="9.15" fill="none" stroke="white" strokeWidth="0.25" strokeOpacity="0.85" />
             <circle cx="55" cy="36.5" r="0.4" fill="white" />
 
-            {/* The Box Official Logo Emblem on Turf (100% Identical to Navbar) */}
-            <svg x="45.85" y="27.35" width="18.3" height="18.3" viewBox="0 0 100 100" className="pointer-events-none">
-              <g stroke="white" strokeOpacity="0.4" fill="none">
-                <circle cx="50" cy="50" r="44" strokeWidth="4.5" />
-                <path d="M 19 19 L 81 81" strokeWidth="4.5" strokeLinecap="square" />
-                <path d="M 81 19 L 19 81" strokeWidth="4.5" strokeLinecap="square" />
-                <path d="M 32 21 L 50 39 L 68 21" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-                <path d="M 32 79 L 50 61 L 68 79" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-                <path d="M 21 32 L 39 50 L 21 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-                <path d="M 79 32 L 61 50 L 79 68" strokeWidth="4.5" strokeLinecap="square" strokeLinejoin="miter" />
-              </g>
-            </svg>
+            {/* Rond central : emblème The Box, ou logo du club s'il est paramétré */}
+            <CenterEmblem cx={55} cy={36.5} r={9.15} lineWidth={0.25} logo={centerLogo} />
 
             {/* Goal nets outside the goal line (7.32m wide, 2.2m deep) */}
             <rect x="0.3" y="32.84" width="2.2" height="7.32" fill="rgba(255,255,255,0.06)" stroke="white" strokeWidth="0.2" />
@@ -547,6 +555,7 @@ export default function Pitch({ sport, format, isPortrait }: PitchProps) {
 
             {/* Center Circle (full crisp white circle) */}
             <circle cx="14" cy="7.5" r="1.85" fill="none" stroke="white" strokeWidth="0.16" />
+            {centerLogo && <CenterEmblem cx={14} cy={7.5} r={1.85} lineWidth={0.16} logo={centerLogo} />}
 
             {/* Left Key (white rectangle - placed completely inside the 3-point arc) */}
             <rect x="0.6" y="5.4" width="4.6" height="4.2" fill="none" stroke="white" strokeWidth="0.16" />

@@ -4,7 +4,7 @@
 import React from "react";
 import { Arrow, Circle, Ellipse, Group, Line, Rect, RegularPolygon, Text } from "react-konva";
 import type Konva from "konva";
-import { LADDER_RUNG_SPACING, LADDER_WIDTH } from "@/lib/training/catalog";
+import { HURDLE_WIDTH, LADDER_RUNG_SPACING, LADDER_WIDTH } from "@/lib/training/catalog";
 import type { ArrowElement, TrainingElement, ZoneElement } from "@/lib/training/types";
 
 /** Agrandit un symbole trop petit à l'écran (taille minimale en pixels) sans toucher à ses dimensions réelles */
@@ -132,6 +132,121 @@ function ElementShapeInner({ el, pxPerMeter, draggable, dimmed, onPointerDown, o
           <HitArea radius={Math.max(hit, 0.3)} />
           <Circle radius={0.16 * b} fill="rgba(15,23,42,0.55)" stroke={el.color} strokeWidth={0.03 * b} />
           <Circle radius={0.06 * b} fill={el.color} stroke="rgba(0,0,0,0.6)" strokeWidth={0.02 * b} />
+          {el.flag ? (
+            // Fanion vu de dessus, flottant le long de l'axe de l'élément
+            <Line points={[0.04 * b, -0.02 * b, 0.42 * b, -0.16 * b, 0.42 * b, 0.12 * b, 0.04 * b, 0.02 * b]} closed fill={el.color} stroke="rgba(0,0,0,0.5)" strokeWidth={0.02 * b} rotation={-el.rotation - 35} />
+          ) : null}
+        </>
+      );
+      break;
+    }
+    case "hurdle": {
+      const b = boostFor(pxPerMeter, 4, 0.1);
+      const half = HURDLE_WIDTH / 2;
+      const foot = (0.18 + el.height * 0.5) * Math.min(b, 2);
+      const bar = (0.05 + el.height * 0.12) * b;
+      body = (
+        <>
+          <Rect x={-foot / 2 - 0.15} y={-half - 0.15} width={foot + 0.3} height={HURDLE_WIDTH + 0.3} fill="rgba(0,0,0,0.01)" />
+          <Line points={[-foot / 2, -half, foot / 2, -half]} stroke="#e2e8f0" strokeWidth={0.05 * b} lineCap="round" />
+          <Line points={[-foot / 2, half, foot / 2, half]} stroke="#e2e8f0" strokeWidth={0.05 * b} lineCap="round" />
+          <Rect x={-bar / 2} y={-half} width={bar} height={HURDLE_WIDTH} fill={el.color} stroke="rgba(0,0,0,0.5)" strokeWidth={0.02 * b} cornerRadius={bar / 3} shadowColor="#000" shadowBlur={0.1 * b} shadowOpacity={0.35} />
+        </>
+      );
+      break;
+    }
+    case "numberCone": {
+      const b = boostFor(pxPerMeter, 11, 0.24);
+      const r = 0.24 * b;
+      body = (
+        <>
+          <HitArea radius={Math.max(hit, 0.35)} />
+          <Circle radius={r} fill={el.color} stroke="rgba(0,0,0,0.55)" strokeWidth={0.035 * b} />
+          <Text
+            text={String(el.value)}
+            fontSize={0.3 * b}
+            fontStyle="bold"
+            fill={isLight(el.color) ? "#0f172a" : "#ffffff"}
+            width={2 * r}
+            offsetX={r}
+            offsetY={0.15 * b}
+            align="center"
+            rotation={-el.rotation}
+            listening={false}
+          />
+        </>
+      );
+      break;
+    }
+    case "popupGoal": {
+      const w = el.size;
+      const depth = w * 0.45;
+      const b = boostFor(pxPerMeter, 2.5, 0.06);
+      body = (
+        <>
+          <Rect x={-depth - 0.2} y={-w / 2 - 0.3} width={depth + 0.6} height={w + 0.6} fill="rgba(0,0,0,0.01)" />
+          <Line points={[0, -w / 2, -depth, 0, 0, w / 2]} tension={0.55} closed fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.75)" strokeWidth={0.05 * b} dash={[0.12 * b, 0.08 * b]} />
+          <Line points={[0, -w / 2, 0, w / 2]} stroke="#f97316" strokeWidth={0.08 * b} lineCap="round" />
+          <Circle y={-w / 2} radius={0.07 * b} fill="#f97316" />
+          <Circle y={w / 2} radius={0.07 * b} fill="#f97316" />
+        </>
+      );
+      break;
+    }
+    case "rebounder": {
+      const w = el.size;
+      const b = boostFor(pxPerMeter, 3, 0.08);
+      const t = 0.12 * Math.min(b, 2.5);
+      body = (
+        <>
+          <Rect x={-0.4} y={-w / 2 - 0.3} width={0.8} height={w + 0.6} fill="rgba(0,0,0,0.01)" />
+          <Line points={[-0.35 * Math.min(b, 2), -w / 2, 0, -w / 2]} stroke="#94a3b8" strokeWidth={0.04 * b} />
+          <Line points={[-0.35 * Math.min(b, 2), w / 2, 0, w / 2]} stroke="#94a3b8" strokeWidth={0.04 * b} />
+          <Rect x={-t / 2} y={-w / 2} width={t} height={w} fill="rgba(226,232,240,0.55)" stroke="#e2e8f0" strokeWidth={0.04 * b} />
+          <Line points={[0, -w / 2, 0, w / 2]} stroke="#0f172a" strokeWidth={0.02 * b} dash={[0.06 * b, 0.06 * b]} />
+        </>
+      );
+      break;
+    }
+    case "net": {
+      const L = el.length;
+      const b = boostFor(pxPerMeter, 3, 0.08);
+      body = (
+        <>
+          <Rect x={-0.35} y={-L / 2 - 0.3} width={0.7} height={L + 0.6} fill="rgba(0,0,0,0.01)" />
+          <Rect x={-0.05 * b} y={-L / 2} width={0.1 * b} height={L} fill="rgba(255,255,255,0.35)" stroke="#ffffff" strokeWidth={0.03 * b} dash={[0.1 * b, 0.07 * b]} />
+          <Circle y={-L / 2} radius={0.1 * b} fill="#cbd5e1" stroke="#0f172a" strokeWidth={0.025 * b} />
+          <Circle y={L / 2} radius={0.1 * b} fill="#cbd5e1" stroke="#0f172a" strokeWidth={0.025 * b} />
+        </>
+      );
+      break;
+    }
+    case "ballBag": {
+      const b = boostFor(pxPerMeter, 6, 0.2);
+      const spots = [[0, 0], [0.32, -0.12], [-0.3, -0.14], [0.14, 0.3], [-0.18, 0.28]];
+      body = (
+        <>
+          <HitArea radius={Math.max(hit, 0.6 * Math.min(b, 2))} />
+          <Circle radius={0.62 * Math.min(b, 2)} fill="rgba(15,23,42,0.45)" stroke="rgba(255,255,255,0.35)" strokeWidth={0.03 * b} dash={[0.08 * b, 0.06 * b]} />
+          {spots.map(([sx, sy], i) => (
+            <Group key={i} x={sx * Math.min(b, 2)} y={sy * Math.min(b, 2)}>
+              <Circle radius={0.16 * b} fill="#ffffff" stroke="#0f172a" strokeWidth={0.03 * b} />
+              <RegularPolygon sides={5} radius={0.06 * b} fill="#0f172a" />
+            </Group>
+          ))}
+          <Text
+            text={`×${el.count}`}
+            fontSize={0.3 * Math.min(b, 2.5)}
+            fontStyle="bold"
+            fill="#ffffff"
+            x={0.5 * Math.min(b, 2)}
+            y={0.25 * Math.min(b, 2)}
+            shadowColor="#000"
+            shadowBlur={0.2}
+            shadowOpacity={0.8}
+            rotation={-el.rotation}
+            listening={false}
+          />
         </>
       );
       break;

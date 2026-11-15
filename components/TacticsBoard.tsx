@@ -16,7 +16,7 @@ import {
   Play, Pause, Plus, Trash2, ChevronLeft, ChevronRight,
   RotateCcw, Pencil, Sparkles, Save, UserPlus, UserMinus, RefreshCw, Shield, CheckCircle, Check,
   Download, Share2, Maximize2, Minimize2, Laptop, Smartphone,
-  MousePointer, Move, ArrowUpRight, Settings, Info, FileText, Camera,
+  MousePointer, Move, ArrowUpRight, Settings, Info, FileText, Camera, Loader2,
   Mic, Trash, Eye, Globe, LogOut, ChevronDown, Award, Eraser, Lock, X, User, Users,
   Search, UserCheck, Upload, ArrowLeftRight, Zap, AlertCircle, Cloud, Filter, Film,
   Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target, Shirt, Circle,
@@ -28,11 +28,25 @@ import { saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFire
 import { isSuperAdminEmail } from "@/lib/security";
 import { Language, translations, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 import { confirmAction } from "@/components/ConfirmDialog";
+import { exportMatchPdf, type MatchPdfSchema } from "@/lib/matchPdf";
+import { prepareClubLogo, CLUB_LOGO_ACCEPT } from "@/lib/clubLogo";
+import { getSportRoles, getPlayerRoleCodes, autoAssignSportRoles, type RoleIconName, type RoleTone } from "@/lib/sportRoles";
+
+// Icônes et couleurs des rôles tactiques (définis par sport dans lib/sportRoles)
+const ROLE_ICONS: Record<RoleIconName, React.ElementType> = {
+  crown: Crown, target: Target, zap: Zap, left: CornerUpLeft, right: CornerUpRight, flag: Flag, users: Users, shield: Shield, circle: CircleDot,
+};
+const ROLE_TONE_CHIP: Record<RoleTone, string> = {
+  gold: "bg-amber-400 text-slate-950 border-amber-200",
+  green: "bg-[#00E599] text-[#0d1117] border-emerald-300",
+  cyan: "bg-cyan-400 text-slate-950 border-cyan-200",
+  rose: "bg-rose-500 text-white border-rose-300",
+};
 import { useToolbarOverflow } from "@/lib/useToolbarOverflow";
 import {
   getGameFormatOptions, getGameFormatOption, resolveGameFormat,
   getFormatDefaultPlayers, getFormatFormations, getFormatFormationCoords, getFormatPeriodSeconds,
-  getFormatPitchRatio, getSmallPitchSpec, smallPitchBox, drawSmallFootballPitch,
+  getFormatPitchRatio, getCenterCircleRadiusRatio, getSmallPitchSpec, smallPitchBox, drawSmallFootballPitch,
 } from "@/lib/gameFormats";
 
 // Mode live : durée de la pause (mi-temps) entre les deux moitiés du match
@@ -92,6 +106,8 @@ export interface DrawingAction {
   points: { x: number; y: number }[]; // percentages 0-100
 }
 
+// 7 emplacements de rôles communs à tous les sports : leur sens dépend du sport (voir lib/sportRoles.ts).
+// Ex. penaltyTaker = tireur de penalty (foot), buteur (rugby), lancers francs (basket), jet de 7 m (hand).
 export interface SetPieceRoleConfig {
   captain: string;           // Capitaine (👑)
   penaltyTaker: string;      // Penalty (11m ⚽)
@@ -390,6 +406,9 @@ interface CoachProfile {
   createdAt?: string;
   trialBonusDays?: number;
   language?: Language;
+  /** Logo du club (data URL) : carte du match, rond central, exports image et PDF */
+  clubLogo?: string;
+  showLogoOnPitch?: boolean;
 }
 
 export interface TeamCategory {
@@ -1472,6 +1491,23 @@ export default function TacticsBoard({
 
   const activeTeam = teams.find((t) => t.id === activeTeamId) || teams[0];
 
+  // Logo du club (profil du coach) : carte du match, rond central du terrain, exports image et PDF
+  const clubLogo = activeCoach?.clubLogo || "";
+  const showClubLogoOnPitch = Boolean(clubLogo) && (activeCoach?.showLogoOnPitch ?? true);
+  const clubLogoImgRef = useRef<HTMLImageElement | null>(null);
+  useEffect(() => {
+    if (!clubLogo) { clubLogoImgRef.current = null; return; }
+    const img = new Image();
+    img.onload = () => { clubLogoImgRef.current = img; };
+    img.src = clubLogo;
+  }, [clubLogo]);
+  /** true si ce nom d'équipe est une équipe du club (pour placer le logo du bon côté du match) */
+  const isClubTeamName = (name?: string) => {
+    const n = (name || "").trim().toLowerCase();
+    if (!n) return false;
+    return teams.some((t) => t.name.trim().toLowerCase() === n) || (activeCoach?.club || "").trim().toLowerCase() === n;
+  };
+
   const handleSelectTeam = (teamId: string) => {
     const target = teams.find((t) => t.id === teamId);
     if (!target) return;
@@ -1682,6 +1718,9 @@ export default function TacticsBoard({
   const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editClub, setEditClub] = useState("");
+  const [editClubLogo, setEditClubLogo] = useState<string>("");
+  const [editShowLogoOnPitch, setEditShowLogoOnPitch] = useState(true);
+  const [clubLogoError, setClubLogoError] = useState<string | null>(null);
   const [editRole, setEditRole] = useState("");
   const [editSport, setEditSport] = useState(activeSport);
   const [editLanguage, setEditLanguage] = useState<Language>(currentLang);
@@ -1694,6 +1733,9 @@ export default function TacticsBoard({
       setEditLastName(activeCoach.lastName || "Principal");
       setEditEmail(activeCoach.email || fallbackEmail);
       setEditClub(activeCoach.club || "");
+      setEditClubLogo(activeCoach.clubLogo || "");
+      setEditShowLogoOnPitch(activeCoach.showLogoOnPitch ?? true);
+      setClubLogoError(null);
       setEditRole(activeCoach.role || "Coach Principal");
       setEditSport(activeSport || activeCoach.preferredSport || "football");
       setEditLanguage(activeCoach.language || currentLang);
@@ -1737,6 +1779,8 @@ export default function TacticsBoard({
             lastName: editLastName.trim(),
             email: editEmail.trim(),
             club: editClub.trim(),
+            clubLogo: editClubLogo,
+            showLogoOnPitch: editShowLogoOnPitch,
             role: editRole,
             preferredSport: editSport,
             language: finalLang,
@@ -1752,6 +1796,8 @@ export default function TacticsBoard({
         lastName: editLastName.trim(),
         email: editEmail.trim(),
         club: editClub.trim(),
+        clubLogo: editClubLogo,
+        showLogoOnPitch: editShowLogoOnPitch,
         role: editRole,
         preferredSport: editSport,
         language: finalLang,
@@ -2382,20 +2428,8 @@ export default function TacticsBoard({
     const playersOnPitch = currentTokens.filter(t => isAway ? t.type === "player_b" : t.type === "player_a");
     if (playersOnPitch.length === 0) return;
 
-    const playmaker = playersOnPitch.find(p => p.number === 10 || p.role?.includes("MC") || p.role?.includes("MO")) || playersOnPitch[0];
-    const striker = playersOnPitch.find(p => p.number === 9 || p.role?.includes("AC") || p.role?.includes("BU") || p.role?.includes("ATT")) || playersOnPitch[Math.min(8, playersOnPitch.length - 1)];
-    const wingerL = playersOnPitch.find(p => p.number === 11 || p.role?.includes("AG") || p.role?.includes("MG")) || playersOnPitch[Math.min(6, playersOnPitch.length - 1)];
-    const wingerR = playersOnPitch.find(p => p.number === 7 || p.role?.includes("AD") || p.role?.includes("MD")) || playersOnPitch[Math.min(7, playersOnPitch.length - 1)];
-
-    const assignedRoles: SetPieceRoleConfig = {
-      captain: playmaker ? playmaker.name : (playersOnPitch[0]?.name || ""),
-      penaltyTaker: striker ? striker.name : (playersOnPitch[0]?.name || ""),
-      directFreeKick: playmaker ? playmaker.name : (playersOnPitch[0]?.name || ""),
-      offCenterFKLeft: wingerL ? wingerL.name : (playersOnPitch[0]?.name || ""),
-      offCenterFKRight: wingerR ? wingerR.name : (playersOnPitch[0]?.name || ""),
-      cornerLeft: wingerL ? wingerL.name : (playersOnPitch[0]?.name || ""),
-      cornerRight: wingerR ? wingerR.name : (playersOnPitch[0]?.name || ""),
-    };
+    // Rôles propres au sport (buteur et ouvreur au rugby, meneur au basket, jet de 7 m au handball…)
+    const assignedRoles: SetPieceRoleConfig = autoAssignSportRoles(activeSport, playersOnPitch);
 
     if (isAway) {
       setOpponentSetPieceRoles(assignedRoles);
@@ -2592,6 +2626,52 @@ export default function TacticsBoard({
   }, [isPitchFullscreen, isBoardFullscreen, terrainComplet, aspectRatioMode, isLiveMatchMode]);
 
   const currentTokens = keyframes[currentFrameIdx] || [];
+
+  // Numéros du banc : les remplaçants générés (« Joueur 12 », « Joueur 12 Adv ») suivent directement
+  // le dernier numéro des titulaires (foot à 8 : 9, 10… ; foot à 11 : 12, 13…).
+  // Les remplaçants renommés par le coach gardent leur numéro.
+  const starterNumbersKeyA = currentTokens.filter((t) => t.type === "player_a").map((t) => t.number || 0).join(",");
+  const starterNumbersKeyB = currentTokens.filter((t) => t.type === "player_b").map((t) => t.number || 0).join(",");
+  useEffect(() => {
+    const renumber = (bench: any[], starterKey: string, isAway: boolean) => {
+      const starterNums = starterKey ? starterKey.split(",").map(Number).filter((n) => n > 0) : [];
+      // Remplaçant du banc par défaut (identifiant s1… / opp_s1…) dont le nom n'a pas été personnalisé
+      const isGenerated = (s: any) =>
+        new RegExp(isAway ? "^opp_s\\d+$" : "^s\\d+$").test(String(s.id || "")) &&
+        new RegExp(isAway ? "^Joueur \\d+ Adv$" : "^Joueur \\d+$").test(s.name || "");
+      const taken = new Set<number>([...starterNums, ...bench.filter((s) => !isGenerated(s)).map((s) => Number(s.number) || 0)]);
+      let next = (starterNums.length ? Math.max(...starterNums) : 0) + 1;
+      const renames: Record<string, string> = {};
+      let changed = false;
+      const updated = bench.map((s) => {
+        if (!isGenerated(s)) return s;
+        while (taken.has(next)) next++;
+        const num = next++;
+        const name = isAway ? `Joueur ${num} Adv` : `Joueur ${num}`;
+        if (s.number === num && s.name === name) return s;
+        changed = true;
+        renames[s.name] = name;
+        return { ...s, number: num, name };
+      });
+      return changed ? { updated, renames } : null;
+    };
+    const renameRoles = (roles: SetPieceRoleConfig, renames: Record<string, string>): SetPieceRoleConfig => {
+      const out = { ...roles };
+      (Object.keys(out) as (keyof SetPieceRoleConfig)[]).forEach((k) => { if (renames[out[k]]) out[k] = renames[out[k]]; });
+      return out;
+    };
+    const home = renumber(substitutes, starterNumbersKeyA, false);
+    if (home) {
+      setSubstitutes(home.updated);
+      setSetPieceRoles((prev) => renameRoles(prev, home.renames));
+    }
+    const away = renumber(opponentSubstitutes, starterNumbersKeyB, true);
+    if (away) {
+      setOpponentSubstitutes(away.updated);
+      setOpponentSetPieceRoles((prev) => renameRoles(prev, away.renames));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [starterNumbersKeyA, starterNumbersKeyB, substitutes, opponentSubstitutes]);
 
   // Cache et nettoyage automatique systématique du fond des photos de joueurs (de base, sans bouton requis)
   const [autoTransparentCache, setAutoTransparentCache] = useState<Record<string, string>>({});
@@ -3381,13 +3461,40 @@ export default function TacticsBoard({
     });
   };
 
+  // « Dans leur camp » : le schéma de jeu est réparti sur toute la moitié de terrain de l'équipe
+  // (profondeur ramenée entre le but et la ligne médiane, largeur conservée), sans joueurs superposés.
+  // Coordonnées renvoyées pour l'équipe qui défend le but de gauche (miroir à faire pour l'adversaire).
+  const spreadFormationInOwnHalf = (coords: { x: number; y: number }[]): { x: number; y: number }[] => {
+    if (coords.length === 0) return coords;
+    const HALF_MIN = 7;   // près de la ligne de but
+    const HALF_MAX = 44;  // avant la ligne médiane (rond central dégagé)
+    const xs = coords.map((c) => c.x);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const span = maxX - minX;
+    const placed = coords.map((c) => ({
+      x: span < 1 ? (HALF_MIN + HALF_MAX) / 2 : HALF_MIN + ((c.x - minX) / span) * (HALF_MAX - HALF_MIN),
+      y: Math.min(92, Math.max(8, c.y)),
+    }));
+    // Écarte les joueurs qui se chevaucheraient encore
+    for (let i = 0; i < placed.length; i++) {
+      for (let guard = 0; guard < 12; guard++) {
+        const clash = placed.slice(0, i).some((o) => Math.abs(o.x - placed[i].x) < 4 && Math.abs(o.y - placed[i].y) < 7);
+        if (!clash) break;
+        placed[i] = { x: placed[i].x, y: placed[i].y <= 50 ? Math.max(8, placed[i].y - 8) : Math.min(92, placed[i].y + 8) };
+        if (guard % 2 === 1) placed[i] = { x: Math.min(HALF_MAX, placed[i].x + 4), y: placed[i].y };
+      }
+    }
+    return placed.map((c) => ({ x: Math.round(c.x * 10) / 10, y: Math.round(c.y * 10) / 10 }));
+  };
+
   const regroupTeamAInCamp = () => {
     const availableFormations = getAvailableFormationsForSport(activeSport);
     const formA = availableFormations.includes(selectedFormationA)
       ? selectedFormationA
       : availableFormations[0] || "4-3-3";
 
-    const coordsA = getFormationCoordinates(activeSport, formA, false);
+    const coordsA = spreadFormationInOwnHalf(getFormationCoordinates(activeSport, formA, false));
 
     setKeyframes((prev) => {
       const copy = [...prev];
@@ -3402,14 +3509,13 @@ export default function TacticsBoard({
       const updatedTeamA: Token[] = coordsA.map((c, idx) => {
         const existingP = teamAToPlace[idx];
         const defaultP = defaultTokensA[idx] || { name: `Joueur ${idx + 1}`, role: "J", number: idx + 1 };
-        const campX = 6 + (c.x / 100) * 36;
         return {
           id: existingP ? existingP.id : `player_a_${idx}`,
           type: "player_a",
           name: existingP ? existingP.name : defaultP.name,
           role: existingP ? existingP.role : defaultP.role,
           number: existingP ? existingP.number : defaultP.number,
-          x: Math.min(44, Math.max(8, campX)),
+          x: c.x,
           y: c.y,
           status: existingP ? existingP.status : undefined
         };
@@ -3426,7 +3532,8 @@ export default function TacticsBoard({
       ? selectedFormationB
       : availableFormations[0] || "4-3-3";
 
-    const coordsB = getFormationCoordinates(activeSport, formB, true);
+    // Même répartition que l'équipe A, en miroir dans l'autre moitié de terrain
+    const coordsB = spreadFormationInOwnHalf(getFormationCoordinates(activeSport, formB, false)).map((c) => ({ x: 100 - c.x, y: c.y }));
 
     setKeyframes((prev) => {
       const copy = [...prev];
@@ -3441,14 +3548,13 @@ export default function TacticsBoard({
       const updatedTeamB: Token[] = coordsB.map((c, idx) => {
         const existingP = teamBToPlace[idx];
         const defaultP = defaultTokensB[idx] || { name: `Joueur ${idx + 1} Adv`, role: "ADV", number: idx + 1 };
-        const campX = 94 - ((100 - c.x) / 100) * 36;
         return {
           id: existingP ? existingP.id : `player_b_${idx}`,
           type: "player_b",
           name: existingP ? existingP.name : defaultP.name,
           role: existingP ? existingP.role : defaultP.role,
           number: existingP ? existingP.number : defaultP.number,
-          x: Math.max(56, Math.min(92, campX)),
+          x: c.x,
           y: c.y
         };
       });
@@ -4147,7 +4253,8 @@ export default function TacticsBoard({
       if (typeof s.number === "number" && !isNaN(s.number)) taken.add(s.number);
     });
 
-    let newNum = 1;
+    // Le nouveau joueur prend le numéro qui suit le dernier de l'effectif (titulaires puis banc)
+    let newNum = (taken.size ? Math.max(...taken) : 0) + 1;
     while (taken.has(newNum)) {
       newNum++;
     }
@@ -4174,6 +4281,32 @@ export default function TacticsBoard({
         type: "player_a"
       };
       setSubstitutes((prev) => [...prev, newSub]);
+    }
+  };
+
+  // Supprime un titulaire de l'effectif : retiré du terrain (toutes les étapes de l'animation) et de ses rôles
+  const handleDeleteStarter = async (tokenId: string, targetTeam?: "home" | "away") => {
+    const isAway = (targetTeam || rolesTargetTeam) === "away";
+    const token = currentTokens.find((t) => t.id === tokenId);
+    if (!token) return;
+    const ok = await confirmAction({
+      title: "Supprimer ce joueur ?",
+      subject: token.name,
+      message: "Le joueur sera retiré du terrain et de l'effectif. Pour le garder en réserve, envoyez-le plutôt sur le banc.",
+      confirmLabel: "Supprimer",
+    });
+    if (!ok) return;
+    setKeyframes((prev) => prev.map((frame) => frame.filter((t) => t.id !== tokenId)));
+    if (token.name) {
+      const clearRoles = (prev: SetPieceRoleConfig) => {
+        const updated = { ...prev };
+        (Object.keys(updated) as (keyof SetPieceRoleConfig)[]).forEach((key) => {
+          if (updated[key] === token.name) updated[key] = "";
+        });
+        return updated;
+      };
+      if (isAway) setOpponentSetPieceRoles(clearRoles);
+      else setSetPieceRoles(clearRoles);
     }
   };
 
@@ -4774,6 +4907,30 @@ export default function TacticsBoard({
     }
   };
 
+  // Format du terrain depuis la barre d'outils (foot à 11 / 8 / 5, rugby à XV / 7).
+  // Ne modifie pas le format enregistré de l'équipe : il reprend la main au prochain changement d'équipe.
+  const handleSwitchBoardFormat = async (format: string) => {
+    const option = getGameFormatOption(activeSport, format);
+    if (!option || option.id === activeFormat) return;
+    if (
+      (drawingActions.length > 0 || keyframes.length > 1) &&
+      !(await confirmAction({
+        title: `Passer en ${currentLang === "en" ? option.labelEn : option.label} ?`,
+        message: "Le terrain sera réinitialisé : les joueurs reprendront leur position de départ, les tracés et les étapes d'animation seront effacés.",
+        confirmLabel: "Changer de format",
+        tone: "warning",
+      }))
+    ) return;
+    setSchemaFormatOverride(option.id === resolveGameFormat(activeSport, teamForFormat?.format) ? null : { sport: activeSport, format: option.id });
+    setIsPlaying(false);
+    setDrawingActions([]);
+    setDrawingHistory([]);
+    setKeyframes([getDefaultPlayersForSport(activeSport, option.id)]);
+    setCurrentFrameIdx(0);
+    setSleekToastMessage(`✅ ${currentLang === "en" ? option.labelEn : option.label} (${option.players} ${currentLang === "en" ? "players" : "joueurs"})`);
+    setTimeout(() => setSleekToastMessage(null), 2500);
+  };
+
   // Format de jeu d'une équipe (foot à 11 / 8 / 5, rugby à XV / 7)
   const handleChangeTeamFormat = async (teamId: string, format: string) => {
     const team = teams.find((t) => t.id === teamId);
@@ -5109,7 +5266,7 @@ export default function TacticsBoard({
       title: defaultSchemaTitle,
       sport: schema?.sport || activeSport,
       clubName: schema?.teamName || displayClubTitle,
-      matchInfo: activeMatch ? `${displayClubTitle} vs ${activeMatch.awayTeam}` : undefined,
+      matchInfo: hasActiveMatch ? `${displayClubTitle} vs ${activeMatch.awayTeam}` : undefined,
       formation: schema?.formation || selectedFormationA,
       notes: defaultSchemaNotes,
       players: [...targetPlayers, ...activeSubs],
@@ -5163,6 +5320,93 @@ export default function TacticsBoard({
     } catch (err) {
       console.warn("Erreur pré-génération GIF:", err);
       markGifFailed();
+    }
+  };
+
+  // Export PDF du dossier du match : nom du match, schémas liés et notes tactiques (PRO & PRO+)
+  const [isExportingMatchPdf, setIsExportingMatchPdf] = useState(false);
+  const handleExportMatchPdf = async () => {
+    if (!isProOrAdmin) {
+      setSleekToastMessage("🔒 L'export PDF du match est réservé aux formules PRO & PRO+.");
+      setIsCheckoutOpen(true);
+      return;
+    }
+    if (isExportingMatchPdf) return;
+    setIsExportingMatchPdf(true);
+    try {
+      const matchSchemas = savedTactics.filter((s) => schemaBelongsToMatch(s, activeMatchId));
+      const collectFrameTokens = (frames: any[] | undefined): any[] =>
+        (frames || []).flatMap((frame: any) => (Array.isArray(frame) ? frame : frame?.players || []));
+      await Promise.all(
+        matchSchemas.map((s) => preloadExportPortraits(collectFrameTokens(s.keyframes).concat(s.players || [], s.tokens || []), s.sport || activeSport))
+      );
+
+      const schemas: MatchPdfSchema[] = matchSchemas.map((s) => {
+        const isAnim = Boolean(s.isAnimation || (s.keyframes && s.keyframes.length > 1));
+        let image: string | undefined;
+        let imageWidth: number | undefined;
+        let imageHeight: number | undefined;
+        try {
+          const source = renderCompositeTacticsCanvas(s);
+          if (source) {
+            // Sans le bandeau de l'image (85 px : logo, titre, coach), déjà repris par le PDF : le terrain est plus grand
+            const cropTop = Math.min(85, Math.max(0, source.height - 1));
+            const srcH = source.height - cropTop;
+            // Image réduite et compressée : le PDF reste léger même avec beaucoup de schémas
+            const scale = Math.min(1, 2000 / source.width);
+            const out = document.createElement("canvas");
+            out.width = Math.round(source.width * scale);
+            out.height = Math.round(srcH * scale);
+            const outCtx = out.getContext("2d");
+            if (outCtx) {
+              outCtx.imageSmoothingQuality = "high";
+              outCtx.drawImage(source, 0, cropTop, source.width, srcH, 0, 0, out.width, out.height);
+              image = out.toDataURL("image/jpeg", 0.88);
+              imageWidth = out.width;
+              imageHeight = out.height;
+            }
+          }
+        } catch (e) {
+          console.warn("Image du schéma indisponible pour le PDF", e);
+        }
+        return {
+          name: s.name,
+          date: s.date,
+          description: s.description,
+          isAnimation: isAnim,
+          steps: isAnim ? s.keyframes?.length : undefined,
+          image,
+          imageWidth,
+          imageHeight,
+        };
+      });
+
+      const matchTitle = hasActiveMatch
+        ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}`
+        : `Schémas hors match - ${activeTeam?.name || displayClubTitle}`;
+      const slug = matchTitle
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const coachName = [activeCoach?.firstName, activeCoach?.lastName].filter(Boolean).join(" ");
+
+      await exportMatchPdf({
+        matchTitle,
+        competition: hasActiveMatch ? activeMatch.competition : undefined,
+        dateTime: hasActiveMatch ? activeMatch.dateTime || (activeMatch as any).date : undefined,
+        clubName: activeTeam?.name || displayClubTitle,
+        clubLogo: clubLogo || undefined,
+        sport: activeSport,
+        coachName: coachName || undefined,
+        notes: tacticalNotes,
+        schemas,
+        fileName: `TheBox_${slug || "Match"}.pdf`,
+      });
+      setSleekToastMessage("📄 Dossier du match exporté en PDF.");
+    } catch (err) {
+      console.error("Export PDF du match impossible", err);
+      setSleekToastMessage("⚠️ L'export PDF a échoué. Réessayez.");
+    } finally {
+      setIsExportingMatchPdf(false);
     }
   };
 
@@ -5265,6 +5509,8 @@ export default function TacticsBoard({
     tokensOverride?: any[]
   ): HTMLCanvasElement | null => {
     const isMatchReport = !schemaOverride && (isLiveMatchMode || matchEvents.length > 0);
+    // Match réellement paramétré (sans match, activeMatch n'est qu'un modèle « MON EQUIPE vs ADVERSAIRE »)
+    const exportMatch = hasActiveMatch ? activeMatch : null;
     const targetSport = schemaOverride?.sport || activeSport;
     const sportKey = targetSport.toLowerCase();
     // Un schéma enregistré garde son format ; sans format, c'est le format historique (à 11 / à XV)
@@ -5290,7 +5536,7 @@ export default function TacticsBoard({
     const ctx = exportCanvas.getContext("2d");
     if (!ctx) return null;
 
-    const targetTitle = schemaOverride?.name || (activeMatch ? `${activeMatch.homeTeam} VS ${activeMatch.awayTeam}` : `THE BOX • ${targetSport.toUpperCase()} TACTICS PRO`);
+    const targetTitle = schemaOverride?.name || (exportMatch ? `${exportMatch.homeTeam} VS ${exportMatch.awayTeam}` : `Schéma tactique ${targetSport}`);
     const targetClub = schemaOverride?.teamName || displayClubTitle;
 
     // 1. Dark Background
@@ -5308,22 +5554,27 @@ export default function TacticsBoard({
     ctx.lineTo(w, headerH);
     ctx.stroke();
 
-    // Match Title / Sport Title
+    // Nom de l'application, en haut à gauche
     ctx.fillStyle = "#00E599";
-    ctx.font = "900 22px system-ui, sans-serif";
+    ctx.font = "900 13px system-ui, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(`🏆 ${targetTitle.toUpperCase()}`, 30, 36);
+    ctx.fillText("The Box - Zone de Décision Tactique", 30, 24);
+
+    // Titre du schéma / du match
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "900 20px system-ui, sans-serif";
+    ctx.fillText(`🏆 ${targetTitle.toUpperCase()}`, 30, 50);
 
     // Subtitle
     ctx.fillStyle = "#cbd5e1";
     ctx.font = "700 12px system-ui, sans-serif";
-    const matchSubInfo = activeMatch
-      ? `Compétition : ${activeMatch.competition || "Regular"}  |  Date & Heure : ${activeMatch.dateTime || activeMatch.date || "Prochainement"}`
+    const matchSubInfo = exportMatch
+      ? `Compétition : ${exportMatch.competition || "Regular"}  |  Date & Heure : ${exportMatch.dateTime || exportMatch.date || "Prochainement"}`
       : `Sport : ${targetSport.toUpperCase()}  |  Club : ${targetClub}`;
-    ctx.fillText(matchSubInfo, 30, 62);
+    ctx.fillText(matchSubInfo, 30, 72);
 
-    // Score Badge on Header Right
-    if (activeMatch || homeScore > 0 || awayScore > 0) {
+    // Badge de score : uniquement sur le rapport de match (jamais sur les images de schémas partagées)
+    if (isMatchReport && (exportMatch || homeScore > 0 || awayScore > 0)) {
       const scoreStr = `SCORE : ${homeScore} - ${awayScore}`;
       ctx.fillStyle = "#00E599";
       ctx.fillRect(w - 240, 20, 210, 45);
@@ -5714,6 +5965,32 @@ export default function TacticsBoard({
     ctx.strokeStyle = "#1f293d";
     ctx.lineWidth = 3;
     ctx.strokeRect(pitchX, pitchY, pitchW, pitchH);
+
+    // Logo du club dans le rond central (même réglage que sur le terrain) : découpé en rond au diamètre du rond central
+    const logoImg = clubLogoImgRef.current;
+    const centerRatio = getCenterCircleRadiusRatio(targetSport, targetFormat);
+    if (showClubLogoOnPitch && logoImg && logoImg.naturalWidth > 0 && centerRatio) {
+      const ccx = pitchX + pitchW / 2;
+      const ccy = pitchY + pitchH / 2;
+      const r = pitchH * centerRatio;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ccx, ccy, r, 0, 2 * Math.PI);
+      ctx.clip();
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      ctx.fillRect(ccx - r, ccy - r, r * 2, r * 2);
+      // Remplit le rond (comme « cover ») en gardant les proportions du logo
+      const scale = Math.max((r * 2) / logoImg.naturalWidth, (r * 2) / logoImg.naturalHeight);
+      const lw = logoImg.naturalWidth * scale;
+      const lh = logoImg.naturalHeight * scale;
+      ctx.drawImage(logoImg, ccx - lw / 2, ccy - lh / 2, lw, lh);
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(ccx, ccy, r, 0, 2 * Math.PI);
+      ctx.strokeStyle = "rgba(255,255,255,0.85)";
+      ctx.lineWidth = Math.max(1.5, pitchH * 0.0035);
+      ctx.stroke();
+    }
 
     // 2. Render Drawing Actions
     let exportDrawings: any[] = [];
@@ -6195,7 +6472,7 @@ export default function TacticsBoard({
         return;
       }
       const link = document.createElement("a");
-      const matchNameSlug = activeMatch ? `${activeMatch.homeTeam}_VS_${activeMatch.awayTeam}`.replace(/\s+/g, "_") : `Tactique_${activeSport.toUpperCase()}`;
+      const matchNameSlug = hasActiveMatch ? `${activeMatch.homeTeam}_VS_${activeMatch.awayTeam}`.replace(/\s+/g, "_") : `Tactique_${activeSport.toUpperCase()}`;
       link.download = `Bilan_${matchNameSlug}_${new Date().toISOString().slice(0, 10)}.png`;
       link.href = dataUrl;
       document.body.appendChild(link);
@@ -9341,17 +9618,40 @@ export default function TacticsBoard({
                 <Smartphone className="h-[18px] w-[18px] shrink-0" />
               </button>
 
-              {/* Format de jeu de l'équipe active (choisi à la création de l'équipe) */}
-              {getGameFormatOption(activeSport, activeFormat) && getGameFormatOptions(activeSport).length > 1 && (
+              {/* Format de jeu du terrain : foot à 11 / 8 / 5 (rugby à XV / 7) */}
+              {getGameFormatOptions(activeSport).length > 1 && (
                 <>
                   <div className={`h-4 w-px mx-0.5 ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
-                  <span
-                    className={`h-7 px-2 rounded-lg flex items-center gap-1 text-[11px] font-black whitespace-nowrap ${isModernSleek ? "text-emerald-800" : "text-[#00E599]"}`}
-                    title={currentLang === "en" ? "Game format of the active team (set in team management)" : "Format de jeu de l'équipe active (défini dans la gestion des équipes)"}
+                  <div
+                    role="group"
+                    aria-label={currentLang === "en" ? "Game format" : "Format de jeu"}
+                    className="flex items-center gap-1"
                   >
-                    <Users className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    {currentLang === "en" ? getGameFormatOption(activeSport, activeFormat)!.labelEn : getGameFormatOption(activeSport, activeFormat)!.label}
-                  </span>
+                    <Users className={`h-3.5 w-3.5 shrink-0 mx-0.5 ${isModernSleek ? "text-slate-500" : "text-[#6c7d99]"}`} aria-hidden="true" />
+                    {getGameFormatOptions(activeSport).map((opt) => {
+                      const isOn = opt.id === activeFormat;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => handleSwitchBoardFormat(opt.id)}
+                          aria-pressed={isOn}
+                          className={`h-7 min-w-[34px] px-2 rounded-lg transition cursor-pointer flex items-center justify-center text-[12px] font-black tabular-nums ${isOn
+                            ? isModernSleek
+                              ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs"
+                              : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                            : isModernSleek
+                              ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                              : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                            }`}
+                          title={`${currentLang === "en" ? opt.labelEn : opt.label} (${opt.players} ${currentLang === "en" ? "players" : "joueurs"})`}
+                          aria-label={currentLang === "en" ? opt.labelEn : opt.label}
+                        >
+                          {opt.short}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </>
               )}
             </div>
@@ -10462,7 +10762,8 @@ export default function TacticsBoard({
                         }}
                       >
                         {/* Ground pitch texture lines rendering */}
-                        <Pitch sport={activeSport} format={activeFormat} isPortrait={aspectRatioMode === "mobile"} />
+                        <Pitch sport={activeSport} format={activeFormat} isPortrait={aspectRatioMode === "mobile"} centerLogo={showClubLogoOnPitch ? clubLogo : undefined} />
+
 
                         {/* Corner Flags Overlay */}
                         {activeSport === "football" && !(aspectRatioMode === "mobile") && (
@@ -10824,50 +11125,27 @@ export default function TacticsBoard({
                                           </span>
                                         )}
 
-                                        {/* Tireur de Corner 🚩 */}
-                                        {(setPieceRoles.cornerLeft === token.name || setPieceRoles.cornerRight === token.name) && (
-                                          <span
-                                            className="bg-rose-500 text-white rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-rose-300 flex items-center justify-center leading-none"
-                                            title={t.tactics.pitchBadges.cornerTaker}
-                                          >
-                                            {setPieceRoles.cornerLeft === token.name && setPieceRoles.cornerRight === token.name
-                                              ? "CK-2"
-                                              : setPieceRoles.cornerLeft === token.name
-                                                ? "CK-G"
-                                                : "CK-D"}
-                                          </span>
-                                        )}
-
-                                        {/* Coup Franc Direct / Excentré */}
-                                        {(setPieceRoles.directFreeKick === token.name || setPieceRoles.offCenterFKLeft === token.name || setPieceRoles.offCenterFKRight === token.name) && (
-                                          <span
-                                            className="bg-cyan-400 text-slate-950 rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-cyan-200 flex items-center justify-center leading-none"
-                                            title={t.tactics.pitchBadges.freeKickTaker}
-                                          >
-                                            {setPieceRoles.directFreeKick === token.name
-                                              ? "CF"
-                                              : setPieceRoles.offCenterFKLeft === token.name
-                                                ? "CF-G"
-                                                : "CF-D"}
-                                          </span>
-                                        )}
                                       </div>
                                     )}
 
-                                    {/* RIGHT BADGES (Set-Piece Roles: Penalty Taker PK) */}
-                                    {token.type === "player_a" && (
-                                      <div className="absolute -right-3.5 top-1/2 -translate-y-1/2 flex flex-col items-start justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
-                                        {/* Tireur Penalty ⚽ (PK) */}
-                                        {setPieceRoles.penaltyTaker === token.name && (
-                                          <span
-                                            className="bg-[#00E599] text-[#0d1117] rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border border-emerald-300 flex items-center justify-center leading-none"
-                                            title={t.tactics.pitchBadges.penaltyTaker}
-                                          >
-                                            PK
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
+                                    {/* RIGHT BADGES : rôles du sport (PK, CF, CK au foot ; BUT, OUV, LAN au rugby ; LF, MEN au basket ; 7M, JF au hand) */}
+                                    {token.type === "player_a" && (() => {
+                                      const codes = getPlayerRoleCodes(activeSport, setPieceRoles, token.name);
+                                      if (codes.length === 0) return null;
+                                      return (
+                                        <div className="absolute -right-3.5 top-1/2 -translate-y-1/2 flex flex-col items-start justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
+                                          {codes.map((c) => (
+                                            <span
+                                              key={c.code}
+                                              className={`${ROLE_TONE_CHIP[c.tone]} rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border flex items-center justify-center leading-none`}
+                                              title={c.label}
+                                            >
+                                              {c.code}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 )}
 
@@ -11002,7 +11280,7 @@ export default function TacticsBoard({
               className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2333] transition cursor-pointer"
               title={t.tactics.sidebar.closeSidebarTooltip}
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
@@ -11022,24 +11300,24 @@ export default function TacticsBoard({
             >
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className={`w-7 h-7 rounded-full border-2 ${isModernSleek ? "border-emerald-600" : "border-[#00E599]"} flex items-center justify-center shrink-0`}>
-                  <Shield className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
+                  <Shield className={`w-4 h-4 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
                 </span>
                 <span className="min-w-0 text-left">
                   <span className={`block text-sm font-black ${isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-amber-200"} truncate transition`}>
                     {activeTeam?.name || "Séniors A (Fanion)"}
                   </span>
                   {activeMatch?.competition && (
-                    <span className={`block text-[10px] font-semibold ${isModernSleek ? "text-slate-500" : "text-slate-400"} truncate mt-0.5`}>{activeMatch.competition}</span>
+                    <span className={`block text-xs font-semibold ${isModernSleek ? "text-slate-500" : "text-slate-400"} truncate mt-0.5`}>{activeMatch.competition}</span>
                   )}
                 </span>
               </div>
               {isProOrAdmin ? (
-                <span className="tb-pro-badge text-[7.5px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0 shadow-sm">
+                <span className="tb-pro-badge text-[10px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0 shadow-sm">
                   PRO
                 </span>
               ) : (
-                <span className="text-[7px] bg-slate-800 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded-full uppercase font-extrabold flex items-center gap-0.5 shrink-0">
-                  <Lock className="w-2 h-2" /> 1 ÉQUIPE
+                <span className="text-[9px] bg-slate-800 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded-full uppercase font-extrabold flex items-center gap-0.5 shrink-0">
+                  <Lock className="w-2.5 h-2.5" /> 1 ÉQUIPE
                 </span>
               )}
             </button>
@@ -11052,17 +11330,17 @@ export default function TacticsBoard({
                   className="flex items-center gap-1.5 cursor-pointer select-none"
                 >
                   {isLiveMatchMode ? (
-                    <span className={`${isModernSleek ? "text-slate-900" : "text-slate-200"} text-[10px] font-black flex items-center gap-1.5 uppercase`}>
-                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                    <span className={`${isModernSleek ? "text-slate-900" : "text-slate-200"} text-xs font-black flex items-center gap-1.5 uppercase`}>
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
                       MATCH EN DIRECT
                     </span>
                   ) : (
-                    <span className={`${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} text-[9.5px] font-black uppercase flex items-center gap-1`}>
-                      <CalendarDays className={`w-4 h-4 ${isModernSleek ? "text-amber-600" : "text-[#e9c349]"} shrink-0`} /> MATCH
+                    <span className={`${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} text-xs font-black uppercase flex items-center gap-1`}>
+                      <CalendarDays className={`w-5 h-5 ${isModernSleek ? "text-amber-600" : "text-[#e9c349]"} shrink-0`} /> MATCH
                     </span>
                   )}
-                  <span className="tb-pro-badge text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
-                    <Award className="w-2 h-2" /> PRO
+                  <span className="tb-pro-badge text-[9px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
+                    <Award className="w-2.5 h-2.5" /> PRO
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -11075,38 +11353,38 @@ export default function TacticsBoard({
                       }
                       setIsMatchEditOpen(true);
                     }}
-                    className={`relative h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#00E599]"} border rounded transition cursor-pointer shrink-0`}
+                    className={`relative h-8 w-8 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#00E599]"} border rounded transition cursor-pointer shrink-0`}
                     title="Gérer ou ajouter des matchs"
                   >
-                    <Plus className="h-3 w-3 shrink-0" />
+                    <Plus className="h-4 w-4 shrink-0" />
                   </button>
                   <button
                     onClick={handlePrevMatch}
                     disabled={filteredMatches.findIndex(m => m.id === activeMatchId) <= 0}
-                    className={`h-6 w-6 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
+                    className={`h-8 w-8 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
                     title="Match précédent"
                   >
-                    <ChevronLeft className="h-3 w-3 shrink-0" />
+                    <ChevronLeft className="h-4 w-4 shrink-0" />
                   </button>
                   <button
                     onClick={handleNextMatch}
                     disabled={filteredMatches.findIndex(m => m.id === activeMatchId) >= filteredMatches.length - 1 || filteredMatches.length === 0}
-                    className={`h-6 w-6 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
+                    className={`h-8 w-8 flex items-center justify-center rounded border ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} disabled:opacity-30 transition cursor-pointer shrink-0`}
                     title="Match suivant"
                   >
-                    <ChevronRight className="h-3 w-3 shrink-0" />
+                    <ChevronRight className="h-4 w-4 shrink-0" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsMatchSectionCollapsed(!isMatchSectionCollapsed)}
-                    className={`h-6 px-1.5 rounded border text-[8.5px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
+                    className={`h-8 px-2 rounded border text-[11px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
                       ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900"
                       : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-white"
                       }`}
                     title={isMatchSectionCollapsed ? "Déplier la section Match" : "Réduire la section Match"}
                     aria-label={isMatchSectionCollapsed ? "Déplier la section Match" : "Réduire la section Match"}
                   >
-                    <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isMatchSectionCollapsed ? "-rotate-90" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isMatchSectionCollapsed ? "-rotate-90" : ""}`} />
                     <span className="sr-only">{isMatchSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
                   </button>
                 </div>
@@ -11114,8 +11392,8 @@ export default function TacticsBoard({
 
               {!isMatchSectionCollapsed && !hasActiveMatch && (
                 <div className={`rounded-xl border border-dashed p-3 text-center ${isModernSleek ? "border-slate-300 bg-slate-50" : "border-[#26354d] bg-[#0d1117]/60"}`}>
-                  <p className={`text-[11px] font-black uppercase ${isModernSleek ? "text-slate-700" : "text-slate-200"}`}>Aucun match</p>
-                  <p className={`text-[10px] mt-0.5 leading-snug ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                  <p className={`text-[12.5px] font-black uppercase ${isModernSleek ? "text-slate-700" : "text-slate-200"}`}>Aucun match</p>
+                  <p className={`text-xs mt-0.5 leading-snug ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                     Les matchs sont facultatifs. Créez-en un pour suivre un adversaire, vos notes ou le mode live.
                   </p>
                   <button
@@ -11129,9 +11407,9 @@ export default function TacticsBoard({
                       handleAddNewMatch();
                       setIsMatchEditOpen(true);
                     }}
-                    className={`mt-2 h-7 px-3 rounded-lg text-[10px] font-black inline-flex items-center gap-1 transition cursor-pointer ${isModernSleek ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-[#00E599] hover:bg-[#00cc88] text-[#0d1117]"}`}
+                    className={`mt-2 h-8 px-3 rounded-lg text-xs font-black inline-flex items-center gap-1 transition cursor-pointer ${isModernSleek ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-[#00E599] hover:bg-[#00cc88] text-[#0d1117]"}`}
                   >
-                    <Plus className="w-3 h-3" /> Créer un match
+                    <Plus className="w-4 h-4" /> Créer un match
                   </button>
                 </div>
               )}
@@ -11147,17 +11425,19 @@ export default function TacticsBoard({
                   <div className="flex items-center justify-between gap-1.5">
                     {/* Home Team */}
                     <div className="flex flex-col items-center flex-1 min-w-0">
-                      <span className={`w-11 h-11 rounded-full border-2 flex items-center justify-center text-xs font-black mb-1.5 ${isModernSleek ? "border-emerald-500/60 bg-emerald-50 text-emerald-700" : "border-[#00E599]/60 bg-[#00E599]/10 text-[#00E599]"}`}>
-                        {teamInitials(activeMatch.homeTeam)}
+                      <span className={`w-11 h-11 rounded-full border-2 overflow-hidden flex items-center justify-center text-xs font-black mb-1.5 ${isModernSleek ? "border-emerald-500/60 bg-emerald-50 text-emerald-700" : "border-[#00E599]/60 bg-[#00E599]/10 text-[#00E599]"}`}>
+                        {clubLogo && !(isClubTeamName(activeMatch.awayTeam) && !isClubTeamName(activeMatch.homeTeam))
+                          ? <img src={clubLogo} alt={activeMatch.homeTeam} className="w-full h-full object-contain p-1 rounded-full" />
+                          : teamInitials(activeMatch.homeTeam)}
                       </span>
-                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10.5px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
                         {activeMatch.homeTeam}
                       </span>
                       {isLiveMatchMode && (
                         <div className="flex items-center gap-1.5 mt-1.5">
                           <button
                             onClick={(e) => { e.stopPropagation(); setHomeScore(Math.max(0, homeScore - 1)); }}
-                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                            className={`w-8 h-8 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
                               ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
                               : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
                               }`}
@@ -11168,7 +11448,7 @@ export default function TacticsBoard({
                           <span className={`text-sm font-black px-0.5 font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{homeScore}</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); setHomeScore(homeScore + 1); }}
-                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                            className={`w-8 h-8 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
                               ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
                               : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
                               }`}
@@ -11190,7 +11470,7 @@ export default function TacticsBoard({
                             setTimeout(() => setSleekToastMessage(null), 3500);
                             setIsMatchFinishedModalOpen(true);
                           }}
-                          className={`px-2.5 py-1 rounded-full text-[9px] font-black transition cursor-pointer flex items-center gap-1 border shadow-2xs ${isModernSleek
+                          className={`px-2.5 py-1 rounded-full text-[11.5px] font-black transition cursor-pointer flex items-center gap-1 border shadow-2xs ${isModernSleek
                             ? "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
                             : "bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800"
                             }`}
@@ -11223,7 +11503,7 @@ export default function TacticsBoard({
                               setIsNotesSectionCollapsed(false);
                             }
                           }}
-                          className={`px-2.5 py-1 rounded-full text-[9px] font-black transition cursor-pointer flex items-center gap-1.5 border shadow-2xs ${isLiveMatchMode
+                          className={`px-2.5 py-1 rounded-full text-[11.5px] font-black transition cursor-pointer flex items-center gap-1.5 border shadow-2xs ${isLiveMatchMode
                             ? isModernSleek
                               ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
                               : "bg-[#161f2e] hover:bg-[#1e293b] text-white border-[#26354d]"
@@ -11236,7 +11516,7 @@ export default function TacticsBoard({
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                           <span>{isLiveMatchMode ? "LIVE" : "MODE LIVE"}</span>
                           {!isProPlusOrAdmin && (
-                            <span className="text-[7px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm ml-0.5">PRO+</span>
+                            <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm ml-0.5">PRO+</span>
                           )}
                         </button>
                       )}
@@ -11251,23 +11531,25 @@ export default function TacticsBoard({
                           </div>
                         </div>
                       ) : (
-                        <span className={`text-[9px] ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} font-black uppercase`}>VS</span>
+                        <span className={`text-[11.5px] ${isModernSleek ? "text-slate-400" : "text-[#62728f]"} font-black uppercase`}>VS</span>
                       )}
                     </div>
 
                     {/* Away Team */}
                     <div className="flex flex-col items-center flex-1 min-w-0">
-                      <span className={`w-11 h-11 rounded-full border-2 flex items-center justify-center text-xs font-black mb-1.5 ${isModernSleek ? "border-rose-400/60 bg-rose-50 text-rose-600" : "border-rose-400/60 bg-rose-500/10 text-rose-300"}`}>
-                        {teamInitials(activeMatch.awayTeam)}
+                      <span className={`w-11 h-11 rounded-full border-2 overflow-hidden flex items-center justify-center text-xs font-black mb-1.5 ${isModernSleek ? "border-rose-400/60 bg-rose-50 text-rose-600" : "border-rose-400/60 bg-rose-500/10 text-rose-300"}`}>
+                        {clubLogo && isClubTeamName(activeMatch.awayTeam) && !isClubTeamName(activeMatch.homeTeam)
+                          ? <img src={clubLogo} alt={activeMatch.awayTeam} className="w-full h-full object-contain p-1 rounded-full" />
+                          : teamInitials(activeMatch.awayTeam)}
                       </span>
-                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10.5px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
                         {activeMatch.awayTeam}
                       </span>
                       {isLiveMatchMode && (
                         <div className="flex items-center gap-1.5 mt-1.5">
                           <button
                             onClick={(e) => { e.stopPropagation(); setAwayScore(Math.max(0, awayScore - 1)); }}
-                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                            className={`w-8 h-8 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
                               ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
                               : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
                               }`}
@@ -11278,7 +11560,7 @@ export default function TacticsBoard({
                           <span className={`text-sm font-black px-0.5 font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{awayScore}</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); setAwayScore(awayScore + 1); }}
-                            className={`w-6 h-6 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
+                            className={`w-8 h-8 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center border ${isModernSleek
                               ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
                               : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
                               }`}
@@ -11297,7 +11579,7 @@ export default function TacticsBoard({
                       {/* Boutons rapides de points en mode BASKETBALL et RUGBY */}
                       {(activeSport === "basketball" || activeSport === "rugby") && (
                         <div className={`w-full p-2 rounded-xl border space-y-2 ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
-                          <div className={`text-[9px] font-extrabold uppercase tracking-wider text-center ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                          <div className={`text-[11.5px] font-extrabold uppercase tracking-wider text-center ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
                             {getSportBallInfo(activeSport).emoji} Noter les points ({activeMatch.homeTeam})
                           </div>
                           <div className="grid grid-cols-3 gap-1.5 w-full">
@@ -11319,19 +11601,19 @@ export default function TacticsBoard({
                                     };
                                   handleRecordScore(targetToken, action);
                                 }}
-                                className={`py-1.5 px-1 rounded-lg border text-[9.5px] font-bold transition cursor-pointer flex flex-col items-center justify-center leading-snug shadow-2xs ${isModernSleek
+                                className={`py-1.5 px-1 rounded-lg border text-xs font-bold transition cursor-pointer flex flex-col items-center justify-center leading-snug shadow-2xs ${isModernSleek
                                   ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-800"
                                   : "bg-[#111827] hover:bg-[#1a2333] border-[#26354d] text-slate-200"
                                   }`}
                                 title={`Ajouter ${action.label} (+${action.points} sur le score)`}
                               >
                                 <span>{action.icon} {action.label}</span>
-                                <span className={`text-[9px] font-black ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>+{action.points}</span>
+                                <span className={`text-[11.5px] font-black ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>+{action.points}</span>
                               </button>
                             ))}
                           </div>
                           <div className={`flex items-center justify-between gap-1.5 pt-1.5 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
-                            <span className={`text-[8.5px] font-bold uppercase truncate max-w-[90px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                            <span className={`text-[11px] font-bold uppercase truncate max-w-[90px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                               Adv. ({activeMatch.awayTeam}) :
                             </span>
                             <div className="flex items-center gap-1">
@@ -11353,7 +11635,7 @@ export default function TacticsBoard({
                                       };
                                     handleRecordScore(targetToken, action);
                                   }}
-                                  className={`px-2 py-1 rounded-md border text-[9px] font-bold transition cursor-pointer ${isModernSleek
+                                  className={`px-2 py-1 rounded-md border text-[11.5px] font-bold transition cursor-pointer ${isModernSleek
                                     ? "bg-white hover:bg-slate-100 border-slate-200 text-slate-700"
                                     : "bg-[#111827] hover:bg-[#1a2333] border-[#26354d] text-slate-300"
                                     }`}
@@ -11377,7 +11659,7 @@ export default function TacticsBoard({
                               handleSelectLivePeriod(periodKey);
                             }}
                             title={periodKey === "MI-TEMPS" ? `${breakLongLabel} : lance un compte à rebours de 15 minutes` : undefined}
-                            className={`flex-1 py-1.5 rounded-lg text-[9.5px] font-black transition cursor-pointer text-center uppercase tracking-tight ${currentPeriod === periodKey
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition cursor-pointer text-center uppercase tracking-tight ${currentPeriod === periodKey
                               ? isModernSleek
                                 ? "bg-white text-slate-900 border border-slate-300 shadow-2xs"
                                 : "bg-[#1e293b] text-white border border-slate-600"
@@ -11423,7 +11705,7 @@ export default function TacticsBoard({
                               if (isHalftime) setIsHalftimeRunning(!isHalftimeRunning);
                               else setIsLiveTimerRunning(!isLiveTimerRunning);
                             }}
-                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition cursor-pointer border ${isModernSleek
+                            className={`px-3 py-1 rounded-lg text-xs font-black uppercase transition cursor-pointer border ${isModernSleek
                               ? "bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-2xs"
                               : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-200 border-[#26354d]"
                               }`}
@@ -11441,7 +11723,7 @@ export default function TacticsBoard({
                                 setLiveTimerSeconds(0);
                               }
                             }}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition cursor-pointer border ${isModernSleek
+                            className={`px-2 py-1 rounded-lg text-xs font-black transition cursor-pointer border ${isModernSleek
                               ? "bg-white hover:bg-slate-100 text-slate-600 border-slate-200"
                               : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-300 border-[#26354d]"
                               }`}
@@ -11458,7 +11740,7 @@ export default function TacticsBoard({
                           e.stopPropagation();
                           handleFinishLiveMatch();
                         }}
-                        className={`w-full py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer border flex items-center justify-center gap-1.5 shadow-2xs ${isModernSleek
+                        className={`w-full py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer border flex items-center justify-center gap-1.5 shadow-2xs ${isModernSleek
                           ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
                           : "bg-[#161f2e] hover:bg-[#1e293b] text-slate-200 border-[#26354d]"
                           }`}
@@ -11470,7 +11752,7 @@ export default function TacticsBoard({
                       {/* Match Events Feed Log */}
                       {matchEvents.filter((evt) => evt.type !== "assist").length > 0 && (
                         <div className={`mt-1 w-full p-2 rounded-xl border max-h-56 overflow-y-auto text-left space-y-1.5 scrollbar-thin ${isModernSleek ? "bg-slate-50 border-slate-200" : "bg-[#090d14] border-[#1f293d]"}`}>
-                          <div className={`text-[9px] font-black uppercase tracking-wider flex items-center justify-between border-b pb-1 ${isModernSleek ? "text-slate-600 border-slate-200" : "text-slate-400 border-[#1f293d]"}`}>
+                          <div className={`text-[11.5px] font-black uppercase tracking-wider flex items-center justify-between border-b pb-1 ${isModernSleek ? "text-slate-600 border-slate-200" : "text-slate-400 border-[#1f293d]"}`}>
                             <span>ÉVÉNEMENTS ({matchEvents.filter((evt) => evt.type !== "assist").length}) :</span>
                             <button
                               onClick={async () => {
@@ -11478,7 +11760,7 @@ export default function TacticsBoard({
                                   setMatchEvents([]);
                                 }
                               }}
-                              className={`text-[8.5px] font-bold transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
+                              className={`text-[11px] font-bold transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
                             >
                               Effacer
                             </button>
@@ -11486,7 +11768,7 @@ export default function TacticsBoard({
                           {matchEvents
                             .filter((evt) => evt.type !== "assist")
                             .map((evt) => (
-                              <div key={evt.id} className={`text-[10px] font-bold flex items-center justify-between p-1.5 rounded-lg transition group ${isModernSleek ? "text-slate-700 bg-white border border-slate-200/80 hover:bg-slate-100/70" : "text-slate-200 hover:bg-[#131b29]"}`}>
+                              <div key={evt.id} className={`text-xs font-bold flex items-center justify-between p-1.5 rounded-lg transition group ${isModernSleek ? "text-slate-700 bg-white border border-slate-200/80 hover:bg-slate-100/70" : "text-slate-200 hover:bg-[#131b29]"}`}>
                                 <span className="flex items-center gap-1.5 truncate min-w-0">
                                   <span className="text-xs">
                                     {evt.type === "goal"
@@ -11496,19 +11778,19 @@ export default function TacticsBoard({
                                   <span className={`font-extrabold truncate max-w-[140px] ${isModernSleek ? "text-slate-800" : "text-white"}`}>
                                     {evt.player}
                                     {evt.type === "goal" ? (
-                                      <span className={`font-bold text-[9.5px] ml-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                                      <span className={`font-bold text-xs ml-1 ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                                         ({evt.points && evt.points > 1 ? `+${evt.points} pts` : "1 pt"}{evt.assister ? ` • ${evt.assister}` : ""})
                                       </span>
                                     ) : null}
                                   </span>
                                 </span>
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <span className={`text-[9px] font-mono font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                                  <span className={`text-[11.5px] font-mono font-bold ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
                                     {evt.period ? `${evt.period} ${evt.time}` : evt.time}
                                   </span>
                                   <button
                                     onClick={() => handleDeleteMatchEvent(evt.id)}
-                                    className={`opacity-0 group-hover:opacity-100 transition px-1 cursor-pointer font-black text-[9.5px] ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
+                                    className={`opacity-0 group-hover:opacity-100 transition px-1 cursor-pointer font-black text-xs ${isModernSleek ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-slate-300"}`}
                                     title="Supprimer cet événement"
                                   >
                                     ✕
@@ -11532,11 +11814,11 @@ export default function TacticsBoard({
                       className={`mt-1.5 pt-1 border-t ${isModernSleek ? "border-slate-100" : "border-[#1f293d]/60"} cursor-pointer text-center`}
                     >
                       <div className="flex items-center justify-center gap-1 mb-0.5">
-                        <p className={`text-[8.5px] font-black ${isModernSleek ? "text-slate-700" : "text-slate-300"} uppercase tracking-wider truncate`}>
+                        <p className={`text-[11px] font-black ${isModernSleek ? "text-slate-700" : "text-slate-300"} uppercase tracking-wider truncate`}>
                           {activeMatch.competition}
                         </p>
                         {activeMatch.isFinished && (
-                          <span className="text-[7px] bg-emerald-500 text-slate-950 font-black px-1 rounded uppercase">
+                          <span className="text-[9px] bg-emerald-500 text-slate-950 font-black px-1 rounded uppercase">
                             TERMINÉ
                           </span>
                         )}
@@ -11546,7 +11828,7 @@ export default function TacticsBoard({
                           Score : {activeMatch.score}
                         </p>
                       )}
-                      <p className={`text-[8.5px] font-bold ${isModernSleek ? "text-emerald-800" : "text-slate-400"} mt-0.5`}>
+                      <p className={`text-[11px] font-bold ${isModernSleek ? "text-emerald-800" : "text-slate-400"} mt-0.5`}>
                         {activeMatch.dateTime}
                       </p>
                     </div>
@@ -11560,12 +11842,12 @@ export default function TacticsBoard({
               <div className={`tb-section-head flex items-center justify-between ${isSchemasSectionCollapsed ? "" : `mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}`}>
                 <p
                   onClick={() => setIsSchemasSectionCollapsed(!isSchemasSectionCollapsed)}
-                  className={`text-[9.5px] ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f] font-black"} uppercase tracking-wider flex items-center gap-1 cursor-pointer select-none`}
+                  className={`text-xs ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f] font-black"} uppercase tracking-wider flex items-center gap-1 cursor-pointer select-none`}
                 >
-                  <Bookmark className={`w-4 h-4 ${isModernSleek ? "text-amber-600" : "text-[#e9c349]"} shrink-0`} />
+                  <Bookmark className={`w-5 h-5 ${isModernSleek ? "text-amber-600" : "text-[#e9c349]"} shrink-0`} />
                   <span>SCHÉMAS</span>
-                  <span className="tb-pro-badge text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
-                    <Award className="w-2 h-2" /> PRO
+                  <span className="tb-pro-badge text-[9px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
+                    <Award className="w-2.5 h-2.5" /> PRO
                   </span>
                 </p>
                 <div className="flex items-center gap-1">
@@ -11578,29 +11860,39 @@ export default function TacticsBoard({
                       }
                       handleOpenShareSchema();
                     }}
-                    className={`h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer shrink-0`}
+                    className={`h-8 w-8 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer shrink-0`}
                     title="Partager le schéma actuel (PRO)"
                   >
-                    <Share2 className="h-3 w-3 shrink-0" />
+                    <Share2 className="h-4 w-4 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExportMatchPdf}
+                    disabled={isExportingMatchPdf}
+                    className={`h-8 w-8 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-wait`}
+                    title="Exporter le match en PDF : schémas et notes tactiques (PRO)"
+                    aria-label="Exporter le match en PDF"
+                  >
+                    {isExportingMatchPdf ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <FileText className="h-4 w-4 shrink-0" />}
                   </button>
                   <button
                     onClick={handleTriggerSaveModal}
-                    className={`h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-emerald-800 hover:text-emerald-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#00E599] hover:text-brand-cream"} border rounded transition cursor-pointer shrink-0`}
+                    className={`h-8 w-8 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-emerald-800 hover:text-emerald-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#00E599] hover:text-brand-cream"} border rounded transition cursor-pointer shrink-0`}
                     title="Enregistrer sous (PRO)"
                   >
-                    <Save className="h-3 w-3 shrink-0" />
+                    <Save className="h-4 w-4 shrink-0" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsSchemasSectionCollapsed(!isSchemasSectionCollapsed)}
-                    className={`h-6 px-1.5 rounded border text-[8.5px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
+                    className={`h-8 px-2 rounded border text-[11px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
                       ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900"
                       : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-white"
                       }`}
                     title={isSchemasSectionCollapsed ? "Déplier la section Schémas" : "Réduire la section Schémas"}
                     aria-label={isSchemasSectionCollapsed ? "Déplier la section Schémas" : "Réduire la section Schémas"}
                   >
-                    <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isSchemasSectionCollapsed ? "-rotate-90" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isSchemasSectionCollapsed ? "-rotate-90" : ""}`} />
                     <span className="sr-only">{isSchemasSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
                   </button>
                 </div>
@@ -11609,7 +11901,7 @@ export default function TacticsBoard({
               {!isSchemasSectionCollapsed && (
                 <>
                   {/* En-tête Match actuel */}
-                  <div className={`flex items-center justify-between px-2 py-1 mb-1.5 rounded-lg border text-[8.5px] font-black uppercase tracking-tight ${isModernSleek
+                  <div className={`flex items-center justify-between px-2.5 py-1.5 mb-2 rounded-lg border text-[11px] font-black uppercase tracking-tight ${isModernSleek
                     ? "bg-slate-100 border-slate-200 text-slate-700"
                     : "bg-[#080d14] border-[#1f293d] text-slate-300"
                     }`}>
@@ -11617,20 +11909,20 @@ export default function TacticsBoard({
                       <span>⚽</span>
                       <span className="truncate">{activeMatch ? `${activeMatch.homeTeam} vs ${activeMatch.awayTeam}` : "Ce Match"}</span>
                     </span>
-                    <span className={`px-1.5 py-0.2 rounded text-[7.5px] font-extrabold shrink-0 ${isModernSleek ? "bg-emerald-100 text-emerald-800" : "bg-[#00E599]/20 text-[#00E599]"
+                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-extrabold shrink-0 ${isModernSleek ? "bg-emerald-100 text-emerald-800" : "bg-[#00E599]/20 text-[#00E599]"
                       }`}>
                       {savedTactics.filter(sc => schemaBelongsToMatch(sc, activeMatchId)).length}
                     </span>
                   </div>
 
                   {/* Saved Playbooks scroll list */}
-                  <div className="space-y-1.5 max-h-56 overflow-y-auto scrollbar-thin">
+                  <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-thin">
                     {(() => {
                       const matchSchemas = savedTactics.filter(sc => schemaBelongsToMatch(sc, activeMatchId));
 
                       if (matchSchemas.length === 0) {
                         return (
-                          <div className={`border border-dashed ${isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-[#62728f]"} rounded-lg p-3 text-center text-[8.5px] font-bold uppercase tracking-wider`}>
+                          <div className={`border border-dashed ${isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-[#62728f]"} rounded-lg p-3 text-center text-[11px] font-bold uppercase tracking-wider`}>
                             AUCUN SCHÉMA POUR CE MATCH
                           </div>
                         );
@@ -11650,26 +11942,26 @@ export default function TacticsBoard({
                               : isModernSleek
                                 ? "bg-white border-slate-200 hover:border-emerald-400 shadow-2xs"
                                 : "bg-[#0d1117] border-[#1a2130] hover:border-[#00e599]/30"
-                              } border p-1.5 rounded-lg flex items-center justify-between cursor-pointer transition gap-1.5`}
+                              } border p-2.5 rounded-lg flex items-center justify-between cursor-pointer transition gap-1.5`}
                           >
                             <div className="text-left min-w-0 flex-1">
                               <div className="flex items-center gap-1 flex-wrap">
-                                <p className={`text-[9.5px] font-black ${isAnim
+                                <p className={`text-xs font-black ${isAnim
                                   ? isModernSleek ? "text-purple-900 group-hover:text-purple-700" : "text-purple-200 group-hover:text-purple-300"
                                   : isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-[#00E599]"
                                   } truncate leading-tight transition flex items-center gap-1`}>
-                                  {isAnim && <span className="text-[10px]">🎬</span>}
+                                  {isAnim && <span className="text-xs">🎬</span>}
                                   <span>{sc.name}</span>
                                 </p>
 
                                 {isAnim && (
-                                  <span className="text-[6.5px] bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black px-1.5 py-0.2 rounded-xs uppercase tracking-wider shrink-0 shadow-2xs">
+                                  <span className="text-[9px] bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black px-1.5 py-0.2 rounded-xs uppercase tracking-wider shrink-0 shadow-2xs">
                                     ANIMATION
                                   </span>
                                 )}
 
                               </div>
-                              <span className={`text-[7.5px] ${isAnim ? (isModernSleek ? "text-purple-600 font-extrabold" : "text-purple-300/80 font-bold") : (isModernSleek ? "text-slate-400 font-bold" : "text-[#62728f] font-bold")} block mt-0.5`}>
+                              <span className={`text-[10px] ${isAnim ? (isModernSleek ? "text-purple-600 font-extrabold" : "text-purple-300/80 font-bold") : (isModernSleek ? "text-slate-400 font-bold" : "text-[#62728f] font-bold")} block mt-0.5`}>
                                 {sc.date} {sc.keyframes ? `• ${sc.keyframes.length} étape${sc.keyframes.length > 1 ? "s" : ""}` : ""}
                               </span>
                             </div>
@@ -11682,7 +11974,7 @@ export default function TacticsBoard({
                                     handleDeleteSchema(sc.id);
                                     setConfirmDeleteSchemaId(null);
                                   }}
-                                  className="px-1.5 py-0.5 bg-rose-600 hover:bg-rose-500 text-white font-black text-[8px] rounded transition shadow-md cursor-pointer"
+                                  className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-black text-[10.5px] rounded transition shadow-md cursor-pointer"
                                   title="Confirmer la suppression"
                                 >
                                   Supprimer
@@ -11692,7 +11984,7 @@ export default function TacticsBoard({
                                     e.stopPropagation();
                                     setConfirmDeleteSchemaId(null);
                                   }}
-                                  className="px-1 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[8px] rounded transition cursor-pointer"
+                                  className="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[10.5px] rounded transition cursor-pointer"
                                   title="Annuler"
                                 >
                                   ✕
@@ -11712,10 +12004,10 @@ export default function TacticsBoard({
                                     }
                                     handleOpenShareSchema(sc);
                                   }}
-                                  className={`p-1 ${isModernSleek ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#131b29] hover:bg-[#1f2b40] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
+                                  className={`p-1.5 ${isModernSleek ? "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-emerald-800" : "bg-[#131b29] hover:bg-[#1f2b40] border-[#1a2130] text-slate-400 hover:text-[#00E599]"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
                                   title="Partager ce schéma (PRO)"
                                 >
-                                  <Share2 className="h-3 w-3" />
+                                  <Share2 className="h-4 w-4" />
                                 </button>
 
                                 <button
@@ -11724,10 +12016,10 @@ export default function TacticsBoard({
                                     e.preventDefault();
                                     setConfirmDeleteSchemaId(sc.id);
                                   }}
-                                  className={`p-1 ${isModernSleek ? "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600 hover:text-rose-800" : "bg-rose-950/60 hover:bg-rose-900 border-rose-800/80 text-rose-300 hover:text-white"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
+                                  className={`p-1.5 ${isModernSleek ? "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600 hover:text-rose-800" : "bg-rose-950/60 hover:bg-rose-900 border-rose-800/80 text-rose-300 hover:text-white"} border rounded transition cursor-pointer flex items-center justify-center z-10`}
                                   title="Supprimer ce schéma"
                                 >
-                                  <Trash className="h-3 w-3" />
+                                  <Trash className="h-4 w-4" />
                                 </button>
                               </div>
                             )}
@@ -11745,18 +12037,18 @@ export default function TacticsBoard({
               <div className={`tb-section-head flex items-center justify-between ${isNotesSectionCollapsed ? "" : `mb-1.5 border-b ${isModernSleek ? "border-slate-200" : "border-[#1f293d]/60"} pb-1`}`}>
                 <p
                   onClick={() => setIsNotesSectionCollapsed(!isNotesSectionCollapsed)}
-                  className={`text-[9.5px] ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer select-none`}
+                  className={`text-xs ${isModernSleek ? "text-slate-600 font-extrabold" : "text-[#62728f]"} font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer select-none`}
                 >
-                  <NotebookPen className={`w-4 h-4 ${isModernSleek ? "text-amber-600" : "text-[#e9c349]"} shrink-0`} />
+                  <NotebookPen className={`w-5 h-5 ${isModernSleek ? "text-amber-600" : "text-[#e9c349]"} shrink-0`} />
                   <span>{t.tactics.sidebar.notesTitle}</span>
-                  <span className="tb-pro-badge text-[7px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
-                    <Award className="w-2 h-2" /> PRO
+                  <span className="tb-pro-badge text-[9px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black px-1 py-0.2 rounded uppercase tracking-wider shadow-sm flex items-center gap-0.5">
+                    <Award className="w-2.5 h-2.5" /> PRO
                   </span>
                 </p>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={handleToggleMicRecording}
-                    className={`relative h-6 w-6 flex items-center justify-center border rounded transition cursor-pointer shrink-0 ${isRecordingVoice
+                    className={`relative h-8 w-8 flex items-center justify-center border rounded transition cursor-pointer shrink-0 ${isRecordingVoice
                       ? "bg-rose-600 border-rose-500 text-white animate-pulse"
                       : isModernSleek
                         ? "bg-white hover:bg-slate-200 border-slate-200 text-amber-600 hover:text-amber-800"
@@ -11764,26 +12056,26 @@ export default function TacticsBoard({
                       }`}
                     title={isRecordingVoice ? "Arrêter l'enregistrement" : "Enregistrer une note vocale"}
                   >
-                    <Mic className="h-3 w-3 shrink-0" />
+                    <Mic className="h-4 w-4 shrink-0" />
                   </button>
                   <button
                     onClick={() => setIsNotesExpanded(true)}
-                    className={`h-6 w-6 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} border rounded transition cursor-pointer shrink-0`}
+                    className={`h-8 w-8 flex items-center justify-center ${isModernSleek ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-900" : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-[#62728f] hover:text-brand-cream"} border rounded transition cursor-pointer shrink-0`}
                     title="Agrandir les notes"
                   >
-                    <Maximize2 className="h-3 w-3 shrink-0" />
+                    <Maximize2 className="h-4 w-4 shrink-0" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsNotesSectionCollapsed(!isNotesSectionCollapsed)}
-                    className={`h-6 px-1.5 rounded border text-[8.5px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
+                    className={`h-8 px-2 rounded border text-[11px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-0.5 whitespace-nowrap ${isModernSleek
                       ? "bg-white hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900"
                       : "bg-[#121926] hover:bg-[#1a2333] border-[#1a2130] text-slate-400 hover:text-white"
                       }`}
                     title={isNotesSectionCollapsed ? "Déplier la section Notes" : "Réduire la section Notes"}
                     aria-label={isNotesSectionCollapsed ? "Déplier la section Notes" : "Réduire la section Notes"}
                   >
-                    <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isNotesSectionCollapsed ? "-rotate-90" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isNotesSectionCollapsed ? "-rotate-90" : ""}`} />
                     <span className="sr-only">{isNotesSectionCollapsed ? "Ouvrir" : "Réduire"}</span>
                   </button>
                 </div>
@@ -11792,7 +12084,7 @@ export default function TacticsBoard({
               {!isNotesSectionCollapsed && (
                 <>
                   {isRecordingVoice && (
-                    <div className="mb-1.5 bg-rose-950/30 border border-rose-500/50 rounded-lg p-1 flex items-center justify-between text-[8px] text-rose-300 shadow-sm animate-pulse">
+                    <div className="mb-1.5 bg-rose-950/30 border border-rose-500/50 rounded-lg p-1 flex items-center justify-between text-[10.5px] text-rose-300 shadow-sm animate-pulse">
                       <span className="flex items-center gap-1 font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
                         🎤 Dictée vocale...
@@ -11802,7 +12094,7 @@ export default function TacticsBoard({
                   )}
 
                   {speechError && (
-                    <div className="mb-1.5 bg-rose-950/50 border border-rose-500/60 rounded-lg p-1 text-[8px] text-rose-200 flex items-center justify-between font-bold">
+                    <div className="mb-1.5 bg-rose-950/50 border border-rose-500/60 rounded-lg p-1 text-[10.5px] text-rose-200 flex items-center justify-between font-bold">
                       <span>⚠️ {speechError}</span>
                       <button onClick={() => setSpeechError(null)} className="text-slate-400 hover:text-white font-bold ml-1">✕</button>
                     </div>
@@ -11842,7 +12134,7 @@ export default function TacticsBoard({
 
           {/* Quick coaching quotes footer watermark */}
           <div className={`p-2 px-3 border-t ${isModernSleek ? "border-slate-200 bg-slate-50" : "border-[#2a2f37]"} text-center`}>
-            <p className={`text-[8.5px] ${isModernSleek ? "text-slate-500" : "text-slate-400"} font-bold uppercase tracking-widest flex items-center justify-between gap-2`}>
+            <p className={`text-[11px] ${isModernSleek ? "text-slate-500" : "text-slate-400"} font-bold uppercase tracking-widest flex items-center justify-between gap-2`}>
               <span>THE BOX FOOTBALL CLUB</span>
               <span className={isModernSleek ? "" : "text-[#00E599]"}>VERSION DÉMO</span>
             </p>
@@ -13224,6 +13516,7 @@ export default function TacticsBoard({
         const starters = currentTokens.filter((t) => isAway ? t.type === "player_b" : t.type === "player_a");
         const activeSubs = isAway ? opponentSubstitutes : substitutes;
         const currentRoles = isAway ? opponentSetPieceRoles : setPieceRoles;
+        const sportRoles = getSportRoles(activeSport);
         const availablePositions = getSportCommonPositions(activeSport);
 
         const getPlayerDefaultHeadAvatar = (
@@ -13339,21 +13632,15 @@ export default function TacticsBoard({
 
         const sections: { id: "players" | "setpieces"; label: string; icon: React.ElementType; badge: string }[] = [
           { id: "players", label: "Effectif", icon: Users, badge: String(allCount) },
-          { id: "setpieces", label: "Coups arrêtés", icon: Target, badge: `${assignedRolesCount}/7` },
+          { id: "setpieces", label: sportRoles.tabLabel, icon: Target, badge: `${assignedRolesCount}/${sportRoles.roles.length}` },
         ];
         const tabMeta = teamRolesModalTab === "players"
           ? { title: "Effectif", desc: "Noms, numéros, postes et disponibilité. Les titulaires sont synchronisés avec le terrain." }
-          : { title: "Coups de pied arrêtés", desc: "Désignez le capitaine et les tireurs pour chaque phase arrêtée." };
+          : { title: sportRoles.title, desc: sportRoles.description };
 
-        const roleItems: { key: keyof SetPieceRoleConfig; icon: React.ElementType; label: string; badge: string }[] = [
-          { key: "captain", icon: Crown, label: "Capitaine", badge: "Brassard" },
-          { key: "penaltyTaker", icon: CircleDot, label: "Tireur de penalty", badge: "11 m" },
-          { key: "directFreeKick", icon: Zap, label: "Coup franc direct", badge: "Axe" },
-          { key: "offCenterFKLeft", icon: CornerUpLeft, label: "Coup franc excentré gauche", badge: "Gauche" },
-          { key: "offCenterFKRight", icon: CornerUpRight, label: "Coup franc excentré droit", badge: "Droite" },
-          { key: "cornerLeft", icon: Flag, label: "Corner gauche", badge: "Gauche" },
-          { key: "cornerRight", icon: Flag, label: "Corner droit", badge: "Droite" },
-        ];
+        // Rôles propres au sport actif (lib/sportRoles)
+        const roleItems: { key: keyof SetPieceRoleConfig; icon: React.ElementType; label: string; badge: string }[] =
+          sportRoles.roles.map((r) => ({ key: r.key, icon: ROLE_ICONS[r.icon], label: r.label, badge: r.badge }));
 
         // Carte joueur commune aux titulaires et aux remplaçants
         const renderPlayerCard = (player: { id: string; name: string; number?: number; role?: string; photo?: string; status?: string }, isStarter: boolean) => {
@@ -13460,10 +13747,10 @@ export default function TacticsBoard({
                       >
                         <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-500" />
                       </button>
-                      {!isStarter && (
+                      {(
                         <button
                           type="button"
-                          onClick={() => handleDeleteSubstitute(player.id, rolesTargetTeam)}
+                          onClick={() => (isStarter ? handleDeleteStarter(player.id, rolesTargetTeam) : handleDeleteSubstitute(player.id, rolesTargetTeam))}
                           className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${isModernSleek ? "bg-white border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50" : "bg-white/[0.03] border-white/10 text-slate-500 hover:text-rose-300 hover:border-rose-500/40 hover:bg-rose-500/10"}`}
                           title="Supprimer ce joueur de l'effectif"
                           aria-label="Supprimer ce joueur de l'effectif"
@@ -13569,7 +13856,7 @@ export default function TacticsBoard({
                     {[
                       { label: "Titulaires", value: starters.length, cls: acc.text },
                       { label: "Remplaçants", value: activeSubs.length, cls: th.gold },
-                      { label: "Rôles", value: `${assignedRolesCount}/7`, cls: th.text },
+                      { label: "Rôles", value: `${assignedRolesCount}/${sportRoles.roles.length}`, cls: th.text },
                       { label: "Indisponibles", value: unavailableCount, cls: unavailableCount > 0 ? (isModernSleek ? "text-rose-600" : "text-rose-300") : th.text },
                     ].map((k) => (
                       <div key={k.label} className={`p-2 rounded-xl border ${th.cardMuted}`}>
@@ -14746,7 +15033,7 @@ export default function TacticsBoard({
                   >
                     {/* Terrain du sport de l'utilisateur : rendu 3D détaillé pour le football, tracés officiels du sport sinon */}
                     {activeSport === "basketball" || activeSport === "rugby" || activeSport === "handball" || getSmallPitchSpec(activeSport, activeFormat) ? (
-                      <Pitch sport={activeSport} format={activeFormat} isPortrait={squad3DOrientation === "portrait"} />
+                      <Pitch sport={activeSport} format={activeFormat} isPortrait={squad3DOrientation === "portrait"} centerLogo={showClubLogoOnPitch ? clubLogo : undefined} />
                     ) : (
                     <>
                     {/* Mower Stripes parallel to goal lines */}
@@ -15379,6 +15666,62 @@ export default function TacticsBoard({
                               <option value="Préparateur Physique">{t.userModal.roles.fitness}</option>
                               <option value="Responsable Technique">{t.userModal.roles.techDirector}</option>
                             </select>
+                          </div>
+                        </div>
+
+                        {/* Logo du club : carte du match, rond central, exports image et PDF */}
+                        <div>
+                          <label className={labelBase}>{en ? "Club logo" : "Logo du club"}</label>
+                          <div className={`p-3 rounded-2xl border flex items-center gap-3 flex-wrap ${th.selectable}`}>
+                            <div className={`w-16 h-16 rounded-xl border flex items-center justify-center overflow-hidden shrink-0 ${th.chip}`}>
+                              {editClubLogo ? (
+                                <img src={editClubLogo} alt={en ? "Club logo" : "Logo du club"} className="w-full h-full object-contain p-1" />
+                              ) : (
+                                <Shield className={`w-6 h-6 ${th.faint}`} aria-hidden="true" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-[180px] space-y-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <label className={`px-3 py-2 rounded-xl border text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${th.ghostBtn}`}>
+                                  <Upload className="w-3.5 h-3.5" />
+                                  {editClubLogo ? (en ? "Replace" : "Remplacer") : (en ? "Add a logo" : "Ajouter un logo")}
+                                  <input
+                                    type="file"
+                                    accept={CLUB_LOGO_ACCEPT}
+                                    className="sr-only"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      e.target.value = "";
+                                      if (!file) return;
+                                      try {
+                                        setClubLogoError(null);
+                                        setEditClubLogo(await prepareClubLogo(file));
+                                      } catch (err) {
+                                        setClubLogoError(err instanceof Error ? err.message : "Logo invalide.");
+                                      }
+                                    }}
+                                  />
+                                </label>
+                                {editClubLogo && (
+                                  <button type="button" onClick={() => setEditClubLogo("")} className={`px-3 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${th.ghostBtn}`}>
+                                    {en ? "Remove" : "Retirer"}
+                                  </button>
+                                )}
+                              </div>
+                              <label className={`flex items-center gap-2 text-xs font-semibold cursor-pointer ${editClubLogo ? "" : "opacity-50"}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={editShowLogoOnPitch}
+                                  disabled={!editClubLogo}
+                                  onChange={(e) => setEditShowLogoOnPitch(e.target.checked)}
+                                  className="w-4 h-4 accent-[#00E599] cursor-pointer"
+                                />
+                                {en ? "Show in the pitch centre circle" : "Afficher dans le rond central du terrain"}
+                              </label>
+                              <p className={`text-[11px] ${clubLogoError ? "text-rose-400 font-semibold" : th.faint}`}>
+                                {clubLogoError || (en ? "PNG, JPG, WebP or SVG. Used on the match card, the pitch and image / PDF exports." : "PNG, JPG, WebP ou SVG. Utilisé sur la carte du match, le terrain et les exports image / PDF.")}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>

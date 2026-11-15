@@ -24,6 +24,7 @@
     "firebase-admin": "^14.5.0",
     "html-to-image": "^1.11.11",
     "html2canvas": "^1.4.1",
+    "jspdf": "4.2.1",
     "konva": "10.9.1",
     "lucide-react": "^0.468.0",
     "motion": "^11.11.17",
