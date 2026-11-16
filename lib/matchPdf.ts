@@ -1,7 +1,8 @@
 // Export PDF du dossier d'un match (A4 paysage) :
 //   page 1 : couverture sombre (logo THE BOX, nom du match, compétition / date / coach / équipe)
-//   page 2 : notes tactiques
-//   page 3 et suivantes : schémas tactiques, un par page
+//   page 2 : groupe de joueurs et rôles attribués pour la rencontre
+//   puis   : notes tactiques
+//   puis   : schémas tactiques, un par page
 // jsPDF est chargé à la demande pour ne pas alourdir le tableau tactique.
 
 import type { jsPDF as JsPDF } from "jspdf";
@@ -18,6 +19,33 @@ export interface MatchPdfSchema {
   imageHeight?: number;
 }
 
+export interface MatchPdfPlayer {
+  number?: number;
+  name: string;
+  /** Poste (DC, MC, AC…) */
+  position?: string;
+  /** Disponibilité : normal, excellent, tired, injured, suspended */
+  status?: string;
+  /** Codes des rôles tenus pour la rencontre (C, PK, CF, CK-G, MUR…) */
+  roles: string[];
+}
+
+export interface MatchPdfRole {
+  label: string;
+  badge?: string;
+  /** Joueur désigné (« N°10 · Dupont »), absent si le rôle n'est pas attribué */
+  player?: string;
+}
+
+export interface MatchPdfSquad {
+  teamName: string;
+  starters: MatchPdfPlayer[];
+  substitutes: MatchPdfPlayer[];
+  roles: MatchPdfRole[];
+  /** Mur sur coup franc (football) : joueurs dans l'ordre du mur ; absent s'il n'y a pas de mur */
+  wall?: { places: number; players: string[] };
+}
+
 export interface MatchPdfData {
   /** Titre du match (« Équipe A vs Équipe B »), ou titre de repli sans match */
   matchTitle: string;
@@ -29,9 +57,27 @@ export interface MatchPdfData {
   sport: string;
   coachName?: string;
   notes?: string;
+  /** Groupe de joueurs et rôles de la rencontre (page 2) */
+  squad?: MatchPdfSquad;
   schemas: MatchPdfSchema[];
   fileName: string;
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  normal: "Disponible",
+  excellent: "En forme",
+  tired: "Fatigué",
+  injured: "Blessé",
+  suspended: "Suspendu",
+  red_card: "Exclu",
+};
+const STATUS_COLORS: Record<string, RGB> = {
+  excellent: [0, 150, 100],
+  tired: [180, 120, 0],
+  injured: [200, 40, 60],
+  suspended: [200, 40, 60],
+  red_card: [200, 40, 60],
+};
 
 type RGB = [number, number, number];
 
@@ -222,7 +268,179 @@ export async function exportMatchPdf(data: MatchPdfData): Promise<void> {
   doc.setTextColor(...COVER_MUTED);
   doc.text(pdfSafe(`Généré le ${new Date().toLocaleDateString("fr-FR")}`), centerX, pageH - 12, { align: "center" });
 
-  // ───────────── Page 2 : notes tactiques ─────────────
+  // ───────────── Page 2 : groupe de joueurs et rôles de la rencontre ─────────────
+  if (data.squad) {
+    const squad = data.squad;
+    newLightPage();
+    sectionTitle(`Groupe & rôles  -  ${squad.teamName}`);
+    const top = y;
+    const gap = 8;
+    const tableW = Math.round(contentW * 0.6);
+    const sideX = margin + tableW + gap;
+    const sideW = contentW - tableW - gap;
+
+    // Texte tronqué à une largeur (une seule ligne)
+    const fit = (text: string, width: number) => {
+      const safe = pdfSafe(text);
+      if (doc.getTextWidth(safe) <= width) return safe;
+      let out = safe;
+      while (out.length > 1 && doc.getTextWidth(`${out}...`) > width) out = out.slice(0, -1);
+      return `${out.trimEnd()}...`;
+    };
+
+    // Tableau du groupe (colonne gauche, se poursuit sur la page suivante si besoin)
+    const cols = [
+      { key: "num", label: "N°", w: 12 },
+      { key: "name", label: "JOUEUR", w: tableW * 0.4 },
+      { key: "pos", label: "POSTE", w: 18 },
+      { key: "roles", label: "RÔLES", w: 0 },
+      { key: "status", label: "DISPONIBILITÉ", w: 27 },
+    ];
+    cols[3].w = tableW - cols.reduce((s, c) => s + c.w, 0);
+    // Hauteur de ligne ajustée pour garder tout le groupe sur une page tant que c'est lisible (5 à 6,6 mm)
+    const groups = squad.substitutes.length ? 2 : 1;
+    const rowsNeeded = squad.starters.length + squad.substitutes.length + groups; // + en-têtes de tableau
+    const fixedH = groups * 8.5 + (groups - 1) * 3 + 2;
+    const rowH = Math.max(5, Math.min(6.6, (bottom - y - fixedH) / Math.max(1, rowsNeeded)));
+    const tableHeader = () => {
+      doc.setFillColor(241, 245, 249);
+      doc.rect(margin, y, tableW, rowH, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...MUTED);
+      let x = margin + 2;
+      cols.forEach((c) => {
+        doc.text(pdfSafe(c.label), x, y + rowH / 2 + 1.1, { charSpace: 0.3 });
+        x += c.w;
+      });
+      y += rowH;
+    };
+    const groupTitle = (label: string, count: number) => {
+      if (y + rowH * 3 > bottom) { newLightPage(); }
+      y += 2;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...GREEN_DARK);
+      doc.text(pdfSafe(`${label} (${count})`), margin, y + 4);
+      y += 6.5;
+      tableHeader();
+    };
+    const playerRow = (p: MatchPdfPlayer, index: number) => {
+      if (y + rowH > bottom) {
+        newLightPage();
+        tableHeader();
+      }
+      if (index % 2 === 1) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(margin, y, tableW, rowH, "F");
+      }
+      doc.setDrawColor(...LINE);
+      doc.setLineWidth(0.2);
+      doc.line(margin, y + rowH, margin + tableW, y + rowH);
+      let x = margin + 2;
+      const baseY = y + rowH / 2 + 1.3;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(...DARK);
+      doc.text(p.number !== undefined ? String(p.number) : "-", x, baseY);
+      x += cols[0].w;
+      doc.text(fit(p.name || "Sans nom", cols[1].w - 3), x, baseY);
+      x += cols[1].w;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...MUTED);
+      doc.text(fit((p.position || "-").toUpperCase(), cols[2].w - 3), x, baseY);
+      x += cols[2].w;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...GREEN_DARK);
+      doc.text(p.roles.length ? fit(p.roles.join("  "), cols[3].w - 3) : "", x, baseY);
+      x += cols[3].w;
+      const status = p.status || "normal";
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...(STATUS_COLORS[status] || MUTED));
+      doc.text(fit(STATUS_LABELS[status] || STATUS_LABELS.normal, cols[4].w - 2), x, baseY);
+      y += rowH;
+    };
+
+    if (squad.starters.length + squad.substitutes.length === 0) {
+      writeParagraph("Aucun joueur dans le groupe.", 11, MUTED);
+    } else {
+      groupTitle("Titulaires", squad.starters.length);
+      squad.starters.forEach(playerRow);
+      if (squad.substitutes.length) {
+        y += 3;
+        groupTitle("Remplaçants", squad.substitutes.length);
+        squad.substitutes.forEach(playerRow);
+      }
+    }
+    const tableEndPage = doc.getNumberOfPages();
+    const tableEndY = y;
+
+    // Rôles de la rencontre (colonne droite de la première page du groupe)
+    const firstSquadPage = 2;
+    doc.setPage(firstSquadPage);
+    let sy = top + 2;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...GREEN_DARK);
+    doc.text("Rôles de la rencontre", sideX, sy + 4);
+    sy += 7.5;
+    const roleH = 10.5;
+    squad.roles.forEach((r) => {
+      doc.setFillColor(...(r.player ? ([240, 253, 248] as RGB) : ([248, 250, 252] as RGB)));
+      doc.setDrawColor(...(r.player ? ([167, 243, 208] as RGB) : LINE));
+      doc.setLineWidth(0.25);
+      doc.roundedRect(sideX, sy, sideW, roleH - 1.5, 1.6, 1.6, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...DARK);
+      const badge = r.badge ? pdfSafe(r.badge.toUpperCase()) : "";
+      doc.setFontSize(7);
+      const badgeW = badge ? doc.getTextWidth(badge) + 4 : 0;
+      doc.setFontSize(8.5);
+      doc.text(fit(r.label, sideW - badgeW - 6), sideX + 2.5, sy + 3.9);
+      if (badge) {
+        doc.setFontSize(7);
+        doc.setTextColor(...MUTED);
+        doc.text(badge, sideX + sideW - 2.5, sy + 3.9, { align: "right" });
+      }
+      doc.setFont("helvetica", r.player ? "bold" : "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...(r.player ? GREEN_DARK : MUTED));
+      doc.text(fit(r.player || "Non attribué", sideW - 5), sideX + 2.5, sy + 7.6);
+      sy += roleH;
+    });
+
+    if (squad.wall) {
+      sy += 3;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...GREEN_DARK);
+      doc.text(pdfSafe(`Mur sur coup franc (${squad.wall.places} places)`), sideX, sy + 4);
+      sy += 7;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const wallPlayers = squad.wall.players.length ? squad.wall.players : [];
+      if (!wallPlayers.length) {
+        doc.setTextColor(...MUTED);
+        doc.text("Aucun joueur placé dans le mur.", sideX, sy + 3.5);
+      } else {
+        doc.setTextColor(...DARK);
+        wallPlayers.forEach((name, i) => {
+          if (sy + 5 > bottom) return;
+          doc.text(fit(`${i + 1}.  ${name}`, sideW), sideX, sy + 3.5);
+          sy += 5;
+        });
+      }
+    }
+
+    // Reprise après le tableau du groupe
+    doc.setPage(tableEndPage);
+    y = tableEndY;
+  }
+
+  // ───────────── Notes tactiques ─────────────
   newLightPage();
   sectionTitle("Notes tactiques");
   const notes = data.notes ? pdfSafe(data.notes) : "";

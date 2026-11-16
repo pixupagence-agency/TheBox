@@ -28,7 +28,7 @@ import { saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFire
 import { isSuperAdminEmail } from "@/lib/security";
 import { Language, translations, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 import { confirmAction } from "@/components/ConfirmDialog";
-import { exportMatchPdf, type MatchPdfSchema } from "@/lib/matchPdf";
+import { exportMatchPdf, type MatchPdfPlayer, type MatchPdfSchema, type MatchPdfSquad } from "@/lib/matchPdf";
 import { prepareClubLogo, CLUB_LOGO_ACCEPT } from "@/lib/clubLogo";
 import { getSportRoles, getPlayerRoleCodes, autoAssignSportRoles, type RoleIconName, type RoleTone } from "@/lib/sportRoles";
 import { assignPlayersToFormation } from "@/lib/formationAssign";
@@ -5654,7 +5654,46 @@ export default function TacticsBoard({
         .replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
       const coachName = [activeCoach?.firstName, activeCoach?.lastName].filter(Boolean).join(" ");
 
+      // Groupe de joueurs (titulaires sur le terrain + remplaçants) et rôles attribués pour la rencontre
+      const sportRolesDef = getSportRoles(activeSport);
+      const homeWall = isFootballBoard ? findWall("home") : undefined;
+      const homeWallMembers = homeWall ? wallMembers("home", homeWall.wallCount || WALL_DEFAULT) : [];
+      const byNumber = (a: { number?: number }, b: { number?: number }) => (a.number ?? 999) - (b.number ?? 999);
+      const toPdfPlayer = (p: { name: string; number?: number; role?: string; status?: string }, inWall: boolean): MatchPdfPlayer => ({
+        number: p.number,
+        name: p.name,
+        position: p.role,
+        status: p.status,
+        roles: [
+          ...(p.name && setPieceRoles.captain === p.name ? ["C"] : []),
+          ...getPlayerRoleCodes(activeSport, setPieceRoles, p.name).map((r) => r.code),
+          ...(inWall ? ["MUR"] : []),
+        ],
+      });
+      const pitchPlayers = currentTokens.filter((t) => t.type === "player_a").sort(byNumber);
+      const playerLabel = (name: string) => {
+        const p = pitchPlayers.find((t) => t.name === name) || substitutes.find((s) => s.name === name);
+        return p?.number !== undefined ? `N°${p.number} · ${name}` : name;
+      };
+      const squad: MatchPdfSquad = {
+        teamName: hasActiveMatch ? activeMatch.homeTeam || activeTeam?.name || displayClubTitle : activeTeam?.name || displayClubTitle,
+        starters: pitchPlayers.map((p) => toPdfPlayer(p, Boolean(homeWall) && typeof p.wallSlot === "number")),
+        substitutes: [...substitutes].sort(byNumber).map((s) => toPdfPlayer(s, false)),
+        roles: sportRolesDef.roles.map((r) => ({
+          label: r.label,
+          badge: r.badge,
+          player: setPieceRoles[r.key] ? playerLabel(setPieceRoles[r.key]) : undefined,
+        })),
+        wall: homeWall
+          ? {
+            places: homeWall.wallCount || WALL_DEFAULT,
+            players: homeWallMembers.filter((m): m is Token => !!m).map((m) => (m.number !== undefined ? `N°${m.number} · ${m.name}` : m.name)),
+          }
+          : undefined,
+      };
+
       await exportMatchPdf({
+        squad,
         matchTitle,
         competition: hasActiveMatch ? activeMatch.competition : undefined,
         dateTime: hasActiveMatch ? activeMatch.dateTime || (activeMatch as any).date : undefined,
@@ -10511,10 +10550,22 @@ export default function TacticsBoard({
               >
                 {/* Fullscreen Dedicated Top Controls Header with Full Tactics Tools & Animation Button */}
                 {isPitchFullscreen && (
-                  <div className={`w-full max-w-fit flex flex-wrap items-center justify-center gap-1.5 px-3 py-1.5 mb-2 rounded-2xl shadow-2xl backdrop-blur-md z-40 shrink-0 border ${isModernSleek
+                  <div className={`w-fit max-w-full min-w-0 flex flex-col items-center gap-1.5 px-3 py-1.5 mb-2 rounded-2xl shadow-2xl backdrop-blur-md z-40 shrink-0 border ${isModernSleek
                     ? "bg-white/95 border-slate-200 text-slate-800 shadow-slate-900/10"
                     : "bg-[#0d1117]/95 border-[#1f293d] text-white shadow-2xl"
                     }`}>
+                  {/* Une seule ligne d'outils, jamais repliée sur deux lignes : défilement horizontal si l'écran est trop étroit
+                      (molette ou glissé) ; seuls les contrôles d'animation s'affichent en seconde ligne */}
+                  <div
+                    data-fullscreen-toolbar-row
+                    onWheel={(e) => {
+                      // Molette verticale → défilement horizontal de la ligne d'outils
+                      const el = e.currentTarget;
+                      if (el.scrollWidth <= el.clientWidth || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+                      el.scrollLeft += e.deltaY;
+                    }}
+                    className="max-w-full flex flex-nowrap items-center gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:thin] pb-0.5 [&>*]:shrink-0"
+                  >
 
                     {/* Mode Live Indicator & Score Pill in Top Fullscreen Bar */}
                     {isLiveMatchMode && (
@@ -11074,6 +11125,7 @@ export default function TacticsBoard({
                         <span className="uppercase tracking-wider text-[10px]">{t.tactics.pitchModes.fullscreenExit}</span>
                       </button>
                     </div>
+                  </div>
 
                     {!isLiveMatchMode && isAnimationCreatorOpen && renderAnimationStrip()}
 
