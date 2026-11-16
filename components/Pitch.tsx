@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { getSmallPitchSpec, smallPitchBox, SmallPitchSpec } from "@/lib/gameFormats";
+import { getSmallPitchSpec, smallPitchBox, SmallPitchSpec, FOOTBALL_ZONE_BOUNDS, FOOTBALL_THIRDS_COLOR, getFootballFieldRect } from "@/lib/gameFormats";
 
 interface PitchProps {
   sport: string;
@@ -10,6 +10,39 @@ interface PitchProps {
   isPortrait?: boolean;
   /** Logo du club (data URL) : remplace l'emblème The Box dans le rond central, découpé en rond */
   centerLogo?: string;
+  /** Football : affiche les 5 couloirs (2 couloirs latéraux, 2 demi-espaces, axe) */
+  showZones?: boolean;
+  /** Football : affiche les 3 zones dans la longueur (défense, milieu, attaque) */
+  showThirds?: boolean;
+  /** Libellés des 3 zones, de la défense à l'attaque */
+  thirdsLabels?: [string, string, string];
+}
+
+// Limites des 5 couloirs (partagées avec l'export PNG)
+const ZONE_BOUNDS = FOOTBALL_ZONE_BOUNDS;
+
+// 5 couloirs tracés dans le repère du terrain ; `vertical` = couloirs dans le sens de la hauteur du repère
+function FootballZones({ x, y, length, width, vertical, sw }: { x: number; y: number; length: number; width: number; vertical: boolean; sw: number }) {
+  const dash = `${sw * 5} ${sw * 3.5}`;
+  return (
+    <g className="pointer-events-none" data-pitch-zones="true">
+      {ZONE_BOUNDS.slice(0, -1).map((f, i) => {
+        const a = width * f;
+        const b = width * ZONE_BOUNDS[i + 1];
+        // Demi-espaces légèrement éclaircis pour distinguer les couloirs
+        const fill = i % 2 === 1 ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0)";
+        return vertical
+          ? <rect key={i} x={x + a} y={y} width={b - a} height={length} fill={fill} />
+          : <rect key={i} x={x} y={y + a} width={length} height={b - a} fill={fill} />;
+      })}
+      {ZONE_BOUNDS.slice(1, -1).map((f) => {
+        const c = width * f;
+        return vertical
+          ? <line key={f} x1={x + c} y1={y} x2={x + c} y2={y + length} stroke="white" strokeWidth={sw} strokeOpacity={0.55} strokeDasharray={dash} />
+          : <line key={f} x1={x} y1={y + c} x2={x + length} y2={y + c} stroke="white" strokeWidth={sw} strokeOpacity={0.55} strokeDasharray={dash} />;
+      })}
+    </g>
+  );
 }
 
 // Rond central : emblème The Box par défaut, ou logo du club découpé en rond au diamètre du rond central
@@ -50,7 +83,7 @@ function CenterEmblem({ cx, cy, r, lineWidth, logo, counterRotate }: { cx: numbe
 
 // Petit terrain de football (foot à 8, foot à 5), tracé à partir de ses dimensions en mètres.
 // Les lignes sont dessinées en paysage puis pivotées d'un quart de tour en portrait.
-function SmallFootballPitch({ spec, isPortrait, centerLogo }: { spec: SmallPitchSpec; isPortrait?: boolean; centerLogo?: string }) {
+function SmallFootballPitch({ spec, isPortrait, centerLogo, showZones }: { spec: SmallPitchSpec; isPortrait?: boolean; centerLogo?: string; showZones?: boolean }) {
   const { W, H } = smallPitchBox(spec);
   const m = spec.margin;
   const cy = H / 2;
@@ -79,6 +112,7 @@ function SmallFootballPitch({ spec, isPortrait, centerLogo }: { spec: SmallPitch
 
   const markings = (
     <>
+      {showZones && <FootballZones x={m} y={m} length={spec.length} width={spec.width} vertical={false} sw={sw} />}
       <rect x={m} y={m} width={spec.length} height={spec.width} {...line} />
       <line x1={W / 2} y1={m} x2={W / 2} y2={H - m} {...line} />
       <circle cx={W / 2} cy={cy} r={spec.centerRadius} {...line} />
@@ -103,9 +137,56 @@ function SmallFootballPitch({ spec, isPortrait, centerLogo }: { spec: SmallPitch
   );
 }
 
-export default function Pitch({ sport, format, isPortrait, centerLogo }: PitchProps) {
+// 3 zones dans la longueur (défense, milieu, attaque), posées sur l'aire de jeu.
+// Paysage : défense à gauche ; portrait : défense en bas (sens de jeu vers le haut, comme les joueurs).
+function FootballThirds({ sport, format, isPortrait, labels }: { sport: string; format?: string; isPortrait?: boolean; labels: [string, string, string] }) {
+  const r = getFootballFieldRect(sport, format);
+  const box = isPortrait
+    ? { left: r.y, top: r.x, width: r.h, height: r.w }
+    : { left: r.x, top: r.y, width: r.w, height: r.h };
+  const pct = (v: number) => `${v * 100}%`;
+  const dashed = `2px dashed ${FOOTBALL_THIRDS_COLOR}`;
+  return (
+    <div
+      className={`absolute pointer-events-none select-none flex ${isPortrait ? "flex-col-reverse" : "flex-row"}`}
+      style={{ left: pct(box.left), top: pct(box.top), width: pct(box.width), height: pct(box.height), containerType: "size" }}
+      data-pitch-thirds="true"
+      aria-hidden="true"
+    >
+      {labels.map((label, i) => (
+        <div
+          key={label}
+          className="flex-1 flex justify-center items-start"
+          style={i === 1 ? (isPortrait ? { borderTop: dashed, borderBottom: dashed } : { borderLeft: dashed, borderRight: dashed }) : undefined}
+        >
+          <span
+            className="font-black uppercase leading-none whitespace-nowrap text-white/[0.13] mt-[3%]"
+            style={{ fontSize: isPortrait ? "min(11cqw, 7cqh)" : "min(5.5cqw, 11cqh)" }}
+          >
+            {label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function Pitch(props: PitchProps) {
+  const { sport, format, isPortrait, showThirds, thirdsLabels } = props;
+  const isFootball = ["football", "soccer"].includes(sport.toLowerCase());
+  return (
+    <>
+      <PitchField {...props} />
+      {isFootball && showThirds && (
+        <FootballThirds sport={sport} format={format} isPortrait={isPortrait} labels={thirdsLabels ?? ["Défense", "Milieu", "Attaque"]} />
+      )}
+    </>
+  );
+}
+
+function PitchField({ sport, format, isPortrait, centerLogo, showZones }: PitchProps) {
   const smallPitch = getSmallPitchSpec(sport, format);
-  if (smallPitch) return <SmallFootballPitch spec={smallPitch} isPortrait={isPortrait} centerLogo={centerLogo} />;
+  if (smallPitch) return <SmallFootballPitch spec={smallPitch} isPortrait={isPortrait} centerLogo={centerLogo} showZones={showZones} />;
 
   // Render high-fidelity tactical field based on sport type in portrait or landscape
   if (isPortrait) {
@@ -126,6 +207,7 @@ export default function Pitch({ sport, format, isPortrait, centerLogo }: PitchPr
 
             {/* SVG Field Lines - Exact FIFA proportions with uniform 2.5m run-off margin (73m x 110m viewBox, 68m x 105m playfield) */}
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 73 110" preserveAspectRatio="none">
+              {showZones && <FootballZones x={2.5} y={2.5} length={105} width={68} vertical sw={0.25} />}
               {/* Outer Field Boundary Line */}
               <rect x="2.5" y="2.5" width="68" height="105" fill="none" stroke="white" strokeWidth="0.25" strokeOpacity="0.85" />
               
@@ -470,6 +552,7 @@ export default function Pitch({ sport, format, isPortrait, centerLogo }: PitchPr
 
           {/* SVG Field Lines with Out-Of-Bounds Perimeter Margin (110m x 73m total viewBox, 105m x 68m inner field) */}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 110 73" preserveAspectRatio="none">
+            {showZones && <FootballZones x={2.5} y={2.5} length={105} width={68} vertical={false} sw={0.25} />}
             {/* Outer Field Boundary Line (Touchlines: y=2.5 & y=70.5; Goal lines: x=2.5 & x=107.5) */}
             <rect x="2.5" y="2.5" width="105" height="68" fill="none" stroke="white" strokeWidth="0.25" strokeOpacity="0.85" />
             

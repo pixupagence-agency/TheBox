@@ -19,13 +19,14 @@ import {
   saveVideoBlob, storageEstimate,
 } from "@/lib/recording/db";
 import { renderShapes, renderTracks, trackPosition } from "@/lib/recording/draw";
+import { PITCH_REFS, defaultPitchOverlay, pitchRef, renderPitchOverlay } from "@/lib/recording/pitchOverlay";
 import { autoTrack, measurePlayer, type TrackDirection } from "@/lib/recording/tracker";
 import { clipExportFormat, exportClip } from "@/lib/recording/exportVideo";
 import { formatTime, parseVideoLink } from "@/lib/recording/sources";
 import { DRAW_COLORS, DRAW_WIDTHS, TOOL_LABELS } from "@/lib/recording/tags";
 import { RecordingThemeContext, getRecordingTheme, readThemePreference, storeThemePreference } from "@/lib/recording/theme";
 import {
-  emptyTags, type Freeze, type LibraryImage, type Sequence, type Shape, type SequenceTags, type StageTool, type Track, type TrackKey,
+  emptyTags, type Freeze, type LibraryImage, type PitchOverlay, type Sequence, type Shape, type SequenceTags, type StageTool, type Track, type TrackKey,
 } from "@/lib/recording/types";
 import { readActiveRoster } from "@/lib/training/storage";
 
@@ -117,6 +118,8 @@ export default function RecordingEditor() {
   const [width, setWidth] = useState(5);
   const [dashed, setDashed] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Calage en perspective des couloirs / zones du terrain (poignées sur la vidéo)
+  const [calibrating, setCalibrating] = useState(false);
   type Snapshot = { freezes: Freeze[]; tracks: Track[] };
   const history = useRef<Snapshot[]>([]);
   const moveSnapshot = useRef<Snapshot | null>(null);
@@ -193,6 +196,8 @@ export default function RecordingEditor() {
   // Lecture : suivi de la position, pause automatique sur les arrêts sur image, boucle du clip
   const seqRef = useRef(seq);
   seqRef.current = seq;
+  // Une autre séquence (ou aucune) : le calage en cours se referme
+  useEffect(() => { setCalibrating(false); }, [seq?.id]);
   const loopRef = useRef(loop);
   loopRef.current = loop;
   useEffect(() => {
@@ -239,6 +244,19 @@ export default function RecordingEditor() {
     setSeq((s) => (s ? { ...s, ...(typeof patch === "function" ? patch(s) : patch) } : s));
     setDirty(true);
   }, []);
+
+  // Couloirs / zones du terrain : réglages enregistrés avec la séquence
+  const patchOverlay = useCallback((patch: Partial<PitchOverlay>) => {
+    updateSeq((s) => ({ pitchOverlay: { ...(s.pitchOverlay || defaultPitchOverlay()), ...patch } }));
+  }, [updateSeq]);
+
+  /** Affiche / masque les couloirs ou les zones ; le premier affichage ouvre le calage */
+  const toggleOverlay = (key: "zones" | "thirds") => {
+    const current = seqRef.current?.pitchOverlay;
+    const next = !(current?.[key] ?? false);
+    patchOverlay({ [key]: next });
+    if (next && !current) setCalibrating(true);
+  };
 
   const setFreezes = useCallback((fn: (f: Freeze[]) => Freeze[], recordHistory = true) => {
     // Historique enregistré hors du « updater » (exécuté deux fois en mode strict)
@@ -397,6 +415,7 @@ export default function RecordingEditor() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return seq?.thumbnail;
     ctx.drawImage(video, 0, 0, w, h);
+    renderPitchOverlay(ctx, seq?.pitchOverlay, { x: 0, y: 0, w, h });
     if (seq?.tracks?.length) renderTracks(ctx, seq.tracks, { x: 0, y: 0, w, h }, time);
     if (activeFreeze) renderShapes(ctx, activeFreeze.shapes, { x: 0, y: 0, w, h });
     return canvas.toDataURL("image/jpeg", 0.72);
@@ -697,6 +716,7 @@ export default function RecordingEditor() {
       ctx.font = "700 22px Inter, system-ui, sans-serif";
       ctx.fillText(`Consignes de « ${seq.title} » (image de la vidéo non exportable depuis ${seq.source.kind === "youtube" ? "YouTube" : "Vimeo"})`, 32, h - 32);
     }
+    renderPitchOverlay(ctx, seq.pitchOverlay, { x: 0, y: 0, w, h });
     if (seq.tracks?.length) renderTracks(ctx, seq.tracks, { x: 0, y: 0, w, h }, time);
     if (activeFreeze) renderShapes(ctx, activeFreeze.shapes, { x: 0, y: 0, w, h });
     return canvas;
@@ -897,6 +917,7 @@ export default function RecordingEditor() {
         end: current.outPoint ?? Infinity,
         tracks: current.tracks || [],
         freezes: current.freezes,
+        pitchOverlay: current.pitchOverlay,
         isCancelled: () => exportCancel.current,
         onProgress: (progress) => setExporting((e) => (e && Math.abs(e.progress - progress) > 0.005 ? { ...e, progress } : e)),
       });
@@ -967,6 +988,7 @@ export default function RecordingEditor() {
       else if (mod && key === "z") { e.preventDefault(); undo(); }
       else if (mod && key === "s") { e.preventDefault(); void save(); }
       else if ((key === "delete" || key === "backspace") && selectedId) { e.preventDefault(); deleteSelected(); }
+      else if (key === "escape" && calibrating) setCalibrating(false);
       else if (key === "escape") { setSelectedId(null); setSelectedTrackId(null); if (tool !== "track") setTool("select"); }
       else if (!mod && key === "i") updateSeq({ inPoint: snap(time) });
       else if (!mod && key === "o") updateSeq({ outPoint: snap(time) });
@@ -983,6 +1005,7 @@ export default function RecordingEditor() {
 
   const toolIdle = th.toolIdle;
   const toolOn = th.toolOn;
+  const pitchOverlay = seq?.pitchOverlay;
   const separator = <span aria-hidden="true" className={`h-6 w-px mx-0.5 shrink-0 ${th.separator}`} />;
   const stageShapes = activeFreeze ? activeFreeze.shapes : null;
 
@@ -1050,6 +1073,36 @@ export default function RecordingEditor() {
             <button type="button" disabled={!seq || Boolean(tracking) || history.current.length === 0} className={`${barBtn} ${toolIdle}`} onClick={undo} title="Annuler (Ctrl+Z)" aria-label="Annuler"><Undo2 className="h-[18px] w-[18px] shrink-0" /></button>
             <button type="button" disabled={!activeFreeze} className={`${barBtn} ${toolIdle}`} onClick={clearFreeze} title="Effacer les consignes de cette image" aria-label="Effacer l'image"><Eraser className="h-[18px] w-[18px] shrink-0" /></button>
           </div>
+          {separator}
+          {/* Repères du terrain en perspective : 5 couloirs, 3 zones, calage sur la pelouse */}
+          <div className={`flex items-center gap-1 h-8 shrink-0 ${th.toolGroup}`} role="group" aria-label="Repères du terrain">
+            <button type="button" disabled={!seq || Boolean(tracking)} className={`${barBtn} ${pitchOverlay?.zones ? toolOn : toolIdle}`} onClick={() => toggleOverlay("zones")} aria-pressed={Boolean(pitchOverlay?.zones)} title={pitchOverlay?.zones ? "Masquer les 5 couloirs du terrain" : "Afficher les 5 couloirs du terrain"} aria-label="5 couloirs du terrain">
+              <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <line x1="2" y1="8" x2="22" y2="8" strokeWidth="1.5" strokeDasharray="2 2" />
+                <line x1="2" y1="10.5" x2="22" y2="10.5" strokeWidth="1.5" strokeDasharray="2 2" />
+                <line x1="2" y1="13.5" x2="22" y2="13.5" strokeWidth="1.5" strokeDasharray="2 2" />
+                <line x1="2" y1="16" x2="22" y2="16" strokeWidth="1.5" strokeDasharray="2 2" />
+              </svg>
+            </button>
+            <button type="button" disabled={!seq || Boolean(tracking)} className={`${barBtn} ${pitchOverlay?.thirds ? toolOn : toolIdle}`} onClick={() => toggleOverlay("thirds")} aria-pressed={Boolean(pitchOverlay?.thirds)} title={pitchOverlay?.thirds ? "Masquer les 3 zones (défense, milieu, attaque)" : "Afficher les 3 zones (défense, milieu, attaque)"} aria-label="3 zones du terrain">
+              <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <line x1="8.7" y1="4" x2="8.7" y2="20" strokeWidth="1.5" strokeDasharray="2 2" />
+                <line x1="15.3" y1="4" x2="15.3" y2="20" strokeWidth="1.5" strokeDasharray="2 2" />
+              </svg>
+            </button>
+            <button type="button" disabled={!seq || Boolean(tracking)} className={`${barBtn} ${calibrating ? toolOn : toolIdle}`} onClick={() => { if (!seqRef.current?.pitchOverlay) patchOverlay({}); setCalibrating((v) => !v); }} aria-pressed={calibrating} title="Caler la perspective : placer 4 poignées sur la pelouse pour que les couloirs et les zones suivent le terrain filmé" aria-label="Caler la perspective du terrain">
+              <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M7 6h10l5 13H2z" />
+                <circle cx="7" cy="6" r="1.6" fill="currentColor" />
+                <circle cx="17" cy="6" r="1.6" fill="currentColor" />
+                <circle cx="22" cy="19" r="1.6" fill="currentColor" />
+                <circle cx="2" cy="19" r="1.6" fill="currentColor" />
+              </svg>
+              <span className="hidden md:inline">Caler</span>
+            </button>
+          </div>
           <span className="flex-1" />
           <div className={`flex items-center gap-1 h-8 shrink-0 ${th.toolGroup}`}>
             <button type="button" disabled={!seq} className={`${barBtn} ${toolIdle}`} onClick={closeSequence} title="Fermer la séquence" aria-label="Nouvelle séquence"><Plus className="h-[18px] w-[18px] shrink-0" /><span className="hidden md:inline">Nouvelle</span></button>
@@ -1099,6 +1152,9 @@ export default function RecordingEditor() {
                   onBeginDraw={onBeginDraw}
                   onAddShape={onAddShape}
                   onMoveShape={onMoveShape}
+                  pitchOverlay={pitchOverlay}
+                  calibrating={calibrating && Boolean(pitchOverlay)}
+                  onCalibrate={(quad) => patchOverlay({ quad })}
                   onReady={({ duration: d }) => {
                     setDuration(d);
                     setReady(true);
@@ -1129,7 +1185,7 @@ export default function RecordingEditor() {
                 </div>
               )}
 
-              {seq && ready && tool === "track" && (
+              {seq && ready && tool === "track" && !calibrating && (
                 <div className={`absolute left-1/2 -translate-x-1/2 top-3 z-10 rounded-2xl border px-3 py-2 text-sm font-bold shadow-xl pointer-events-none max-w-[calc(100%-24px)] text-center ${th.banner}`}>
                   {tracking ? (
                     <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5" role="status">
@@ -1162,9 +1218,30 @@ export default function RecordingEditor() {
                   )}
                 </div>
               )}
-              {seq && !activeFreeze && paused && ready && tool !== "select" && tool !== "track" && (
+              {seq && !activeFreeze && paused && ready && tool !== "select" && tool !== "track" && !calibrating && (
                 <div className={`absolute left-1/2 -translate-x-1/2 top-3 z-10 rounded-2xl border px-3 py-2 text-sm font-bold shadow-xl pointer-events-none ${th.banner}`}>
                   {TOOL_LABELS[tool as keyof typeof TOOL_LABELS]} : tracez sur l&apos;image pour créer un arrêt sur image
+                </div>
+              )}
+              {seq && calibrating && pitchOverlay && (
+                <div className={`absolute left-1/2 -translate-x-1/2 top-3 z-10 rounded-2xl border px-3 py-2 shadow-xl w-max max-w-[calc(100%-24px)] ${th.banner}`} role="dialog" aria-label="Calage de la perspective">
+                  <p className="text-sm font-bold text-center">
+                    Placez les poignées 1 à 4 sur les {pitchRef(pitchOverlay.ref).hint} : 1 = loin à gauche, 2 = loin à droite, 3 = près à droite, 4 = près à gauche.
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+                    {PITCH_REFS.map((r) => (
+                      <button key={r.id} type="button" onClick={() => patchOverlay({ ref: r.id })} aria-pressed={pitchOverlay.ref === r.id} className={`h-9 px-2.5 rounded-lg border text-[13px] font-black cursor-pointer ${pitchOverlay.ref === r.id ? th.primaryBtn : th.idleBtn}`}>
+                        {r.label}
+                      </button>
+                    ))}
+                    <span aria-hidden="true" className={`h-6 w-px mx-0.5 ${th.separator}`} />
+                    <button type="button" onClick={() => patchOverlay({ attackLeft: !pitchOverlay.attackLeft })} title="Sens d'attaque de l'équipe : inverse Défense et Attaque" className={`h-9 px-2.5 rounded-lg border text-[13px] font-black cursor-pointer ${th.idleBtn}`}>
+                      {pitchOverlay.attackLeft ? "Attaque ← gauche" : "Attaque → droite"}
+                    </button>
+                    <button type="button" onClick={() => setCalibrating(false)} className={`h-9 px-3 rounded-lg border text-[13px] font-black cursor-pointer ${th.primaryBtn}`}>
+                      Terminé
+                    </button>
+                  </div>
                 </div>
               )}
               {activeFreeze && (

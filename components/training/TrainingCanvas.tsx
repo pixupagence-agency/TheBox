@@ -8,7 +8,8 @@ import { Circle, Group, Layer, Line, Rect, Shape, Stage, Transformer } from "rea
 import { ElementShape, ZoneBody, arrowPath, boostFor } from "./ElementShape";
 import { createElement, type PaletteItem } from "@/lib/training/catalog";
 import { isElementVisible, round2, snapValue, type EditorAction, type EditorState } from "@/lib/training/editorState";
-import { PITCH_MARGIN, pitchMarkings } from "@/lib/training/pitch";
+import { PITCH_MARGIN, fullPitchFrame, pitchMarkings } from "@/lib/training/pitch";
+import { drawFootballThirds, drawFootballZones } from "@/lib/gameFormats";
 import { readClubCenterLogo } from "@/lib/training/storage";
 import { useTrainingTheme } from "@/lib/training/theme";
 import type { ArrowElement, PitchConfig, TrainingElement, ZoneElement } from "@/lib/training/types";
@@ -39,6 +40,10 @@ interface Props {
   onPlace: (item: PaletteItem, x: number, y: number) => void;
   onPolygonProgress?: (points: number) => void;
   polygonCommand?: { id: number; action: "finish" | "cancel" } | null;
+  /** 5 couloirs (latéraux, demi-espaces, axe) */
+  showZones?: boolean;
+  /** 3 zones dans la longueur (défense, milieu, attaque) */
+  showThirds?: boolean;
 }
 
 type Gesture =
@@ -167,6 +172,16 @@ function drawPitch(ctx: Konva.Context, pitch: PitchConfig, scale: number, light:
   }
 }
 
+/** 5 couloirs et/ou 3 zones (défense, milieu, attaque), mêmes tracés que sur le tableau tactique */
+function drawPitchZones(ctx: Konva.Context, pitch: PitchConfig, scale: number, zones: boolean, thirds: boolean) {
+  const c = ctx._context;
+  const f = fullPitchFrame(pitch);
+  const view = { x: 0, y: 0, w: pitch.length, h: pitch.width };
+  const unit = 1 / scale;
+  if (zones) drawFootballZones(c, f.x, f.y, f.length, f.width, unit, view);
+  if (thirds) drawFootballThirds(c, f.x, f.y, f.length, f.width, ["Défense", "Milieu", "Attaque"], unit, view);
+}
+
 function drawGrid(ctx: Konva.Context, pitch: PitchConfig, size: number, scale: number) {
   const c = ctx._context;
   const M = PITCH_MARGIN;
@@ -199,7 +214,7 @@ function drawGrid(ctx: Konva.Context, pitch: PitchConfig, size: number, scale: n
 const absPoints = (el: { x: number; y: number }, pts: number[]) => pts.map((v, i) => (i % 2 === 0 ? v + el.x : v + el.y));
 
 const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function TrainingCanvas(
-  { state, dispatch, mode, multiSelect, armed, onPlace, onPolygonProgress, polygonCommand },
+  { state, dispatch, mode, multiSelect, armed, onPlace, onPolygonProgress, polygonCommand, showZones, showThirds },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -633,6 +648,7 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
         >
           <Layer listening={false}>
             <Shape sceneFunc={(ctx) => drawPitch(ctx, pitch, view.scale, th.light, centerLogo)} />
+            {(showZones || showThirds) && <Shape sceneFunc={(ctx) => drawPitchZones(ctx, pitch, view.scale, !!showZones, !!showThirds)} />}
             {grid.visible && <Shape sceneFunc={(ctx) => drawGrid(ctx, pitch, grid.size, view.scale)} />}
           </Layer>
           <Layer>

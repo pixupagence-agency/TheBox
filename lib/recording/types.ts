@@ -51,6 +51,25 @@ export interface Track {
   keys: TrackKey[];
 }
 
+/** Repère du terrain sur lequel on cale les 4 poignées de perspective */
+export type PitchRefId = "full" | "halfLeft" | "halfRight" | "boxLeft" | "boxRight";
+
+/**
+ * Repères tactiques posés sur la vidéo en perspective : le terrain (105 × 68 m) est calé sur l'image
+ * par 4 poignées placées sur les coins d'un repère connu (homographie terrain → image).
+ */
+export interface PitchOverlay {
+  ref: PitchRefId;
+  /** Coins du repère dans l'image (normalisés) : [loin-gauche, loin-droite, près-droite, près-gauche] → x0, y0, … x3, y3 */
+  quad: number[];
+  /** 5 couloirs (latéraux, demi-espaces, axe) */
+  zones: boolean;
+  /** 3 zones dans la longueur (défense, milieu, attaque) */
+  thirds: boolean;
+  /** L'équipe attaque vers la gauche de l'image (défense à droite) */
+  attackLeft?: boolean;
+}
+
 export type VideoSource =
   | { kind: "file"; videoId: string; fileName: string; mime: string }
   | { kind: "youtube"; ref: string; url: string }
@@ -81,6 +100,8 @@ export interface Sequence {
   freezes: Freeze[];
   /** Joueurs suivis (absent sur les séquences enregistrées avant l'outil de suivi) */
   tracks?: Track[];
+  /** Couloirs / zones du terrain calés en perspective (absent tant qu'ils n'ont jamais été affichés) */
+  pitchOverlay?: PitchOverlay;
   /** Vignette (data URL JPEG) ou URL d'aperçu */
   thumbnail?: string;
   /** Extrait : séquence d'origine (la vidéo est partagée, seule la plage Entrée → Sortie est gardée) */

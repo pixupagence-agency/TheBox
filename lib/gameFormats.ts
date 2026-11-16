@@ -216,6 +216,104 @@ export const getFormatPitchRatio = (sport: string, format?: string | null): numb
   return W / H;
 };
 
+/**
+ * Limites des 5 couloirs du football (latéraux, demi-espaces, axe), en fraction de la largeur du terrain :
+ * bords de la surface de réparation (40,32 m) et de la surface de but (18,32 m) sur 68 m, appliquées à tous les formats.
+ */
+export const FOOTBALL_ZONE_BOUNDS = [0, 13.84 / 68, 24.84 / 68, 43.16 / 68, 54.16 / 68, 1];
+
+/**
+ * Aire de jeu d'un terrain de football en paysage, en fraction du terrain affiché (marges comprises) :
+ * x, y = coin haut-gauche ; w = longueur ; h = largeur.
+ */
+export function getFootballFieldRect(sport: string, format?: string | null): { x: number; y: number; w: number; h: number } {
+  const small = getSmallPitchSpec(sport, format);
+  if (small) {
+    const { W, H } = smallPitchBox(small);
+    return { x: small.margin / W, y: small.margin / H, w: small.length / W, h: small.width / H };
+  }
+  return { x: 2.5 / 110, y: 2.5 / 73, w: 105 / 110, h: 68 / 73 };
+}
+
+/** Couleur des lignes des 3 zones (défense / milieu / attaque) */
+export const FOOTBALL_THIRDS_COLOR = "#00E599";
+
+/** Fenêtre visible d'un terrain complet (demi-terrain, quart de terrain…), dans le même repère */
+export interface FieldWindow { x: number; y: number; w: number; h: number }
+
+/**
+ * Trace les 3 zones (défense, milieu, attaque) dans la longueur sur un canvas, en paysage :
+ * (fx, fy) = coin de l'aire de jeu complète, flen = longueur, fwid = largeur ; défense à gauche.
+ * `unit` = taille d'un pixel écran dans le repère (1 pour l'export image, 1 / échelle sur un canevas en mètres).
+ * `view` = partie visible du terrain (demi-terrain…) : tracé découpé, libellés centrés sur la partie visible.
+ */
+export function drawFootballThirds(
+  ctx: CanvasRenderingContext2D, fx: number, fy: number, flen: number, fwid: number,
+  labels: [string, string, string], unit = 1, view?: FieldWindow
+) {
+  const v = view ?? { x: fx, y: fy, w: flen, h: fwid };
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(v.x, v.y, v.w, v.h);
+  ctx.clip();
+  ctx.strokeStyle = FOOTBALL_THIRDS_COLOR;
+  ctx.globalAlpha = 0.85;
+  ctx.lineWidth = 3 * unit;
+  ctx.setLineDash([14 * unit, 9 * unit]);
+  [1, 2].forEach((k) => {
+    const x = fx + (flen * k) / 3;
+    ctx.beginPath();
+    ctx.moveTo(x, fy);
+    ctx.lineTo(x, fy + fwid);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.13)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const fontSize = Math.min(flen / 3 / 6, v.h / 9);
+  ctx.font = `900 ${fontSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+  labels.forEach((label, i) => {
+    // Partie visible de la zone : libellé centré dessus, omis si elle est trop étroite
+    const a = Math.max(fx + (flen * i) / 3, v.x);
+    const b = Math.min(fx + (flen * (i + 1)) / 3, v.x + v.w);
+    if (b - a < flen / 3 / 4) return;
+    ctx.fillText(label, (a + b) / 2, v.y + v.h * 0.03, b - a - 16 * unit);
+  });
+  ctx.restore();
+}
+
+/**
+ * Trace les 5 couloirs sur un canvas, en paysage : (fx, fy) = coin de l'aire de jeu complète,
+ * flen = longueur (horizontale), fwid = largeur (verticale). `unit` et `view` : voir drawFootballThirds.
+ */
+export function drawFootballZones(ctx: CanvasRenderingContext2D, fx: number, fy: number, flen: number, fwid: number, unit = 1, view?: FieldWindow) {
+  const v = view ?? { x: fx, y: fy, w: flen, h: fwid };
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(v.x, v.y, v.w, v.h);
+  ctx.clip();
+  FOOTBALL_ZONE_BOUNDS.slice(0, -1).forEach((f, i) => {
+    if (i % 2 !== 1) return;
+    const a = fwid * f;
+    const b = fwid * FOOTBALL_ZONE_BOUNDS[i + 1];
+    ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
+    ctx.fillRect(fx, fy + a, flen, b - a);
+  });
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+  ctx.lineWidth = 2 * unit;
+  ctx.setLineDash([12 * unit, 8 * unit]);
+  FOOTBALL_ZONE_BOUNDS.slice(1, -1).forEach((f) => {
+    const y = fy + fwid * f;
+    ctx.beginPath();
+    ctx.moveTo(fx, y);
+    ctx.lineTo(fx + flen, y);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
 /** Trace un petit terrain de football sur un canvas (export image), en paysage. */
 export function drawSmallFootballPitch(
   ctx: CanvasRenderingContext2D,

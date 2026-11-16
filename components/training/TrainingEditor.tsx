@@ -32,6 +32,9 @@ export default function TrainingEditor() {
   const [seriesOpen, setSeriesOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [polygonPoints, setPolygonPoints] = useState(0);
+  // Repères tactiques sur le terrain, comme sur le tableau tactique : 5 couloirs, 3 zones (défense, milieu, attaque)
+  const [showZones, setShowZones] = useState(false);
+  const [showThirds, setShowThirds] = useState(false);
   const [polygonCommand, setPolygonCommand] = useState<{ id: number; action: "finish" | "cancel" } | null>(null);
   const canvasRef = useRef<TrainingCanvasHandle>(null);
   const roster = useMemo(() => readActiveRoster(), []);
@@ -195,6 +198,22 @@ export default function TrainingEditor() {
         <div className={`flex items-center gap-1 shrink-0 ${th.toolGroup}`}>
           <button type="button" className={`${toolBtn} ${toolIdle}`} onClick={() => setSeriesOpen(true)} title="Poser une série d'éléments" aria-label="Poser une série"><Rows3 className="w-5 h-5" /><span className="hidden sm:inline">Série</span></button>
           <button type="button" className={`${toolBtn} ${state.grid.visible ? toolOn : toolIdle}`} onClick={() => dispatch({ type: "setGrid", grid: { visible: !state.grid.visible } })} title="Afficher la grille" aria-label="Grille" aria-pressed={state.grid.visible}><Grid3x3 className="w-5 h-5" /></button>
+          <button type="button" className={`${toolBtn} ${showZones ? toolOn : toolIdle}`} onClick={() => setShowZones((v) => !v)} title={showZones ? "Masquer les 5 couloirs du terrain" : "Afficher les 5 couloirs du terrain"} aria-label="5 couloirs du terrain" aria-pressed={showZones}>
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <line x1="2" y1="8" x2="22" y2="8" strokeWidth="1.5" strokeDasharray="2 2" />
+              <line x1="2" y1="10.5" x2="22" y2="10.5" strokeWidth="1.5" strokeDasharray="2 2" />
+              <line x1="2" y1="13.5" x2="22" y2="13.5" strokeWidth="1.5" strokeDasharray="2 2" />
+              <line x1="2" y1="16" x2="22" y2="16" strokeWidth="1.5" strokeDasharray="2 2" />
+            </svg>
+          </button>
+          <button type="button" className={`${toolBtn} ${showThirds ? toolOn : toolIdle}`} onClick={() => setShowThirds((v) => !v)} title={showThirds ? "Masquer les 3 zones (défense, milieu, attaque)" : "Afficher les 3 zones (défense, milieu, attaque)"} aria-label="3 zones du terrain" aria-pressed={showThirds}>
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <line x1="8.7" y1="4" x2="8.7" y2="20" strokeWidth="1.5" strokeDasharray="2 2" />
+              <line x1="15.3" y1="4" x2="15.3" y2="20" strokeWidth="1.5" strokeDasharray="2 2" />
+            </svg>
+          </button>
           <button type="button" className={`${toolBtn} ${state.grid.snap ? toolOn : toolIdle}`} onClick={() => dispatch({ type: "setGrid", grid: { snap: !state.grid.snap } })} title={`Magnétisme (pas de ${String(state.grid.size).replace(".", ",")} m)`} aria-label="Magnétisme" aria-pressed={state.grid.snap}><Magnet className="w-5 h-5" /></button>
         </div>
         {separator}
@@ -227,6 +246,8 @@ export default function TrainingEditor() {
             onPlace={placeItem}
             onPolygonProgress={onPolygonProgress}
             polygonCommand={polygonCommand}
+            showZones={showZones}
+            showThirds={showThirds}
           />
 
           {armed && (

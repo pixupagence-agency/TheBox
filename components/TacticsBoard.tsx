@@ -17,7 +17,7 @@ import {
   RotateCcw, Pencil, Sparkles, Save, UserPlus, UserMinus, RefreshCw, Shield, CheckCircle, Check,
   Download, Share2, Maximize2, Minimize2, Laptop, Smartphone,
   MousePointer, Move, ArrowUpRight, Settings, Info, FileText, Camera, Loader2,
-  Mic, Trash, Eye, Globe, LogOut, ChevronDown, Award, Eraser, Lock, X, User, Users,
+  Mic, Trash, Eye, Globe, LogOut, ChevronDown, Award, Eraser, Lock, X, User, Users, BrickWall, RotateCw,
   Search, UserCheck, Upload, ArrowLeftRight, Zap, AlertCircle, Cloud, Filter, Film,
   Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target, Shirt, Circle,
   CreditCard, Box, Scan, Bookmark, CalendarDays, CircleHelp, NotebookPen,
@@ -31,6 +31,8 @@ import { confirmAction } from "@/components/ConfirmDialog";
 import { exportMatchPdf, type MatchPdfSchema } from "@/lib/matchPdf";
 import { prepareClubLogo, CLUB_LOGO_ACCEPT } from "@/lib/clubLogo";
 import { getSportRoles, getPlayerRoleCodes, autoAssignSportRoles, type RoleIconName, type RoleTone } from "@/lib/sportRoles";
+import { assignPlayersToFormation } from "@/lib/formationAssign";
+import { WALL_DEFAULT, WALL_MAX, WALL_MIN, WALL_PREFERRED_ROLES, effectiveWallAngle, isGoalkeeperRole, normalizeAngle, playerWallTeam, wallPlacement, type WallTeam } from "@/lib/setPieceWall";
 
 // Icônes et couleurs des rôles tactiques (définis par sport dans lib/sportRoles)
 const ROLE_ICONS: Record<RoleIconName, React.ElementType> = {
@@ -46,7 +48,7 @@ import { useToolbarOverflow } from "@/lib/useToolbarOverflow";
 import {
   getGameFormatOptions, getGameFormatOption, resolveGameFormat,
   getFormatDefaultPlayers, getFormatFormations, getFormatFormationCoords, getFormatPeriodSeconds,
-  getFormatPitchRatio, getCenterCircleRadiusRatio, getSmallPitchSpec, smallPitchBox, drawSmallFootballPitch,
+  getFormatPitchRatio, getCenterCircleRadiusRatio, getSmallPitchSpec, smallPitchBox, drawSmallFootballPitch, drawFootballZones, drawFootballThirds, getFootballFieldRect,
 } from "@/lib/gameFormats";
 
 // Mode live : durée de la pause (mi-temps) entre les deux moitiés du match
@@ -86,7 +88,14 @@ const TOOLBAR_HIDE_ORDER = ["zoom", "export", "display", "view", "color", "drawi
 
 export interface Token {
   id: string;
-  type: "player_a" | "player_b" | "referee" | "ball" | "cone" | "goal" | "hurdle" | "ladder";
+  type: "player_a" | "player_b" | "referee" | "ball" | "cone" | "goal" | "hurdle" | "ladder" | "wall";
+  /** Mur (type « wall ») : nombre de places et équipe qui le forme */
+  wallCount?: number;
+  wallTeam?: "home" | "away";
+  /** Mur : angle choisi (degrés, repère paysage) ; absent = le mur fait face au ballon */
+  wallAngle?: number;
+  /** Joueur placé dans le mur de son équipe (place 0 → wallCount - 1) : masqué du terrain, affiché dans le mur */
+  wallSlot?: number;
   number?: number;
   name: string;
   role: string;
@@ -1163,6 +1172,19 @@ export default function TacticsBoard({
   // Toggles display
   const [showBall, setShowBall] = useState<boolean>(true);
   const [showOpponents, setShowOpponents] = useState<boolean>(true);
+  // Football uniquement : 5 couloirs (latéraux, demi-espaces, axe) tracés sur le terrain
+  const [showPitchZones, setShowPitchZones] = useState<boolean>(false);
+  // Football uniquement : 3 zones dans la longueur (défense, milieu, attaque)
+  const [showPitchThirds, setShowPitchThirds] = useState<boolean>(false);
+  const pitchThirdsLabels: [string, string, string] = currentLang === "en" ? ["Defence", "Midfield", "Attack"] : ["Défense", "Milieu", "Attaque"];
+  const isFootballBoard = ["football", "soccer"].includes(activeSport.toLowerCase());
+  // Mur sur coup franc (football) : nombre de joueurs choisi par équipe, fenêtre de réglage de la barre d'outils
+  const [wallCounts, setWallCounts] = useState<Record<WallTeam, number>>({ home: WALL_DEFAULT, away: WALL_DEFAULT });
+  const [wallPopover, setWallPopover] = useState<{ team: WallTeam; left: number; top: number } | null>(null);
+  /** Joueur glissé au-dessus d'un mur : place visée (surbrillance) */
+  const [wallDropTarget, setWallDropTarget] = useState<{ team: WallTeam; slot: number } | null>(null);
+  /** Rôles réellement attribués (hors composition du mur) */
+  const countSportRoles = (roles: SetPieceRoleConfig) => getSportRoles(activeSport).roles.filter((r) => roles[r.key]).length;
   const [showPlayerNames, setShowPlayerNames] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("thebox_show_player_names");
@@ -2429,12 +2451,12 @@ export default function TacticsBoard({
     if (playersOnPitch.length === 0) return;
 
     // Rôles propres au sport (buteur et ouvreur au rugby, meneur au basket, jet de 7 m au handball…)
-    const assignedRoles: SetPieceRoleConfig = autoAssignSportRoles(activeSport, playersOnPitch);
+    const assignedRoles = autoAssignSportRoles(activeSport, playersOnPitch);
 
     if (isAway) {
-      setOpponentSetPieceRoles(assignedRoles);
+      setOpponentSetPieceRoles((prev) => ({ ...prev, ...assignedRoles }));
     } else {
-      setSetPieceRoles(assignedRoles);
+      setSetPieceRoles((prev) => ({ ...prev, ...assignedRoles }));
     }
   };
 
@@ -2974,14 +2996,31 @@ export default function TacticsBoard({
           });
           return copy;
         });
+
+        // Joueur glissé au-dessus du mur de son équipe : place visée en surbrillance
+        if (dropWall) {
+          const slot = wallSlotAtPoint(dropWall, clientX, clientY, rect);
+          lastDrop = slot >= 0 ? slot : -1;
+          const next = slot >= 0 ? { team: dropTeam!, slot } : null;
+          setWallDropTarget((prev) => (prev?.team === next?.team && prev?.slot === next?.slot ? prev : next));
+        }
       }
     };
+
+    // Mur de l'équipe du joueur glissé (le joueur n'y est pas déjà) : cible possible du dépôt
+    const draggedToken = currentTokens.find((t) => t.id === tokenId);
+    const dropTeam = draggedToken ? playerWallTeam(draggedToken.type) : null;
+    const dropWall = dropTeam && draggedToken && typeof draggedToken.wallSlot !== "number" ? findWall(dropTeam) : undefined;
+    let lastDrop = -1;
 
     const upHandler = () => {
       if (userMoved) {
         // Enregistrer l'instant de fin du déplacement pour bloquer l'événement onClick résiduel du navigateur
         dragEndTimeRef.current = Date.now();
+        // Déposé sur le mur : le joueur y entre
+        if (dropWall && dropTeam && lastDrop >= 0) handleJoinWall(tokenId, dropTeam, lastDrop);
       }
+      if (dropWall) setWallDropTarget(null);
       isDraggingTokenRef.current = false;
       setSelectedTokenId(null);
       window.removeEventListener("mousemove", moveHandler);
@@ -3361,85 +3400,73 @@ export default function TacticsBoard({
     }));
   };
 
-  const applyTeamAFormation = (formName: string) => {
-    setSelectedFormationA(formName);
-    const coords = getFormationCoordinates(activeSport, formName, false);
+  /**
+   * Applique un schéma à une équipe : chaque joueur reprend la place de son POSTE dans le schéma (lib/formationAssign),
+   * pas la place la plus proche de sa position actuelle. Les joueurs gardent toutes leurs informations
+   * (photo, cartons, place dans le mur…). Place sans joueur : joueur par défaut ; joueur sans place : il reste où il est.
+   */
+  const applyFormationToTeam = (formName: string, isOpponent: boolean) => {
+    const coords = getFormationCoordinates(activeSport, formName, isOpponent);
     if (coords.length === 0) return;
+    const type: Token["type"] = isOpponent ? "player_b" : "player_a";
+    // Places exprimées pour une équipe qui attaque vers la droite (l'adversaire est en miroir)
+    const slots = coords.map((c) => ({ x: isOpponent ? 100 - c.x : c.x, y: c.y }));
 
     setKeyframes((prev) => {
       const copy = [...prev];
       const activeFrame = copy[currentFrameIdx] || [];
-      const nonTeamAPlayers = activeFrame.filter(t => t.type !== "player_a" && t.type !== "ball");
-      const ballToken = activeFrame.find(t => t.type === "ball") || {
-        id: "ball",
-        type: "ball" as const,
-        name: "Ballon",
-        role: "Equipement",
-        x: 50,
-        y: 50
-      };
+      const teamPlayers = activeFrame.filter((t) => t.type === type);
+      const others = activeFrame.filter((t) => t.type !== type && (isOpponent || t.type !== "ball"));
+      const defaultTokens = getDefaultPlayersForSport(activeSport).filter((t) => t.type === type);
+      const slotToPlayer = assignPlayersToFormation(teamPlayers, slots, activeSport);
+      const placed = new Set(slotToPlayer.filter((i) => i >= 0));
 
-      const existingTeamA = activeFrame.filter(t => t.type === "player_a");
-      const defaultTokens = getDefaultPlayersForSport(activeSport).filter(t => t.type === "player_a");
-
-      const newTeamAPlayers: Token[] = coords.map((c, idx) => {
-        const existingP = existingTeamA[idx];
+      const newTeam: Token[] = coords.map((c, idx) => {
+        const pi = slotToPlayer[idx];
+        if (pi >= 0) return { ...teamPlayers[pi], x: c.x, y: c.y };
         const defaultP = defaultTokens[idx] || {
-          name: `Joueur ${idx + 1}`,
-          role: "J",
-          number: idx + 1
+          name: isOpponent ? `Joueur ${idx + 1} Adv` : `Joueur ${idx + 1}`,
+          role: isOpponent ? "ADV" : "J",
+          number: idx + 1,
         };
         return {
-          id: existingP ? existingP.id : `player_a_${idx}`,
-          type: "player_a",
-          name: existingP ? existingP.name : defaultP.name,
-          role: existingP ? existingP.role : defaultP.role,
-          number: existingP ? existingP.number : defaultP.number,
+          id: `${type}_${idx}_${Date.now().toString(36)}`,
+          type,
+          name: defaultP.name,
+          role: defaultP.role,
+          number: defaultP.number,
           x: c.x,
           y: c.y,
-          status: existingP ? existingP.status : undefined
         };
       });
+      // Joueurs en trop (plus de joueurs que de places) : gardés là où ils sont
+      const extras = teamPlayers.filter((_, i) => !placed.has(i));
 
-      copy[currentFrameIdx] = [...newTeamAPlayers, ballToken, ...nonTeamAPlayers];
+      if (isOpponent) {
+        copy[currentFrameIdx] = [...others, ...newTeam, ...extras];
+      } else {
+        const ballToken = activeFrame.find((t) => t.type === "ball") || {
+          id: "ball",
+          type: "ball" as const,
+          name: "Ballon",
+          role: "Equipement",
+          x: 50,
+          y: 50,
+        };
+        copy[currentFrameIdx] = [...newTeam, ...extras, ballToken, ...others];
+      }
       return copy;
     });
   };
 
+  const applyTeamAFormation = (formName: string) => {
+    setSelectedFormationA(formName);
+    applyFormationToTeam(formName, false);
+  };
+
   const applyTeamBFormation = (formName: string) => {
     setSelectedFormationB(formName);
-    const coords = getFormationCoordinates(activeSport, formName, true);
-    if (coords.length === 0) return;
-
-    setKeyframes((prev) => {
-      const copy = [...prev];
-      const activeFrame = copy[currentFrameIdx] || [];
-      const nonTeamBPlayers = activeFrame.filter(t => t.type !== "player_b");
-
-      const existingTeamB = activeFrame.filter(t => t.type === "player_b");
-      const defaultTokens = getDefaultPlayersForSport(activeSport).filter(t => t.type === "player_b");
-
-      const newTeamBPlayers: Token[] = coords.map((c, idx) => {
-        const existingP = existingTeamB[idx];
-        const defaultP = defaultTokens[idx] || {
-          name: `Joueur ${idx + 1} Adv`,
-          role: "ADV",
-          number: idx + 1
-        };
-        return {
-          id: existingP ? existingP.id : `player_b_${idx}`,
-          type: "player_b",
-          name: existingP ? existingP.name : defaultP.name,
-          role: existingP ? existingP.role : defaultP.role,
-          number: existingP ? existingP.number : defaultP.number,
-          x: c.x,
-          y: c.y
-        };
-      });
-
-      copy[currentFrameIdx] = [...nonTeamBPlayers, ...newTeamBPlayers];
-      return copy;
-    });
+    applyFormationToTeam(formName, true);
     setShowOpponents(true);
   };
 
@@ -4836,6 +4863,244 @@ export default function TacticsBoard({
     setShowOpponents(true);
   };
 
+  // ---------------------------------------------------------------------------
+  // Mur sur coup franc (football)
+  // Les joueurs glissés sur le mur y prennent une place (wallSlot) : ils sont affichés dans le mur, plus seuls.
+  // Un remplaçant reprend le jeton du joueur sorti (même identifiant) : il entre donc aussi dans le mur.
+  // ---------------------------------------------------------------------------
+  const wallTokenId = (team: WallTeam) => `wall_${team}`;
+  const findWall = (team: WallTeam, tokens: Token[] = currentTokens) => tokens.find((t) => t.type === "wall" && t.wallTeam === team);
+  const wallCountFor = (team: WallTeam) => findWall(team)?.wallCount ?? wallCounts[team];
+  const isWallMemberOf = (t: Token, team: WallTeam) => playerWallTeam(t.type) === team && typeof t.wallSlot === "number";
+
+  /** Joueur affiché dans le mur de son équipe (le mur est posé dans cette image) */
+  const isInWall = (t: Token, tokens: Token[]) => {
+    const team = playerWallTeam(t.type);
+    return !!team && typeof t.wallSlot === "number" && tokens.some((w) => w.type === "wall" && w.wallTeam === team);
+  };
+
+  /** Places du mur dans l'ordre : le joueur qui l'occupe, ou null si elle est libre */
+  const wallMembers = (team: WallTeam, count: number, tokens: Token[] = currentTokens): (Token | null)[] =>
+    Array.from({ length: count }, (_, i) => tokens.find((t) => isWallMemberOf(t, team) && t.wallSlot === i) || null);
+
+  /** Angle affiché du mur (repère paysage) */
+  const wallAngleOf = (wall: Token, tokens: Token[] = currentTokens) => {
+    const ballTok = tokens.find((t) => t.type === "ball");
+    return effectiveWallAngle(wall, ballTok && showBall ? ballTok : null, activeSport, activeFormat);
+  };
+
+  /** Position d'un joueur qui sort du mur : juste derrière le mur, côté de son but, à hauteur de sa place */
+  const releasePosition = (wall: Token, slot: number, count: number) => {
+    const a = (wallAngleOf(wall) * Math.PI) / 180;
+    const offset = (slot - (count - 1) / 2) * 2.4;
+    const back = wall.wallTeam === "away" ? 3.5 : -3.5;
+    return {
+      x: Math.max(1, Math.min(99, Math.round((wall.x + back + Math.cos(a) * offset * 0.66) * 10) / 10)),
+      y: Math.max(1, Math.min(99, Math.round((wall.y + Math.sin(a) * offset) * 10) / 10)),
+    };
+  };
+
+  /** Place (ou replace) le mur de l'équipe face au ballon, sur toutes les images ; ses joueurs restent dedans */
+  const handlePlaceWall = (team: WallTeam) => {
+    const ballTok = currentTokens.find((t) => t.type === "ball");
+    const ball = ballTok && showBall ? { x: ballTok.x, y: ballTok.y } : null;
+    const pos = wallPlacement(ball, team, activeSport, activeFormat);
+    const wall: Token = {
+      id: wallTokenId(team),
+      type: "wall",
+      wallTeam: team,
+      wallCount: wallCountFor(team),
+      name: "Mur",
+      role: "MUR",
+      x: pos.x,
+      y: pos.y,
+    };
+    setKeyframes((prev) => prev.map((frame) => [...frame.filter((t) => !(t.type === "wall" && t.wallTeam === team)), wall]));
+    if (team === "away") setShowOpponents(true);
+  };
+
+  /** Retire le mur : ses joueurs reviennent sur le terrain, juste derrière */
+  const handleRemoveWall = (team: WallTeam) => {
+    const wall = findWall(team);
+    const count = wall?.wallCount || WALL_DEFAULT;
+    setKeyframes((prev) => prev.map((frame) => frame
+      .filter((t) => !(t.type === "wall" && t.wallTeam === team))
+      .map((t) => {
+        if (!isWallMemberOf(t, team)) return t;
+        const { wallSlot, ...rest } = t;
+        return wall ? { ...rest, ...releasePosition(wall, wallSlot!, count) } : rest;
+      })));
+    setWallPopover((p) => (p && p.team === team ? null : p));
+  };
+
+  /** Sort un joueur du mur */
+  const handleReleaseFromWall = (tokenId: string) => {
+    const tok = currentTokens.find((t) => t.id === tokenId);
+    const team = tok ? playerWallTeam(tok.type) : null;
+    const wall = team ? findWall(team) : undefined;
+    if (!tok || !team || typeof tok.wallSlot !== "number") return;
+    const pos = wall ? releasePosition(wall, tok.wallSlot, wall.wallCount || WALL_DEFAULT) : null;
+    setKeyframes((prev) => prev.map((frame) => frame.map((t) => {
+      if (t.id !== tokenId) return t;
+      const { wallSlot: _slot, ...rest } = t;
+      return pos ? { ...rest, ...pos } : rest;
+    })));
+  };
+
+  /**
+   * Fait entrer un joueur dans le mur de son équipe, à la place visée si elle est libre, sinon à la place libre
+   * la plus proche ; mur plein : une place de plus (jusqu'à 7).
+   */
+  const handleJoinWall = (tokenId: string, team: WallTeam, preferredSlot: number) => {
+    const wall = findWall(team);
+    if (!wall) return;
+    const count = wall.wallCount || WALL_DEFAULT;
+    const occupied = new Set(currentTokens.filter((t) => isWallMemberOf(t, team) && t.id !== tokenId).map((t) => t.wallSlot!));
+    const free = Array.from({ length: count }, (_, i) => i).filter((i) => !occupied.has(i)).sort((a, b) => Math.abs(a - preferredSlot) - Math.abs(b - preferredSlot));
+    let slot = free.length ? free[0] : -1;
+    let newCount = count;
+    if (slot < 0) {
+      if (count >= WALL_MAX) {
+        setSleekToastMessage(`Le mur est complet (${WALL_MAX} joueurs maximum)`);
+        return;
+      }
+      slot = count;
+      newCount = count + 1;
+      setWallCounts((prev) => ({ ...prev, [team]: newCount }));
+    }
+    setKeyframes((prev) => prev.map((frame) => frame.map((t) => {
+      if (t.id === tokenId) return { ...t, wallSlot: slot };
+      if (t.type === "wall" && t.wallTeam === team && newCount !== count) return { ...t, wallCount: newCount };
+      return t;
+    })));
+  };
+
+  /** Nombre de places du mur : en moins, les derniers joueurs du mur reviennent sur le terrain */
+  const handleSetWallCount = (team: WallTeam, count: number) => {
+    const n = Math.max(WALL_MIN, Math.min(WALL_MAX, count));
+    setWallCounts((prev) => ({ ...prev, [team]: n }));
+    const wall = findWall(team);
+    const members = currentTokens.filter((t) => isWallMemberOf(t, team)).sort((a, b) => a.wallSlot! - b.wallSlot!);
+    const keep = members.slice(0, n);
+    const drop = new globalThis.Map(members.slice(n).map((m) => [m.id, m.wallSlot!]));
+    // Les joueurs gardés dont la place disparaît prennent les places libres restantes
+    const used = new Set(keep.filter((m) => m.wallSlot! < n).map((m) => m.wallSlot!));
+    const remap = new globalThis.Map<string, number>();
+    let next = 0;
+    keep.filter((m) => m.wallSlot! >= n).forEach((m) => {
+      while (used.has(next)) next++;
+      remap.set(m.id, next);
+      used.add(next);
+    });
+    setKeyframes((prev) => prev.map((frame) => frame.map((t) => {
+      if (t.type === "wall" && t.wallTeam === team) return { ...t, wallCount: n };
+      if (drop.has(t.id)) {
+        const { wallSlot: _slot, ...rest } = t;
+        return wall ? { ...rest, ...releasePosition(wall, drop.get(t.id)!, wall.wallCount || WALL_DEFAULT) } : rest;
+      }
+      if (remap.has(t.id)) return { ...t, wallSlot: remap.get(t.id) };
+      return t;
+    })));
+  };
+
+  /** Angle du mur (undefined = face au ballon) */
+  const handleSetWallAngle = (team: WallTeam, angle: number | undefined) => {
+    setKeyframes((prev) => prev.map((frame) => frame.map((t) => {
+      if (!(t.type === "wall" && t.wallTeam === team)) return t;
+      if (angle === undefined) {
+        const { wallAngle: _a, ...rest } = t;
+        return rest;
+      }
+      return { ...t, wallAngle: normalizeAngle(angle) };
+    })));
+  };
+
+  /** Remplit les places libres : joueurs de champ sur le terrain, postes de duel d'abord, sans le tireur de coup franc */
+  const handleAutoFillWall = (team: WallTeam) => {
+    const wall = findWall(team);
+    if (!wall) return;
+    const count = wall.wallCount || WALL_DEFAULT;
+    const roles = team === "away" ? opponentSetPieceRoles : setPieceRoles;
+    const occupied = new Set(currentTokens.filter((t) => isWallMemberOf(t, team)).map((t) => t.wallSlot!));
+    const freeSlots = Array.from({ length: count }, (_, i) => i).filter((i) => !occupied.has(i));
+    const rank = (role?: string) => {
+      const i = WALL_PREFERRED_ROLES.indexOf((role || "").toUpperCase().trim());
+      return i < 0 ? WALL_PREFERRED_ROLES.length : i;
+    };
+    const picked = currentTokens
+      .filter((t) => playerWallTeam(t.type) === team && typeof t.wallSlot !== "number" && !isGoalkeeperRole(t.role) && t.number !== 1 && (!t.name || t.name !== roles.directFreeKick))
+      .sort((a, b) => rank(a.role) - rank(b.role))
+      .slice(0, freeSlots.length);
+    if (!picked.length) return;
+    const assign = new globalThis.Map(picked.map((p, i) => [p.id, freeSlots[i]]));
+    setKeyframes((prev) => prev.map((frame) => frame.map((t) => (assign.has(t.id) ? { ...t, wallSlot: assign.get(t.id) } : t))));
+  };
+
+  /** Place du mur sous un point de l'écran (-1 si le point n'est pas sur le mur) */
+  const wallSlotAtPoint = (wall: Token, clientX: number, clientY: number, rect: DOMRect) => {
+    const portrait = aspectRatioMode === "mobile";
+    const sx = portrait ? wall.y : wall.x;
+    const sy = portrait ? 100 - wall.x : wall.y;
+    const cx = rect.left + (sx / 100) * rect.width;
+    const cy = rect.top + (sy / 100) * rect.height;
+    const a = ((wallAngleOf(wall) - (portrait ? 90 : 0)) * Math.PI) / 180;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    const u = dx * Math.cos(a) + dy * Math.sin(a);
+    const v = -dx * Math.sin(a) + dy * Math.cos(a);
+    const scale = playerScale / 100;
+    const step = 24 * scale;
+    const count = wall.wallCount || WALL_DEFAULT;
+    const half = (count * step) / 2;
+    if (Math.abs(v) > 26 * scale || Math.abs(u) > half + 18 * scale) return -1;
+    return Math.max(0, Math.min(count - 1, Math.floor((u + half) / step)));
+  };
+
+  /** Rotation à la main : la poignée suit le doigt / la souris autour du centre du mur (pas de 5°) */
+  const handleStartWallRotate = (team: WallTeam, e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const el = (e.currentTarget as HTMLElement).closest("[data-wall-team]") as HTMLElement | null;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const portrait = aspectRatioMode === "mobile";
+    const move = (ev: MouseEvent | TouchEvent) => {
+      const p = "touches" in ev ? ev.touches[0] : ev;
+      if (!p) return;
+      const screen = (Math.atan2(p.clientY - cy, p.clientX - cx) * 180) / Math.PI;
+      handleSetWallAngle(team, normalizeAngle(screen + (portrait ? 90 : 0), 5));
+    };
+    const up = () => {
+      dragEndTimeRef.current = Date.now();
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      window.removeEventListener("touchmove", move);
+      window.removeEventListener("touchend", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    window.addEventListener("touchmove", move, { passive: true });
+    window.addEventListener("touchend", up);
+  };
+
+  // Le panneau du mur se ferme quand on appuie ailleurs (hors du panneau, du mur, des joueurs et du bouton « Mur »)
+  useEffect(() => {
+    if (!wallPopover) return;
+    const onDown = (ev: MouseEvent | TouchEvent) => {
+      const target = ev.target as HTMLElement | null;
+      if (target?.closest("[data-wall-popover], [data-wall-team], [data-board-token], [data-wall-button]")) return;
+      setWallPopover(null);
+    };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("touchstart", onDown);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("touchstart", onDown);
+    };
+  }, [wallPopover]);
+
   // Core drawing and whiteboard cleaning options
   const handleUndo = () => {
     if (drawingHistory.length > 0) {
@@ -5961,6 +6226,17 @@ export default function TacticsBoard({
       });
     }
 
+    // 5 couloirs et 3 zones du football, si affichés sur le terrain
+    if ((showPitchZones || showPitchThirds) && (sportKey === "football" || sportKey === "soccer")) {
+      const fr = getFootballFieldRect(targetSport, targetFormat);
+      const fx = pitchX + fr.x * pitchW;
+      const fy = pitchY + fr.y * pitchH;
+      const flen = fr.w * pitchW;
+      const fwid = fr.h * pitchH;
+      if (showPitchZones) drawFootballZones(ctx, fx, fy, flen, fwid);
+      if (showPitchThirds) drawFootballThirds(ctx, fx, fy, flen, fwid, pitchThirdsLabels);
+    }
+
     // Outer Pitch Frame Border
     ctx.strokeStyle = "#1f293d";
     ctx.lineWidth = 3;
@@ -6108,9 +6384,60 @@ export default function TacticsBoard({
         ? schemaOverride.showOpponents !== false
         : schemaOverride ? true : showOpponents;
       if (token.type === "player_b" && !opponentsVisible) return;
+      // Joueur placé dans le mur : dessiné avec le mur
+      if (isInWall(token, exportTokens)) return;
 
       const tokX = pitchX + (token.x / 100) * pitchW;
       const tokY = pitchY + (token.y / 100) * pitchH;
+
+      // Mur sur coup franc : rangée de joueurs face au ballon, numéros des joueurs attribués
+      if (token.type === "wall") {
+        const team: WallTeam = token.wallTeam === "away" ? "away" : "home";
+        if (team === "away" && !opponentsVisible) return;
+        const count = Math.max(WALL_MIN, Math.min(WALL_MAX, token.wallCount || WALL_DEFAULT));
+        const members = wallMembers(team, count, exportTokens);
+        const ballTok = exportTokens.find((t: Token) => t.type === "ball");
+        const angle = (effectiveWallAngle(token, ballTok && (showBall || schemaOverride) ? ballTok : null, targetSport, targetFormat) * Math.PI) / 180;
+        const r = 13;
+        const step = 2 * r + 3;
+        const span = (count - 1) * step;
+        ctx.save();
+        ctx.translate(tokX, tokY);
+        ctx.rotate(angle);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(-span / 2 - r - 4, -r - 4, span + 2 * r + 8, 2 * r + 8, r + 4);
+        ctx.fill();
+        ctx.stroke();
+        members.forEach((m, i) => {
+          const cx = -span / 2 + i * step;
+          ctx.beginPath();
+          ctx.arc(cx, 0, r, 0, Math.PI * 2);
+          // Place libre : disque estompé
+          ctx.globalAlpha = m ? 1 : 0.35;
+          ctx.fillStyle = team === "away" ? (teamBColor || "#e11d48") : (teamAColor || "#00E599");
+          ctx.fill();
+          ctx.strokeStyle = "#0d131f";
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          if (m?.number) {
+            ctx.save();
+            ctx.translate(cx, 0);
+            ctx.rotate(-angle);
+            ctx.fillStyle = team === "away" ? "#ffffff" : "#0d131f";
+            ctx.font = "900 12px system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(String(m.number), 0, 0.5);
+            ctx.restore();
+          }
+        });
+        ctx.restore();
+        return;
+      }
       const radius = 22;
       const isPlayerToken = token.type === "player_a" || token.type === "player_b";
       const portrait = isPlayerToken ? exportImageCacheRef.current[getTokenPortraitSrc(token, targetSport)] : undefined;
@@ -8752,9 +9079,9 @@ export default function TacticsBoard({
               >
                 <Target className="w-3.5 h-3.5 shrink-0 text-[#e9c349]" />
                 <span>{t.tactics.teamPanel.tacticalRoles}</span>
-                {Object.values(setPieceRoles).filter(Boolean).length > 0 && (
+                {countSportRoles(setPieceRoles) > 0 && (
                   <span className="bg-[#00E599] text-slate-950 font-black text-[8px] px-1.5 py-0.2 rounded-full ml-0.5">
-                    {Object.values(setPieceRoles).filter(Boolean).length}
+                    {countSportRoles(setPieceRoles)}
                   </span>
                 )}
               </button>
@@ -8982,9 +9309,9 @@ export default function TacticsBoard({
                     PRO
                   </span>
                 )}
-                {Object.values(opponentSetPieceRoles).filter(Boolean).length > 0 && (
+                {countSportRoles(opponentSetPieceRoles) > 0 && (
                   <span className="bg-rose-500 text-white font-black text-[8px] px-1.5 py-0.2 rounded-full ml-0.5">
-                    {Object.values(opponentSetPieceRoles).filter(Boolean).length}
+                    {countSportRoles(opponentSetPieceRoles)}
                   </span>
                 )}
               </button>
@@ -9681,6 +10008,91 @@ export default function TacticsBoard({
                   {getSportBallInfo(activeSport).emoji}
                 </span>
               </button>
+              {/* Football uniquement : afficher / masquer les 5 couloirs du terrain */}
+              {isFootballBoard && (
+                <button
+                  type="button"
+                  onClick={() => setShowPitchZones((v) => !v)}
+                  aria-pressed={showPitchZones}
+                  className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${showPitchZones
+                    ? isModernSleek
+                      ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                      : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                    : isModernSleek
+                      ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                    }`}
+                  title={showPitchZones
+                    ? (currentLang === "en" ? "Hide the 5 pitch lanes" : "Masquer les 5 couloirs du terrain")
+                    : (currentLang === "en" ? "Show the 5 pitch lanes" : "Afficher les 5 couloirs du terrain")}
+                  aria-label={currentLang === "en" ? "5 pitch lanes" : "5 couloirs du terrain"}
+                >
+                  <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <line x1="2" y1="8" x2="22" y2="8" strokeWidth="1.5" strokeDasharray="2 2" />
+                    <line x1="2" y1="10.5" x2="22" y2="10.5" strokeWidth="1.5" strokeDasharray="2 2" />
+                    <line x1="2" y1="13.5" x2="22" y2="13.5" strokeWidth="1.5" strokeDasharray="2 2" />
+                    <line x1="2" y1="16" x2="22" y2="16" strokeWidth="1.5" strokeDasharray="2 2" />
+                  </svg>
+                </button>
+              )}
+              {/* Football uniquement : afficher / masquer les 3 zones (défense, milieu, attaque) */}
+              {isFootballBoard && (
+                <button
+                  type="button"
+                  onClick={() => setShowPitchThirds((v) => !v)}
+                  aria-pressed={showPitchThirds}
+                  className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${showPitchThirds
+                    ? isModernSleek
+                      ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                      : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                    : isModernSleek
+                      ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                      : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                    }`}
+                  title={showPitchThirds
+                    ? (currentLang === "en" ? "Hide the 3 zones (defence, midfield, attack)" : "Masquer les 3 zones (défense, milieu, attaque)")
+                    : (currentLang === "en" ? "Show the 3 zones (defence, midfield, attack)" : "Afficher les 3 zones (défense, milieu, attaque)")}
+                  aria-label={currentLang === "en" ? "3 pitch zones" : "3 zones du terrain"}
+                >
+                  <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <line x1="8.7" y1="4" x2="8.7" y2="20" strokeWidth="1.5" strokeDasharray="2 2" />
+                    <line x1="15.3" y1="4" x2="15.3" y2="20" strokeWidth="1.5" strokeDasharray="2 2" />
+                  </svg>
+                </button>
+              )}
+              {/* Football uniquement : mur sur coup franc (nombre de joueurs, équipe, composition) */}
+              {isFootballBoard && (() => {
+                const hasWall = currentTokens.some((t) => t.type === "wall");
+                const isOpen = wallPopover !== null;
+                return (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      if (isOpen) { setWallPopover(null); return; }
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const existing = currentTokens.find((t) => t.type === "wall");
+                      setWallPopover({ team: existing?.wallTeam === "away" ? "away" : "home", left: r.left + r.width / 2, top: r.bottom + 8 });
+                    }}
+                    aria-pressed={hasWall}
+                    aria-expanded={isOpen}
+                    className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${hasWall || isOpen
+                      ? isModernSleek
+                        ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                        : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                      : isModernSleek
+                        ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                        : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                      }`}
+                    data-wall-button="true"
+                    title={currentLang === "en" ? "Free-kick wall" : "Mur (coup franc)"}
+                    aria-label={currentLang === "en" ? "Free-kick wall" : "Mur (coup franc)"}
+                  >
+                    <BrickWall className="h-[18px] w-[18px] shrink-0" />
+                  </button>
+                );
+              })()}
               <button
                 type="button"
                 onClick={() => setShowOpponents(!showOpponents)}
@@ -10762,7 +11174,7 @@ export default function TacticsBoard({
                         }}
                       >
                         {/* Ground pitch texture lines rendering */}
-                        <Pitch sport={activeSport} format={activeFormat} isPortrait={aspectRatioMode === "mobile"} centerLogo={showClubLogoOnPitch ? clubLogo : undefined} />
+                        <Pitch sport={activeSport} format={activeFormat} isPortrait={aspectRatioMode === "mobile"} centerLogo={showClubLogoOnPitch ? clubLogo : undefined} showZones={isFootballBoard && showPitchZones} showThirds={isFootballBoard && showPitchThirds} thirdsLabels={pitchThirdsLabels} />
 
 
                         {/* Corner Flags Overlay */}
@@ -10809,6 +11221,77 @@ export default function TacticsBoard({
                             // Handle visibility toggles
                             if (token.type === "ball" && !showBall) return null;
                             if (token.type === "player_b" && !showOpponents) return null;
+
+                            // Joueur placé dans le mur : affiché dans le mur, plus seul sur le terrain
+                            if (isInWall(token, currentTokens)) return null;
+
+                            // Mur sur coup franc : rangée de places (numéro du joueur qui l'occupe), glissable d'un bloc.
+                            // Un appui ouvre son panneau (places, rotation) ; on y entre en glissant un joueur dessus.
+                            if (token.type === "wall") {
+                              const team: WallTeam = token.wallTeam === "away" ? "away" : "home";
+                              if (team === "away" && !showOpponents) return null;
+                              const count = Math.max(WALL_MIN, Math.min(WALL_MAX, token.wallCount || WALL_DEFAULT));
+                              const members = wallMembers(team, count);
+                              const angle = wallAngleOf(token) - (aspectRatioMode === "mobile" ? 90 : 0);
+                              const teamColor = team === "away" ? (teamBColor || "#e11d48") : (teamAColor || "#00E599");
+                              const isActive = selectedTokenId === token.id || wallPopover?.team === team;
+                              const isDropTarget = wallDropTarget?.team === team;
+                              const named = members.filter((m): m is Token => !!m).map((m) => (m.number ? `${m.number}. ${m.name}` : m.name));
+                              return (
+                                <div
+                                  key={token.id}
+                                  onMouseDown={(e) => { e.stopPropagation(); handleTokenStartDrag(token.id, e); }}
+                                  onTouchStart={(e) => { e.stopPropagation(); handleTokenStartDrag(token.id, e); }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isDraggingTokenRef.current || Date.now() - dragEndTimeRef.current < 250) return;
+                                    const r = e.currentTarget.getBoundingClientRect();
+                                    setWallPopover(wallPopover?.team === team ? null : { team, left: r.left + r.width / 2, top: r.bottom + 10 });
+                                  }}
+                                  className="absolute pointer-events-auto select-none cursor-grab active:cursor-grabbing"
+                                  title={`Mur : ${named.length}/${count} joueur${count > 1 ? "s" : ""}${named.length ? ` (${named.join(", ")})` : ""}. Glissez un joueur dessus pour l'ajouter ; appuyez pour régler le mur.`}
+                                  style={{
+                                    left: `${aspectRatioMode === "mobile" ? token.y : token.x}%`,
+                                    top: `${aspectRatioMode === "mobile" ? 100 - token.x : token.y}%`,
+                                    transform: `translate(-50%, -50%) rotate(${angle}deg) scale(${playerScale / 100})`,
+                                    zIndex: 31,
+                                    transition: selectedTokenId === token.id ? "none" : `left 350ms ease-in-out, top 350ms ease-in-out`,
+                                  }}
+                                  data-wall-team={team}
+                                >
+                                  <div className={`relative flex items-center gap-[2px] p-[3px] rounded-full bg-black/45 border shadow-xl transition ${isDropTarget ? "border-white ring-4 ring-white/50 scale-105" : isActive ? "border-white ring-2 ring-white/40" : "border-white/25"}`}>
+                                    {members.map((m, i) => (
+                                      <span
+                                        key={i}
+                                        className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center text-[10px] font-black leading-none ${m ? "" : "border-dashed"} ${isDropTarget && wallDropTarget?.slot === i ? "ring-2 ring-white" : ""}`}
+                                        style={m
+                                          ? { background: teamColor, borderColor: "#0d131f", color: team === "away" ? "#ffffff" : "#0d131f" }
+                                          : { background: "rgba(255,255,255,0.08)", borderColor: teamColor, color: teamColor }}
+                                      >
+                                        {/* Le numéro reste lisible quel que soit l'angle du mur */}
+                                        <span style={{ transform: `rotate(${-angle}deg)` }}>{m ? (m.number ?? "•") : ""}</span>
+                                      </span>
+                                    ))}
+                                    {/* Poignée de rotation (panneau du mur ouvert) : tourner le mur à la main */}
+                                    {wallPopover?.team === team && (
+                                      <span
+                                        role="slider"
+                                        aria-label="Tourner le mur"
+                                        aria-valuenow={Math.round(wallAngleOf(token))}
+                                        title="Glisser pour tourner le mur"
+                                        onMouseDown={(e) => handleStartWallRotate(team, e)}
+                                        onTouchStart={(e) => handleStartWallRotate(team, e)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="absolute -right-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white border-2 border-slate-900 shadow-lg flex items-center justify-center cursor-alias"
+                                      >
+                                        <RotateCw className="w-3 h-3 text-slate-900" />
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            }
+
 
                             // Custom visual profiles
                             let tokenBg = "bg-[#090d14] border-[#00E599] text-[#00E599]"; // Team A looks like neon green matching layout
@@ -10894,6 +11377,7 @@ export default function TacticsBoard({
                                     setSubPickerToken(null);
                                   }
                                 }}
+                                data-board-token="true"
                                 className="absolute pointer-events-auto select-none cursor-grab active:cursor-grabbing flex flex-col items-center justify-center transition-transform"
                                 title={
                                   token.type.startsWith("player")
@@ -13518,6 +14002,137 @@ export default function TacticsBoard({
       {/* 9. SINGLE TOKEN QUICK EDIT & SUBSTITUTION (NOW INLINE BELOW PITCH) */}
       {/* ========================================================= */}
 
+      {/* Réglage du mur sur coup franc : bouton « Mur » de la barre d'outils, ou appui sur le mur */}
+      {wallPopover && isFootballBoard && (() => {
+        const team = wallPopover.team;
+        const wall = findWall(team);
+        const count = wallCountFor(team);
+        const members = wallMembers(team, count);
+        const filled = members.filter(Boolean).length;
+        const width = 300;
+        const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+        const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+        const left = Math.max(8, Math.min(vw - width - 8, wallPopover.left - width / 2));
+        const top = Math.max(8, Math.min(vh - 420, wallPopover.top));
+        const isManualAngle = typeof wall?.wallAngle === "number";
+        const panelCls = isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b1018] border-[#1e293b] text-white";
+        const subCls = isModernSleek ? "text-slate-500" : "text-slate-400";
+        const segIdle = isModernSleek ? "bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900" : "bg-[#0c1017] border-[#1e293b] text-[#8a9ab5] hover:text-white";
+        const segOn = team === "away"
+          ? (isModernSleek ? "bg-rose-50 border-rose-400 text-rose-700" : "bg-rose-500/15 border-rose-500/60 text-rose-300")
+          : (isModernSleek ? "bg-emerald-50 border-emerald-400 text-emerald-800" : "bg-[#132338] border-[#00E599]/60 text-[#00E599]");
+        const primary = isModernSleek ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600" : "bg-[#00E599] hover:bg-[#33ebad] text-slate-950 border-[#00E599]";
+        const ghost = isModernSleek ? "bg-white border-slate-200 text-slate-700 hover:bg-slate-50" : "bg-white/[0.03] border-white/10 text-slate-200 hover:bg-white/[0.07]";
+        const stepBtn = `h-8 w-8 rounded-lg border flex items-center justify-center transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed ${ghost}`;
+        return (
+          <div
+            role="dialog"
+            aria-label="Mur sur coup franc"
+            data-wall-popover="true"
+            className={`fixed z-[140] rounded-2xl border shadow-2xl p-3.5 space-y-3 ${panelCls}`}
+            style={{ left, top, width }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[13px] font-black flex items-center gap-2"><BrickWall className="w-4 h-4" />Mur sur coup franc</p>
+              <button type="button" onClick={() => setWallPopover(null)} aria-label="Fermer" className={`h-7 w-7 rounded-lg flex items-center justify-center cursor-pointer ${subCls}`}><X className="w-4 h-4" /></button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Équipe qui forme le mur">
+              {(["home", "away"] as WallTeam[]).map((tm) => (
+                <button
+                  key={tm}
+                  type="button"
+                  onClick={() => setWallPopover({ ...wallPopover, team: tm })}
+                  aria-pressed={team === tm}
+                  className={`h-8 px-2 rounded-lg border text-[11px] font-black truncate cursor-pointer transition ${team === tm ? segOn : segIdle}`}
+                >
+                  {tm === "home" ? (activeMatch.homeTeam || "Mon équipe") : (activeMatch.awayTeam || "Adversaire")}
+                </button>
+              ))}
+            </div>
+
+            {!wall ? (
+              <>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-[11px] font-bold ${subCls}`}>Places dans le mur</span>
+                  <div className="flex items-center gap-1.5">
+                    <button type="button" className={stepBtn} disabled={count <= WALL_MIN} onClick={() => handleSetWallCount(team, count - 1)} aria-label="Une place de moins"><Minus className="w-3.5 h-3.5" /></button>
+                    <span className="w-7 text-center text-base font-black tabular-nums" aria-live="polite">{count}</span>
+                    <button type="button" className={stepBtn} disabled={count >= WALL_MAX} onClick={() => handleSetWallCount(team, count + 1)} aria-label="Une place de plus"><Plus className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+                <button type="button" onClick={() => handlePlaceWall(team)} className={`w-full h-9 px-2 rounded-xl border text-[12px] font-black cursor-pointer transition ${primary}`} title="Place le mur à la distance réglementaire du ballon, entre le ballon et le but défendu">
+                  Placer le mur
+                </button>
+                <p className={`text-[11px] leading-snug ${subCls}`}>Ensuite, glissez les joueurs du terrain sur le mur pour le composer.</p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-[11px] font-bold ${subCls}`}>Places · {filled}/{count} occupées</span>
+                  <div className="flex items-center gap-1.5">
+                    <button type="button" className={stepBtn} disabled={count <= WALL_MIN} onClick={() => handleSetWallCount(team, count - 1)} aria-label="Une place de moins" title="Une place de moins (le dernier joueur du mur revient sur le terrain)"><Minus className="w-3.5 h-3.5" /></button>
+                    <span className="w-7 text-center text-base font-black tabular-nums" aria-live="polite">{count}</span>
+                    <button type="button" className={stepBtn} disabled={count >= WALL_MAX} onClick={() => handleSetWallCount(team, count + 1)} aria-label="Une place de plus"><Plus className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+
+                <ol className={`rounded-xl border p-2 space-y-1 ${isModernSleek ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.02]"}`}>
+                  {members.map((m, i) => (
+                    <li key={i} className="flex items-center gap-2 text-[11px] min-h-6">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border shrink-0 ${segOn}`}>{i + 1}</span>
+                      <span className={`flex-1 truncate font-bold ${m ? "" : subCls}`}>{m ? `${m.number ? `N°${m.number} · ` : ""}${m.name}` : "Place libre"}</span>
+                      {m && (
+                        <>
+                          <button type="button" onClick={() => { setWallPopover(null); setSubPickerToken(m); }} aria-label={`Remplacer ${m.name}`} title="Remplacer ce joueur : le remplaçant prend sa place dans le mur" className={`h-6 w-6 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${subCls} hover:text-cyan-500`}>
+                            <ArrowLeftRight className="w-3.5 h-3.5" />
+                          </button>
+                          <button type="button" onClick={() => handleReleaseFromWall(m.id)} aria-label={`Sortir ${m.name} du mur`} title="Sortir du mur (le joueur revient sur le terrain)" className={`h-6 w-6 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${subCls} hover:text-rose-500`}>
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+                <p className={`text-[11px] leading-snug ${subCls}`}>Glissez un joueur du terrain sur le mur pour l&apos;y ajouter. Un remplaçant prend la place du joueur qu&apos;il remplace.</p>
+
+                <div className="space-y-1.5">
+                  <span className={`text-[11px] font-bold ${subCls}`}>Orientation</span>
+                  <div className="flex items-center gap-1.5">
+                    <button type="button" className={stepBtn} onClick={() => handleSetWallAngle(team, wallAngleOf(wall) - 15)} aria-label="Tourner de 15° vers la gauche"><RotateCcw className="w-3.5 h-3.5" /></button>
+                    <span className="w-12 text-center text-sm font-black tabular-nums">{Math.round(normalizeAngle(wallAngleOf(wall)))}°</span>
+                    <button type="button" className={stepBtn} onClick={() => handleSetWallAngle(team, wallAngleOf(wall) + 15)} aria-label="Tourner de 15° vers la droite"><RotateCw className="w-3.5 h-3.5" /></button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetWallAngle(team, undefined)}
+                      aria-pressed={!isManualAngle}
+                      className={`flex-1 h-8 px-2 rounded-lg border text-[11px] font-black cursor-pointer transition ${!isManualAngle ? segOn : segIdle}`}
+                      title="Le mur se tourne tout seul vers le ballon"
+                    >
+                      Face au ballon
+                    </button>
+                  </div>
+                  <p className={`text-[10.5px] ${subCls}`}>Ou glissez la poignée ↻ au bout du mur.</p>
+                </div>
+
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => handleAutoFillWall(team)} disabled={filled >= count} className={`h-9 px-2.5 rounded-xl border text-[11px] font-black cursor-pointer transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${ghost}`} title="Remplit les places libres avec des joueurs du terrain (défenseurs centraux et milieux défensifs d'abord, sans gardien ni tireur de coup franc)">
+                    <Zap className="w-3.5 h-3.5" />Remplir
+                  </button>
+                  <button type="button" onClick={() => handlePlaceWall(team)} className={`flex-1 h-9 px-2 rounded-xl border text-[11px] font-black cursor-pointer transition ${primary}`} title="Replace le mur à la distance réglementaire du ballon, tourné vers lui">
+                    Replacer face au ballon
+                  </button>
+                  <button type="button" onClick={() => handleRemoveWall(team)} aria-label="Retirer le mur" title="Retirer le mur (ses joueurs reviennent sur le terrain)" className={`h-9 w-9 rounded-xl border flex items-center justify-center cursor-pointer transition shrink-0 ${isModernSleek ? "bg-white border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-300" : "bg-white/[0.03] border-white/10 text-slate-400 hover:text-rose-300 hover:border-rose-500/40"}`}>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ========================================================= */}
       {/* MODAL : GESTION DE L'EFFECTIF (NOMS, N°, POSTES) & RÔLES / COUPS DE PIED ARRÊTÉS */}
       {/* ========================================================= */}
@@ -13601,7 +14216,7 @@ export default function TacticsBoard({
 
         const filteredStarters = starters.filter(matchesSearch);
         const filteredSubs = activeSubs.filter(matchesSearch);
-        const assignedRolesCount = Object.values(currentRoles).filter(Boolean).length;
+        const assignedRolesCount = countSportRoles(currentRoles);
         const teamDisplayName = isAway
           ? (activeMatch.awayTeam || "Équipe B (Adverse)")
           : (activeMatch.homeTeam || "Mon Équipe");
@@ -14168,6 +14783,62 @@ export default function TacticsBoard({
                           );
                         })}
                       </div>
+
+                      {/* Composition du mur sur coup franc (football) : faite sur le terrain, en glissant les joueurs sur le mur */}
+                      {isFootballBoard && (() => {
+                        const team: WallTeam = isAway ? "away" : "home";
+                        const count = wallCountFor(team);
+                        const wallOnPitch = findWall(team);
+                        const members = wallMembers(team, count);
+                        const filled = members.filter(Boolean).length;
+                        return (
+                          <div className={`p-4 rounded-2xl border ${filled ? acc.selected : th.card}`}>
+                            <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${filled ? acc.chip : th.cardMuted}`}>
+                                  <BrickWall className={`w-4 h-4 ${filled ? "" : th.faint}`} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className={`text-[13px] font-black ${th.text}`}>Composition du mur</p>
+                                  <p className={`text-[11px] ${th.sub}`}>
+                                    {wallOnPitch ? `Coups francs · ${filled}/${count} places occupées · glissez les joueurs du terrain sur le mur` : "Aucun mur sur le terrain"}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex items-center gap-1.5" role="group" aria-label="Nombre de places dans le mur">
+                                  <button type="button" disabled={count <= WALL_MIN} onClick={() => handleSetWallCount(team, count - 1)} className={`h-8 w-8 rounded-lg border flex items-center justify-center transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed ${th.ghostBtn}`} aria-label="Une place de moins"><Minus className="w-3.5 h-3.5" /></button>
+                                  <span className={`w-16 text-center text-xs font-black tabular-nums ${th.text}`}>{count} place{count > 1 ? "s" : ""}</span>
+                                  <button type="button" disabled={count >= WALL_MAX} onClick={() => handleSetWallCount(team, count + 1)} className={`h-8 w-8 rounded-lg border flex items-center justify-center transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed ${th.ghostBtn}`} aria-label="Une place de plus"><Plus className="w-3.5 h-3.5" /></button>
+                                </div>
+                                {wallOnPitch && (
+                                  <button type="button" onClick={() => handleAutoFillWall(team)} disabled={filled >= count} className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${th.ghostBtn}`} title="Remplit les places libres avec des joueurs du terrain (défenseurs centraux et milieux défensifs d'abord, sans gardien ni tireur de coup franc)">
+                                    <Zap className="w-3.5 h-3.5" />Remplir
+                                  </button>
+                                )}
+                                <button type="button" onClick={() => handlePlaceWall(team)} className={`px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer ${acc.btn}`}>
+                                  {wallOnPitch ? "Replacer face au ballon" : "Placer le mur"}
+                                </button>
+                              </div>
+                            </div>
+                            {wallOnPitch && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {members.map((m, i) => (
+                                  <div key={i} className={`h-10 px-2.5 rounded-xl border flex items-center gap-2 ${m ? th.card : th.cardMuted}`}>
+                                    <span className={`w-6 h-6 rounded-lg border flex items-center justify-center text-[11px] font-black shrink-0 ${m ? acc.chip : th.chip}`}>{i + 1}</span>
+                                    <span className={`flex-1 min-w-0 truncate text-xs font-bold ${m ? th.text : th.faint}`}>{m ? `N°${m.number ?? "?"} · ${m.name}` : "Place libre"}</span>
+                                    {m && (
+                                      <button type="button" onClick={() => handleReleaseFromWall(m.id)} aria-label={`Sortir ${m.name} du mur`} title="Sortir du mur (le joueur revient sur le terrain)" className={`h-7 w-7 rounded-lg border flex items-center justify-center cursor-pointer shrink-0 ${th.ghostBtn}`}>
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </>
                   )}
                 </div>

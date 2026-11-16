@@ -113,6 +113,15 @@ function cornerArcs(L: number, W: number, corners: Array<"tl" | "tr" | "bl" | "b
   return corners.map((c) => map[c]);
 }
 
+/**
+ * Terrain complet dont le terrain configuré est une partie (m, même origine) : le demi-terrain et le
+ * quart de terrain sont des morceaux d'un terrain à 11, pour placer les couloirs et les zones au bon endroit.
+ */
+export function fullPitchFrame(pitch: PitchConfig): { x: number; y: number; length: number; width: number } {
+  if (pitch.format === "half" || pitch.format === "quarter") return { x: 0, y: 0, length: 105, width: 68 };
+  return { x: 0, y: 0, length: pitch.length, width: pitch.width };
+}
+
 /** Tracés du terrain configuré */
 export function pitchMarkings(pitch: PitchConfig): PitchMarking[] {
   const L = pitch.length;

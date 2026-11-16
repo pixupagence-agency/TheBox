@@ -3,7 +3,8 @@
 // chaque arrêt sur image annoté est tenu quelques secondes avec ses consignes, comme lors de la causerie.
 // MP4 (H.264 + AAC) quand le navigateur sait l'enregistrer (Chrome, Edge, Safari), sinon WebM (Firefox).
 import { renderShapes, renderTracks } from "./draw";
-import type { Freeze, Track } from "./types";
+import { renderPitchOverlay } from "./pitchOverlay";
+import type { Freeze, PitchOverlay, Track } from "./types";
 
 export interface ClipExportOptions {
   /** URL du fichier vidéo (fichier importé) */
@@ -12,6 +13,8 @@ export interface ClipExportOptions {
   end: number;
   tracks: Track[];
   freezes: Freeze[];
+  /** Couloirs / zones du terrain calés en perspective */
+  pitchOverlay?: PitchOverlay;
   /** Durée d'affichage d'un arrêt sur image annoté (s) */
   holdSeconds?: number;
   /** Largeur maximale de l'image exportée */
@@ -86,6 +89,7 @@ export async function exportClip(opts: ClipExportOptions): Promise<ClipExportRes
 
     const draw = (t: number, shapes: Freeze["shapes"] | null) => {
       ctx.drawImage(video, 0, 0, W, H);
+      renderPitchOverlay(ctx, opts.pitchOverlay, rect);
       if (opts.tracks.length) renderTracks(ctx, opts.tracks, rect, t);
       if (shapes) renderShapes(ctx, shapes, rect);
     };

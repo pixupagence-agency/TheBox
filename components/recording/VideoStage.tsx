@@ -4,7 +4,8 @@
 // Le lecteur est piloté par l'éditeur (pas de commandes natives) pour un contrôle image par image.
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { curveControl, fitRect, hitShape, hitTrack, renderShapes, renderTracks, type Rect } from "@/lib/recording/draw";
-import type { Shape, StageTool, Track } from "@/lib/recording/types";
+import type { PitchOverlay, Shape, StageTool, Track } from "@/lib/recording/types";
+import { hitHandle, renderPitchCalibration, renderPitchOverlay } from "@/lib/recording/pitchOverlay";
 import { newId } from "@/lib/recording/db";
 
 declare global {
@@ -95,10 +96,16 @@ interface Props {
   onMoveShape: (id: string, dx: number, dy: number, commit: boolean) => void;
   onReady: (info: { duration: number }) => void;
   onError: (message: string) => void;
+  /** Couloirs / zones du terrain calés en perspective */
+  pitchOverlay?: PitchOverlay;
+  /** Calage en cours : les poignées se déplacent, les outils de dessin sont suspendus */
+  calibrating?: boolean;
+  /** Nouvelle position des poignées (commit = relâchement) */
+  onCalibrate?: (quad: number[], commit: boolean) => void;
 }
 
 const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
-  { source, shapes, tool, tracks, time, live = false, liveCanvasRef, selectedTrackId, onTrackPointer, color, width, dashed, selectedId, onSelect, onBeginDraw, onAddShape, onMoveShape, onReady, onError },
+  { source, shapes, tool, tracks, time, live = false, liveCanvasRef, selectedTrackId, onTrackPointer, color, width, dashed, selectedId, onSelect, onBeginDraw, onAddShape, onMoveShape, onReady, onError, pitchOverlay, calibrating = false, onCalibrate },
   ref
 ) {
   const boxRef = useRef<HTMLDivElement>(null);
@@ -114,7 +121,8 @@ const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
   const draftRef = useRef<Shape | null>(null);
   draftRef.current = draft;
   const [textEdit, setTextEdit] = useState<{ x: number; y: number; value: string } | null>(null);
-  const drag = useRef<{ kind: "draw" | "move" | "track"; startX: number; startY: number; id?: string; lastX: number; lastY: number } | null>(null);
+  const drag = useRef<{ kind: "draw" | "move" | "track" | "calib"; startX: number; startY: number; id?: string; handle?: number; lastX: number; lastY: number } | null>(null);
+  const [activeHandle, setActiveHandle] = useState<number | null>(null);
 
   const rect = fitRect(box.w, box.h, natural.w, natural.h);
   const rectRef = useRef(rect);
@@ -261,10 +269,12 @@ const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, box.w, box.h);
+    if (pitchOverlay) renderPitchOverlay(ctx, pitchOverlay, rect);
+    if (pitchOverlay && calibrating) renderPitchCalibration(ctx, pitchOverlay, rect, activeHandle);
     if (tracks.length) renderTracks(ctx, tracks, rect, time, tool === "track" ? selectedTrackId : null);
     const list = [...(shapes || []), ...(draft ? [draft] : [])];
     if (list.length) renderShapes(ctx, list, rect, tool === "select" ? selectedId : null);
-  }, [shapes, draft, box, rect.x, rect.y, rect.w, rect.h, selectedId, tool, tracks, time, selectedTrackId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shapes, draft, box, rect.x, rect.y, rect.w, rect.h, selectedId, tool, tracks, time, selectedTrackId, pitchOverlay, calibrating, activeHandle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toNorm = useCallback((clientX: number, clientY: number) => {
     const b = boxRef.current!.getBoundingClientRect();
@@ -277,6 +287,15 @@ const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
   const onPointerDown = (e: React.PointerEvent) => {
     if (!source || e.button !== 0 || textEdit || live) return;
     const p = toNorm(e.clientX, e.clientY);
+    if (calibrating) {
+      if (!pitchOverlay) return;
+      const handle = hitHandle(pitchOverlay, rectRef.current, p.px, p.py);
+      if (handle < 0) return;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      drag.current = { kind: "calib", handle, startX: p.x, startY: p.y, lastX: p.x, lastY: p.y };
+      setActiveHandle(handle);
+      return;
+    }
     if (tool === "track") {
       const hit = hitTrack(tracks, p.px, p.py, rectRef.current, time);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -307,6 +326,19 @@ const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
     const d = drag.current;
     if (!d) return;
     const p = toNorm(e.clientX, e.clientY);
+    if (d.kind === "calib" && d.handle !== undefined && pitchOverlay) {
+      // Poignée libre jusqu'aux bords de la scène (un coin du repère peut être hors de l'image)
+      const r = rectRef.current;
+      const b = boxRef.current!.getBoundingClientRect();
+      const nx = Math.min((b.width - r.x) / r.w, Math.max(-r.x / r.w, (p.px - r.x) / r.w));
+      const ny = Math.min((b.height - r.y) / r.h, Math.max(-r.y / r.h, (p.py - r.y) / r.h));
+      const quad = [...pitchOverlay.quad];
+      quad[d.handle * 2] = nx;
+      quad[d.handle * 2 + 1] = ny;
+      d.lastX = nx; d.lastY = ny;
+      onCalibrate?.(quad, false);
+      return;
+    }
     if (d.kind === "track") { onTrackPointer({ x: p.x, y: p.y }, "move", null); return; }
     if (d.kind === "move" && d.id) {
       onMoveShape(d.id, p.x - d.lastX, p.y - d.lastY, false);
@@ -328,6 +360,11 @@ const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
     const d = drag.current;
     drag.current = null;
     if (!d) return;
+    if (d.kind === "calib") {
+      setActiveHandle(null);
+      if (pitchOverlay) onCalibrate?.(pitchOverlay.quad, true);
+      return;
+    }
     if (d.kind === "track") { onTrackPointer({ x: d.lastX, y: d.lastY }, "up", null); return; }
     if (d.kind === "move" && d.id) { onMoveShape(d.id, 0, 0, true); return; }
     // Le tracé est lu depuis la référence (et non dans un « updater » de state, exécuté deux fois en mode strict)
@@ -353,7 +390,7 @@ const VideoStage = forwardRef<PlayerHandle, Props>(function VideoStage(
     setTextEdit(null);
   };
 
-  const cursor = !source ? "default" : live ? "progress" : tool === "select" ? "default" : tool === "text" ? "text" : tool === "track" ? "cell" : "crosshair";
+  const cursor = !source ? "default" : live ? "progress" : calibrating ? (activeHandle !== null ? "grabbing" : "grab") : tool === "select" ? "default" : tool === "text" ? "text" : tool === "track" ? "cell" : "crosshair";
 
   return (
     <div ref={boxRef} className="absolute inset-0 overflow-hidden bg-black select-none" data-testid="recording-stage">
