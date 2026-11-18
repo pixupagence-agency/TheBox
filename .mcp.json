@@ -10,7 +10,11 @@
     },
     "firebase": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "firebase-tools@latest", "mcp", "--dir", "."]
+      "args": ["/c", "firebase", "mcp", "--dir", "."]
+    },
+    "vercel": {
+      "type": "http",
+      "url": "https://mcp.vercel.com"
     }
   }
 }
