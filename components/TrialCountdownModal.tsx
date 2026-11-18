@@ -18,11 +18,30 @@ export interface TrialTimeRemaining {
   totalTrialDays: number;
 }
 
-export function calculateTrialRemaining(createdAtStr?: string, bonusDays: number = 0): TrialTimeRemaining {
+/**
+ * Temps d'essai restant. `trialEndsAt` (fixée par le serveur, voir lib/accountStatus.ts) fait foi ;
+ * null = le compte n'a pas (ou plus) droit à l'essai. Sans elle (ancien profil, serveur injoignable),
+ * la fin est déduite de la date de création et des jours offerts.
+ */
+export function calculateTrialRemaining(createdAtStr?: string, bonusDays: number = 0, trialEndsAt?: string | null): TrialTimeRemaining {
   const totalDays = TRIAL_DURATION_DAYS + (bonusDays || 0);
+  const expired: TrialTimeRemaining = {
+    isExpired: true,
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    percentRemaining: 0,
+    daysPassed: totalDays,
+    totalTrialDays: totalDays,
+  };
+  if (trialEndsAt === null) return expired;
 
   let startDate: number;
-  if (createdAtStr && !isNaN(new Date(createdAtStr).getTime())) {
+  const serverEnd = trialEndsAt ? new Date(trialEndsAt).getTime() : NaN;
+  if (!isNaN(serverEnd)) {
+    startDate = serverEnd - totalDays * 24 * 60 * 60 * 1000;
+  } else if (createdAtStr && !isNaN(new Date(createdAtStr).getTime())) {
     startDate = new Date(createdAtStr).getTime();
   } else {
     if (typeof window !== "undefined") {
@@ -41,26 +60,12 @@ export function calculateTrialRemaining(createdAtStr?: string, bonusDays: number
   const bonusMs = (bonusDays || 0) * 24 * 60 * 60 * 1000;
   const now = Date.now();
 
-  let endDate = baseEndDate + bonusMs;
-  // If base trial was already expired and bonus days are added, extend from now
-  if (baseEndDate < now && bonusDays > 0) {
-    endDate = Math.max(endDate, now + bonusMs);
-  }
+  // Fin fixe (le serveur applique la même règle) : ajouter des jours ne repousse pas la fin indéfiniment
+  const endDate = !isNaN(serverEnd) ? serverEnd : baseEndDate + bonusMs;
 
   const diff = endDate - now;
 
-  if (diff <= 0) {
-    return {
-      isExpired: true,
-      days: 0,
-      hours: 0,
-      minutes: 0,
-      seconds: 0,
-      percentRemaining: 0,
-      daysPassed: totalDays,
-      totalTrialDays: totalDays,
-    };
-  }
+  if (diff <= 0) return expired;
 
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -89,6 +94,8 @@ interface TrialCountdownModalProps {
   onClose: () => void;
   createdAt?: string;
   trialBonusDays?: number;
+  /** Fin d'essai fixée par le serveur (voir calculateTrialRemaining) */
+  trialEndsAt?: string | null;
   isNewAccountWelcome?: boolean;
   onOpenCheckout?: () => void;
   coachName?: string;
@@ -104,6 +111,7 @@ export default function TrialCountdownModal({
   onClose,
   createdAt,
   trialBonusDays = 0,
+  trialEndsAt,
   isNewAccountWelcome = false,
   onOpenCheckout,
   coachName = "Coach",
@@ -119,16 +127,16 @@ export default function TrialCountdownModal({
   );
 
   const [remaining, setRemaining] = useState<TrialTimeRemaining>(() =>
-    calculateTrialRemaining(createdAt, trialBonusDays)
+    calculateTrialRemaining(createdAt, trialBonusDays, trialEndsAt)
   );
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setRemaining(calculateTrialRemaining(createdAt, trialBonusDays));
+      setRemaining(calculateTrialRemaining(createdAt, trialBonusDays, trialEndsAt));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [createdAt, trialBonusDays]);
+  }, [createdAt, trialBonusDays, trialEndsAt]);
 
   if (!isOpen) return null;
 

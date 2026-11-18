@@ -426,3 +426,22 @@ export async function stopWorkspaceSync(): Promise<void> {
   window.removeEventListener("pagehide", handlePageHide);
   document.removeEventListener("visibilitychange", handleVisibilityChange);
 }
+
+/**
+ * Compte sans accès (essai terminé, abonnement arrêté) : retire de l'appareil les données synchronisées
+ * (équipes, effectifs, matchs, notes…). Elles restent en ligne jusqu'à leur suppression par le serveur
+ * et reviennent par restoreWorkspaceFromCloud au retour d'un abonnement.
+ * La synchro doit être arrêtée : sinon elle supprimerait aussi les données en ligne.
+ */
+export async function clearLocalWorkspace(): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (intervalId) clearInterval(intervalId);
+  intervalId = null;
+  currentUid = null;
+  window.removeEventListener("pagehide", handlePageHide);
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
+  if (syncInFlight) await syncInFlight.catch(() => undefined);
+  for (const key of Array.from(localSyncedEntries().keys())) localStorage.removeItem(key);
+  localStorage.removeItem(META_KEY);
+  resetState();
+}

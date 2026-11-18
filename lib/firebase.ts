@@ -24,7 +24,8 @@ import {
   query, 
   where, 
   getDocs, 
-  onSnapshot 
+  onSnapshot,
+  Timestamp
 } from "firebase/firestore";
 import firebaseConfig from "../firebase-config.json";
 
@@ -244,8 +245,17 @@ export async function saveUserProfileToFirestore(profile: FirebaseCoachProfile) 
   const currentUid = auth.currentUser.uid;
   const path = `users/${currentUid}`;
   try {
+    // Champs tenus par le serveur (abonnement, essai, suppression des données) : jamais renvoyés par le client,
+    // les règles Firestore refuseraient l'écriture
+    const {
+      trialEndsAt: _trialEndsAt,
+      hasHadSubscription: _hasHadSubscription,
+      freeSince: _freeSince,
+      dataHidden: _dataHidden,
+      ...writable
+    } = profile as FirebaseCoachProfile & Record<string, unknown>;
     const rawData = {
-      ...profile,
+      ...writable,
       id: currentUid,
       isAdmin: Boolean(profile.isAdmin),
       updatedAt: new Date().toISOString(),
@@ -292,11 +302,16 @@ export async function listAllUserProfiles(): Promise<FirebaseCoachProfile[]> {
 /** Plateforme admin : modifie la formule ou l'essai d'un coach (réservé au super admin par les règles). */
 export async function adminUpdateUserProfile(
   userId: string,
-  patch: Partial<Pick<FirebaseCoachProfile, "activePlan" | "trialBonusDays">>
+  patch: Partial<Pick<FirebaseCoachProfile, "activePlan" | "trialBonusDays">> & { trialEndsAt?: Date }
 ) {
   const path = `users/${userId}`;
   try {
-    await updateDoc(doc(db, "users", userId), cleanFirestoreData({ ...patch, updatedAt: new Date().toISOString() }));
+    const { trialEndsAt, ...rest } = patch;
+    await updateDoc(doc(db, "users", userId), {
+      ...cleanFirestoreData({ ...rest, updatedAt: new Date().toISOString() }),
+      // Fin d'essai stockée en Timestamp (lue par les règles Firestore), ajoutée après le nettoyage qui l'aplatirait
+      ...(trialEndsAt ? { trialEndsAt: Timestamp.fromDate(trialEndsAt) } : {}),
+    });
   } catch (err) {
     handleFirestoreError(err, OperationType.UPDATE, path);
   }

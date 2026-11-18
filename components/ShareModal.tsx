@@ -47,6 +47,77 @@ export interface MatchSchemaItem {
   description?: string;
   formation?: string;
   sport?: string;
+  isAnimation?: boolean;
+  stepsCount?: number;
+  playbackSpeed?: number;
+  renderAnimationFrame?: (position: number) => HTMLCanvasElement | null;
+}
+
+// Lecture en boucle d'une animation enregistrée, dessinée image par image dans la fenêtre de partage
+const PREVIEW_FRAME_MS = 1000 / 15;
+function AnimatedSchemaPreview({
+  renderFrame,
+  stepsCount,
+  stepMs,
+  fallbackImage,
+  alt,
+  className,
+}: {
+  renderFrame: (position: number) => HTMLCanvasElement | null;
+  stepsCount: number;
+  stepMs: number;
+  fallbackImage?: string;
+  alt: string;
+  className?: string;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let rafId = 0;
+    let visible = true;
+    let lastDraw = -Infinity;
+    const loopDuration = getAnimationDuration(stepsCount, stepMs);
+    const startedAt = performance.now();
+
+    const tick = (now: number) => {
+      rafId = requestAnimationFrame(tick);
+      if (!visible || now - lastDraw < PREVIEW_FRAME_MS) return;
+      lastDraw = now;
+      try {
+        const source = renderFrame(getPositionAtTime((now - startedAt) % loopDuration, stepsCount, stepMs));
+        if (!source) return;
+        if (canvas.width !== source.width || canvas.height !== source.height) {
+          canvas.width = source.width;
+          canvas.height = source.height;
+        }
+        canvas.getContext("2d")?.drawImage(source, 0, 0);
+      } catch (e) {
+        console.warn("Aperçu animé indisponible", e);
+        cancelAnimationFrame(rafId);
+        setFailed(true);
+      }
+    };
+
+    // Pas de rendu pour les aperçus hors de l'écran
+    const observer = typeof IntersectionObserver !== "undefined"
+      ? new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; })
+      : null;
+    observer?.observe(canvas);
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer?.disconnect();
+    };
+  }, [renderFrame, stepsCount, stepMs]);
+
+  if (failed && fallbackImage) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={fallbackImage} alt={alt} className={className} />;
+  }
+  return <canvas ref={canvasRef} role="img" aria-label={alt} className={className} />;
 }
 
 export interface ShareData {
@@ -124,7 +195,10 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
   // Selected schemas to include if multiple are present
   const [unselectedSchemaIds, setUnselectedSchemaIds] = useState<string[]>([]);
-  const [userPreviewSchema, setUserPreviewSchema] = useState<MatchSchemaItem | null>(null);
+  const [focusedSchemaId, setFocusedSchemaId] = useState<string | null>(null);
+  const [downloadedSchemaId, setDownloadedSchemaId] = useState<string | null>(null);
+  const mainVisualRef = useRef<HTMLDivElement | null>(null);
+  const schemaCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Collapsible text preview
   const [showLivePreview, setShowLivePreview] = useState<boolean>(false);
@@ -230,15 +304,16 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   const selectedSchemaIds = allMatchSchemas
     .map((s) => s.id)
     .filter((id) => !unselectedSchemaIds.includes(id));
-  const activePreviewSchema = userPreviewSchema || (!data.imageUrl ? allMatchSchemas[0] : null);
+  const activePreviewSchema = !data.imageUrl ? allMatchSchemas[0] : null;
+  const selectedMatchSchemas = allMatchSchemas.filter((s) => selectedSchemaIds.includes(s.id));
 
   const sportLabel = (data.sport || "Football").toUpperCase();
   const clubLabel = data.clubName || "The Box FC";
   const formationLabel = activePreviewSchema?.formation || data.formation || "4-3-3";
-  const activeSchemaTitle = userPreviewSchema?.name || data.title || allMatchSchemas[0]?.name || "Schéma Tactique";
+  const activeSchemaTitle = data.title || allMatchSchemas[0]?.name || "Schéma Tactique";
   const activeCoachNoteText = customCoachNote.trim() || data.notes || "";
   const activeSchemaDesc = activePreviewSchema?.description || activeCoachNoteText;
-  const activeImageUrl = userPreviewSchema?.previewImage || data.imageUrl || allMatchSchemas[0]?.previewImage || captured3dUrl || null;
+  const activeImageUrl = data.imageUrl ||allMatchSchemas[0]?.previewImage || captured3dUrl || null;
   const is3D = data.type === "carte_3d";
   const isAnimMode = Boolean(data.isAnimation || (data.keyframes && data.keyframes.length > 1) || (data.phasesCount && data.phasesCount > 1));
 
@@ -431,6 +506,30 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
     } catch (e) {
       console.warn("Erreur téléchargement image", e);
     }
+  };
+
+  // Téléchargement de l'image d'un schéma du match
+  const handleDownloadSchemaImage = (schema: MatchSchemaItem) => {
+    if (!schema.previewImage) return;
+    try {
+      const link = document.createElement("a");
+      link.download = buildExportFilename(schema.isAnimation ? "Animation" : "Schema", schema.name, "png");
+      link.href = schema.previewImage;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setDownloadedSchemaId(schema.id);
+      setTimeout(() => setDownloadedSchemaId((prev) => (prev === schema.id ? null : prev)), 3000);
+    } catch (e) {
+      console.warn("Erreur téléchargement schéma", e);
+    }
+  };
+
+  // Clic dans la liste latérale : amène l'aperçu correspondant à l'écran
+  const scrollToSchema = (schemaId: string | null) => {
+    setFocusedSchemaId(schemaId);
+    const target = schemaId ? schemaCardRefs.current[schemaId] : mainVisualRef.current;
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   // Direct Download GIF Animation Helper
@@ -819,7 +918,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
     }
   };
 
-  const hasMultipleSchemas = Boolean(data.matchSchemas && data.matchSchemas.length > 1);
+  const hasMatchSchemas = allMatchSchemas.length > 0;
   const th = getPremiumTheme(Boolean(isModernSleek));
 
   return (
@@ -853,7 +952,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
               <div className="space-y-1.5">
                 {[
                   { key: "players", on: includePlayers, set: setIncludePlayers, icon: Users, label: "Joueurs", desc: isGroupList ? `Groupe de ${totalPlayersCount} joueurs` : `${activeStarters.length} titulaires${activeSubstitutes.length > 0 ? ` · ${activeSubstitutes.length} remplaçants` : ""}` },
-                  { key: "schemas", on: includeSchemas, set: setIncludeSchemas, icon: Layers, label: isAnimMode ? "Animation" : "Schémas", desc: hasMultipleSchemas ? `${selectedSchemaIds.length}/${data.matchSchemas?.length} sélectionnés` : isAnimMode ? "GIF, vidéo ou image fixe" : "Visuel HD du terrain" },
+                  { key: "schemas", on: includeSchemas, set: setIncludeSchemas, icon: Layers, label: isAnimMode ? "Animation" : "Schémas", desc: hasMatchSchemas ? `${selectedSchemaIds.length}/${data.matchSchemas?.length} sélectionnés` : isAnimMode ? "GIF, vidéo ou image fixe" : "Visuel HD du terrain" },
                   { key: "notes", on: includeNotes, set: setIncludeNotes, icon: FileText, label: "Consignes", desc: customCoachNote.trim() ? "Note personnalisée" : "Mot du coach" },
                 ].map((opt) => {
                   const Icon = opt.icon;
@@ -904,17 +1003,17 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             </div>
 
             {/* Sélection des schémas */}
-            {includeSchemas && hasMultipleSchemas && (
+            {includeSchemas && hasMatchSchemas && (
               <div>
                 <p className={`px-3 pb-2 text-[10px] font-black uppercase tracking-[0.18em] ${th.faint}`}>Schémas du match</p>
                 <div className="space-y-1">
                   {data.imageUrl && data.matchSchemas && data.matchSchemas.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setUserPreviewSchema(null)}
-                      className={`relative w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition cursor-pointer ${userPreviewSchema === null ? th.navActive : th.navIdle}`}
+                      onClick={() => scrollToSchema(null)}
+                      className={`relative w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition cursor-pointer ${focusedSchemaId === null ? th.navActive : th.navIdle}`}
                     >
-                      {userPreviewSchema === null && <span className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-full ${th.navIndicator}`} />}
+                      {focusedSchemaId === null && <span className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-full ${th.navIndicator}`} />}
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={data.imageUrl} alt="Terrain actuel" className="w-10 h-6 object-cover rounded-md bg-black border border-white/10" />
                       <span className="min-w-0">
@@ -925,7 +1024,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                   )}
                   {data.matchSchemas?.map((sc) => {
                     const isChecked = selectedSchemaIds.includes(sc.id);
-                    const isPreviewing = userPreviewSchema?.id === sc.id;
+                    const isPreviewing = focusedSchemaId === sc.id;
                     return (
                       <div
                         key={sc.id}
@@ -939,7 +1038,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                           className="w-3.5 h-3.5 accent-[#00E599] rounded cursor-pointer shrink-0"
                           title="Inclure ce schéma dans le message"
                         />
-                        <button type="button" onClick={() => setUserPreviewSchema(sc)} className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer">
+                        <button type="button" onClick={() => scrollToSchema(sc.id)} className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer">
                           {sc.previewImage ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={sc.previewImage} alt={sc.name} className="w-10 h-6 object-cover rounded-md bg-black border border-white/10 shrink-0" />
@@ -948,7 +1047,11 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                           )}
                           <span className="min-w-0">
                             <span className="block text-[11px] font-bold truncate">{sc.name}</span>
-                            {sc.formation && <span className={`block text-[10px] ${th.faint}`}>{sc.formation}</span>}
+                            {(sc.isAnimation || sc.formation) && (
+                              <span className={`block text-[10px] ${th.faint}`}>
+                                {sc.isAnimation ? `Animation · ${sc.stepsCount || 2} étapes` : sc.formation}
+                              </span>
+                            )}
                           </span>
                         </button>
                       </div>
@@ -1061,13 +1164,16 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
             {/* Visuel / animation */}
             {includeSchemas && (
               activeImageUrl ? (
-                <div className={`rounded-2xl border overflow-hidden ${th.card}`}>
+                <div ref={mainVisualRef} className={`rounded-2xl border overflow-hidden scroll-mt-4 ${th.card}`}>
                   <div className={`px-4 py-2.5 border-b flex flex-wrap items-center justify-between gap-2 ${th.border}`}>
                     <p className={`text-[11px] font-black flex items-center gap-1.5 ${th.text}`}>
                       {isAnimMode ? <Film className="w-4 h-4 text-purple-400" /> : <ImageIcon className={`w-4 h-4 ${th.accent}`} />}
+                      {hasMatchSchemas && "Terrain actuel · "}
                       {isAnimMode ? `Animation · ${data.phasesCount || data.keyframes?.length || 2} étapes` : activeSchemaTitle}
                     </p>
                     {isAnimMode ? (
+                      <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-black uppercase tracking-[0.14em] ${th.faint}`}>Prévisualisation</span>
                       <div className={`flex items-center gap-0.5 p-0.5 rounded-lg border ${th.segment}`}>
                         {([
                           { id: "gif", l: "GIF animé" },
@@ -1086,6 +1192,7 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                             {tab.l}
                           </button>
                         ))}
+                      </div>
                       </div>
                     ) : (
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${th.chip}`}>HD</span>
@@ -1139,6 +1246,8 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
 
                     {/* Actions sur le visuel */}
                     <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-black/75 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-xl z-20">
+                      <span className="pl-2 pr-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/55">Téléchargement</span>
+                      <span className="h-4 w-px bg-white/15" />
                       {isAnimMode && (dynamicGifUrl || data.gifUrl) && (
                         <button onClick={handleDownloadGif} className="h-8 px-2.5 text-[11px] font-bold text-white/90 hover:text-white hover:bg-white/10 rounded-lg inline-flex items-center gap-1.5 transition cursor-pointer" title="Télécharger le GIF animé">
                           <Film className="w-3.5 h-3.5 text-purple-300" />
@@ -1169,6 +1278,71 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
                   <p className={`text-xs font-bold ${th.sub}`}>Génération du visuel du terrain…</p>
                 </div>
               )
+            )}
+
+            {/* Schémas et animations du match (partage global) */}
+            {includeSchemas && hasMatchSchemas && (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${th.sub}`}>Schémas du match</p>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${th.chip}`}>
+                    {selectedMatchSchemas.length}/{allMatchSchemas.length} inclus
+                  </span>
+                </div>
+                {selectedMatchSchemas.length === 0 ? (
+                  <div className={`rounded-2xl border border-dashed p-6 text-center text-xs font-bold ${th.cardMuted} ${th.sub}`}>
+                    Aucun schéma sélectionné : cochez-les dans la liste « Schémas du match ».
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {selectedMatchSchemas.map((sc) => (
+                      <div
+                        key={sc.id}
+                        ref={(el) => { schemaCardRefs.current[sc.id] = el; }}
+                        className={`rounded-2xl border overflow-hidden scroll-mt-4 transition ${th.card} ${focusedSchemaId === sc.id ? (isModernSleek ? "ring-2 ring-emerald-500" : "ring-2 ring-[#00E599]") : ""}`}
+                      >
+                        <div className={`px-3 py-2 border-b flex items-center justify-between gap-2 ${th.border}`}>
+                          <p className={`min-w-0 text-[11px] font-black flex items-center gap-1.5 ${th.text}`}>
+                            {sc.isAnimation ? <Film className="w-3.5 h-3.5 shrink-0 text-purple-400" /> : <ImageIcon className={`w-3.5 h-3.5 shrink-0 ${th.accent}`} />}
+                            <span className="truncate">{sc.name}</span>
+                          </p>
+                          <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-md border ${th.chip}`}>
+                            {sc.isAnimation ? `${sc.stepsCount || 2} étapes` : "Image"}
+                          </span>
+                        </div>
+                        <div className={`relative p-2 flex items-center justify-center min-h-[160px] ${isModernSleek ? "bg-slate-50" : "bg-black/20"}`}>
+                          {sc.isAnimation && sc.renderAnimationFrame ? (
+                            <AnimatedSchemaPreview
+                              renderFrame={sc.renderAnimationFrame}
+                              stepsCount={sc.stepsCount || 2}
+                              stepMs={clampStepDuration(sc.playbackSpeed)}
+                              fallbackImage={sc.previewImage}
+                              alt={sc.name}
+                              className="w-full h-auto max-h-[260px] object-contain rounded-lg"
+                            />
+                          ) : sc.previewImage ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={sc.previewImage} alt={sc.name} className="w-full h-auto max-h-[260px] object-contain rounded-lg" />
+                          ) : (
+                            <ImageIcon className={`w-6 h-6 ${th.faint}`} />
+                          )}
+                          {sc.previewImage && (
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadSchemaImage(sc)}
+                              className="absolute bottom-3 right-3 h-7 px-2 text-[10.5px] font-bold text-white/90 hover:text-white bg-black/75 hover:bg-black/85 backdrop-blur-md rounded-lg border border-white/10 inline-flex items-center gap-1.5 transition cursor-pointer"
+                              title="Télécharger l'image PNG HD"
+                            >
+                              {downloadedSchemaId === sc.id ? <Check className="w-3.5 h-3.5 text-[#00E599]" /> : <Download className="w-3.5 h-3.5 text-[#00E599]" />}
+                              {downloadedSchemaId === sc.id ? "Téléchargé" : "PNG"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Joueurs convoqués */}

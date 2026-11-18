@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp, cert, App } from "firebase-admin/app";
-import { getFirestore, Firestore } from "firebase-admin/firestore";
+import { getFirestore, Firestore, FieldValue } from "firebase-admin/firestore";
+import { isPaidPlan, markEmailAsSubscribed } from "./accountStatus";
 import { getAuth } from "firebase-admin/auth";
 import firebaseConfig from "../firebase-config.json";
 
@@ -95,6 +96,18 @@ export async function updateCoachPlanInFirestore(params: UpdateCoachPlanParams):
     updatedAt: new Date().toISOString(),
   };
   if (planId) payload.activePlan = planId;
+
+  // Cycle de vie du compte (voir lib/accountStatus.ts) : un abonné ne retrouve jamais l'essai gratuit ;
+  // le retour en gratuit masque ses données (conservées en base) et date la perte d'accès.
+  const isPaid = Boolean(planId && isPaidPlan(planId));
+  if (isPaid) {
+    payload.hasHadSubscription = true;
+    payload.freeSince = FieldValue.delete();
+    await markEmailAsSubscribed(db, email);
+  } else if (planId === "free") {
+    payload.hasHadSubscription = true;
+    payload.freeSince = new Date().toISOString();
+  }
 
   if (stripeCustomerId) payload.stripeCustomerId = stripeCustomerId;
   if (stripeSubscriptionId) payload.stripeSubscriptionId = stripeSubscriptionId;

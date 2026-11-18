@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { checkRateLimit, getClientIp, isAllowedOrigin } from "@/lib/security";
+import { getAdminFirestore, verifyFirebaseIdToken } from "@/lib/firebase-admin";
+import { hasProAccess } from "@/lib/accountStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,17 @@ export async function POST(req: NextRequest) {
         { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes.` },
         { status: 429, headers: { "Retry-After": String(rateCheck.retryAfterSeconds || 60) } }
       );
+    }
+
+    // Partage d'animations : réservé aux formules PRO & PRO+ (et à l'essai en cours)
+    const authHeader = req.headers.get("authorization") || "";
+    const user = await verifyFirebaseIdToken(authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null);
+    if (!user) {
+      return NextResponse.json({ error: "Connexion requise pour créer le GIF." }, { status: 401 });
+    }
+    const db = getAdminFirestore();
+    if (!db || !(await hasProAccess(db, user.uid, user.email))) {
+      return NextResponse.json({ error: "Le partage d'animations est réservé aux formules PRO & PRO+." }, { status: 403 });
     }
 
     const body = await req.json().catch(() => null);

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { CoachProfile } from "@/app/page";
 import { calculateTrialRemaining, TRIAL_DURATION_DAYS } from "@/components/TrialCountdownModal";
 import { isSuperAdminEmail } from "@/lib/security";
-import { listAllUserProfiles, adminUpdateUserProfile, type FirebaseCoachProfile } from "@/lib/firebase";
+import { auth, listAllUserProfiles, adminUpdateUserProfile, type FirebaseCoachProfile } from "@/lib/firebase";
 import {
   ShieldCheck,
   Users,
@@ -88,6 +88,15 @@ interface AdminPlatformProps {
   setActivePlan: (plan: string) => void;
   isModernSleek?: boolean;
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Fin d'essai enregistrée en base (Timestamp Firestore ou ISO) au format ISO, sinon undefined. */
+const trialEndIso = (p: FirebaseCoachProfile): string | undefined => {
+  const raw: any = (p as any).trialEndsAt;
+  const date = raw?.toDate ? raw.toDate() : raw ? new Date(raw) : null;
+  return date && !isNaN(date.getTime()) ? date.toISOString() : undefined;
+};
 
 export default function AdminPlatform({
   isOpen,
@@ -186,6 +195,8 @@ export default function AdminPlatform({
       isAdmin: p.isAdmin,
       createdAt: p.createdAt,
       trialBonusDays: p.trialBonusDays || 0,
+      trialEndsAt: (p as any).hasHadSubscription ? null : trialEndIso(p),
+      hasHadSubscription: Boolean((p as any).hasHadSubscription),
     }));
     const localOnly = coaches.filter(
       (c) => !remoteById.has(c.id) && !(c.email && remoteEmails.has(c.email.toLowerCase()))
@@ -195,9 +206,23 @@ export default function AdminPlatform({
     );
   }, [remoteProfiles, remoteById, coaches]);
 
-  const patchRemote = async (coachId: string, patch: Partial<Pick<FirebaseCoachProfile, "activePlan" | "trialBonusDays">>) => {
+  const patchRemote = async (
+    coachId: string,
+    patch: Partial<Pick<FirebaseCoachProfile, "activePlan" | "trialBonusDays">> & { trialEndsAt?: Date }
+  ) => {
     await adminUpdateUserProfile(coachId, patch);
-    setRemoteProfiles((prev) => prev.map((p) => (p.id === coachId ? { ...p, ...patch } : p)));
+    const { trialEndsAt, ...rest } = patch;
+    setRemoteProfiles((prev) =>
+      prev.map((p) => (p.id === coachId ? { ...p, ...rest, ...(trialEndsAt ? { trialEndsAt: trialEndsAt.toISOString() } : {}) } : p))
+    );
+  };
+
+  /** Fin d'essai actuelle d'un compte en base (fixée par le serveur), sinon déduite de la création + jours offerts */
+  const currentTrialEndMs = (p: FirebaseCoachProfile): number => {
+    const iso = trialEndIso(p);
+    if (iso) return new Date(iso).getTime();
+    const start = new Date(p.createdAt || "").getTime();
+    return (isNaN(start) ? Date.now() : start) + (TRIAL_DURATION_DAYS + (p.trialBonusDays || 0)) * DAY_MS;
   };
 
   // Handle plan change for a specific coach
@@ -231,7 +256,11 @@ export default function AdminPlatform({
     const remote = remoteById.get(coachId);
     if (remote) {
       try {
-        await patchRemote(coachId, { trialBonusDays: (remote.trialBonusDays || 0) + daysToAdd });
+        // Jours ajoutés à la fin d'essai actuelle, ou à partir d'aujourd'hui si l'essai est déjà terminé
+        await patchRemote(coachId, {
+          trialBonusDays: (remote.trialBonusDays || 0) + daysToAdd,
+          trialEndsAt: new Date(Math.max(currentTrialEndMs(remote), Date.now()) + daysToAdd * DAY_MS),
+        });
       } catch (e) {
         console.error(e);
         alert("⚠️ Les jours d'essai n'ont pas pu être enregistrés en base.");
@@ -266,15 +295,15 @@ export default function AdminPlatform({
   const handleResetTrial = async (coachId: string) => {
     const remote = remoteById.get(coachId);
     if (remote) {
-      // La date de création est verrouillée par les règles Firestore : on recale l'essai avec les jours offerts
-      // pour qu'il se termine dans 14 jours (voir calculateTrialRemaining).
+      // La fin d'essai (lue par le serveur et les règles Firestore) est repoussée à dans 14 jours.
+      // Sans effet pour un ancien abonné : il n'a plus droit à l'essai.
       const start = new Date(remote.createdAt || "").getTime();
-      const dayMs = 24 * 60 * 60 * 1000;
-      const elapsedDays = isNaN(start) ? 0 : Math.max(0, Math.ceil((Date.now() - start) / dayMs));
-      const isBaseExpired = !isNaN(start) && start + TRIAL_DURATION_DAYS * dayMs < Date.now();
-      const bonus = isBaseExpired ? TRIAL_DURATION_DAYS : elapsedDays;
+      const elapsedDays = isNaN(start) ? 0 : Math.max(0, Math.ceil((Date.now() - start) / DAY_MS));
       try {
-        await patchRemote(coachId, { trialBonusDays: bonus });
+        await patchRemote(coachId, {
+          trialBonusDays: elapsedDays,
+          trialEndsAt: new Date(Date.now() + TRIAL_DURATION_DAYS * DAY_MS),
+        });
       } catch (e) {
         console.error(e);
         alert("⚠️ L'essai n'a pas pu être réinitialisé en base.");
@@ -407,6 +436,38 @@ export default function AdminPlatform({
     }
     if (await confirmAction({ title: "Supprimer ce compte ?", subject: email, message: "Le coach perdra l'accès à la plateforme." })) {
       setCoaches((prev) => prev.filter((c) => c.id !== coachId));
+    }
+  };
+
+  // Supprime les données d'un coach en base (équipes, joueurs, matchs, notes, schémas) ; le compte est conservé
+  const [deletingDataCoachId, setDeletingDataCoachId] = useState<string | null>(null);
+  const handleDeleteCoachData = async (coach: CoachProfile) => {
+    if (isSuperAdminEmail(coach.email)) return;
+    const confirmed = await confirmAction({
+      title: "Supprimer les données de ce coach ?",
+      subject: `${coach.firstName} ${coach.lastName}`.trim() || coach.email,
+      message:
+        "Ses équipes, joueurs, matchs, notes et schémas seront définitivement effacés de la base. Son compte, sa formule et son abonnement sont conservés. Cette action est irréversible.",
+      confirmLabel: "Supprimer les données",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+    setDeletingDataCoachId(coach.id);
+    try {
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+      const res = await fetch("/api/admin/delete-coach-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) },
+        body: JSON.stringify({ coachId: coach.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) throw new Error(data?.error || `HTTP ${res.status}`);
+      setExtendNotification(`🗑️ Données de ${coach.firstName} ${coach.lastName} supprimées.`);
+      setTimeout(() => setExtendNotification(null), 5000);
+    } catch (e: any) {
+      alert(`⚠️ ${e?.message || "La suppression des données a échoué."}`);
+    } finally {
+      setDeletingDataCoachId(null);
     }
   };
 
@@ -808,7 +869,7 @@ export default function AdminPlatform({
                         {filteredCoaches.map((coach) => {
                           const isPixupAdmin = isSuperAdminEmail(coach.email) || Boolean(coach.isAdmin);
                           const currentPlan = planOf(coach);
-                          const trialInfo = calculateTrialRemaining(coach.createdAt, coach.trialBonusDays || 0);
+                          const trialInfo = calculateTrialRemaining(coach.createdAt, coach.trialBonusDays || 0, coach.trialEndsAt);
                           const sportInfo = activeSportsConfig.find((s) => s.id === coach.preferredSport);
 
                           return (
@@ -907,6 +968,21 @@ export default function AdminPlatform({
                                       aria-label={`Supprimer le compte de ${coach.firstName} ${coach.lastName}`}
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  )}
+                                  {!isPixupAdmin && isRemoteCoach(coach.id) && (
+                                    <button
+                                      onClick={() => handleDeleteCoachData(coach)}
+                                      disabled={deletingDataCoachId === coach.id}
+                                      className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-wait ${isModernSleek
+                                        ? "bg-white border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50"
+                                        : "bg-white/[0.03] border-white/10 text-slate-400 hover:text-rose-300 hover:border-rose-500/40 hover:bg-rose-500/10"
+                                        }`}
+                                      title="Supprimer les équipes, matchs, notes et schémas de ce coach (le compte est conservé)"
+                                      aria-label={`Supprimer les données de ${coach.firstName} ${coach.lastName}`}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                      {deletingDataCoachId === coach.id ? "Suppression…" : "Données"}
                                     </button>
                                   )}
                                 </div>
@@ -1168,7 +1244,7 @@ export default function AdminPlatform({
             <div className="p-6 space-y-5">
               {/* Coach ciblé */}
               {(() => {
-                const info = calculateTrialRemaining(selectedCoachForExtend.createdAt, selectedCoachForExtend.trialBonusDays || 0);
+                const info = calculateTrialRemaining(selectedCoachForExtend.createdAt, selectedCoachForExtend.trialBonusDays || 0, selectedCoachForExtend.trialEndsAt);
                 return (
                   <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${th.cardMuted}`}>
                     <div className="flex items-center gap-3 min-w-0">

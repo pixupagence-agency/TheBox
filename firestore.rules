@@ -49,7 +49,21 @@ service cloud.firestore {
     // Champs d'abonnement : écrits uniquement par le serveur (webhook Stripe, Admin SDK) ou un super admin.
     // Un coach ne peut pas s'attribuer lui-même une formule payante ni modifier ses données Stripe.
     function billingKeys() {
-      return ['stripeCustomerId', 'stripeSubscriptionId', 'stripeStatus', 'cancelAtPeriodEnd', 'accessEndsAt'];
+      return ['stripeCustomerId', 'stripeSubscriptionId', 'stripeStatus', 'cancelAtPeriodEnd', 'accessEndsAt',
+              'hasHadSubscription', 'trialEndsAt', 'freeSince'];
+    }
+
+    // Accès aux fonctions PRO (formule payante, essai en cours ou admin), calculé depuis le profil
+    // tenu à jour par le serveur (lib/accountStatus.ts). Sans accès, le coach ne peut plus enregistrer
+    // d'équipes, de matchs, de notes ni de schémas en ligne (lecture et suppression restent possibles).
+    function hasProAccess(userId) {
+      let u = get(/databases/$(database)/documents/users/$(userId)).data;
+      return isSuperAdmin() ||
+        u.get('isAdmin', false) == true ||
+        u.get('activePlan', 'free') in ['pro', 'mensuel', 'pro_plus', 'club', 'annuel'] ||
+        (u.get('hasHadSubscription', false) != true &&
+          u.get('trialEndsAt', null) is timestamp &&
+          u.trialEndsAt > request.time);
     }
 
     function hasSafeBillingOnCreate() {
@@ -114,6 +128,7 @@ service cloud.firestore {
       allow create: if isSignedIn() &&
         isValidId(tacticId) &&
         (incoming().userId == request.auth.uid || isSuperAdmin()) &&
+        hasProAccess(request.auth.uid) &&
         (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200)) &&
         (!('notes' in incoming()) || (incoming().notes is string && incoming().notes.size() <= 10000)) &&
         (!('payload' in incoming()) || (incoming().payload is string && incoming().payload.size() <= 1048576));
@@ -121,6 +136,7 @@ service cloud.firestore {
       allow update: if isSignedIn() &&
         isValidId(tacticId) &&
         (existing().userId == request.auth.uid || isSuperAdmin()) &&
+        hasProAccess(request.auth.uid) &&
         (incoming().userId == existing().userId || isSuperAdmin()) &&
         hasUnchangedCreatedAt() &&
         (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 200)) &&
@@ -138,6 +154,7 @@ service cloud.firestore {
       allow read, delete: if isOwner(userId) || isSuperAdmin();
 
       allow create, update: if (isOwner(userId) || isSuperAdmin()) &&
+        hasProAccess(userId) &&
         isValidId(docId) &&
         coll in ['teams', 'players', 'matches', 'matchData', 'settings', 'schemas'] &&
         (!('key' in incoming()) || (incoming().key is string && incoming().key.size() <= 200)) &&
@@ -153,6 +170,7 @@ service cloud.firestore {
       allow read, delete: if isOwner(userId) || isSuperAdmin();
 
       allow create, update: if isOwner(userId) &&
+        hasProAccess(userId) &&
         isValidId(entryId) &&
         incoming().keys().hasOnly(['key', 'part', 'parts', 'value', 'updatedAt']) &&
         incoming().key is string && incoming().key.size() <= 110 &&

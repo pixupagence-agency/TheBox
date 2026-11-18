@@ -1,5 +1,6 @@
 // Service Worker for The Box PWA - Offline Pitchside Support
-const CACHE_NAME = 'the-box-pwa-v2';
+// Changer de version supprime les caches des versions précédentes (voir « activate »)
+const CACHE_NAME = 'the-box-pwa-v3';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -36,40 +37,47 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+const putInCache = (request, response) => {
+  if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
+    const copy = response.clone();
+    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+  }
+  return response;
+};
+
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
 
-  // Skip dynamic backend API routes and external third-party calls
+  // Uniquement nos propres fichiers : API, données Next.js (RSC) et services externes passent toujours par le réseau
+  if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
-  if (!url.protocol.startsWith('http')) return;
+  if (request.headers.get('RSC') || url.searchParams.has('_rsc')) return;
 
+  // Pages HTML : réseau d'abord, pour toujours référencer le CSS / JS du dernier déploiement.
+  // Le cache ne sert qu'en cas de coupure réseau (bord de terrain).
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => putInCache(request, response))
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // Fichiers de build Next.js : leur nom contient un hash, ils ne changent jamais → cache d'abord
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(
+      caches.match(request).then((cached) => cached || fetch(request).then((response) => putInCache(request, response)))
+    );
+    return;
+  }
+
+  // Autres fichiers (images, icônes…) : réseau d'abord, cache en secours hors ligne
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (
-            networkResponse &&
-            networkResponse.status === 200 &&
-            (networkResponse.type === 'basic' || networkResponse.type === 'cors')
-          ) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          // If network fails (pitchside / no connectivity)
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-          return cachedResponse;
-        });
-
-      // If cached asset exists, return immediately for instant offline loading, otherwise fetch from network
-      return cachedResponse || fetchPromise;
-    })
+    fetch(request)
+      .then((response) => putInCache(request, response))
+      .catch(() => caches.match(request))
   );
 });

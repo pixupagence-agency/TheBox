@@ -67,13 +67,13 @@ const FAQ_DATA: FaqItem[] = [
     id: "f5",
     category: "Abonnements & Tarifs",
     question: "Comment fonctionne la période d'essai gratuite ?",
-    answer: "Toute création de compte bénéficie automatiquement d'une période d'essai gratuite complète de 14 jours donnant accès à toutes les fonctionnalités de la formule PRO+ (y compris le Mode Live Match), sans engagement et sans carte bancaire requise à l'inscription. À la fin des 14 jours, votre compte passe automatiquement en Version Gratuite."
+    answer: "Toute création de compte bénéficie automatiquement d'une période d'essai gratuite complète de 14 jours donnant accès à toutes les fonctionnalités de la formule PRO+ (y compris le Mode Live Match), sans engagement et sans carte bancaire requise à l'inscription. L'essai est accordé une seule fois par compte et par adresse e-mail : il n'est plus proposé à un utilisateur ayant déjà souscrit un abonnement PRO ou PRO+. À la fin des 14 jours, votre compte passe automatiquement en Version Gratuite : vos équipes, matchs, notes et schémas sont alors masqués mais restent sauvegardés, et vous les retrouvez dès que vous souscrivez une formule PRO ou PRO+."
   },
   {
     id: "f6",
     category: "Abonnements & Tarifs",
     question: "Puis-je annuler mon abonnement à tout moment ?",
-    answer: "Absolument. Les abonnements PRO et PRO+ sont mensuels et sans aucun engagement de durée. Vous pouvez résilier votre récurrence à tout moment depuis votre espace utilisateur. Vous conserverez vos accès jusqu'à la fin du mois déjà réglé."
+    answer: "Absolument. Les abonnements PRO et PRO+ sont mensuels et sans aucun engagement de durée. Vous pouvez résilier votre récurrence à tout moment depuis votre espace utilisateur. Vous conserverez vos accès jusqu'à la fin du mois déjà réglé. Votre compte repasse ensuite en Version Gratuite : vos équipes, matchs, notes et schémas sont masqués mais conservés, et réapparaissent si vous reprenez un abonnement. Une résiliation ne donne pas droit à une nouvelle période d'essai gratuite."
   },
   {
     id: "f7",
@@ -134,6 +134,12 @@ const FAQ_DATA: FaqItem[] = [
     category: "Sécurité & Données",
     question: "Mes données tactiques et mes effectifs sont-ils protégés ?",
     answer: "Toutes vos données (joueurs, schémas, notes de causerie, enregistrements) sont chiffrées et stockées sur des serveurs sécurisés conformes aux normes européennes du RGPD. Seul votre compte a accès à vos données tactiques privées."
+  },
+  {
+    id: "f16b",
+    category: "Sécurité & Données",
+    question: "Combien de temps mes données sont-elles conservées ? Comment les supprimer ?",
+    answer: "Vos données sont conservées tant que votre compte existe, y compris en Version Gratuite (elles sont alors masquées, pas effacées). Aucune suppression automatique n'est appliquée. Vous pouvez supprimer définitivement votre compte et toutes vos données à tout moment depuis Paramètres > Profil > « Supprimer mon compte », ou en écrivant à support@thebox-tactique.com. Un abonnement en cours est alors résilié immédiatement, sans remboursement de la période entamée."
   },
   {
     id: "f17",
@@ -215,8 +221,29 @@ export default function LegalAndFaqModal({
     { title: "Éditeur de la plateforme", body: <>La plateforme <strong>The Box</strong> est éditée, exploitée et gérée par la société <strong>PixUp</strong>, ci-après « l&apos;éditeur ». PixUp est responsable du fonctionnement du service ainsi que du traitement des données personnelles des utilisateurs.</> },
     { title: "Objet et présentation du service", body: <>La plateforme <strong>The Box</strong> est un service SaaS d&apos;animation tactique, de gestion d&apos;effectifs et de préparation de séances sportives destiné aux entraîneurs, éducateurs et clubs sportifs. L&apos;accès au service implique l&apos;acceptation pleine et entière des présentes CGU par l&apos;utilisateur.</> },
     { title: "Accès au service et création de compte", body: <>L&apos;accès aux fonctionnalités avancées nécessite la création d&apos;un compte utilisateur sécurisé. L&apos;utilisateur s&apos;engage à fournir des informations exactes et à préserver la confidentialité de ses identifiants de connexion. Toute action effectuée depuis son compte est présumée être réalisée par l&apos;utilisateur titulaire.</> },
+    { title: "Formules d'accès et données enregistrées", body: <>Chaque nouveau compte bénéficie d&apos;une période d&apos;essai gratuite de 14 jours, accordée une seule fois par compte et par adresse e-mail. À la fin de l&apos;essai ou d&apos;un abonnement PRO / PRO+, le compte passe en <strong>Formule Gratuite</strong> : les fonctionnalités réservées aux formules payantes sont désactivées et les contenus enregistrés (équipes, effectifs, matchs, notes et schémas) sont <strong>masqués mais conservés</strong>. Ils sont de nouveau accessibles dès la souscription d&apos;une formule PRO ou PRO+. Aucune suppression automatique n&apos;est appliquée à ces contenus.</> },
     { title: "Propriété intellectuelle", body: <>L&apos;ensemble de l&apos;application (interface, visuels, moteurs d&apos;animation, terrains vectoriels, codes sources et marques « The Box ») est la propriété exclusive de PixUp. L&apos;utilisateur conserve la propriété intellectuelle de ses contenus créés (schémas tactiques, compositions et notes personnelles), mais concède à la plateforme une licence technique nécessaire au stockage et à la restitution du service.</> },
-    { title: "Protection des données personnelles (RGPD)", body: <>Conformément au Règlement Général sur la Protection des Données (RGPD), PixUp, en tant que responsable du traitement, s&apos;engage à protéger la vie privée des entraîneurs et de leurs effectifs. Les données collectées (nom, email, effectifs du club) sont uniquement utilisées pour l&apos;exécution du service et ne sont en aucun cas vendues ou cédées à des tiers. Vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression via support@thebox-tactique.com.</> },
+    {
+      title: "Protection des données personnelles (RGPD)",
+      body: (
+        <>
+          <p>Conformément au Règlement Général sur la Protection des Données (RGPD), PixUp, en tant que responsable du traitement, s&apos;engage à protéger la vie privée des entraîneurs et de leurs effectifs. Les données collectées (identité et adresse e-mail du coach, club, effectifs, matchs, notes et schémas) sont uniquement utilisées pour l&apos;exécution du service et ne sont en aucun cas vendues ou cédées à des tiers.</p>
+          <p className="mt-2"><strong>Prestataires techniques :</strong> hébergement de l&apos;application (Vercel), stockage des données et authentification (Google Firebase), paiement des abonnements (Stripe). Ces prestataires n&apos;agissent que sur instruction de PixUp.</p>
+          <p className="mt-2"><strong>Durée de conservation :</strong> les données du compte sont conservées tant que le compte existe, y compris en Formule Gratuite, et jusqu&apos;à la demande de suppression de l&apos;utilisateur.</p>
+          <p className="mt-2"><strong>Vos droits :</strong> vous disposez d&apos;un droit d&apos;accès, de rectification, de portabilité et d&apos;effacement de vos données, exerçable depuis votre espace (Paramètres &gt; Profil) ou via <strong>support@thebox-tactique.com</strong>. Vous pouvez également introduire une réclamation auprès de la CNIL.</p>
+        </>
+      ),
+    },
+    {
+      title: "Suppression du compte",
+      body: (
+        <>
+          <p>L&apos;utilisateur peut supprimer définitivement son compte à tout moment depuis <strong>Paramètres &gt; Profil &gt; « Supprimer mon compte »</strong>, ou sur simple demande au support. La suppression efface de manière irréversible le compte, les identifiants de connexion et l&apos;ensemble des contenus enregistrés. Un abonnement en cours est résilié immédiatement (voir CGV).</p>
+          <p className="mt-2">Sont seules conservées après la suppression : les factures et données de paiement détenues par le prestataire de paiement, pendant la durée imposée par les obligations comptables (10 ans), ainsi qu&apos;une empreinte chiffrée et non réversible de l&apos;adresse e-mail des anciens abonnés, utilisée uniquement pour éviter l&apos;attribution d&apos;une nouvelle période d&apos;essai gratuite.</p>
+          <p className="mt-2">PixUp peut également, sur décision motivée (demande de l&apos;utilisateur, compte inactif ou manquement aux présentes CGU), supprimer les contenus enregistrés d&apos;un compte.</p>
+        </>
+      ),
+    },
     { title: "Disponibilité et responsabilité", body: <>The Box met en œuvre tous les moyens raisonnables pour assurer un accès continu et fluide au service 24h/24 et 7j/7. Néanmoins, l&apos;accès peut être temporairement interrompu pour des raisons de maintenance technique ou de mise à jour des terrains. PixUp ne saurait être tenue responsable des pertes indirectes liées à une interruption momentanée du réseau internet.</> },
     { title: "Modification des CGU", body: <>PixUp se réserve le droit de modifier les présentes CGU à tout moment afin de les adapter aux évolutions réglementaires et techniques. Les utilisateurs seront informés de toute modification majeure lors de leur connexion.</> },
   ];
@@ -236,9 +263,10 @@ export default function LegalAndFaqModal({
         </>
       ),
     },
-    { title: "Période d'essai gratuite", body: <>Tout nouveau compte bénéficie automatiquement d&apos;une période d&apos;essai gratuite de 14 jours à toutes les fonctionnalités de la formule PRO+ (y compris le Mode Live Match), sans carte bancaire. À l&apos;issue des 14 jours, l&apos;utilisateur repasse automatiquement en Formule Gratuite sans aucuns frais prélevés si aucun abonnement payant n&apos;a été activé.</> },
+    { title: "Période d'essai gratuite", body: <>Tout nouveau compte bénéficie automatiquement d&apos;une période d&apos;essai gratuite de 14 jours à toutes les fonctionnalités de la formule PRO+ (y compris le Mode Live Match), sans carte bancaire. L&apos;essai est accordé <strong>une seule fois par compte et par adresse e-mail</strong> : il n&apos;est plus proposé à un utilisateur ayant déjà souscrit un abonnement payant, y compris après une résiliation. À l&apos;issue des 14 jours, l&apos;utilisateur repasse automatiquement en Formule Gratuite sans aucuns frais prélevés si aucun abonnement payant n&apos;a été activé.</> },
     { title: "Modalités de paiement", body: <>Les paiements s&apos;effectuent de manière mensuelle et récurrente par Carte Bancaire via une infrastructure de paiement hautement sécurisée et chiffrée. L&apos;abonnement est prélevé à la date anniversaire de la souscription.</> },
-    { title: "Sans engagement & résiliation", body: <>Tous nos abonnements payants sont strictement <strong>sans engagement de durée</strong>. Vous pouvez mettre fin à votre renouvellement automatique à tout moment en un clic dans votre espace utilisateur. La résiliation prend effet à la fin de la période mensuelle en cours.</> },
+    { title: "Sans engagement & résiliation", body: <>Tous nos abonnements payants sont strictement <strong>sans engagement de durée</strong>. Vous pouvez mettre fin à votre renouvellement automatique à tout moment en un clic dans votre espace utilisateur. La résiliation prend effet à la fin de la période mensuelle en cours. Le compte repasse alors en Formule Gratuite : les contenus enregistrés (équipes, effectifs, matchs, notes et schémas) sont masqués mais conservés, et redeviennent accessibles en cas de nouvel abonnement. La résiliation n&apos;ouvre pas droit à une nouvelle période d&apos;essai gratuite.</> },
+    { title: "Suppression du compte", body: <>La suppression du compte par l&apos;utilisateur (voir CGU) entraîne la <strong>résiliation immédiate</strong> de l&apos;abonnement en cours, sans remboursement de la période mensuelle déjà entamée, sous réserve du droit de rétractation ci-dessous. Aucun prélèvement n&apos;est effectué après la suppression. Les factures restent disponibles sur demande auprès du support pendant la durée légale de conservation.</> },
     { title: "Droit de rétractation", body: <>Conformément aux dispositions de l&apos;article L.221-18 du Code de la Consommation, vous disposez d&apos;un délai de rétractation de 14 jours à compter de la souscription initiale pour annuler votre contrat et en demander le remboursement intégral en contactant support@thebox-tactique.com.</> },
     { title: "Support client et facturation", body: <>Pour toute question concernant vos factures ou votre abonnement, notre service client est disponible par courrier électronique à l&apos;adresse <strong>support@thebox-tactique.com</strong>.</> },
   ];

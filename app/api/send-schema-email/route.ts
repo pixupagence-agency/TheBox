@@ -9,7 +9,8 @@ import {
   getClientIp,
   isAllowedOrigin
 } from "@/lib/security";
-import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
+import { getAdminFirestore, verifyFirebaseIdToken } from "@/lib/firebase-admin";
+import { hasProAccess } from "@/lib/accountStatus";
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,6 +41,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Veuillez vous connecter à votre compte coach pour envoyer un schéma par e-mail.", requiresAuth: true },
         { status: 401 }
+      );
+    }
+
+    // Partage des schémas : réservé aux formules PRO & PRO+ (et à l'essai en cours)
+    const adminDb = getAdminFirestore();
+    if (!adminDb || !(await hasProAccess(adminDb, user.uid, user.email))) {
+      return NextResponse.json(
+        { error: "Le partage des schémas par e-mail est réservé aux formules PRO & PRO+." },
+        { status: 403 }
       );
     }
 

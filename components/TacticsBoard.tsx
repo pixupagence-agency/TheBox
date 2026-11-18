@@ -24,7 +24,8 @@ import {
   Crown, Flag, CornerUpLeft, CornerUpRight
 } from "lucide-react";
 import { getPremiumTheme, premiumOverlay, premiumShell, premiumLabel } from "@/lib/premiumModalTheme";
-import { saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
+import { auth, logoutUser, saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
+import { clearLocalWorkspace } from "@/lib/cloudSync";
 import { isSuperAdminEmail } from "@/lib/security";
 import { Language, translations, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 import { confirmAction } from "@/components/ConfirmDialog";
@@ -418,6 +419,12 @@ interface CoachProfile {
   /** Logo du club (data URL) : carte du match, rond central, exports image et PDF */
   clubLogo?: string;
   showLogoOnPitch?: boolean;
+  /** Fin de l'essai fixée par le serveur (ISO) ; null = plus de droit à l'essai ; absent = statut inconnu */
+  trialEndsAt?: string | null;
+  /** Statut d'accès renvoyé par le serveur (lib/accountStatus.ts) */
+  hasHadSubscription?: boolean;
+  /** Compte sans accès : équipes, matchs, notes et schémas masqués (conservés en base) */
+  dataHidden?: boolean;
 }
 
 export interface TeamCategory {
@@ -511,12 +518,8 @@ export const generateDefaultRosterForCustomTeam = (teamId: string, _teamName: st
   return generateStandardRoster(teamId);
 };
 
-const defaultTeams: TeamCategory[] = [
-  { id: "team_1", name: "Séniors A (Fanion)", category: "Séniors", color: "#00E599", isDefault: true },
-  { id: "team_2", name: "Séniors B (Réserve)", category: "Séniors", color: "#f59e0b" },
-  { id: "team_3", name: "U19 Régional 1", category: "Jeunes / U19", color: "#3b82f6" },
-  { id: "team_4", name: "Équipe Féminine", category: "Féminines", color: "#ec4899" },
-];
+// Nouveau compte : aucune équipe paramétrée, le coach crée la sienne
+const defaultTeams: TeamCategory[] = [];
 
 interface TacticsBoardProps {
   coaches: CoachProfile[];
@@ -779,13 +782,13 @@ const compressImage = (file: File, maxWidth = 180, maxHeight = 180, _quality = 0
 
 const GIF_EXPORT_WIDTH = 720;
 
-const LiveTrialCountdownLabel = ({ createdAt, bonusDays }: { createdAt?: string; bonusDays: number }) => {
-  const [status, setStatus] = useState<TrialTimeRemaining>(() => calculateTrialRemaining(createdAt, bonusDays));
+const LiveTrialCountdownLabel = ({ createdAt, bonusDays, trialEndsAt }: { createdAt?: string; bonusDays: number; trialEndsAt?: string | null }) => {
+  const [status, setStatus] = useState<TrialTimeRemaining>(() => calculateTrialRemaining(createdAt, bonusDays, trialEndsAt));
 
   useEffect(() => {
-    const interval = setInterval(() => setStatus(calculateTrialRemaining(createdAt, bonusDays)), 1000);
+    const interval = setInterval(() => setStatus(calculateTrialRemaining(createdAt, bonusDays, trialEndsAt)), 1000);
     return () => clearInterval(interval);
-  }, [createdAt, bonusDays]);
+  }, [createdAt, bonusDays, trialEndsAt]);
 
   return (
     <>{`Démo Pro : ${status.days}j ${String(status.hours).padStart(2, '0')}h ${String(status.minutes).padStart(2, '0')}m ${String(status.seconds).padStart(2, '0')}s`}</>
@@ -852,21 +855,21 @@ export default function TacticsBoard({
   // Active coach helper & live trial calculation
   const activeCoach = coaches.find(c => c.id === activeCoachId) || coaches[0];
   const [liveTrialStatus, setLiveTrialStatus] = useState<TrialTimeRemaining>(() =>
-    calculateTrialRemaining(activeCoach?.createdAt, activeCoach?.trialBonusDays || 0)
+    calculateTrialRemaining(activeCoach?.createdAt, activeCoach?.trialBonusDays || 0, activeCoach?.trialEndsAt)
   );
 
   useEffect(() => {
     const interval = setInterval(() => {
       // Ce composant est très lourd à re-rendre : il ne suit que ce qu'il affiche, les secondes vivent dans LiveTrialCountdownLabel
       setLiveTrialStatus((prev) => {
-        const next = calculateTrialRemaining(activeCoach?.createdAt, activeCoach?.trialBonusDays || 0);
+        const next = calculateTrialRemaining(activeCoach?.createdAt, activeCoach?.trialBonusDays || 0, activeCoach?.trialEndsAt);
         const unchanged = prev.isExpired === next.isExpired && prev.days === next.days && prev.hours === next.hours;
         return unchanged ? prev : next;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeCoach?.createdAt, activeCoach?.trialBonusDays]);
+  }, [activeCoach?.createdAt, activeCoach?.trialBonusDays, activeCoach?.trialEndsAt]);
 
   const isUserAdmin = Boolean(
     isAdmin ||
@@ -936,9 +939,63 @@ export default function TacticsBoard({
 
   // Essai gratuit de 14 jours (PRO+) : compte en formule gratuite, essai non expiré,
   // et jamais abonné (un ancien abonné revenu en gratuit ne récupère pas l'essai).
+  // « Déjà abonné » vient du serveur (tous appareils confondus), l'indicateur local reste en secours.
   const isInFreeTrial = Boolean(
-    isFreePlan && !hasHadPaidSubscription && liveTrialStatus && !liveTrialStatus.isExpired
+    isFreePlan && !hasHadPaidSubscription && !activeCoach?.hasHadSubscription && liveTrialStatus && !liveTrialStatus.isExpired
   );
+  // Compte sans accès : ses données sont masquées, conservées en base (voir lib/accountStatus.ts)
+  const isDataHidden = Boolean(!isUserAdmin && isFreePlan && !isInFreeTrial && activeCoach?.dataHidden);
+  const [isHiddenDataBannerDismissed, setIsHiddenDataBannerDismissed] = useState(false);
+
+  // Suppression définitive du compte par le coach (droit à l'effacement) : abonnement résilié, données,
+  // profil et identifiants supprimés côté serveur (app/api/account/delete)
+  const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
+  const [deleteAccountConfirm, setDeleteAccountConfirm] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
+  const handleDeleteOwnAccount = async () => {
+    if (deleteAccountConfirm.trim().toUpperCase() !== "SUPPRIMER" || isDeletingAccount) return;
+    if (!auth.currentUser) {
+      setDeleteAccountError("Reconnectez-vous pour supprimer votre compte.");
+      return;
+    }
+    setIsDeletingAccount(true);
+    setDeleteAccountError(null);
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      // Synchro arrêtée avant la suppression : elle renverrait sinon les données locales en ligne
+      await clearLocalWorkspace();
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ confirm: deleteAccountConfirm }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) throw new Error(data?.error || "La suppression n'a pas pu aboutir.");
+      // Plus aucune trace du compte sur cet appareil
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith("thebox_")) localStorage.removeItem(key);
+      }
+      try {
+        await logoutUser();
+      } catch {
+        /* compte déjà supprimé côté serveur */
+      }
+      alert("Votre compte et vos données ont été supprimés définitivement.");
+      window.location.reload();
+    } catch (e: any) {
+      // Les données locales seront restaurées depuis le compte au prochain chargement
+      setDeleteAccountError(e?.message || "La suppression n'a pas pu aboutir.");
+      setIsDeletingAccount(false);
+    }
+  };
+
+  // Saisie des notes tactiques : réservée aux formules PRO & PRO+ (les notes restent lisibles)
+  const handleLockedNotesClick = () => {
+    setSleekToastMessage("🔒 La saisie des notes tactiques est réservée aux formules PRO & PRO+.");
+    setTimeout(() => setSleekToastMessage(null), 3000);
+    setIsCheckoutOpen(true);
+  };
 
   const isProPlusOrAdmin = Boolean(
     isUserAdmin ||
@@ -977,13 +1034,13 @@ export default function TacticsBoard({
       const saved = localStorage.getItem("thebox_active_team_id");
       if (saved) return saved;
     }
-    return "team_1";
+    return "";
   });
 
   // Format de jeu (foot à 11 / 8 / 5, rugby à XV / 7) : choisi à la création de l'équipe.
   // Un schéma enregistré dans un autre format s'affiche dans son format, jusqu'au prochain changement d'équipe.
   const [schemaFormatOverride, setSchemaFormatOverride] = useState<{ sport: string; format: string } | null>(null);
-  const teamForFormat = teams.find((t) => t.id === activeTeamId) || teams[0];
+  const teamForFormat = (teams.find((t) => t.id === activeTeamId) || teams[0]) as TeamCategory | undefined;
   const formatFor = (sport: string) =>
     schemaFormatOverride && schemaFormatOverride.sport === sport
       ? resolveGameFormat(sport, schemaFormatOverride.format)
@@ -1454,14 +1511,15 @@ export default function TacticsBoard({
             const str = JSON.stringify(parsed);
             if (/(Stegen|Araújo|Cubarsí|Koundé|Lewandowski|Raphinha|Pedri|Gavi|Fati|Torres|Yamal|De Jong|Mbappé|Benzema|Courtois)/i.test(str)) {
               localStorage.removeItem("thebox_team_rosters");
-              return defaultManagedTeamRosters;
+              return {};
             }
             return parsed;
           }
         } catch (e) { }
       }
     }
-    return defaultManagedTeamRosters;
+    // Nouveau compte : pas d'effectif tant qu'aucune équipe n'est créée
+    return {};
   });
 
   useEffect(() => {
@@ -1511,7 +1569,7 @@ export default function TacticsBoard({
     }
   }, [activeTeamId]);
 
-  const activeTeam = teams.find((t) => t.id === activeTeamId) || teams[0];
+  const activeTeam = (teams.find((t) => t.id === activeTeamId) || teams[0]) as TeamCategory | undefined;
 
   // Logo du club (profil du coach) : carte du match, rond central du terrain, exports image et PDF
   const clubLogo = activeCoach?.clubLogo || "";
@@ -1545,7 +1603,9 @@ export default function TacticsBoard({
   const handleCreateNewTeam = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    if (!isProOrAdmin) {
+    // La première équipe est accessible à toutes les formules ; les suivantes sont réservées au PRO
+    const isFirstTeam = teams.length === 0;
+    if (!isProOrAdmin && !isFirstTeam) {
       setIsMultiTeamUpgradeModalOpen(true);
       return;
     }
@@ -1560,6 +1620,7 @@ export default function TacticsBoard({
       name: newTeamName.trim(),
       category: newTeamCategory,
       color: "#00E599",
+      ...(isFirstTeam ? { isDefault: true } : {}),
       ...(getGameFormatOptions(activeSport).length > 0 ? { format: resolveGameFormat(activeSport, newTeamFormat) } : {}),
     };
 
@@ -1583,7 +1644,7 @@ export default function TacticsBoard({
     if (await confirmAction({ title: "Supprimer cette équipe ?", subject: target.name, message: "L'équipe et son effectif seront retirés de votre compte." })) {
       setTeams((prev) => prev.filter((t) => t.id !== teamId));
       if (activeTeamId === teamId) {
-        setActiveTeamId("team_1");
+        setActiveTeamId(teams.find((t) => t.id !== teamId && t.isDefault)?.id || teams.find((t) => t.id !== teamId)?.id || "");
       }
     }
   };
@@ -1912,11 +1973,11 @@ export default function TacticsBoard({
   // false quand le coach n'a (encore) aucun match pour l'équipe active
   const hasActiveMatch = Boolean(activeMatch.id);
 
-  // Un schéma appartient au match donné. Sans match (matchId vide, les matchs étant facultatifs),
-  // on rattache les schémas enregistrés hors match, ainsi que ceux dont le match a été supprimé.
+  // Un schéma appartient au match donné. Sans match paramétré (matchId vide ou match supprimé),
+  // aucun schéma n'est rattaché : la section Schémas reste vide.
   // Les anciens schémas sans matchId restent rattachés au match historique "match_1".
   const schemaBelongsToMatch = (sc: { matchId?: string }, matchId: string) => {
-    if (!matchId) return !sc.matchId || !matchesList.some((m) => m.id === sc.matchId);
+    if (!matchId || !matchesList.some((m) => m.id === matchId)) return false;
     return (sc.matchId || "match_1") === matchId;
   };
 
@@ -2278,6 +2339,13 @@ export default function TacticsBoard({
     }
     const targetTeamId = typeof assignedTeamId === "string" ? assignedTeamId : activeTeamId;
     const targetTeam = teams.find((t) => t.id === targetTeamId) || activeTeam;
+    // Un match est toujours rattaché à une équipe : sans équipe, on propose d'abord d'en créer une
+    if (!targetTeam) {
+      setSleekToastMessage("⚽ Créez d'abord votre équipe pour pouvoir ajouter un match.");
+      setTimeout(() => setSleekToastMessage(null), 3500);
+      setIsMultiTeamModalOpen(true);
+      return;
+    }
     const newId = `match_${Date.now()}`;
     const newM = {
       id: newId,
@@ -5263,8 +5331,8 @@ export default function TacticsBoard({
       // Adversaires masqués à l'enregistrement : ils restent absents de l'image, du GIF et de la vidéo partagés
       showOpponents,
       matchId: targetMatchId,
-      teamId: targetTeam.id,
-      teamName: targetTeam.name,
+      teamId: targetTeam?.id || "",
+      teamName: targetTeam?.name || "",
       date: new Date().toLocaleDateString("fr-FR", {
         day: "numeric",
         month: "short",
@@ -5477,14 +5545,17 @@ export default function TacticsBoard({
     // Les portraits doivent être chargés avant de dessiner les images et les étapes de l'animation
     const collectFrameTokens = (frames: any[] | undefined): any[] =>
       (frames || []).flatMap((frame: any) => (Array.isArray(frame) ? frame : frame?.players || []));
+    // Partage global (sans schéma ciblé) : tous les schémas du match sont présentés ; sinon uniquement celui partagé
+    const isGlobalShare = !schema;
+    const matchSchemaSources = isGlobalShare ? savedTactics.filter((s) => schemaBelongsToMatch(s, activeMatchId)) : [];
     await Promise.all([
       preloadExportPortraits(
         [...collectFrameTokens(targetKeyframes), ...(schema?.players || []), ...(schema?.tokens || []), ...currentTokens],
         schema?.sport || activeSport
       ),
-      ...savedTactics
-        .filter((s) => schemaBelongsToMatch(s, activeMatchId))
-        .map((s) => preloadExportPortraits(collectFrameTokens(s.keyframes).concat(s.players || [], s.tokens || []), s.sport || activeSport)),
+      ...matchSchemaSources.map((s) =>
+        preloadExportPortraits(collectFrameTokens(s.keyframes).concat(s.players || [], s.tokens || []), s.sport || activeSport)
+      ),
     ]);
 
     // Always generate fresh high-quality composite image to ensure players and proportions are rendered
@@ -5497,9 +5568,10 @@ export default function TacticsBoard({
     }
 
     // Match-associated saved schemas
-    const matchSavedSchemas = savedTactics
-      .filter((s) => schemaBelongsToMatch(s, activeMatchId))
-      .map((s) => ({
+    const matchSavedSchemas = matchSchemaSources.map((s) => {
+      const frames = Array.isArray(s.keyframes) ? s.keyframes : [];
+      const isSchemaAnim = Boolean(s.isAnimation || frames.length > 1) && frames.length > 1;
+      return {
         id: s.id,
         name: s.name,
         previewImage: generateCompositeTacticsCanvas(s),
@@ -5507,7 +5579,14 @@ export default function TacticsBoard({
         description: s.description,
         formation: s.formation,
         sport: s.sport,
-      }));
+        isAnimation: isSchemaAnim,
+        stepsCount: frames.length || 1,
+        playbackSpeed: clampStepDuration(s.playbackSpeed || playbackSpeed),
+        renderAnimationFrame: isSchemaAnim
+          ? (position: number) => renderCompositeTacticsCanvas(s, Math.floor(position), interpolateFrameTokens(frames, position))
+          : undefined,
+      };
+    });
 
     const defaultSchemaTitle = schema?.name || (isAnim ? `Animation ${(schema?.sport || activeSport).toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}` : `Schéma ${(schema?.sport || activeSport).toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}`);
     const defaultSchemaNotes = schema?.description || tacticalNotes || (activeMatch?.notes ? activeMatch.notes : (isAnim ? "Animation tactique séquentielle de référence" : "Schéma tactique de référence"));
@@ -5572,7 +5651,10 @@ export default function TacticsBoard({
       }
       const res = await fetch("/api/generate-animation-gif", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(auth.currentUser ? { Authorization: `Bearer ${await auth.currentUser.getIdToken()}` } : {}),
+        },
         body: JSON.stringify({ frames, delays, width: GIF_EXPORT_WIDTH }),
       });
       const json = res.ok ? await res.json() : null;
@@ -9463,6 +9545,37 @@ export default function TacticsBoard({
         </div>
       )}
 
+      {/* Compte sans accès : données masquées (conservées en base) */}
+      {isDataHidden && !isHiddenDataBannerDismissed && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-xl" role="status">
+          <div className={`p-3 rounded-2xl border shadow-2xl flex items-start gap-3 ${isModernSleek ? "bg-white border-amber-400 text-slate-800" : "bg-[#121926]/95 backdrop-blur-xl border-amber-500/40 text-slate-200"}`}>
+            <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+            <div className="flex-1 min-w-0 text-xs leading-relaxed">
+              <p className="font-black">Votre accès PRO est terminé : vos équipes, matchs, notes et schémas sont masqués.</p>
+              <p className={isModernSleek ? "text-slate-500" : "text-slate-400"}>
+                Ils restent sauvegardés sur votre compte. Reprenez une formule PRO ou PRO+ pour les retrouver.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsCheckoutOpen(true)}
+                className="mt-2 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] transition cursor-pointer"
+              >
+                Voir les formules
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsHiddenDataBannerDismissed(true)}
+              className={`p-1 rounded-lg transition cursor-pointer ${isModernSleek ? "text-slate-400 hover:text-slate-800" : "text-slate-500 hover:text-white"}`}
+              aria-label="Fermer"
+              title="Fermer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 1. TOP HEADER NAVBAR */}
       <header
         id="tour-top-header"
@@ -9553,7 +9666,7 @@ export default function TacticsBoard({
                 {liveTrialStatus.isExpired ? (
                   "Essai expiré (Gratuit)"
                 ) : (
-                  <LiveTrialCountdownLabel createdAt={activeCoach?.createdAt} bonusDays={activeCoach?.trialBonusDays || 0} />
+                  <LiveTrialCountdownLabel createdAt={activeCoach?.createdAt} bonusDays={activeCoach?.trialBonusDays || 0} trialEndsAt={activeCoach?.trialEndsAt} />
                 )}
               </span>
               <span className="font-mono lg:hidden whitespace-nowrap text-[10px] font-bold">
@@ -11825,7 +11938,8 @@ export default function TacticsBoard({
             {/* Active Team Pill (au-dessus du module Match) */}
             <button
               onClick={() => {
-                if (!isProOrAdmin) {
+                // Sans équipe, toutes les formules peuvent créer leur première équipe
+                if (!isProOrAdmin && teams.length > 0) {
                   setIsMultiTeamUpgradeModalOpen(true);
                 } else {
                   setIsMultiTeamModalOpen(true);
@@ -11840,7 +11954,7 @@ export default function TacticsBoard({
                 </span>
                 <span className="min-w-0 text-left">
                   <span className={`block text-sm font-black ${isModernSleek ? "text-slate-900 group-hover:text-emerald-800" : "text-white group-hover:text-amber-200"} truncate transition`}>
-                    {activeTeam?.name || "Séniors A (Fanion)"}
+                    {activeTeam?.name || "Créer mon équipe"}
                   </span>
                   {activeMatch?.competition && (
                     <span className={`block text-xs font-semibold ${isModernSleek ? "text-slate-500" : "text-slate-400"} truncate mt-0.5`}>{activeMatch.competition}</span>
@@ -11927,9 +12041,9 @@ export default function TacticsBoard({
               </div>
 
               {!isMatchSectionCollapsed && !hasActiveMatch && (
-                <div className={`rounded-xl border border-dashed p-3 text-center ${isModernSleek ? "border-slate-300 bg-slate-50" : "border-[#26354d] bg-[#0d1117]/60"}`}>
-                  <p className={`text-[12.5px] font-black uppercase ${isModernSleek ? "text-slate-700" : "text-slate-200"}`}>Aucun match</p>
-                  <p className={`text-xs mt-0.5 leading-snug ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                <div className={`rounded-lg border border-dashed p-3 text-center ${isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-[#62728f]"}`}>
+                  <p className="text-[11px] font-bold uppercase tracking-wider">Aucun match</p>
+                  <p className="text-[11px] mt-1 leading-snug font-medium">
                     Les matchs sont facultatifs. Créez-en un pour suivre un adversaire, vos notes ou le mode live.
                   </p>
                   <button
@@ -12449,7 +12563,7 @@ export default function TacticsBoard({
                       if (matchSchemas.length === 0) {
                         return (
                           <div className={`border border-dashed ${isModernSleek ? "border-slate-300 text-slate-500" : "border-[#1f293d] text-[#62728f]"} rounded-lg p-3 text-center text-[11px] font-bold uppercase tracking-wider`}>
-                            AUCUN SCHÉMA POUR CE MATCH
+                            {hasActiveMatch ? "AUCUN SCHÉMA POUR CE MATCH" : "AUCUN MATCH PARAMÉTRÉ"}
                           </div>
                         );
                       }
@@ -12628,29 +12742,33 @@ export default function TacticsBoard({
 
                   <textarea
                     value={tacticalNotes}
-                    onChange={(e) => setTacticalNotes(e.target.value)}
+                    readOnly={!isProOrAdmin}
+                    onClick={!isProOrAdmin ? handleLockedNotesClick : undefined}
+                    onChange={(e) => { if (isProOrAdmin) setTacticalNotes(e.target.value); }}
                     placeholder="STRATÉGIE ET NOTES DU MATCH..."
-                    className={`w-full flex-1 min-h-[110px] ${isModernSleek
-                      ? "bg-white border-slate-300 focus:border-emerald-500 text-slate-900 placeholder-slate-400 shadow-2xs"
-                      : "bg-[#0d1117] border-[#1f293d] focus:border-[#354563] text-slate-200 placeholder-[#62728f]"
-                      } border rounded-lg p-2.5 text-xs focus:outline-none resize-none font-medium leading-relaxed scrollbar-thin transition`}
+                    className={`w-full flex-1 min-h-[110px] bg-transparent border border-dashed ${isModernSleek
+                      ? "border-slate-300 focus:border-emerald-500 text-slate-900 placeholder-slate-500"
+                      : "border-[#1f293d] focus:border-[#354563] text-slate-200 placeholder-[#62728f]"
+                      } rounded-lg p-2.5 text-xs focus:outline-none resize-none font-medium leading-relaxed scrollbar-thin transition placeholder:font-bold placeholder:tracking-wider`}
                   />
                   <input
                     type="text"
                     value={quickNote}
-                    onChange={(e) => setQuickNote(e.target.value)}
+                    readOnly={!isProOrAdmin}
+                    onClick={!isProOrAdmin ? handleLockedNotesClick : undefined}
+                    onChange={(e) => { if (isProOrAdmin) setQuickNote(e.target.value); }}
                     onKeyDown={(e) => {
-                      if (e.key !== "Enter" || !quickNote.trim()) return;
+                      if (!isProOrAdmin || e.key !== "Enter" || !quickNote.trim()) return;
                       e.preventDefault();
                       setTacticalNotes(tacticalNotes.trim() ? `${tacticalNotes.trimEnd()}\n- ${quickNote.trim()}` : `- ${quickNote.trim()}`);
                       setQuickNote("");
                     }}
                     placeholder={t.tactics.sidebar.quickNotePlaceholder}
                     aria-label={t.tactics.sidebar.quickNotePlaceholder}
-                    className={`w-full mt-2 shrink-0 ${isModernSleek
-                      ? "bg-white border-slate-300 focus:border-emerald-500 text-slate-900 placeholder-slate-400"
-                      : "bg-[#0b0e13] border-[#2a2f37] focus:border-[#00E599]/60 text-slate-100 placeholder-slate-400"
-                      } border rounded-md px-2.5 py-2 text-xs font-medium focus:outline-none transition`}
+                    className={`w-full mt-2 shrink-0 bg-transparent border border-dashed ${isModernSleek
+                      ? "border-slate-300 focus:border-emerald-500 text-slate-900 placeholder-slate-500"
+                      : "border-[#1f293d] focus:border-[#354563] text-slate-100 placeholder-[#62728f]"
+                      } rounded-lg px-2.5 py-2 text-xs font-medium focus:outline-none transition`}
                   />
                 </>
               )}
@@ -12737,7 +12855,9 @@ export default function TacticsBoard({
             <div className="p-5 sm:p-6 flex-1 flex flex-col relative z-10">
               <textarea
                 value={tacticalNotes}
-                onChange={(e) => setTacticalNotes(e.target.value)}
+                readOnly={!isProOrAdmin}
+                onClick={!isProOrAdmin ? handleLockedNotesClick : undefined}
+                onChange={(e) => { if (isProOrAdmin) setTacticalNotes(e.target.value); }}
                 placeholder="Saisissez ici l'intégralité de vos consignes tactiques et physiques de match..."
                 className={`flex-1 w-full rounded-xl p-4 text-xs focus:outline-none transition resize-none font-medium leading-relaxed scrollbar-thin border ${isModernSleek
                   ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white"
@@ -15027,7 +15147,7 @@ export default function TacticsBoard({
                               <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isModernSleek ? "text-slate-700" : "text-slate-300"
                                 }`}>
                                 <Shield className={`w-3.5 h-3.5 ${isModernSleek ? "text-emerald-600" : "text-[#00E599]"}`} />
-                                <span>1. Équipe Source : <strong className={isModernSleek ? "text-slate-900" : "text-white"}>{activeTeam.name}</strong></span>
+                                <span>1. Équipe Source : <strong className={isModernSleek ? "text-slate-900" : "text-white"}>{activeTeam?.name}</strong></span>
                               </span>
                               <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border ${swapSourcePlayer?.isStarter
                                 ? isModernSleek ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-[#00E599]/20 text-[#00E599] border-[#00E599]/40"
@@ -15335,7 +15455,7 @@ export default function TacticsBoard({
                                 }`}>
                                 <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase border ${isModernSleek ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-rose-500/15 text-rose-300 border border-rose-500/30"
                                   }`}>
-                                  Quitte {activeTeam.name}
+                                  Quitte {activeTeam?.name}
                                 </span>
                                 <div className="flex items-center gap-2.5 pt-1">
                                   <div className={`relative w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border ${isModernSleek ? "bg-cyan-50 border-cyan-200" : "bg-cyan-500/20 border-cyan-500/40"
@@ -15365,7 +15485,7 @@ export default function TacticsBoard({
                                 }`}>
                                 <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase border ${isModernSleek ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30"
                                   }`}>
-                                  Rejoint {activeTeam.name}
+                                  Rejoint {activeTeam?.name}
                                 </span>
                                 <div className="flex items-center gap-2.5 pt-1">
                                   <div className={`relative w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border ${isModernSleek ? "bg-emerald-50 border-emerald-200" : "bg-[#00E599]/20 border border-[#00E599]/40"
@@ -16458,6 +16578,77 @@ export default function TacticsBoard({
                           </div>
                         </div>
                       </div>
+
+                      {/* Zone de danger : suppression définitive du compte (droit à l'effacement) */}
+                      {!isUserAdmin && auth.currentUser && (
+                        <div className={`mt-6 rounded-2xl border p-4 ${isModernSleek ? "border-rose-200 bg-rose-50/60" : "border-rose-500/25 bg-rose-500/[0.04]"}`}>
+                          <p className={`text-xs font-black ${isModernSleek ? "text-rose-700" : "text-rose-300"}`}>
+                            {en ? "Delete my account" : "Supprimer mon compte"}
+                          </p>
+                          <p className={`mt-1 text-[11px] leading-relaxed ${th.sub}`}>
+                            {en
+                              ? "Permanently deletes your account, teams, players, matches, notes and diagrams. Any running subscription is cancelled immediately, without refund of the current period. This cannot be undone."
+                              : "Supprime définitivement votre compte, vos équipes, joueurs, matchs, notes et schémas. Un abonnement en cours est résilié immédiatement, sans remboursement de la période entamée. Cette action est irréversible."}
+                          </p>
+                          {!isDeleteAccountOpen ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsDeleteAccountOpen(true);
+                                setDeleteAccountConfirm("");
+                                setDeleteAccountError(null);
+                              }}
+                              className={`mt-3 px-3 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${isModernSleek ? "border-rose-300 text-rose-700 hover:bg-rose-100" : "border-rose-500/40 text-rose-300 hover:bg-rose-500/10"}`}
+                            >
+                              {en ? "Delete my account…" : "Supprimer mon compte…"}
+                            </button>
+                          ) : (
+                            <div className="mt-3 space-y-2">
+                              <label className={labelBase} htmlFor="delete-account-confirm">
+                                {en ? "Type SUPPRIMER to confirm" : "Tapez SUPPRIMER pour confirmer"}
+                              </label>
+                              <input
+                                id="delete-account-confirm"
+                                type="text"
+                                autoComplete="off"
+                                value={deleteAccountConfirm}
+                                onChange={(e) => setDeleteAccountConfirm(e.target.value)}
+                                onKeyDown={(e) => {
+                                  // Entrée ne doit pas soumettre le formulaire du profil
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    void handleDeleteOwnAccount();
+                                  }
+                                }}
+                                placeholder="SUPPRIMER"
+                                className={inputBase}
+                                disabled={isDeletingAccount}
+                              />
+                              {deleteAccountError && <p className="text-[11px] font-semibold text-rose-400">{deleteAccountError}</p>}
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteOwnAccount()}
+                                  disabled={deleteAccountConfirm.trim().toUpperCase() !== "SUPPRIMER" || isDeletingAccount}
+                                  className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  {isDeletingAccount
+                                    ? (en ? "Deleting…" : "Suppression…")
+                                    : (en ? "Permanently delete" : "Supprimer définitivement")}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsDeleteAccountOpen(false)}
+                                  disabled={isDeletingAccount}
+                                  className={`px-3 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${th.ghostBtn}`}
+                                >
+                                  {en ? "Cancel" : "Annuler"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
 

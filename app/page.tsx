@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import TacticsBoard from "@/components/TacticsBoard";
 import LandingPage from "@/components/LandingPage";
 import AdminPlatform, { defaultSportsConfig, defaultBlockedSports, SportAccessConfig } from "@/components/AdminPlatform";
-import TrialCountdownModal from "@/components/TrialCountdownModal";
+import TrialCountdownModal, { calculateTrialRemaining } from "@/components/TrialCountdownModal";
 import OnboardingTutorialModal from "@/components/OnboardingTutorialModal";
 import LegalAndFaqModal, { LegalTab } from "@/components/LegalAndFaqModal";
 import SupportContactModal from "@/components/SupportContactModal";
@@ -22,7 +22,7 @@ import {
   resetPassword,
   getAuthErrorMessage
 } from "@/lib/firebase";
-import { restoreWorkspaceFromCloud, startWorkspaceSync, stopWorkspaceSync } from "@/lib/cloudSync";
+import { clearLocalWorkspace, restoreWorkspaceFromCloud, startWorkspaceSync, stopWorkspaceSync } from "@/lib/cloudSync";
 import { onAuthStateChanged } from "firebase/auth";
 import { isSuperAdminEmail } from "@/lib/security";
 import { Language, getStoredLanguage, setStoredLanguage, translations } from "@/lib/i18n";
@@ -42,6 +42,12 @@ export interface CoachProfile {
   /** Logo du club (data URL) : carte du match, rond central, exports image et PDF */
   clubLogo?: string;
   showLogoOnPitch?: boolean;
+  /** Fin de l'essai fixée par le serveur (ISO) ; null = plus de droit à l'essai ; absent = statut inconnu */
+  trialEndsAt?: string | null;
+  /** Statut d'accès renvoyé par le serveur (lib/accountStatus.ts) */
+  hasHadSubscription?: boolean;
+  /** Compte sans accès : équipes, matchs, notes et schémas masqués (conservés en base) */
+  dataHidden?: boolean;
 }
 
 const defaultCoaches: CoachProfile[] = [];
@@ -58,6 +64,10 @@ export default function Home() {
   // Infos saisies à l'inscription (club, rôle, sport…) en attente de la création du compte Firebase,
   // reprises par onAuthStateChanged pour créer le profil complet en base.
   const pendingRegistrationRef = useRef<Partial<CoachProfile> | null>(null);
+  // Retour de paiement Stripe (lu avant que l'URL ne soit nettoyée) : la connexion attend la mise à jour de la formule
+  const justPaidRef = useRef<boolean>(
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("stripe_status") === "success"
+  );
 
   // Safe client-side loading states
   const [coaches, setCoaches] = useState<CoachProfile[]>(defaultCoaches);
@@ -375,6 +385,48 @@ export default function Home() {
           console.error("Error saving coach profile to Firestore:", e);
         }
 
+        // Statut d'accès calculé par le serveur (essai, formule, masquage des données).
+        // Il fixe aussi la fin d'essai d'un nouveau compte : à attendre avant la première synchro.
+        let serverStatus: {
+          hasAccess: boolean;
+          hasHadSubscription: boolean;
+          trialEndsAt: string | null;
+        } | null = null;
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          // Retour de paiement Stripe : le webhook peut arriver quelques secondes après, on patiente
+          const justPaid = justPaidRef.current;
+          justPaidRef.current = false;
+          for (let attempt = 0; attempt < (justPaid ? 6 : 1); attempt++) {
+            if (attempt > 0) await new Promise((r) => setTimeout(r, 2000));
+            const res = await fetch("/api/account/status", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${idToken}` },
+            });
+            if (res.ok) serverStatus = (await res.json())?.status || null;
+            if (serverStatus?.hasAccess) break;
+          }
+        } catch (e) {
+          console.warn("[Compte] Statut serveur indisponible, calcul local :", e);
+        }
+        const profileTrialEnd = (() => {
+          const raw: any = (profileFromDb as any)?.trialEndsAt;
+          const date = raw?.toDate ? raw.toDate() : raw ? new Date(raw) : null;
+          return date && !isNaN(date.getTime()) ? date.toISOString() : undefined;
+        })();
+        coachData.hasHadSubscription = serverStatus?.hasHadSubscription ?? Boolean((profileFromDb as any)?.hasHadSubscription);
+        coachData.trialEndsAt = serverStatus
+          ? serverStatus.trialEndsAt
+          : coachData.hasHadSubscription ? null : profileTrialEnd;
+        const hasAccess = serverStatus
+          ? serverStatus.hasAccess
+          : Boolean(
+              coachData.isAdmin ||
+              !["free", "gratuit"].includes(String(resolvedPlan).toLowerCase()) ||
+              !calculateTrialRemaining(coachData.createdAt, coachData.trialBonusDays || 0, coachData.trialEndsAt).isExpired
+            );
+        coachData.dataHidden = !hasAccess;
+
         // Send welcome email if new account created (retried at next login if the send failed)
         if (isNewUser && email) {
           firebaseUser
@@ -413,7 +465,22 @@ export default function Home() {
             setSavedTactics([]);
           }
 
-          const remoteTactics = await getTacticsForUser(uid);
+          // Compte sans accès : équipes, matchs, notes et schémas sont masqués (retirés de l'appareil,
+          // conservés en ligne jusqu'à leur suppression). Au retour d'un abonnement, la version en ligne
+          // remplace ce qui a été fait entre-temps en version gratuite.
+          const lockKey = `thebox_data_locked_${uid}`;
+          if (!hasAccess) {
+            await clearLocalWorkspace();
+            localStorage.removeItem("thebox_saved_playbooks");
+            localStorage.setItem(lockKey, "1");
+            setSavedTactics([]);
+          } else if (localStorage.getItem(lockKey)) {
+            await clearLocalWorkspace();
+            await restoreWorkspaceFromCloud(uid);
+            localStorage.removeItem(lockKey);
+          }
+
+          const remoteTactics = hasAccess ? await getTacticsForUser(uid) : [];
           if (remoteTactics && remoteTactics.length > 0) {
             const parsed = remoteTactics.map((t) => {
               try {
@@ -450,7 +517,8 @@ export default function Home() {
         }
 
         await workspaceRestore;
-        startWorkspaceSync(uid);
+        // Sans accès, rien n'est envoyé en ligne (les règles Firestore le refuseraient de toute façon)
+        if (hasAccess) startWorkspaceSync(uid);
 
         setCoaches((prevAll) => {
           // L'ancien profil local (« coach_… ») avec la même adresse est remplacé par le vrai compte
@@ -805,6 +873,7 @@ export default function Home() {
         onClose={() => setIsTrialModalOpen(false)}
         createdAt={activeCoach?.createdAt}
         trialBonusDays={activeCoach?.trialBonusDays || 0}
+        trialEndsAt={activeCoach?.trialEndsAt}
         isNewAccountWelcome={isNewAccountWelcome}
         coachName={`${activeCoach?.firstName || "Coach"}`}
         isAdmin={isAdmin}
