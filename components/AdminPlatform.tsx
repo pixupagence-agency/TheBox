@@ -24,9 +24,17 @@ import {
   Crown,
   Trash2,
   Zap,
-  ExternalLink
+  ExternalLink,
+  Wrench
 } from "lucide-react";
 import { confirmAction } from "@/components/ConfirmDialog";
+import {
+  DEFAULT_MAINTENANCE_MESSAGE,
+  MAINTENANCE_MESSAGE_MAX,
+  MaintenanceState,
+  isCurrentUserSuperAdmin,
+  setMaintenance,
+} from "@/lib/maintenance";
 
 export interface SportAccessConfig {
   id: string;
@@ -87,9 +95,13 @@ interface AdminPlatformProps {
   activePlan: string;
   setActivePlan: (plan: string) => void;
   isModernSleek?: boolean;
+  /** État du mode maintenance, suivi en direct par la page */
+  maintenance: MaintenanceState;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+type AdminTab = "subscriptions" | "sports" | "privileges" | "maintenance";
 
 /** Fin d'essai enregistrée en base (Timestamp Firestore ou ISO) au format ISO, sinon undefined. */
 const trialEndIso = (p: FirebaseCoachProfile): string | undefined => {
@@ -110,9 +122,43 @@ export default function AdminPlatform({
   setSportsConfig,
   activePlan,
   setActivePlan,
-  isModernSleek = false
+  isModernSleek = false,
+  maintenance
 }: AdminPlatformProps) {
-  const [activeTab, setActiveTab] = useState<"subscriptions" | "sports" | "privileges">("subscriptions");
+  const [activeTab, setActiveTab] = useState<AdminTab>("subscriptions");
+
+  // Mode maintenance : réservé au super admin (adresse confirmée, comme l'exigent les règles Firestore)
+  const canManageMaintenance = isOpen && isCurrentUserSuperAdmin();
+  const [maintenanceDraft, setMaintenanceDraft] = useState(maintenance.message);
+  const [isSavingMaintenance, setIsSavingMaintenance] = useState(false);
+  const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
+  React.useEffect(() => {
+    setMaintenanceDraft(maintenance.message);
+  }, [maintenance.message]);
+  const handleSaveMaintenance = async (enabled: boolean) => {
+    if (isSavingMaintenance) return;
+    if (
+      enabled &&
+      !maintenance.enabled &&
+      !(await confirmAction({
+        title: "Activer le mode maintenance ?",
+        message: "Les coachs connectés et les visiteurs verront immédiatement l'écran de maintenance. Seuls les administrateurs gardent l'accès.",
+        confirmLabel: "Activer",
+      }))
+    ) {
+      return;
+    }
+    setIsSavingMaintenance(true);
+    setMaintenanceError(null);
+    try {
+      await setMaintenance(enabled, maintenanceDraft);
+    } catch (e: any) {
+      console.error("[Maintenance] Enregistrement impossible :", e);
+      setMaintenanceError("Enregistrement impossible. Vérifiez votre connexion et que les règles Firestore sont déployées.");
+    } finally {
+      setIsSavingMaintenance(false);
+    }
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPlan, setFilterPlan] = useState("all");
   
@@ -584,12 +630,16 @@ export default function AdminPlatform({
     subscriptions: { title: "Abonnements & coachs", desc: "Suivez les formules, les périodes d'essai et gérez les comptes de la plateforme." },
     sports: { title: "Accès aux sports", desc: "Ouvrez ou verrouillez chaque sport pour le grand public." },
     privileges: { title: "Privilèges administrateur", desc: "Ce que votre compte administrateur débloque sur The Box." },
+    maintenance: { title: "Mode maintenance", desc: "Fermez temporairement l'application au public pendant une mise à jour." },
   } as const;
 
-  const navItems: { id: "subscriptions" | "sports" | "privileges"; label: string; icon: React.ElementType; badge?: string; warn?: boolean }[] = [
+  const navItems: { id: AdminTab; label: string; icon: React.ElementType; badge?: string; warn?: boolean }[] = [
     { id: "subscriptions", label: "Abonnements & coachs", icon: Users, badge: String(totalCoaches) },
     { id: "sports", label: "Accès aux sports", icon: Layers, badge: blockedSportsCount > 0 ? `${blockedSportsCount} verrouillé${blockedSportsCount > 1 ? "s" : ""}` : undefined, warn: true },
     { id: "privileges", label: "Privilèges admin", icon: Crown },
+    ...(canManageMaintenance
+      ? [{ id: "maintenance" as const, label: "Maintenance", icon: Wrench, badge: maintenance.enabled ? "Active" : undefined, warn: true }]
+      : []),
   ];
 
   const adminInitials = `${activeCoach.firstName?.charAt(0) || ""}${activeCoach.lastName?.charAt(0) || ""}`.toUpperCase() || "AD";
@@ -1081,6 +1131,76 @@ export default function AdminPlatform({
                       </div>
                     );
                   })}
+                </div>
+              </>
+            )}
+
+            {/* ---------- MAINTENANCE (super admin uniquement) ---------- */}
+            {activeTab === "maintenance" && canManageMaintenance && (
+              <>
+                <div className={`p-5 rounded-2xl border ${th.card} ${maintenance.enabled ? (isModernSleek ? "!border-amber-300" : "!border-amber-500/40") : ""}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${maintenance.enabled ? (isModernSleek ? "bg-amber-50 border-amber-200 text-amber-600" : "bg-amber-500/10 border-amber-500/30 text-amber-300") : th.cardMuted}`}>
+                        <Wrench className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className={`text-sm font-black ${th.text}`}>
+                          {maintenance.enabled ? "L'application est en maintenance" : "L'application est ouverte"}
+                        </p>
+                        <p className={`text-[11px] mt-1 leading-relaxed ${th.sub}`}>
+                          {maintenance.enabled
+                            ? "Les visiteurs et les coachs voient l'écran de maintenance. Les administrateurs gardent l'accès complet."
+                            : "Activez la maintenance pour afficher un écran d'attente à tous les utilisateurs, sauf aux administrateurs."}
+                          {maintenance.updatedAt && (
+                            <> Dernière modification : {new Date(maintenance.updatedAt).toLocaleString("fr-FR")}.</>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={maintenance.enabled}
+                      aria-label="Mode maintenance"
+                      disabled={isSavingMaintenance}
+                      onClick={() => void handleSaveMaintenance(!maintenance.enabled)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition cursor-pointer disabled:opacity-50 ${maintenance.enabled
+                        ? "bg-amber-500 border-amber-500"
+                        : isModernSleek ? "bg-slate-200 border-slate-300" : "bg-white/10 border-white/10"
+                        }`}
+                      title={maintenance.enabled ? "Rouvrir l'application" : "Activer la maintenance"}
+                    >
+                      <span className={`inline-block h-[18px] w-[18px] rounded-full bg-white shadow transition-transform ${maintenance.enabled ? "translate-x-[22px]" : "translate-x-[3px]"}`} />
+                    </button>
+                  </div>
+
+                  <div className={`mt-4 pt-4 border-t ${th.border}`}>
+                    <label className={labelBase} htmlFor="maintenance-message">Message affiché aux utilisateurs</label>
+                    <textarea
+                      id="maintenance-message"
+                      rows={3}
+                      maxLength={MAINTENANCE_MESSAGE_MAX}
+                      value={maintenanceDraft}
+                      onChange={(e) => setMaintenanceDraft(e.target.value)}
+                      placeholder={DEFAULT_MAINTENANCE_MESSAGE}
+                      className={`${inputBase} resize-y`}
+                    />
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <p className={`text-[10px] ${th.faint}`}>Laissez vide pour le message par défaut.</p>
+                      {maintenance.enabled && maintenanceDraft.trim() !== maintenance.message.trim() && (
+                        <button
+                          type="button"
+                          disabled={isSavingMaintenance}
+                          onClick={() => void handleSaveMaintenance(true)}
+                          className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition cursor-pointer disabled:opacity-50 ${th.ghostBtn}`}
+                        >
+                          Mettre à jour le message
+                        </button>
+                      )}
+                    </div>
+                    {maintenanceError && <p className="mt-2 text-[11px] font-semibold text-rose-400">{maintenanceError}</p>}
+                  </div>
                 </div>
               </>
             )}

@@ -25,6 +25,8 @@ import {
 import { clearLocalWorkspace, restoreWorkspaceFromCloud, startWorkspaceSync, stopWorkspaceSync } from "@/lib/cloudSync";
 import { onAuthStateChanged } from "firebase/auth";
 import { isSuperAdminEmail } from "@/lib/security";
+import { MAINTENANCE_OFF, MaintenanceState, subscribeMaintenance } from "@/lib/maintenance";
+import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { Language, getStoredLanguage, setStoredLanguage, translations } from "@/lib/i18n";
 
 export interface CoachProfile {
@@ -82,6 +84,10 @@ export default function Home() {
   const [sportsConfig, setSportsConfig] = useState<SportAccessConfig[]>(defaultSportsConfig);
   const [isAdminPlatformOpen, setIsAdminPlatformOpen] = useState<boolean>(false);
   const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
+
+  // Mode maintenance (activé par le super admin), suivi en direct pour tous les visiteurs
+  const [maintenance, setMaintenanceState] = useState<MaintenanceState>(MAINTENANCE_OFF);
+  useEffect(() => subscribeMaintenance(setMaintenanceState), []);
 
   const handleOpenAdminPlatform = () => {
     setIsAdminPlatformOpen(true);
@@ -795,10 +801,37 @@ export default function Home() {
     alert(`Si un compte existe pour ${email}, un e-mail de réinitialisation du mot de passe vient d'être envoyé.`);
   };
 
+  const handleLogout = async () => {
+    try {
+      // Dernier envoi des changements en attente avant de perdre la connexion au compte
+      await stopWorkspaceSync();
+      await logoutUser();
+    } catch (err) {
+      console.error("Logout error", err);
+    }
+    setIsLoggedIn(false);
+  };
+
+  // Maintenance : écran d'attente pour tous, sauf un administrateur connecté
+  const showMaintenance = maintenance.enabled && !(isLoggedIn && isAdmin);
+
   return (
     <main className="premium-shell min-h-screen text-white relative">
-      
-      {!isLoggedIn ? (
+
+      {isLoggedIn && isAdmin && maintenance.enabled && (
+        <div className="fixed top-0 inset-x-0 z-[60] bg-amber-500 text-[#1a1300] text-center text-[11px] font-black py-1 pointer-events-none">
+          Mode maintenance actif : seuls les administrateurs accèdent à l&apos;application
+        </div>
+      )}
+
+      {showMaintenance ? (
+        <MaintenanceScreen
+          message={maintenance.message}
+          isLoggedIn={isLoggedIn}
+          onLogout={() => void handleLogout()}
+          onOpenLogin={() => setIsLoginModalOpen(true)}
+        />
+      ) : !isLoggedIn ? (
         <LandingPage
           coaches={coaches}
           activeCoachId={activeCoachId}
@@ -826,16 +859,7 @@ export default function Home() {
           activeSport={activeSport}
           setActiveSport={setActiveSport}
           setIsRegisterModalOpen={setIsRegisterModalOpen}
-          onLogout={async () => {
-            try {
-              // Dernier envoi des changements en attente avant de perdre la connexion au compte
-              await stopWorkspaceSync();
-              await logoutUser();
-            } catch (err) {
-              console.error("Logout error", err);
-            }
-            setIsLoggedIn(false);
-          }}
+          onLogout={handleLogout}
           isAdmin={isAdmin}
           blockedSports={blockedSports}
           sportsConfig={sportsConfig}
@@ -949,6 +973,7 @@ export default function Home() {
         activePlan={activePlan}
         setActivePlan={setActivePlan}
         isModernSleek={isModernSleek}
+        maintenance={maintenance}
       />
 
       {/* SUPPORT CONTACT MODAL */}

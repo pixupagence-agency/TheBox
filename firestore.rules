@@ -186,7 +186,18 @@ service cloud.firestore {
     // --- Global App Config (Admin Managed) ---
     match /app_config/{configId} {
       allow read: if true;
-      allow write: if isSuperAdmin() && isValidId(configId);
+      allow write: if isSuperAdmin() && isValidId(configId) && configId != 'maintenance';
+    }
+
+    // Mode maintenance (lib/maintenance.ts) : réservé au compte super admin de la plateforme
+    match /app_config/maintenance {
+      allow write: if isSignedIn() &&
+        request.auth.token.get('email', '') == 'pixup.agence@gmail.com' &&
+        request.auth.token.get('email_verified', false) == true &&
+        incoming().keys().hasOnly(['enabled', 'message', 'updatedAt', 'updatedBy']) &&
+        incoming().enabled is bool &&
+        incoming().message is string && incoming().message.size() <= 500 &&
+        incoming().updatedAt is string;
     }
   }
 }

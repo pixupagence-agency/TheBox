@@ -7,6 +7,10 @@
         "Accept": "application/json",
         "X-Goog-Api-Key": "${STITCH_API_KEY}"
       }
+    },
+    "firebase": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "firebase-tools@latest", "mcp", "--dir", "."]
     }
   }
 }
