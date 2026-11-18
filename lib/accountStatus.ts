@@ -32,6 +32,8 @@ export interface AccountStatus {
   hasAccess: boolean;
   /** Date de perte d'accès (ISO) */
   freeSince: string | null;
+  /** Suppression du compte demandée par le coach, programmée à cette date (fin de la période payée) */
+  deletionScheduledAt: string | null;
 }
 
 export const isPaidPlan = (plan: unknown) => typeof plan === "string" && PAID_PLANS.includes(plan.toLowerCase());
@@ -74,7 +76,9 @@ const iso = (ms: number | null) => (ms === null ? null : new Date(ms).toISOStrin
 export async function refreshAccountStatus(
   db: Firestore,
   uid: string,
-  data?: Record<string, any> | null
+  data?: Record<string, any> | null,
+  /** Adresse confirmée du jeton (droits super admin) ; l'e-mail du profil est modifiable par le coach */
+  verifiedEmail?: string
 ): Promise<AccountStatus | null> {
   const ref = db.collection("users").doc(uid);
   const profile = data ?? (await ref.get()).data();
@@ -85,7 +89,7 @@ export async function refreshAccountStatus(
   const isPaid = isPaidPlan(plan);
   const email = profile.email as string | undefined;
   const isAdmin = Boolean(
-    profile.isAdmin === true || isSuperAdminEmail(email) || (await db.collection("admins").doc(uid).get()).exists
+    profile.isAdmin === true || isSuperAdminEmail(verifiedEmail) || (await db.collection("admins").doc(uid).get()).exists
   );
 
   const hasHadSubscription = Boolean(
@@ -134,6 +138,7 @@ export async function refreshAccountStatus(
     inTrial,
     hasAccess,
     freeSince: iso(freeSinceMs),
+    deletionScheduledAt: typeof profile.deletionScheduledAt === "string" ? profile.deletionScheduledAt : null,
   };
 }
 

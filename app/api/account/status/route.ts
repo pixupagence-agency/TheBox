@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminFirestore, verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import { refreshAccountStatus } from "@/lib/accountStatus";
+import { deleteCoachAccount, isScheduledDeletionDue } from "@/lib/accountDeletion";
 import { checkRateLimit, getClientIp, isAllowedOrigin } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
-// Statut d'accès du coach connecté (essai, formule, masquage et suppression des données).
+// Statut d'accès du coach connecté (essai, formule, masquage des données, suppression programmée).
 // Appelé à chaque connexion : il fixe aussi la fin d'essai des nouveaux comptes.
 export async function POST(req: NextRequest) {
   if (!isAllowedOrigin(req)) {
@@ -28,7 +30,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const status = await refreshAccountStatus(db, user.uid);
+    const profile = (await db.collection("users").doc(user.uid).get()).data();
+
+    // Suppression programmée arrivée à échéance sans que le webhook Stripe l'ait faite
+    if (isScheduledDeletionDue(profile)) {
+      await deleteCoachAccount(db, user.uid, user.email);
+      console.log(`[Compte] Compte ${user.uid} supprimé (échéance de la suppression programmée).`);
+      return NextResponse.json({ deleted: true }, { status: 410 });
+    }
+
+    const status = await refreshAccountStatus(db, user.uid, profile, user.email);
     if (!status) {
       return NextResponse.json({ error: "Profil introuvable." }, { status: 404 });
     }

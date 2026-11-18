@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { firstName, lastName } = body;
-    const email = user.email;
+    const email = user.email || user.unverifiedEmail;
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: "Aucune adresse e-mail valide sur ce compte." }, { status: 400 });

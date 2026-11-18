@@ -3,6 +3,9 @@ import { getFirestore, Firestore, FieldValue } from "firebase-admin/firestore";
 import { isPaidPlan, markEmailAsSubscribed } from "./accountStatus";
 import { getAuth } from "firebase-admin/auth";
 import firebaseConfig from "../firebase-config.json";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 let adminApp: App | null = null;
 let adminDb: Firestore | null = null;
@@ -36,7 +39,27 @@ export function getAdminFirestore(): Firestore | null {
           projectId: firebaseConfig.projectId,
         });
       } else {
-        // Fallback to Google Application Default Credentials (e.g. Cloud Run, App Engine, GCP)
+        // Identifiants automatiques Google (Cloud Run, App Engine, fichier GOOGLE_APPLICATION_CREDENTIALS).
+        // Ailleurs (poste local), ils n'existent pas : chaque requête attendrait ~40 s avant d'échouer.
+        // Poste local : identifiants créés par « gcloud auth application-default login »
+        const gcloudCredentialsFile = path.join(
+          process.platform === "win32" ? process.env.APPDATA || "" : path.join(os.homedir(), ".config"),
+          "gcloud",
+          "application_default_credentials.json"
+        );
+        const hasDefaultCredentials = Boolean(
+          process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+          fs.existsSync(gcloudCredentialsFile) ||
+          process.env.K_SERVICE ||
+          process.env.GAE_SERVICE ||
+          process.env.FUNCTION_TARGET
+        );
+        if (!hasDefaultCredentials) {
+          console.warn(
+            "⚠️ [Firebase Admin] Non initialisé : ajoutez FIREBASE_SERVICE_ACCOUNT_KEY dans .env.local (voir .env.example) ou lancez « gcloud auth application-default login »."
+          );
+          return null;
+        }
         adminApp = initializeApp({
           projectId: firebaseConfig.projectId,
         });
@@ -170,12 +193,24 @@ export async function updateCoachPlanInFirestore(params: UpdateCoachPlanParams):
 /**
  * Vérifie un jeton d'identification Firebase (envoyé par le client) et renvoie l'utilisateur.
  */
-export async function verifyFirebaseIdToken(idToken: string | null | undefined): Promise<{ uid: string; email?: string } | null> {
+/**
+ * Vérifie le jeton d'un utilisateur connecté.
+ * `email` n'est renseigné que si l'adresse est confirmée (connexion Google, lien de vérification) : elle sert
+ * aux droits super admin et à retrouver le client Stripe, qu'un compte créé avec l'adresse d'un autre
+ * ne doit pas obtenir. `unverifiedEmail` : adresse saisie à l'inscription, pour les envois sans enjeu.
+ */
+export async function verifyFirebaseIdToken(
+  idToken: string | null | undefined
+): Promise<{ uid: string; email?: string; unverifiedEmail?: string } | null> {
   if (!idToken) return null;
   if (!getAdminFirestore()) return null; // initialise l'app admin
   try {
     const decoded = await getAuth().verifyIdToken(idToken);
-    return { uid: decoded.uid, email: decoded.email };
+    return {
+      uid: decoded.uid,
+      email: decoded.email_verified === true ? decoded.email : undefined,
+      unverifiedEmail: decoded.email,
+    };
   } catch (err: any) {
     console.warn("⚠️ [Firebase Admin] Jeton d'identification invalide :", err?.message);
     return null;

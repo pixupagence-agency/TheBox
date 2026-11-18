@@ -48,6 +48,8 @@ export interface CoachProfile {
   hasHadSubscription?: boolean;
   /** Compte sans accès : équipes, matchs, notes et schémas masqués (conservés en base) */
   dataHidden?: boolean;
+  /** Suppression du compte programmée à cette date (fin de la période payée), ISO */
+  deletionScheduledAt?: string | null;
 }
 
 const defaultCoaches: CoachProfile[] = [];
@@ -391,7 +393,9 @@ export default function Home() {
           hasAccess: boolean;
           hasHadSubscription: boolean;
           trialEndsAt: string | null;
+          deletionScheduledAt?: string | null;
         } | null = null;
+        let accountDeleted = false;
         try {
           const idToken = await firebaseUser.getIdToken();
           // Retour de paiement Stripe : le webhook peut arriver quelques secondes après, on patiente
@@ -403,11 +407,28 @@ export default function Home() {
               method: "POST",
               headers: { Authorization: `Bearer ${idToken}` },
             });
+            // Suppression programmée arrivée à échéance : le serveur vient de supprimer le compte
+            if (res.status === 410) {
+              accountDeleted = true;
+              break;
+            }
             if (res.ok) serverStatus = (await res.json())?.status || null;
             if (serverStatus?.hasAccess) break;
           }
         } catch (e) {
           console.warn("[Compte] Statut serveur indisponible, calcul local :", e);
+        }
+        if (accountDeleted) {
+          // Plus aucune trace du compte sur cet appareil
+          await workspaceRestore.catch(() => undefined);
+          await clearLocalWorkspace();
+          for (const key of Object.keys(localStorage)) {
+            if (key.startsWith("thebox_")) localStorage.removeItem(key);
+          }
+          await logoutUser().catch(() => undefined);
+          alert("Votre compte a été supprimé, comme vous l'aviez demandé, à la fin de votre période d'abonnement.");
+          window.location.reload();
+          return;
         }
         const profileTrialEnd = (() => {
           const raw: any = (profileFromDb as any)?.trialEndsAt;
@@ -426,6 +447,7 @@ export default function Home() {
               !calculateTrialRemaining(coachData.createdAt, coachData.trialBonusDays || 0, coachData.trialEndsAt).isExpired
             );
         coachData.dataHidden = !hasAccess;
+        coachData.deletionScheduledAt = serverStatus?.deletionScheduledAt ?? null;
 
         // Send welcome email if new account created (retried at next login if the send failed)
         if (isNewUser && email) {
@@ -682,9 +704,7 @@ export default function Home() {
       // Fenêtre fermée par l'utilisateur : rien à signaler
       if (err?.code === "auth/popup-closed-by-user" || err?.code === "auth/cancelled-popup-request") return;
       console.warn("Connexion Google impossible:", err);
-      if (err?.code !== "auth/unauthorized-domain") {
-        alert("Connexion Google impossible pour le moment. Réessayez, ou utilisez votre e-mail et votre mot de passe.");
-      }
+      alert("Connexion Google impossible pour le moment. Réessayez, ou utilisez votre e-mail et votre mot de passe.");
     }
   };
 

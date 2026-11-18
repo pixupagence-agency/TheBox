@@ -112,9 +112,11 @@ export async function loginWithGoogle() {
       return null;
     }
     if (err?.code === "auth/unauthorized-domain") {
-      const msg = `[Firebase Auth] Le domaine "${typeof window !== 'undefined' ? window.location.hostname : ''}" n'est pas autorisé dans la console Firebase. Veuillez l'ajouter sous Firebase Console > Authentication > Settings > Authorized domains.`;
-      console.error(msg);
-      alert("Connexion Google impossible : Le domaine Vercel n'est pas autorisé dans la console Firebase (Domaines autorisés). Veuillez suivre les instructions de configuration.");
+      // Détail réservé au développeur ; le client voit le message générique affiché par l'appelant
+      console.error(
+        `[Firebase Auth] Le domaine "${typeof window !== "undefined" ? window.location.hostname : ""}" n'est pas autorisé : ` +
+          "ajoutez-le dans Firebase Console > Authentication > Paramètres > Domaines autorisés."
+      );
     }
     throw err;
   }
@@ -252,6 +254,7 @@ export async function saveUserProfileToFirestore(profile: FirebaseCoachProfile) 
       hasHadSubscription: _hasHadSubscription,
       freeSince: _freeSince,
       dataHidden: _dataHidden,
+      deletionScheduledAt: _deletionScheduledAt,
       ...writable
     } = profile as FirebaseCoachProfile & Record<string, unknown>;
     const rawData = {

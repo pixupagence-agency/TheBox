@@ -88,10 +88,14 @@ export function cancellationScheduledEmail(params: {
   name: string;
   planId?: string | null;
   accessUntil: Date;
+  /** Résiliation due à une demande de suppression du compte (suppression à la fin de la période payée) */
+  accountDeletion?: boolean;
 }): RenderedEmail {
   const plan = planDisplayName(params.planId);
   const date = formatDateFr(params.accessUntil);
   const name = params.name || "Coach";
+
+  if (params.accountDeletion) return accountDeletionScheduledEmail(name, plan, date);
 
   const subject = `Confirmation de votre résiliation - The Box ${plan}`;
 
@@ -131,6 +135,47 @@ Vous avez changé d'avis ? Vous pouvez réactiver votre abonnement à tout momen
 Ouvrir The Box : ${APP_PUBLIC_URL}
 
 Une remarque sur l'application ? Répondez simplement à cet e-mail.`;
+
+  return { subject, html, text };
+}
+
+/** Variante de l'e-mail n°1 quand la résiliation vient d'une demande de suppression du compte. */
+function accountDeletionScheduledEmail(name: string, plan: string, date: string): RenderedEmail {
+  const subject = `Suppression de votre compte programmée - The Box`;
+
+  const html = layout({
+    title: subject,
+    badge: "Suppression programmée",
+    accent: "#f43f5e",
+    body: `
+      <h1 ${H1}>Votre demande de suppression est enregistrée</h1>
+      <p ${P}>Bonjour ${esc(name)},</p>
+      <p ${P}>Nous confirmons votre demande de suppression de compte. Votre abonnement <strong style="color:#ffffff;">The Box ${esc(plan)}</strong> ne sera pas renouvelé : aucun nouveau prélèvement ne sera effectué.</p>
+      <div ${BOX}>
+        <p style="color:#f43f5e;font-size:13px;font-weight:900;text-transform:uppercase;margin:0 0 10px 0;">Ce qui se passe maintenant</p>
+        <p ${LI}>✓ Vous gardez l'accès à l'application et à toutes les fonctions ${esc(plan)} jusqu'au <strong>${esc(date)}</strong>, fin de la période déjà payée.</p>
+        <p ${LI}>✓ À cette date, votre compte, vos équipes, effectifs, matchs, notes et schémas seront supprimés définitivement.</p>
+        <p ${LI}>✓ Pensez à exporter ce que vous souhaitez conserver avant cette date.</p>
+      </div>
+      <p ${P}>Vous avez changé d'avis ? Vous pouvez annuler la suppression à tout moment avant le ${esc(date)} depuis Paramètres &gt; Profil dans l'application.</p>
+      ${cta("Ouvrir The Box", APP_PUBLIC_URL)}
+    `,
+  });
+
+  const text = `THE BOX - Suppression programmée
+
+Bonjour ${name},
+
+Nous confirmons votre demande de suppression de compte. Votre abonnement The Box ${plan} ne sera pas renouvelé : aucun nouveau prélèvement ne sera effectué.
+
+Ce qui se passe maintenant :
+- Vous gardez l'accès à l'application et à toutes les fonctions ${plan} jusqu'au ${date}, fin de la période déjà payée.
+- À cette date, votre compte, vos équipes, effectifs, matchs, notes et schémas seront supprimés définitivement.
+- Pensez à exporter ce que vous souhaitez conserver avant cette date.
+
+Vous avez changé d'avis ? Vous pouvez annuler la suppression à tout moment avant le ${date} depuis Paramètres > Profil dans l'application.
+
+Ouvrir The Box : ${APP_PUBLIC_URL}`;
 
   return { subject, html, text };
 }

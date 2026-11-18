@@ -10,6 +10,7 @@ import {
   findCoachProfile,
   claimStripeEvent,
   releaseStripeEvent,
+  getAdminFirestore,
 } from "@/lib/firebase-admin";
 import { getMailTransporter, DEFAULT_FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from "@/lib/mailer";
 import {
@@ -18,6 +19,7 @@ import {
   RenderedEmail,
 } from "@/lib/email-templates";
 import Stripe from "stripe";
+import { CLEARED_DELETION_FIELDS, deleteCoachAccount } from "@/lib/accountDeletion";
 
 function idOf(value: unknown): string | null {
   if (!value) return null;
@@ -32,7 +34,7 @@ function idOf(value: unknown): string | null {
 async function sendSubscriptionEmail(
   stripe: Stripe,
   customerId: string | null,
-  build: (name: string) => RenderedEmail
+  build: (name: string, profile: Record<string, any> | null) => RenderedEmail
 ): Promise<void> {
   if (!customerId) return;
   try {
@@ -50,7 +52,7 @@ async function sendSubscriptionEmail(
       (customer as Stripe.Customer).name?.split(" ")[0] ||
       "Coach";
 
-    const mail = build(name);
+    const mail = build(name, profile?.data || null);
     const info = await getMailTransporter().sendMail({
       from: DEFAULT_FROM_EMAIL,
       to: email,
@@ -123,7 +125,8 @@ export async function POST(req: NextRequest) {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
           stripeStatus: "active",
-          extra: { cancelAtPeriodEnd: false, accessEndsAt: null },
+          // Un nouvel abonnement annule une suppression de compte programmée
+          extra: { cancelAtPeriodEnd: false, accessEndsAt: null, ...CLEARED_DELETION_FIELDS },
         });
 
         console.log(`📦 [Stripe Webhook -> Firestore Result]:`, result);
@@ -153,13 +156,20 @@ export async function POST(req: NextRequest) {
           extra: {
             cancelAtPeriodEnd: isScheduled,
             accessEndsAt: isScheduled && accessEnd ? accessEnd.toISOString() : null,
+            // Abonnement réactivé (application ou portail Stripe) : la suppression programmée du compte est annulée
+            ...(!isScheduled && wasScheduled ? CLEARED_DELETION_FIELDS : {}),
           },
         });
 
         if (isScheduled && !wasScheduled) {
           console.log(`🛑 [Stripe Webhook] Résiliation programmée pour customer=${customerId} (fin: ${accessEnd?.toISOString()})`);
-          await sendSubscriptionEmail(stripe, customerId, (name) =>
-            cancellationScheduledEmail({ name, planId, accessUntil: accessEnd || new Date() })
+          await sendSubscriptionEmail(stripe, customerId, (name, profile) =>
+            cancellationScheduledEmail({
+              name,
+              planId,
+              accessUntil: accessEnd || new Date(),
+              accountDeletion: Boolean(profile?.deletionScheduledAt),
+            })
           );
         } else if (!isScheduled && wasScheduled) {
           console.log(`🔄 [Stripe Webhook] Résiliation annulée (abonnement réactivé) pour customer=${customerId}`);
@@ -174,6 +184,15 @@ export async function POST(req: NextRequest) {
         const reason = subscription.cancellation_details?.reason === "payment_failed" ? "payment_failed" : "canceled";
 
         console.log(`⚠️ [Stripe Webhook] Fin d'abonnement pour customer=${customerId} (raison: ${reason})`);
+
+        // Fin de la période payée d'un coach ayant demandé la suppression de son compte : suppression effective
+        const owner = customerId ? await findCoachProfile({ stripeCustomerId: customerId }) : null;
+        const db = getAdminFirestore();
+        if (owner?.data?.deletionScheduledAt && db) {
+          await deleteCoachAccount(db, owner.id);
+          console.log(`🗑️ [Stripe Webhook] Compte ${owner.id} supprimé (suppression programmée à la fin de l'abonnement).`);
+          break;
+        }
 
         const result = await updateCoachPlanInFirestore({
           planId: "free",

@@ -24,10 +24,12 @@ service cloud.firestore {
       return resource.data;
     }
 
+    // Adresse super admin uniquement si elle est confirmée (connexion Google) : sinon n'importe qui
+    // pourrait créer un compte e-mail/mot de passe avec cette adresse et obtenir les droits.
     function isSuperAdmin() {
       return isSignedIn() && (
-        request.auth.uid == 'zWx5tcF4sehRBpuGtQ0rqg2WXMf2' ||
-        (request.auth.token.keys().hasAll(['email']) && request.auth.token.email == 'pixup.agence@gmail.com') ||
+        (request.auth.token.get('email', '') == 'pixup.agence@gmail.com' &&
+          request.auth.token.get('email_verified', false) == true) ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -50,7 +52,8 @@ service cloud.firestore {
     // Un coach ne peut pas s'attribuer lui-même une formule payante ni modifier ses données Stripe.
     function billingKeys() {
       return ['stripeCustomerId', 'stripeSubscriptionId', 'stripeStatus', 'cancelAtPeriodEnd', 'accessEndsAt',
-              'hasHadSubscription', 'trialEndsAt', 'freeSince'];
+              'hasHadSubscription', 'trialEndsAt', 'freeSince',
+              'deletionScheduledAt', 'deletionRequestedAt', 'deletionStoppedRenewal'];
     }
 
     // Accès aux fonctions PRO (formule payante, essai en cours ou admin), calculé depuis le profil

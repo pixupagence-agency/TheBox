@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { getPremiumTheme, premiumOverlay, premiumShell, premiumLabel } from "@/lib/premiumModalTheme";
 import { auth, logoutUser, saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
-import { clearLocalWorkspace } from "@/lib/cloudSync";
+import { clearLocalWorkspace, startWorkspaceSync, stopWorkspaceSync } from "@/lib/cloudSync";
 import { isSuperAdminEmail } from "@/lib/security";
 import { Language, translations, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 import { confirmAction } from "@/components/ConfirmDialog";
@@ -425,6 +425,8 @@ interface CoachProfile {
   hasHadSubscription?: boolean;
   /** Compte sans accès : équipes, matchs, notes et schémas masqués (conservés en base) */
   dataHidden?: boolean;
+  /** Suppression du compte programmée à cette date (fin de la période payée), ISO */
+  deletionScheduledAt?: string | null;
 }
 
 export interface TeamCategory {
@@ -947,24 +949,33 @@ export default function TacticsBoard({
   const isDataHidden = Boolean(!isUserAdmin && isFreePlan && !isInFreeTrial && activeCoach?.dataHidden);
   const [isHiddenDataBannerDismissed, setIsHiddenDataBannerDismissed] = useState(false);
 
-  // Suppression définitive du compte par le coach (droit à l'effacement) : abonnement résilié, données,
-  // profil et identifiants supprimés côté serveur (app/api/account/delete)
+  // Suppression du compte par le coach (droit à l'effacement), côté serveur (app/api/account/delete) :
+  //  - abonnement payé en cours : non renouvelé, accès conservé jusqu'à la fin de la période payée,
+  //    compte supprimé à cette date (annulable d'ici là) ;
+  //  - sinon : compte, données, profil et identifiants supprimés immédiatement.
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
   const [deleteAccountConfirm, setDeleteAccountConfirm] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
+  const [scheduledDeletionAt, setScheduledDeletionAt] = useState<string | null>(activeCoach?.deletionScheduledAt ?? null);
+  useEffect(() => {
+    setScheduledDeletionAt(activeCoach?.deletionScheduledAt ?? null);
+  }, [activeCoach?.deletionScheduledAt]);
   const handleDeleteOwnAccount = async () => {
     if (deleteAccountConfirm.trim().toUpperCase() !== "SUPPRIMER" || isDeletingAccount) return;
-    if (!auth.currentUser) {
+    const user = auth.currentUser;
+    if (!user) {
       setDeleteAccountError("Reconnectez-vous pour supprimer votre compte.");
       return;
     }
     setIsDeletingAccount(true);
     setDeleteAccountError(null);
+    // Synchro arrêtée pendant la demande : en cas de suppression immédiate, elle renverrait sinon
+    // les données locales en ligne. Elle reprend si le compte reste actif (suppression programmée, échec).
+    const syncWasRunning = !isDataHidden;
+    await stopWorkspaceSync();
     try {
-      const idToken = await auth.currentUser.getIdToken();
-      // Synchro arrêtée avant la suppression : elle renverrait sinon les données locales en ligne
-      await clearLocalWorkspace();
+      const idToken = await user.getIdToken();
       const res = await fetch("/api/account/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
@@ -972,7 +983,18 @@ export default function TacticsBoard({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.success) throw new Error(data?.error || "La suppression n'a pas pu aboutir.");
+
+      if (data.mode === "scheduled") {
+        if (syncWasRunning) startWorkspaceSync(user.uid);
+        setScheduledDeletionAt(data.deletionAt);
+        setCoaches((prev) => prev.map((c) => (c.id === activeCoachId ? { ...c, deletionScheduledAt: data.deletionAt } : c)));
+        setIsDeleteAccountOpen(false);
+        setIsDeletingAccount(false);
+        return;
+      }
+
       // Plus aucune trace du compte sur cet appareil
+      await clearLocalWorkspace();
       for (const key of Object.keys(localStorage)) {
         if (key.startsWith("thebox_")) localStorage.removeItem(key);
       }
@@ -984,8 +1006,28 @@ export default function TacticsBoard({
       alert("Votre compte et vos données ont été supprimés définitivement.");
       window.location.reload();
     } catch (e: any) {
-      // Les données locales seront restaurées depuis le compte au prochain chargement
+      if (syncWasRunning) startWorkspaceSync(user.uid);
       setDeleteAccountError(e?.message || "La suppression n'a pas pu aboutir.");
+      setIsDeletingAccount(false);
+    }
+  };
+  const handleCancelAccountDeletion = async () => {
+    const user = auth.currentUser;
+    if (!user || isDeletingAccount) return;
+    setIsDeletingAccount(true);
+    setDeleteAccountError(null);
+    try {
+      const res = await fetch("/api/account/delete", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) throw new Error(data?.error || "L'annulation n'a pas pu aboutir.");
+      setScheduledDeletionAt(null);
+      setCoaches((prev) => prev.map((c) => (c.id === activeCoachId ? { ...c, deletionScheduledAt: null } : c)));
+    } catch (e: any) {
+      setDeleteAccountError(e?.message || "L'annulation n'a pas pu aboutir.");
+    } finally {
       setIsDeletingAccount(false);
     }
   };
@@ -16585,10 +16627,32 @@ export default function TacticsBoard({
                           <p className={`text-xs font-black ${isModernSleek ? "text-rose-700" : "text-rose-300"}`}>
                             {en ? "Delete my account" : "Supprimer mon compte"}
                           </p>
+                          {scheduledDeletionAt ? (
+                            <>
+                              <p className={`mt-1 text-[11px] leading-relaxed ${th.sub}`}>
+                                {(() => {
+                                  const date = new Date(scheduledDeletionAt).toLocaleDateString(en ? "en-GB" : "fr-FR", { day: "numeric", month: "long", year: "numeric" });
+                                  return en
+                                    ? `Deletion scheduled on ${date}, at the end of your paid period. Your subscription will not renew and you keep full access until then. On that date, your account, teams, players, matches, notes and diagrams will be permanently deleted.`
+                                    : `Suppression programmée le ${date}, à la fin de votre période payée. Votre abonnement ne sera pas renouvelé et vous gardez l'accès complet d'ici là. À cette date, votre compte, vos équipes, joueurs, matchs, notes et schémas seront supprimés définitivement.`;
+                                })()}
+                              </p>
+                              {deleteAccountError && <p className="mt-2 text-[11px] font-semibold text-rose-400">{deleteAccountError}</p>}
+                              <button
+                                type="button"
+                                onClick={() => void handleCancelAccountDeletion()}
+                                disabled={isDeletingAccount}
+                                className={`mt-3 px-3 py-2 rounded-xl border text-xs font-bold transition cursor-pointer disabled:opacity-40 ${th.ghostBtn}`}
+                              >
+                                {isDeletingAccount ? "…" : en ? "Cancel the deletion" : "Annuler la suppression"}
+                              </button>
+                            </>
+                          ) : (
+                          <>
                           <p className={`mt-1 text-[11px] leading-relaxed ${th.sub}`}>
                             {en
-                              ? "Permanently deletes your account, teams, players, matches, notes and diagrams. Any running subscription is cancelled immediately, without refund of the current period. This cannot be undone."
-                              : "Supprime définitivement votre compte, vos équipes, joueurs, matchs, notes et schémas. Un abonnement en cours est résilié immédiatement, sans remboursement de la période entamée. Cette action est irréversible."}
+                              ? "Permanently deletes your account, teams, players, matches, notes and diagrams. With a running subscription, it will not renew: you keep access until the end of the period already paid, then your account is deleted. Without a subscription, deletion is immediate. This cannot be undone."
+                              : "Supprime définitivement votre compte, vos équipes, joueurs, matchs, notes et schémas. Avec un abonnement en cours, celui-ci n'est pas renouvelé : vous gardez l'accès jusqu'à la fin de la période déjà payée, puis le compte est supprimé. Sans abonnement, la suppression est immédiate. Cette action est irréversible."}
                           </p>
                           {!isDeleteAccountOpen ? (
                             <button
@@ -16646,6 +16710,8 @@ export default function TacticsBoard({
                                 </button>
                               </div>
                             </div>
+                          )}
+                          </>
                           )}
                         </div>
                       )}
