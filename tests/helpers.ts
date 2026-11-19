@@ -57,11 +57,33 @@ export async function setSport(page: Page, sport: Sport) {
   await expect(page.locator(`#pitch-${sport}`)).toBeVisible({ timeout: 10000 });
 }
 
-/** Crée un nouveau match (les matchs sont facultatifs) puis active le mode Live. */
+/** Crée une équipe de test depuis la fenêtre « Gestion des équipes » déjà ouverte, puis la referme si elle reste affichée. */
+async function ensureTeamFromDialog(page: Page) {
+  const teamDialog = page.getByRole('dialog', { name: 'Gestion des équipes' });
+  await teamDialog.getByLabel("Nom de l'équipe").fill('Équipe E2E');
+  await teamDialog.getByRole('button', { name: /Ajouter l.équipe/ }).click();
+  await expect(teamDialog.getByText(/Équipes enregistrées \(1\)|Équipe E2E/).first()).toBeVisible({ timeout: 10000 }).catch(() => {});
+  if (await teamDialog.isVisible().catch(() => false)) {
+    await teamDialog.getByRole('button', { name: 'Fermer' }).first().click();
+  }
+}
+
+/** Crée un nouveau match (les matchs sont facultatifs) puis active le mode Live. Crée d'abord une équipe si le compte n'en a pas. */
 export async function startLiveMatch(page: Page) {
   await page.getByRole('button', { name: 'Gérer ou ajouter des matchs' }).click();
   await page.getByRole('button', { name: 'Nouveau match' }).click();
-  await page.getByRole('button', { name: 'Valider' }).click();
+
+  // Un compte neuf n'a aucune équipe : l'application ouvre alors « Gestion des équipes » au lieu du formulaire de match.
+  const validateBtn = page.getByRole('button', { name: 'Valider' });
+  const teamDialog = page.getByRole('dialog', { name: 'Gestion des équipes' });
+  await expect(validateBtn.or(teamDialog).first()).toBeVisible({ timeout: 10000 });
+  if (await teamDialog.isVisible()) {
+    await ensureTeamFromDialog(page);
+    if (!(await validateBtn.isVisible().catch(() => false))) {
+      await page.getByRole('button', { name: 'Nouveau match' }).click();
+    }
+  }
+  await validateBtn.click();
   await page.getByRole('button', { name: 'Fermer', exact: true }).first().click();
 
   const liveToggleBtn = page.getByRole('button', { name: 'MODE LIVE', exact: true });

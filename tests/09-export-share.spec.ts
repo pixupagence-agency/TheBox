@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { ADMIN, requireTestAccount } from './e2e-credentials';
+import { openMoreTools } from './helpers';
 
 requireTestAccount();
 
@@ -39,7 +40,8 @@ test.describe('Section 9 : Export Haute Définition, Impression & Partage (FT-SH
   });
 
   test('FT-SHARE-01 : Export Image PNG du Terrain Tactique', async ({ page }) => {
-    // 1. Bouton d'export PNG direct dans la barre d'outils gauche
+    // 1. Bouton d'export PNG de la barre d'outils (rangé dans « Plus d'outils » sur les écrans étroits)
+    await openMoreTools(page);
     const pngExportBtn = page.locator('#tour-export-actions button').first();
     await expect(pngExportBtn).toBeVisible({ timeout: 5000 });
 

@@ -16,3 +16,6 @@ coverage/
 
 # TypeScript (cache de compilation incrémentale)
 *.tsbuildinfo
+
+# Captures et logs du MCP Playwright
+.playwright-mcp/
