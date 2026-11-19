@@ -12842,7 +12842,6 @@ export default function TacticsBoard({
           <div className={`p-2 px-3 border-t ${isModernSleek ? "border-slate-200 bg-slate-50" : "border-[#2a2f37]"} text-center`}>
             <p className={`text-[11px] ${isModernSleek ? "text-slate-500" : "text-slate-400"} font-bold uppercase tracking-widest flex items-center justify-between gap-2`}>
               <span>THE BOX FOOTBALL CLUB</span>
-              <span className={isModernSleek ? "" : "text-[#00E599]"}>VERSION DÉMO</span>
             </p>
           </div>
 
