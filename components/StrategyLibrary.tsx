@@ -34,33 +34,6 @@ export default function StrategyLibrary({ savedTactics, setSavedTactics, onLoadT
       author: "THE BOX Pro",
       difficulty: "Avancé",
       keyframesCount: 3,
-    },
-    {
-      id: "pre_3",
-      name: "Défense en Zone 2-3 (Match)",
-      sport: "basketball",
-      description: "Couverture hermétique de la raquette pour forcer l'adversaire à prendre des tirs lointains sous pression.",
-      author: "THE BOX Pro",
-      difficulty: "Débutant",
-      keyframesCount: 1,
-    },
-    {
-      id: "pre_4",
-      name: "Système de Pods d'Avants 1-3-3-1",
-      sport: "rugby",
-      description: "Organisation rigoureuse des avants sur toute la largeur du terrain pour pilonner la ligne d'avantage de manière cyclique.",
-      author: "THE BOX Pro",
-      difficulty: "Expert",
-      keyframesCount: 2,
-    },
-    {
-      id: "pre_5",
-      name: "Système de Relance Rapide à 7m",
-      sport: "handball",
-      description: "Pivot se projetant dans le dos de la défense centrale avec croisé des ailiers.",
-      author: "THE BOX Pro",
-      difficulty: "Intermédiaire",
-      keyframesCount: 2,
     }
   ];
 
@@ -176,7 +149,7 @@ export default function StrategyLibrary({ savedTactics, setSavedTactics, onLoadT
 
         {/* Filter Selection */}
         <div className="flex items-center gap-2 w-full sm:w-auto bg-brand-deep border border-brand-border rounded-lg p-1">
-          {["all", "football", "basketball", "rugby", "handball"].map((sport) => (
+          {["all", "football"].map((sport) => (
             <button
               key={sport}
               onClick={() => setSelectedSportFilter(sport)}

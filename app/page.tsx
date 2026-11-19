@@ -1318,16 +1318,11 @@ export default function Home() {
                           : "bg-[#121824] border-[#233149] text-white focus:border-[#00E599]"
                       }`}
                     >
-                      <option value="football">⚽ Football {!blockedSports.includes("football") ? "(Disponible)" : "(🔒 Bloqué)"}</option>
-                      <option value="basketball" disabled={blockedSports.includes("basketball")}>
-                        🏀 Basketball {blockedSports.includes("basketball") ? "(🔒 Sur activation admin)" : "(Disponible)"}
-                      </option>
-                      <option value="rugby" disabled={blockedSports.includes("rugby")}>
-                        🏉 Rugby {blockedSports.includes("rugby") ? "(🔒 Sur activation admin)" : "(Disponible)"}
-                      </option>
-                      <option value="handball" disabled={blockedSports.includes("handball")}>
-                        🤾 Handball {blockedSports.includes("handball") ? "(🔒 Sur activation admin)" : "(Disponible)"}
-                      </option>
+                      {/* Seuls les sports ouverts au public sont proposés (les sports verrouillés sont masqués) */}
+                      <option value="football">⚽ Football</option>
+                      {!blockedSports.includes("basketball") && <option value="basketball">🏀 Basketball</option>}
+                      {!blockedSports.includes("rugby") && <option value="rugby">🏉 Rugby</option>}
+                      {!blockedSports.includes("handball") && <option value="handball">🤾 Handball</option>}
                     </select>
                   </div>
                 </div>

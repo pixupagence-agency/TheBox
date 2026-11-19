@@ -336,18 +336,20 @@ export default function LandingPage({
             {t.sports.tag}
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-white mt-2">
-            {currentLang === "fr" 
-              ? `${allSportsList.filter(s => !s.isBlocked).length} Sport${allSportsList.filter(s => !s.isBlocked).length > 1 ? "s" : ""} Actif${allSportsList.filter(s => !s.isBlocked).length > 1 ? "s" : ""} & Terrains Officiels`
-              : `${allSportsList.filter(s => !s.isBlocked).length} Active Sport${allSportsList.filter(s => !s.isBlocked).length > 1 ? "s" : ""} & Official Pitches`}
+            {availableSports.length <= 1
+              ? (currentLang === "fr" ? "Football : Terrains & Formats Officiels" : "Football: Official Pitches & Formats")
+              : currentLang === "fr"
+              ? `${availableSports.length} Sport${availableSports.length > 1 ? "s" : ""} Actif${availableSports.length > 1 ? "s" : ""} & Terrains Officiels`
+              : `${availableSports.length} Active Sport${availableSports.length > 1 ? "s" : ""} & Official Pitches`}
           </h2>
           <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-xl mx-auto">
             {currentLang === "fr"
-              ? "Le football est immédiatement disponible par défaut. Les autres disciplines (basketball, rugby, handball) sont activables en 1 clic par l'administrateur de l'application."
-              : "Football is immediately available by default. Other sports (basketball, rugby, handball) can be activated in 1 click by the application administrator."}
+              ? "Terrains aux dimensions officielles et formations prêtes à l'emploi, du football à 5 au football à 11."
+              : "Official pitch dimensions and ready-to-use formations, from 5-a-side to 11-a-side football."}
           </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
-            {allSportsList.map((sp) => {
+          <div className={availableSports.length > 1 ? "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10" : "grid grid-cols-1 max-w-xs mx-auto gap-4 mt-10"}>
+            {availableSports.map((sp) => {
               const isBlocked = sp.isBlocked;
               return (
                 <button

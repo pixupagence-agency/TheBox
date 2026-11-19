@@ -33,9 +33,6 @@ export default function Dashboard({
 
   const quickSports = [
     { id: "football", label: "Football", icon: "⚽", color: "from-emerald-500/20 to-emerald-900/10 border-emerald-800/40" },
-    { id: "basketball", label: "Basketball", icon: "🏀", color: "from-amber-500/20 to-amber-900/10 border-amber-800/40" },
-    { id: "rugby", label: "Rugby", icon: "🏉", color: "from-teal-500/20 to-teal-900/10 border-teal-800/40" },
-    { id: "handball", label: "Handball", icon: "🤾", color: "from-rose-500/20 to-rose-900/10 border-rose-800/40" },
   ];
 
   return (
@@ -130,7 +127,7 @@ export default function Dashboard({
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-lg bg-brand-pine p-2 rounded border border-brand-border">
-                      {item.sport === "football" ? "⚽" : item.sport === "basketball" ? "🏀" : "🏟️"}
+                      {item.sport === "football" ? "⚽" : "🏟️"}
                     </span>
                     <div>
                       <h4 className="text-xs font-bold text-white">{item.name}</h4>

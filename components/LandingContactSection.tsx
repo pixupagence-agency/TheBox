@@ -53,10 +53,6 @@ export default function LandingContactSection({ isAdmin = false, language: propL
 
   const sportsOptions = [
     { id: "football", label: t.sportsOptions.football },
-    { id: "basketball", label: t.sportsOptions.basketball },
-    { id: "rugby", label: t.sportsOptions.rugby },
-    { id: "handball", label: t.sportsOptions.handball },
-    { id: "multisport", label: t.sportsOptions.multisport },
   ];
 
   const [name, setName] = useState("");

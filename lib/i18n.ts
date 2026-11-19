@@ -387,7 +387,7 @@ export const translations = {
       },
 
       sports: {
-        tag: "DISCIPLINES RECONNUES",
+        tag: "FOOTBALL À 5, 8 ET 11",
         title: (count: number) => `${count} Sport${count > 1 ? "s" : ""}, ${count} Terrain${count > 1 ? "s" : ""} Officiel${count > 1 ? "s" : ""}`,
         subtitle: "Accédez instantanément aux règles de jeu, dimensions de terrain et compositions tactiques homologuées.",
         footballLabel: "Football",
@@ -973,7 +973,7 @@ export const translations = {
       },
 
       sports: {
-        tag: "SUPPORTED DISCIPLINES",
+        tag: "5, 8 & 11-A-SIDE FOOTBALL",
         title: (count: number) => `${count} Sport${count > 1 ? "s" : ""}, ${count} Official Pitch${count > 1 ? "es" : ""}`,
         subtitle: "Instant access to official rules, pitch dimensions and certified tactical formations.",
         footballLabel: "Football (Soccer)",

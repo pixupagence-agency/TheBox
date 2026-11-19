@@ -93,7 +93,7 @@ export default function OnboardingTutorialModal({
       keyPoints: [
         "Glisser-déposer : déplacez joueurs et ballon librement",
         "Double-clic sur un joueur : modifiez son nom, son numéro, son poste ou sa photo",
-        "Football, basket, rugby et handball : terrain et formations adaptés au sport choisi"
+        "Football à 5, 8 ou 11 : terrain et formations adaptés au format choisi"
       ],
       proTip: "Un remplaçant se fait entrer sur le terrain depuis la fiche du joueur ou depuis l'effectif.",
       preferredPlacement: "top"

@@ -48,8 +48,8 @@ const FAQ_DATA: FaqItem[] = [
   {
     id: "f2",
     category: "Général",
-    question: "Quels sports sont pris en charge sur The Box ?",
-    answer: "The Box gère nativement le Football avec les tracés et dimensions officiels de terrains (et prochainement le Basketball, le Rugby et le Handball). Vous disposez des équipements spécifiques pour chaque discipline."
+    question: "Quels formats de football sont pris en charge sur The Box ?",
+    answer: "The Box gère nativement le football avec les tracés et dimensions officiels des terrains, du football à 5 au football à 11, ainsi que les équipements et formations adaptés à chaque format."
   },
   {
     id: "f3",

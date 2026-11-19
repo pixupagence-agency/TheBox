@@ -37,7 +37,7 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
       {
         subtitle: "1.1 Créer son compte & se connecter",
         paragraphs: [
-          "TheBox est un tableau tactique 2D pour les entraîneurs de football, basket, rugby et handball : préparez vos séances et vos matchs, gérez vos équipes et suivez vos rencontres en direct.",
+          "TheBox est un tableau tactique 2D pour les entraîneurs de football : préparez vos séances et vos matchs, gérez vos équipes et suivez vos rencontres en direct.",
           "Depuis la page d'accueil, cliquez sur « Créer un Compte » ou « Se Connecter »."
         ],
         bullets: [
@@ -90,7 +90,7 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
           "De part et d'autre du terrain, le panneau « Mon Équipe » (à gauche) et le panneau « Mon Adversaire » (à droite) pilotent chaque camp. Chaque panneau peut être réduit pour agrandir le terrain."
         ],
         bullets: [
-          "SCHÉMA : appliquez une formation en un clic (ex. 4-3-3, 4-4-2, 4-2-3-1 au football ; formations adaptées en basket, rugby et handball).",
+          "SCHÉMA : appliquez une formation en un clic (ex. 4-3-3, 4-4-2, 4-2-3-1).",
           "Effectif : gérez les noms, numéros de maillot, postes et photos, les titulaires et les remplaçants.",
           "Rôles Tactiques : désignez capitaine et tireurs (voir la section « Rôles Tactiques »).",
           "Dans leur camp : regroupe les joueurs dans leur moitié de terrain.",
@@ -113,15 +113,14 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
     number: "03",
     title: "Le Terrain & les Joueurs",
     iconName: "layers",
-    summary: "Déplacement des joueurs et du ballon, fiche joueur, remplacements et sports disponibles.",
+    summary: "Déplacement des joueurs et du ballon, fiche joueur, remplacements et formats de jeu disponibles.",
     badge: "Terrain",
     videoUrl: "/images/guide/capture-terrain-et-outils.webp",
     content: [
       {
         subtitle: "Manipuler les joueurs",
         paragraphs: [
-          "Le terrain s'adapte au sport choisi (football, basket, rugby, handball) avec ses dimensions et ses formations.",
-          "Le football est disponible par défaut ; les autres sports sont ouverts par l'administrateur de la plateforme."
+          "Le terrain s'adapte au format de jeu choisi (football à 5, 8 ou 11) avec ses dimensions et ses formations."
         ],
         bullets: [
           "Glisser-déposer : déplacez joueurs et ballon à la souris ou au doigt.",
@@ -270,13 +269,10 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
       {
         subtitle: "Le chronomètre et les périodes",
         paragraphs: [
-          "Le Mode Live Match (formule PRO+) transforme votre écran en console de bord du terrain. Les périodes dépendent du sport :"
+          "Le Mode Live Match (formule PRO+) transforme votre écran en console de bord du terrain. Les périodes du match :"
         ],
         bullets: [
           "Football : 2 mi-temps de 45 minutes (1MT · PAUSE · 2MT).",
-          "Rugby : 2 mi-temps de 40 minutes.",
-          "Handball : 2 mi-temps de 30 minutes.",
-          "Basket : 4 quart-temps de 20 minutes (QT1 · QT2 · PAUSE · QT3 · QT4).",
           "START / PAUSE / 🔄 : lancez, figez ou remettez à zéro le chrono. Au-delà du temps réglementaire, il passe en rouge (temps additionnel).",
           "PAUSE (mi-temps) : lance un compte à rebours de 15 minutes avant la reprise."
         ]
@@ -287,7 +283,7 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
           "Double-cliquez sur un joueur pour ouvrir ses actions de match :"
         ],
         bullets: [
-          "But et passe décisive (au rugby : essai +5, transformation +2, drop +3 ; au basket : 3 points, 2 points, lancer franc).",
+          "But et passe décisive.",
           "Carton jaune (le 2e entraîne l'exclusion) et carton rouge.",
           "Blessure et remplacement : choisissez le remplaçant qui entre ; la minute est enregistrée.",
           "Fil des événements : historique de toutes les actions, avec suppression en cas d'erreur.",
