@@ -111,7 +111,7 @@ export interface Token {
   y: number; // percentage 0-100
   color?: string;
   photo?: string;
-  status?: "excellent" | "tired" | "injured" | "normal" | "suspended" | "red_card";
+  status?: "excellent" | "tired" | "injured" | "normal" | "suspended" | "absent" | "red_card";
   removalReason?: string;
   yellowCards?: number;
   /** Joueur de l'effectif de l'équipe que ce pion représente (fiche partagée entre les matchs) */
@@ -422,13 +422,13 @@ export interface TeamRosterPlayer {
   name: string;
   role: string;
   number: number;
-  status?: "normal" | "excellent" | "tired" | "injured" | "suspended";
+  status?: "normal" | "excellent" | "tired" | "injured" | "suspended" | "absent";
   photo?: string;
   isStarter?: boolean;
 }
 
 /** Fiche saisie pour un joueur lors de la création d'une équipe (champ absent = valeur par défaut). */
-type NewTeamPlayerEdit = { name?: string; role?: string; numberText?: string; photo?: string };
+type NewTeamPlayerEdit = { name?: string; role?: string; numberText?: string; photo?: string; status?: TeamRosterStatus };
 /** Taille maximale de l'effectif proposé à la création d'une équipe. */
 const MAX_TEAM_SQUAD_SIZE = 40;
 
@@ -527,7 +527,19 @@ const readStoredBench = (prefix: string): any[] | null => {
   }
 };
 
-const ROSTER_STATUSES = ["normal", "excellent", "tired", "injured", "suspended"] as const;
+const ROSTER_STATUSES = ["normal", "excellent", "tired", "injured", "suspended", "absent"] as const;
+type TeamRosterStatus = NonNullable<TeamRosterPlayer["status"]>;
+/** Statuts proposés dans les fiches de l'effectif d'équipe */
+const TEAM_PLAYER_STATUS_OPTIONS: { value: TeamRosterStatus; label: string }[] = [
+  { value: "normal", label: "Disponible" },
+  { value: "absent", label: "Absent" },
+  { value: "suspended", label: "Suspendu" },
+  { value: "injured", label: "Blessé" },
+];
+/** Joueur indisponible pour le match (absent, suspendu, blessé) */
+const isUnavailableStatus = (status?: string) => status === "absent" || status === "suspended" || status === "injured";
+/** « En forme » et « Fatigué » restent des joueurs disponibles */
+const toTeamStatusOption = (status?: string): TeamRosterStatus => (isUnavailableStatus(status) ? (status as TeamRosterStatus) : "normal");
 /** Disponibilité conservée dans la fiche d'effectif (les cartons du match n'y vont pas). */
 const toRosterStatus = (status?: string): TeamRosterPlayer["status"] =>
   (ROSTER_STATUSES as readonly string[]).includes(status || "") ? (status as TeamRosterPlayer["status"]) : "normal";
@@ -549,7 +561,8 @@ const rosterPlayerToSub = (p: TeamRosterPlayer) => ({
  * prennent les places du terrain (positions conservées), les joueurs suivants vont sur le banc.
  */
 const buildMatchGroupFromRoster = (tokens: Token[], roster: TeamRosterPlayer[]) => {
-  const ordered = [...roster.filter((p) => p.isStarter), ...roster.filter((p) => !p.isStarter)];
+  const available = roster.filter((p) => !isUnavailableStatus(p.status));
+  const ordered = [...available.filter((p) => p.isStarter), ...available.filter((p) => !p.isStarter)];
   const identity: Record<string, Partial<Token>> = {};
   tokens
     .filter((t) => t.type === "player_a")
@@ -1763,6 +1776,7 @@ export default function TacticsBoard({
         name: edit.name ?? "",
         role: edit.role ?? defaultRole,
         photo: edit.photo,
+        status: edit.status ?? ("normal" as TeamRosterStatus),
         isStarter: index < starters.length,
       };
     });
@@ -1818,7 +1832,7 @@ export default function TacticsBoard({
         name: p.name.trim() || `Joueur ${p.number}`,
         role: p.role,
         number: p.number,
-        status: "normal",
+        status: p.status,
         isStarter: p.isStarter,
         ...(p.photo ? { photo: p.photo } : {}),
       }));
@@ -1844,6 +1858,64 @@ export default function TacticsBoard({
     setNewTeamFormat("");
     setNewTeamSquadSize(null);
     setNewTeamPlayerEdits({});
+  };
+
+  // ---- Fiches des joueurs d'une équipe enregistrée (clic sur l'équipe dans « Gestion des équipes ») ----
+  const [rosterEditTeamId, setRosterEditTeamId] = useState<string | null>(null);
+
+  const editTeamRoster = (teamId: string, update: (roster: TeamRosterPlayer[]) => TeamRosterPlayer[]) => {
+    setTeamRostersMap((prev) => ({
+      ...prev,
+      [teamId]: update(prev[teamId]?.length ? prev[teamId] : getRosterForTeam(teamId)),
+    }));
+  };
+
+  /** Modifie une fiche ; pour l'équipe active, le joueur est aussi mis à jour sur le terrain et le banc du match */
+  const handleEditTeamPlayer = (teamId: string, playerId: string, patch: Partial<TeamRosterPlayer>) => {
+    editTeamRoster(teamId, (roster) => roster.map((p) => (p.id === playerId ? { ...p, ...patch } : p)));
+    if (teamId !== activeTeamId) return;
+    const { isStarter: _isStarter, id: _id, ...tokenPatch } = patch;
+    if (Object.keys(tokenPatch).length === 0) return;
+    setKeyframes((prev) => prev.map((frame) => frame.map((t) => (t.type === "player_a" && t.rosterId === playerId ? { ...t, ...tokenPatch } : t))));
+    setSubstitutes((prev) => prev.map((s) => (s.rosterId === playerId ? { ...s, ...tokenPatch } : s)));
+  };
+
+  const handleTeamPlayerPhoto = async (teamId: string, playerId: string, file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Veuillez sélectionner un fichier image valide (JPG, PNG, WebP).");
+      return;
+    }
+    try {
+      const photo = await compressImage(file, 160, 160, 0.75);
+      if (photo) handleEditTeamPlayer(teamId, playerId, { photo });
+    } catch (err) {
+      console.error("Erreur lors de la compression de la photo:", err);
+    }
+  };
+
+  const handleAddTeamPlayer = (teamId: string) => {
+    editTeamRoster(teamId, (roster) => {
+      if (roster.length >= MAX_TEAM_SQUAD_SIZE) return roster;
+      const used = new Set(roster.map((p) => p.number));
+      let number = 1;
+      while (used.has(number)) number++;
+      const role = getSportCommonPositions(activeSport).filter((p) => p !== "SUB")[0] || "SUB";
+      return [...roster, { id: `${teamId}_p${Date.now()}`, name: `Joueur ${number}`, number, role, status: "normal", isStarter: false }];
+    });
+  };
+
+  const handleRemoveTeamPlayer = async (teamId: string, playerId: string) => {
+    const player = getRosterForTeam(teamId).find((p) => p.id === playerId);
+    if (!player) return;
+    const ok = await confirmAction({
+      title: "Retirer ce joueur de l'équipe ?",
+      subject: player.name,
+      message: "Sa fiche sera supprimée de l'effectif de l'équipe. Les matchs déjà préparés ne sont pas modifiés.",
+      confirmLabel: "Supprimer",
+    });
+    if (!ok) return;
+    editTeamRoster(teamId, (roster) => roster.filter((p) => p.id !== playerId));
   };
 
   const handleDeleteTeam = async (teamId: string) => {
@@ -9582,6 +9654,7 @@ export default function TacticsBoard({
                     <option value="tired" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>🥱 Fatigué</option>
                     <option value="injured" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>🩹 Blessé</option>
                     <option value="suspended" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>🟥 Suspendu</option>
+                    <option value="absent" className={isModernSleek ? "bg-white text-slate-900" : "bg-[#0d1117] text-white"}>🚫 Absent</option>
                   </select>
                   <ChevronDown className={`w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${isModernSleek ? "text-slate-500" : "text-slate-400"
                     }`} />
@@ -10117,6 +10190,162 @@ export default function TacticsBoard({
 
   // Thème commun des grandes fenêtres (gestion des matchs, sauvegarde…)
   const pth = getPremiumTheme(isModernSleek);
+
+  /** Joueurs d'une équipe enregistrée : consultation et modification des fiches */
+  const renderTeamRosterEditor = (team: TeamCategory) => {
+    const roster = getRosterForTeam(team.id);
+    const canEdit = isProOrAdmin;
+    const positions = getSportCommonPositions(activeSport).filter((p) => p !== "SUB");
+    const unavailable = roster.filter((p) => isUnavailableStatus(p.status)).length;
+    const groupIds = team.id === activeTeamId
+      ? new Set([...currentTokens.map((t) => t.rosterId), ...substitutes.map((s) => s.rosterId)].filter(Boolean) as string[])
+      : null;
+    return (
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setRosterEditTeamId(null)}
+            className={`h-9 pl-2 pr-3 rounded-xl border text-xs font-bold inline-flex items-center gap-1 transition cursor-pointer ${pth.ghostBtn}`}
+          >
+            <ChevronLeft className="w-4 h-4" />Équipes
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className={`text-base font-black truncate ${pth.text}`}>{team.name}</p>
+            <p className={`text-[11px] font-semibold ${pth.sub}`}>
+              {team.category} · {roster.length} joueur{roster.length > 1 ? "s" : ""}
+              {unavailable > 0 && ` · ${unavailable} indisponible${unavailable > 1 ? "s" : ""}`}
+            </p>
+          </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => handleAddTeamPlayer(team.id)}
+              disabled={roster.length >= MAX_TEAM_SQUAD_SIZE}
+              className={`h-9 px-3.5 rounded-xl text-xs font-black inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${pth.primaryBtn}`}
+            >
+              <Plus className="w-4 h-4" />Ajouter un joueur
+            </button>
+          )}
+        </div>
+
+        {!canEdit && (
+          <div className={`flex items-center gap-2.5 p-3 rounded-xl border ${pth.goldChip}`}>
+            <Lock className="w-4 h-4 shrink-0" />
+            <p className="text-[11px] font-semibold">La modification des fiches joueurs (photo, nom, poste, statut) est réservée à la formule PRO.</p>
+          </div>
+        )}
+
+        {roster.length === 0 ? (
+          <p className={`text-sm text-center py-8 ${pth.sub}`}>Aucun joueur dans cette équipe.</p>
+        ) : (
+          <ul className={`rounded-xl border divide-y ${pth.border} ${pth.divide}`}>
+            {roster.map((p) => {
+              const roleOptions = positions.includes(p.role) ? positions : [p.role, ...positions];
+              const status = toTeamStatusOption(p.status);
+              const inGroup = groupIds?.has(p.id);
+              return (
+                <li key={p.id} className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-2">
+                  <div className="relative shrink-0">
+                    <label
+                      className={`w-10 h-10 rounded-full border flex items-center justify-center overflow-hidden transition ${canEdit ? "cursor-pointer" : ""} ${pth.chip}`}
+                      title={canEdit ? (p.photo ? "Changer la photo" : "Ajouter une photo") : p.name}
+                    >
+                      {p.photo ? <img src={p.photo} alt="" className="w-full h-full object-cover" /> : canEdit ? <Camera className="w-4 h-4" /> : <span className="text-[11px] font-black">{p.number}</span>}
+                      {canEdit && (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          aria-label={`Photo de ${p.name}`}
+                          onChange={(e) => {
+                            handleTeamPlayerPhoto(team.id, p.id, e.target.files?.[0]);
+                            e.target.value = "";
+                          }}
+                        />
+                      )}
+                    </label>
+                    {canEdit && p.photo && (
+                      <button
+                        type="button"
+                        onClick={() => handleEditTeamPlayer(team.id, p.id, { photo: undefined })}
+                        aria-label={`Retirer la photo de ${p.name}`}
+                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center cursor-pointer hover:bg-rose-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={2}
+                    disabled={!canEdit}
+                    value={String(p.number ?? "")}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
+                      if (!Number.isNaN(n)) handleEditTeamPlayer(team.id, p.id, { number: n });
+                    }}
+                    aria-label={`Numéro de ${p.name}`}
+                    className={`w-11 shrink-0 text-center border rounded-lg px-1 py-2 text-sm font-black outline-none transition disabled:opacity-80 ${pth.input}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <input
+                      type="text"
+                      disabled={!canEdit}
+                      value={p.name}
+                      placeholder={`Joueur ${p.number}`}
+                      onChange={(e) => handleEditTeamPlayer(team.id, p.id, { name: e.target.value })}
+                      onBlur={(e) => { if (!e.target.value.trim()) handleEditTeamPlayer(team.id, p.id, { name: `Joueur ${p.number}` }); }}
+                      aria-label={`Nom du joueur ${p.number}`}
+                      className={`w-full border rounded-lg px-2.5 py-2 text-sm font-semibold outline-none transition disabled:opacity-80 ${pth.input}`}
+                    />
+                    {inGroup && <p className={`text-[10px] font-bold mt-0.5 px-1 ${pth.accent}`}>Dans le groupe du match</p>}
+                  </div>
+                  <select
+                    value={p.role}
+                    disabled={!canEdit}
+                    onChange={(e) => handleEditTeamPlayer(team.id, p.id, { role: e.target.value })}
+                    aria-label={`Poste de ${p.name}`}
+                    className={`w-[76px] shrink-0 border rounded-lg px-1.5 py-2 text-xs font-bold outline-none cursor-pointer transition disabled:opacity-80 ${pth.input} ${pth.option}`}
+                  >
+                    {roleOptions.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={status}
+                    disabled={!canEdit}
+                    onChange={(e) => handleEditTeamPlayer(team.id, p.id, { status: e.target.value as TeamRosterStatus })}
+                    aria-label={`Statut de ${p.name}`}
+                    className={`w-[98px] shrink-0 border rounded-lg px-1.5 py-2 text-xs font-bold outline-none cursor-pointer transition disabled:opacity-80 ${pth.input} ${pth.option} ${isUnavailableStatus(status) ? "!text-rose-500" : ""}`}
+                  >
+                    {TEAM_PLAYER_STATUS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTeamPlayer(team.id, p.id)}
+                      className={`p-1.5 rounded-lg transition cursor-pointer shrink-0 ${pth.faint} hover:text-rose-500 ${isModernSleek ? "hover:bg-rose-50" : "hover:bg-rose-500/10"}`}
+                      title="Retirer ce joueur de l'équipe"
+                      aria-label={`Retirer ${p.name} de l'équipe`}
+                    >
+                      <Trash className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className={`text-[11px] ${pth.faint}`}>
+          Les modifications sont enregistrées automatiquement. Pour l&apos;équipe active, elles s&apos;appliquent aussi aux joueurs du match en cours.
+        </p>
+      </section>
+    );
+  };
   // Boutons d'outils de la barre du haut (même gabarit que les autres groupes : h-7, icône seule)
   const topToolBtnClass = (isActive: boolean) => `h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer relative flex items-center justify-center ${isActive
     ? isModernSleek
@@ -12407,6 +12636,8 @@ export default function TacticsBoard({
                                                 ? "bg-rose-600 text-white font-bold"
                                                 : token.status === "suspended"
                                                   ? "bg-red-700 text-white font-bold"
+                                                  : token.status === "absent"
+                                                    ? "bg-slate-500 text-white font-bold"
                                                   : "bg-rose-500 text-white font-bold"
                                             }`}
                                           title={t.tactics.pitchBadges.fitnessTitle(token.status === "excellent"
@@ -12417,6 +12648,8 @@ export default function TacticsBoard({
                                                 ? t.tactics.pitchBadges.fitnessInjured
                                                 : token.status === "suspended"
                                                   ? t.tactics.pitchBadges.fitnessSuspended
+                                                  : token.status === "absent"
+                                                    ? "Absent 🚫"
                                                   : token.status
                                           )}
                                         >
@@ -12428,6 +12661,8 @@ export default function TacticsBoard({
                                                 ? "🩹"
                                                 : token.status === "suspended"
                                                   ? "🟥"
+                                                  : token.status === "absent"
+                                                    ? "🚫"
                                                   : "•"}
                                         </span>
                                       )}
@@ -14327,7 +14562,13 @@ export default function TacticsBoard({
       {/* MULTI-TEAM MANAGER MODAL (PRO MODE) */}
       {isMultiTeamModalOpen && (() => {
         const activeTeamObj = teams.find((tm) => tm.id === activeTeamId);
-        const closeTeamsModal = () => setIsMultiTeamModalOpen(false);
+        const closeTeamsModal = () => { setIsMultiTeamModalOpen(false); setRosterEditTeamId(null); };
+        const openTeamRoster = (teamId: string) => {
+          const target = teams.find((tm) => tm.id === teamId);
+          handleSelectTeam(teamId);
+          if (target && (isProOrAdmin || target.isDefault)) setRosterEditTeamId(teamId);
+        };
+        const rosterTeam = rosterEditTeamId ? teams.find((tm) => tm.id === rosterEditTeamId) : undefined;
         return (
           <div
             className={`${premiumOverlay} z-50`}
@@ -14379,7 +14620,7 @@ export default function TacticsBoard({
                         <span className={`text-[9px] font-black uppercase tracking-[0.14em] px-2 py-0.5 rounded-md border ${pth.goldChip}`}>Pro</span>
                       </h2>
                       <p className={`text-xs mt-1 ${pth.sub}`}>
-                        Sélectionnez l&apos;équipe à afficher sur le tableau ou ajoutez-en une nouvelle.
+                        Cliquez sur une équipe pour l&apos;afficher sur le tableau et consulter ou modifier ses joueurs.
                       </p>
                     </div>
                     <button
@@ -14395,6 +14636,7 @@ export default function TacticsBoard({
                 </header>
 
                 <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-7 py-5 space-y-6">
+                  {rosterTeam ? renderTeamRosterEditor(rosterTeam) : (<>
                   {/* TEAM CARDS LIST */}
                   <section>
                     <p className={`${premiumLabel} ${pth.sub}`}>Équipes enregistrées ({teams.length})</p>
@@ -14412,11 +14654,11 @@ export default function TacticsBoard({
                             role="button"
                             tabIndex={0}
                             aria-pressed={isActive}
-                            onClick={() => handleSelectTeam(team.id)}
+                            onClick={() => openTeamRoster(team.id)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" || e.key === " ") {
                                 e.preventDefault();
-                                handleSelectTeam(team.id);
+                                openTeamRoster(team.id);
                               }
                             }}
                             className={`group p-3.5 rounded-2xl border transition cursor-pointer flex flex-col gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00E599]/40 ${isActive ? pth.selected : pth.selectable}`}
@@ -14470,11 +14712,9 @@ export default function TacticsBoard({
                                 <span className="inline-flex items-center gap-1"><Users className="w-3.5 h-3.5" />{playerCount} joueur{playerCount > 1 ? "s" : ""}</span>
                                 <span className="inline-flex items-center gap-1"><Bookmark className="w-3.5 h-3.5" />{tacticCount} schéma{tacticCount > 1 ? "s" : ""}</span>
                               </div>
-                              {!isActive && (
-                                <span className={`font-bold inline-flex items-center gap-0.5 ${pth.accent} opacity-0 group-hover:opacity-100 transition`}>
-                                  Basculer <ChevronRight className="w-3.5 h-3.5" />
-                                </span>
-                              )}
+                              <span className={`font-bold inline-flex items-center gap-0.5 ${pth.accent} ${isActive ? "" : "opacity-70 group-hover:opacity-100"} transition`}>
+                                Voir les joueurs <ChevronRight className="w-3.5 h-3.5" />
+                              </span>
                             </div>
                           </div>
                         );
@@ -14671,11 +14911,16 @@ export default function TacticsBoard({
                                         <option key={r} value={r}>{r}</option>
                                       ))}
                                     </select>
-                                    <span
-                                      className={`hidden sm:inline-flex shrink-0 w-[74px] justify-center text-[9px] font-black uppercase tracking-[0.1em] px-1.5 py-1 rounded-md border ${p.isStarter ? pth.accentChip : pth.chip}`}
+                                    <select
+                                      value={p.status}
+                                      onChange={(e) => updateNewTeamPlayer(p.index, { status: e.target.value as TeamRosterStatus })}
+                                      aria-label={`Statut du joueur ${p.index + 1}`}
+                                      className={`w-[98px] shrink-0 border rounded-lg px-1.5 py-2 text-xs font-bold outline-none cursor-pointer transition ${pth.input} ${pth.option} ${isUnavailableStatus(p.status) ? "!text-rose-500" : ""}`}
                                     >
-                                      {p.isStarter ? "Titulaire" : "Remplaçant"}
-                                    </span>
+                                      {TEAM_PLAYER_STATUS_OPTIONS.map((o) => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                      ))}
+                                    </select>
                                   </li>
                                 );
                               })}
@@ -14696,6 +14941,7 @@ export default function TacticsBoard({
                       </button>
                     </div>
                   </form>
+                  </>)}
                 </div>
               </main>
             </div>
@@ -15290,11 +15536,11 @@ export default function TacticsBoard({
             ? isModernSleek ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
             : status === "tired"
               ? isModernSleek ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-amber-500/10 border-amber-500/25 text-amber-300"
-              : status === "injured" || status === "suspended"
+              : isUnavailableStatus(status)
                 ? isModernSleek ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-rose-500/10 border-rose-500/25 text-rose-300"
                 : isModernSleek ? "bg-white border-slate-200 text-slate-700" : "bg-white/[0.03] border-white/10 text-slate-300";
 
-        const unavailableCount = [...starters, ...activeSubs].filter((p) => p.status === "injured" || p.status === "suspended").length;
+        const unavailableCount = [...starters, ...activeSubs].filter((p) => isUnavailableStatus(p.status)).length;
         const allCount = starters.length + activeSubs.length;
 
         const sections: { id: "players" | "setpieces"; label: string; icon: React.ElementType; badge: string }[] = [
@@ -15457,6 +15703,7 @@ export default function TacticsBoard({
                     <option value="tired" className={optionCls}>🥱 Fatigué</option>
                     <option value="injured" className={optionCls}>🩹 Blessé</option>
                     <option value="suspended" className={optionCls}>🟥 Suspendu</option>
+                    <option value="absent" className={optionCls}>🚫 Absent</option>
                   </select>
                   <div className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 min-w-0">
                     {availablePositions.slice(0, 6).map((pos) => {
@@ -15481,7 +15728,7 @@ export default function TacticsBoard({
 
         // Carte d'un joueur en réserve : fiche de l'effectif, hors du groupe de ce match
         const renderReserveCard = (player: TeamRosterPlayer) => {
-          const unavailable = player.status === "injured" || player.status === "suspended";
+          const unavailable = isUnavailableStatus(player.status);
           return (
             <div key={player.id} className={`relative rounded-2xl border overflow-hidden transition ${th.cardMuted}`}>
               <span className={`absolute left-0 inset-y-0 w-[3px] ${isModernSleek ? "bg-slate-300" : "bg-slate-600"}`} />
