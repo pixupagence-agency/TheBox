@@ -21,7 +21,7 @@ import {
   Search, UserCheck, Upload, ArrowLeftRight, Zap, AlertCircle, Cloud, Filter, Film,
   Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target, Shirt, Circle,
   CreditCard, Box, Scan, Bookmark, CalendarDays, CircleHelp, NotebookPen,
-  Crown, Flag, CornerUpLeft, CornerUpRight
+  Crown, Flag, CornerUpLeft, CornerUpRight, Archive
 } from "lucide-react";
 import { getPremiumTheme, premiumOverlay, premiumShell, premiumLabel } from "@/lib/premiumModalTheme";
 import { auth, logoutUser, saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
@@ -107,6 +107,8 @@ export interface Token {
   status?: "excellent" | "tired" | "injured" | "normal" | "suspended" | "red_card";
   removalReason?: string;
   yellowCards?: number;
+  /** Joueur de l'effectif de l'équipe que ce pion représente (fiche partagée entre les matchs) */
+  rosterId?: string;
 }
 
 export interface DrawingAction {
@@ -449,6 +451,11 @@ export interface TeamRosterPlayer {
   isStarter?: boolean;
 }
 
+/** Fiche saisie pour un joueur lors de la création d'une équipe (champ absent = valeur par défaut). */
+type NewTeamPlayerEdit = { name?: string; role?: string; numberText?: string; photo?: string };
+/** Taille maximale de l'effectif proposé à la création d'une équipe. */
+const MAX_TEAM_SQUAD_SIZE = 40;
+
 // Bascule unique vers le design « cockpit » : les préférences d'affichage étaient déjà
 // persistées (thème, représentation des joueurs, panneau droit), les nouveaux défauts
 // n'auraient donc jamais atteint les utilisateurs existants. Rejouée une seule fois,
@@ -519,6 +526,79 @@ export const defaultManagedTeamRosters: Record<string, TeamRosterPlayer[]> = {
 export const generateDefaultRosterForCustomTeam = (teamId: string, _teamName: string, _category: string): TeamRosterPlayer[] => {
   return generateStandardRoster(teamId);
 };
+
+/** Banc par défaut d'un match sans effectif (Joueur 12 à 26). */
+const makeDefaultSubstitutes = (opponent: boolean) =>
+  standardDefaultRoles26.slice(11).map(({ num, role }, i) => ({
+    id: opponent ? `opp_s${i + 1}` : `s${i + 1}`,
+    name: opponent ? `Joueur ${num} Adv` : `Joueur ${num}`,
+    role,
+    number: num,
+    status: "normal",
+  }));
+
+/** Banc enregistré pour le match actif (au chargement de la page). */
+const readStoredBench = (prefix: string): any[] | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const matchId = localStorage.getItem("thebox_active_match_id");
+    if (!matchId) return null;
+    const raw = localStorage.getItem(`${prefix}${matchId}`);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const ROSTER_STATUSES = ["normal", "excellent", "tired", "injured", "suspended"] as const;
+/** Disponibilité conservée dans la fiche d'effectif (les cartons du match n'y vont pas). */
+const toRosterStatus = (status?: string): TeamRosterPlayer["status"] =>
+  (ROSTER_STATUSES as readonly string[]).includes(status || "") ? (status as TeamRosterPlayer["status"]) : "normal";
+
+/** Fiche de l'effectif → remplaçant du match (même fiche, reliée par rosterId). */
+const rosterPlayerToSub = (p: TeamRosterPlayer) => ({
+  id: `sub_${p.id}`,
+  rosterId: p.id,
+  name: p.name,
+  number: p.number,
+  role: p.role,
+  status: p.status || "normal",
+  photo: p.photo,
+  type: "player_a" as const,
+});
+
+/**
+ * Groupe d'un match construit depuis l'effectif de l'équipe : les titulaires de l'effectif
+ * prennent les places du terrain (positions conservées), les joueurs suivants vont sur le banc.
+ */
+const buildMatchGroupFromRoster = (tokens: Token[], roster: TeamRosterPlayer[]) => {
+  const ordered = [...roster.filter((p) => p.isStarter), ...roster.filter((p) => !p.isStarter)];
+  const identity: Record<string, Partial<Token>> = {};
+  tokens
+    .filter((t) => t.type === "player_a")
+    .forEach((t, i) => {
+      const p = ordered[i];
+      if (p) {
+        identity[t.id] = { name: p.name, number: p.number, role: p.role, photo: p.photo, status: p.status || "normal", rosterId: p.id };
+      }
+    });
+  const used = Object.keys(identity).length;
+  return { identity, bench: ordered.slice(used).map(rosterPlayerToSub) };
+};
+
+/**
+ * Applique les fiches de l'effectif aux pions d'une étape : le groupe compte exactement les joueurs
+ * de l'effectif, une place du terrain sans joueur (effectif trop court) est retirée.
+ */
+const applyRosterIdentity = (frame: Token[], identity: Record<string, Partial<Token>>) =>
+  frame
+    .filter((t) => t.type !== "player_a" || !!identity[t.id])
+    .map((t) => (identity[t.id] ? { ...t, ...identity[t.id] } : t));
+
+/** Groupe encore « vierge » : uniquement les joueurs génériques (Joueur N), sans fiche reliée. */
+const isGenericGroup = (players: { name?: string; rosterId?: string }[]) =>
+  players.every((p) => !p.rosterId && /^Joueur \d+$/.test((p.name || "").trim()));
 
 // Nouveau compte : aucune équipe paramétrée, le coach crée la sienne
 const defaultTeams: TeamCategory[] = [];
@@ -1510,7 +1590,7 @@ export default function TacticsBoard({
   const [isSetPiecesOpen, setIsSetPiecesOpen] = useState(false);
   const [teamRolesModalTab, setTeamRolesModalTab] = useState<"players" | "setpieces">("players");
   const [rosterSearchQuery, setRosterSearchQuery] = useState<string>("");
-  const [rosterFilter, setRosterFilter] = useState<"all" | "starters" | "subs">("all");
+  const [rosterFilter, setRosterFilter] = useState<"all" | "starters" | "subs" | "reserve">("all");
   const [rosterPositionFilter, setRosterPositionFilter] = useState<string>("ALL");
 
   // Tactic Save states
@@ -1530,6 +1610,9 @@ export default function TacticsBoard({
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamCategory, setNewTeamCategory] = useState("Séniors");
   const [newTeamFormat, setNewTeamFormat] = useState<string>("");
+  // Effectif saisi à la création : taille choisie (null = taille par défaut du format) et fiches par position dans la liste
+  const [newTeamSquadSize, setNewTeamSquadSize] = useState<number | null>(null);
+  const [newTeamPlayerEdits, setNewTeamPlayerEdits] = useState<Record<number, NewTeamPlayerEdit>>({});
 
   // Fenêtre de gestion des équipes : fermeture avec Échap
   useEffect(() => {
@@ -1642,6 +1725,54 @@ export default function TacticsBoard({
     setActiveTeamId(teamId);
   };
 
+  /**
+   * Effectif proposé dans le formulaire de création d'équipe : les titulaires du format choisi,
+   * puis les remplaçants, complétés par les fiches déjà saisies (photo, numéro, nom, poste).
+   */
+  const getNewTeamDraft = () => {
+    const starters = getDefaultPlayersForSport(activeSport, resolveGameFormat(activeSport, newTeamFormat))
+      .filter((t) => t.type === "player_a");
+    const defaultSize = Math.min(MAX_TEAM_SQUAD_SIZE, starters.length + Math.max(3, Math.round(starters.length * 0.6)));
+    const size = newTeamSquadSize ?? defaultSize;
+    const positions = getSportCommonPositions(activeSport).filter((p) => p !== "SUB");
+    const useStandardBench = activeSport === "football" && starters.length === 11;
+    const players = Array.from({ length: size }, (_, index) => {
+      const edit = newTeamPlayerEdits[index] || {};
+      const defaultRole = index < starters.length && starters[index].role
+        ? starters[index].role
+        : (useStandardBench && standardDefaultRoles26[index]?.role) || positions[index % positions.length];
+      const typedNumber = parseInt(edit.numberText ?? "", 10);
+      return {
+        index,
+        number: Number.isNaN(typedNumber) ? index + 1 : typedNumber,
+        numberText: edit.numberText ?? String(index + 1),
+        name: edit.name ?? "",
+        role: edit.role ?? defaultRole,
+        photo: edit.photo,
+        isStarter: index < starters.length,
+      };
+    });
+    return { size, starterCount: Math.min(starters.length, size), players, positions };
+  };
+
+  const updateNewTeamPlayer = (index: number, patch: NewTeamPlayerEdit) => {
+    setNewTeamPlayerEdits((prev) => ({ ...prev, [index]: { ...prev[index], ...patch } }));
+  };
+
+  const handleNewTeamPlayerPhoto = async (index: number, file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Veuillez sélectionner un fichier image valide (JPG, PNG, WebP).");
+      return;
+    }
+    try {
+      const photo = await compressImage(file, 160, 160, 0.75);
+      if (photo) updateNewTeamPlayer(index, { photo });
+    } catch (err) {
+      console.error("Erreur lors de la compression de la photo:", err);
+    }
+  };
+
   const handleCreateNewTeam = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
@@ -1666,13 +1797,39 @@ export default function TacticsBoard({
       ...(getGameFormatOptions(activeSport).length > 0 ? { format: resolveGameFormat(activeSport, newTeamFormat) } : {}),
     };
 
-    const newRoster = generateDefaultRosterForCustomTeam(newTeamObj.id, newTeamObj.name, newTeamObj.category);
-    setTeamRostersMap((prev) => ({ ...prev, [newTeamObj.id]: newRoster }));
+    if (isProOrAdmin) {
+      // PRO : effectif choisi dans le formulaire (les fiches laissées vides deviennent « Joueur N »)
+      const newRoster: TeamRosterPlayer[] = getNewTeamDraft().players.map((p) => ({
+        id: `${newTeamObj.id}_p${p.index + 1}`,
+        name: p.name.trim() || `Joueur ${p.number}`,
+        role: p.role,
+        number: p.number,
+        status: "normal",
+        isStarter: p.isStarter,
+        ...(p.photo ? { photo: p.photo } : {}),
+      }));
+      setTeamRostersMap((prev) => ({ ...prev, [newTeamObj.id]: newRoster }));
+
+      // La nouvelle équipe n'a pas encore de match : le terrain et le banc reprennent tout de suite son effectif
+      clearActiveMatch();
+      const teamTokens = getDefaultPlayersForSport(activeSport, resolveGameFormat(activeSport, newTeamObj.format));
+      const { identity, bench } = buildMatchGroupFromRoster(teamTokens, newRoster);
+      setKeyframes([applyRosterIdentity(teamTokens, identity)]);
+      setDrawingActions([]);
+      setCurrentFrameIdx(0);
+      setSubstitutes(bench);
+    } else {
+      // Gratuit : effectif type de 26 joueurs, terrain et banc inchangés
+      const newRoster = generateDefaultRosterForCustomTeam(newTeamObj.id, newTeamObj.name, newTeamObj.category);
+      setTeamRostersMap((prev) => ({ ...prev, [newTeamObj.id]: newRoster }));
+    }
 
     setTeams((prev) => [...prev, newTeamObj]);
     setActiveTeamId(newTeamObj.id);
     setNewTeamName("");
     setNewTeamFormat("");
+    setNewTeamSquadSize(null);
+    setNewTeamPlayerEdits({});
   };
 
   const handleDeleteTeam = async (teamId: string) => {
@@ -2446,8 +2603,26 @@ export default function TacticsBoard({
     if (targetM && targetM.teamId && targetM.teamId !== activeTeamId) {
       setActiveTeamId(targetM.teamId);
     }
+    // Effectif de l'équipe du match : constitue le groupe d'un match qui n'en a pas encore
+    const matchRoster = isProOrAdmin ? teamRostersMap[targetM?.teamId || activeTeamId] || [] : [];
+    let hasSavedBench = false;
     if (typeof window !== "undefined") {
       localStorage.setItem("thebox_active_match_id", matchId);
+
+      // Bancs enregistrés pour ce match (sinon bancs par défaut)
+      const readBench = (key: string): any[] | null => {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || "null");
+          return Array.isArray(parsed) ? parsed : null;
+        } catch {
+          return null;
+        }
+      };
+      const savedBench = readBench(`thebox_substitutes_${matchId}`);
+      const savedOppBench = readBench(`thebox_opp_substitutes_${matchId}`);
+      hasSavedBench = savedBench !== null;
+      setSubstitutes(savedBench ?? makeDefaultSubstitutes(false));
+      setOpponentSubstitutes(savedOppBench ?? makeDefaultSubstitutes(true));
 
       // Load events for this match
       const savedEvts = localStorage.getItem(`thebox_match_events_${matchId}`);
@@ -2547,10 +2722,16 @@ export default function TacticsBoard({
       applySchemaFormat(schema.sport || activeSport, schema.format);
       setCurrentFrameIdx(0);
     } else {
-      // Reset pitch to default players for activeSport for new match
+      // Nouveau match : joueurs par défaut du sport, remplacés par l'effectif de l'équipe s'il existe
       setDrawingActions([]);
       const defaultTokens = getDefaultPlayersForSport(activeSport);
-      setKeyframes([defaultTokens]);
+      if (matchRoster.length > 0 && !hasSavedBench) {
+        const { identity, bench } = buildMatchGroupFromRoster(defaultTokens, matchRoster);
+        setKeyframes([applyRosterIdentity(defaultTokens, identity)]);
+        setSubstitutes(bench);
+      } else {
+        setKeyframes([defaultTokens]);
+      }
       setCurrentFrameIdx(0);
     }
   };
@@ -2647,43 +2828,11 @@ export default function TacticsBoard({
     }
   };
 
-  // Roster / Substitutes (15 bench players: Joueur 12 to 26)
-  const [substitutes, setSubstitutes] = useState<any[]>([
-    { id: "s1", name: "Joueur 12", role: "DD", number: 12, status: "normal" },
-    { id: "s2", name: "Joueur 13", role: "DC", number: 13, status: "normal" },
-    { id: "s3", name: "Joueur 14", role: "DG", number: 14, status: "normal" },
-    { id: "s4", name: "Joueur 15", role: "MDC", number: 15, status: "normal" },
-    { id: "s5", name: "Joueur 16", role: "GB", number: 16, status: "normal" },
-    { id: "s6", name: "Joueur 17", role: "MC", number: 17, status: "normal" },
-    { id: "s7", name: "Joueur 18", role: "MC", number: 18, status: "normal" },
-    { id: "s8", name: "Joueur 19", role: "MOC", number: 19, status: "normal" },
-    { id: "s9", name: "Joueur 20", role: "AiD", number: 20, status: "normal" },
-    { id: "s10", name: "Joueur 21", role: "AiG", number: 21, status: "normal" },
-    { id: "s11", name: "Joueur 22", role: "BU", number: 22, status: "normal" },
-    { id: "s12", name: "Joueur 23", role: "AC", number: 23, status: "normal" },
-    { id: "s13", name: "Joueur 24", role: "DC", number: 24, status: "normal" },
-    { id: "s14", name: "Joueur 25", role: "MC", number: 25, status: "normal" },
-    { id: "s15", name: "Joueur 26", role: "GB", number: 26, status: "normal" }
-  ]);
+  // Banc du match (remplaçants) : rechargé depuis le match actif, sinon Joueur 12 à 26
+  const [substitutes, setSubstitutes] = useState<any[]>(() => readStoredBench("thebox_substitutes_") ?? makeDefaultSubstitutes(false));
 
-  // Opponent Roster / Substitutes (15 bench players for opponent team: Joueur 12 Adv to 26 Adv)
-  const [opponentSubstitutes, setOpponentSubstitutes] = useState<any[]>([
-    { id: "opp_s1", name: "Joueur 12 Adv", role: "DD", number: 12, status: "normal" },
-    { id: "opp_s2", name: "Joueur 13 Adv", role: "DC", number: 13, status: "normal" },
-    { id: "opp_s3", name: "Joueur 14 Adv", role: "DG", number: 14, status: "normal" },
-    { id: "opp_s4", name: "Joueur 15 Adv", role: "MDC", number: 15, status: "normal" },
-    { id: "opp_s5", name: "Joueur 16 Adv", role: "GB", number: 16, status: "normal" },
-    { id: "opp_s6", name: "Joueur 17 Adv", role: "MC", number: 17, status: "normal" },
-    { id: "opp_s7", name: "Joueur 18 Adv", role: "MC", number: 18, status: "normal" },
-    { id: "opp_s8", name: "Joueur 19 Adv", role: "MOC", number: 19, status: "normal" },
-    { id: "opp_s9", name: "Joueur 20 Adv", role: "AiD", number: 20, status: "normal" },
-    { id: "opp_s10", name: "Joueur 21 Adv", role: "AiG", number: 21, status: "normal" },
-    { id: "opp_s11", name: "Joueur 22 Adv", role: "BU", number: 22, status: "normal" },
-    { id: "opp_s12", name: "Joueur 23 Adv", role: "AC", number: 23, status: "normal" },
-    { id: "opp_s13", name: "Joueur 24 Adv", role: "DC", number: 24, status: "normal" },
-    { id: "opp_s14", name: "Joueur 25 Adv", role: "MC", number: 25, status: "normal" },
-    { id: "opp_s15", name: "Joueur 26 Adv", role: "GB", number: 26, status: "normal" }
-  ]);
+  // Banc adverse du match : rechargé depuis le match actif, sinon Joueur 12 Adv à 26 Adv
+  const [opponentSubstitutes, setOpponentSubstitutes] = useState<any[]>(() => readStoredBench("thebox_opp_substitutes_") ?? makeDefaultSubstitutes(true));
 
   // Persist substitutes per match
   useEffect(() => {
@@ -3783,7 +3932,8 @@ export default function TacticsBoard({
               status: targetStatus,
               removalReason: reason,
               type: tokenToRemove.type,
-              photo: tokenToRemove.photo
+              photo: tokenToRemove.photo,
+              ...(tokenToRemove.rosterId ? { rosterId: tokenToRemove.rosterId } : {})
             },
             ...prev
           ];
@@ -3882,7 +4032,8 @@ export default function TacticsBoard({
             number: newSub.number,
             role: newSub.role,
             status: newSub.status || "normal",
-            photo: newSub.photo
+            photo: newSub.photo,
+            rosterId: isOpponent ? undefined : newSub.rosterId
           };
         }
         return t;
@@ -3926,7 +4077,8 @@ export default function TacticsBoard({
               status: "normal",
               removalReason: "normal",
               type: originalToken.type,
-              photo: originalToken.photo
+              photo: originalToken.photo,
+              ...(originalToken.rosterId ? { rosterId: originalToken.rosterId } : {})
             },
             ...withoutSub
           ];
@@ -3972,11 +4124,37 @@ export default function TacticsBoard({
     }
   };
 
+  /** Modifie une fiche de l'effectif d'équipe (identifiants uniques : on la cherche dans toutes les équipes). */
+  const updateRosterPlayer = (rosterId: string | undefined, patch: Partial<TeamRosterPlayer>) => {
+    if (!rosterId) return;
+    setTeamRostersMap((prev) => {
+      let changed = false;
+      const next: Record<string, TeamRosterPlayer[]> = {};
+      Object.entries(prev).forEach(([teamId, roster]) => {
+        next[teamId] = roster.map((p) => {
+          if (p.id !== rosterId) return p;
+          changed = true;
+          return { ...p, ...patch };
+        });
+      });
+      return changed ? next : prev;
+    });
+  };
+
+  /** Une modification faite dans le groupe du match est reportée sur la fiche de l'effectif. */
+  const syncRosterField = (rosterId: string | undefined, field: "name" | "number" | "role" | "status" | "photo", value: any) => {
+    if (!rosterId) return;
+    if (field === "status") updateRosterPlayer(rosterId, { status: toRosterStatus(value) });
+    else if (field === "name" && !(typeof value === "string" && value.trim())) return;
+    else updateRosterPlayer(rosterId, { [field]: value } as Partial<TeamRosterPlayer>);
+  };
+
   // Squad / Roster editing handlers in the Roles & Team Modal
   const handleUpdatePitchPlayer = (tokenId: string, field: "name" | "number" | "role" | "status" | "photo", value: any) => {
     const oldPlayer = currentTokens.find((t) => t.id === tokenId);
     const oldName = oldPlayer?.name;
     const isOpponent = oldPlayer?.type === "player_b";
+    if (!isOpponent) syncRosterField(oldPlayer?.rosterId, field, value);
 
     setKeyframes((prev) =>
       prev.map((frame) =>
@@ -4039,6 +4217,7 @@ export default function TacticsBoard({
     } else {
       const oldSub = substitutes.find((s) => s.id === subId);
       const oldName = oldSub?.name;
+      syncRosterField(oldSub?.rosterId, field, value);
 
       setSubstitutes((prev) =>
         prev.map((s) => (s.id === subId ? { ...s, [field]: value } : s))
@@ -4288,7 +4467,8 @@ export default function TacticsBoard({
           role: starter.role || "SUB",
           status: starter.status || "normal",
           photo: starter.photo,
-          type: "player_a"
+          type: "player_a",
+          ...(starter.rosterId ? { rosterId: starter.rosterId } : {}),
         };
         setSubstitutes((prev) => [...prev, newSub]);
       }
@@ -4336,6 +4516,7 @@ export default function TacticsBoard({
           photo: sub.photo,
           x: 25,
           y: 50,
+          ...(sub.rosterId ? { rosterId: sub.rosterId } : {}),
         };
 
         setKeyframes((prev) => {
@@ -4409,16 +4590,139 @@ export default function TacticsBoard({
       setOpponentSubstitutes((prev) => [...prev, newSub]);
     } else {
       const newId = `sub_${Date.now()}_${newNum}`;
+      const role = activeSport === "football" ? "SUB" : "Remplaçant";
+      // PRO : le nouveau joueur rejoint aussi l'effectif de l'équipe (s'il est enregistré)
+      const joinsRoster = isProOrAdmin && !!(activeTeamId && teamRostersMap[activeTeamId]?.length);
+      const rosterId = joinsRoster ? `${activeTeamId}_p${Date.now()}` : undefined;
       const newSub = {
         id: newId,
         name: `Joueur ${newNum}`,
         number: newNum,
-        role: activeSport === "football" ? "SUB" : "Remplaçant",
+        role,
         status: "normal",
-        type: "player_a"
+        type: "player_a",
+        ...(rosterId ? { rosterId } : {}),
       };
       setSubstitutes((prev) => [...prev, newSub]);
+      if (rosterId) {
+        setTeamRostersMap((prev) => ({
+          ...prev,
+          [activeTeamId]: [...(prev[activeTeamId] || []), { id: rosterId, name: newSub.name, number: newNum, role, status: "normal", isStarter: false }],
+        }));
+      }
     }
+  };
+
+  // ---------- Groupe du match ↔ effectif de l'équipe (titulaires, remplaçants, réserve) ----------
+
+  /** Retire le joueur de ses rôles de coups de pied arrêtés (mon équipe). */
+  const clearHomeRolesFor = (name?: string) => {
+    if (!name) return;
+    setSetPieceRoles((prev) => {
+      const updated = { ...prev };
+      (Object.keys(updated) as (keyof SetPieceRoleConfig)[]).forEach((key) => {
+        if (updated[key] === name) updated[key] = "";
+      });
+      return updated;
+    });
+  };
+
+  /** Sort un joueur du groupe du match : sa fiche reste dans l'effectif, en réserve. */
+  const handleMoveToReserve = (playerId: string, isStarter: boolean) => {
+    const player = isStarter ? currentTokens.find((t) => t.id === playerId) : substitutes.find((s) => s.id === playerId);
+    if (!player) return;
+    if (isStarter) {
+      setKeyframes((prev) => prev.map((frame) => frame.filter((t) => t.id !== playerId)));
+    } else {
+      setSubstitutes((prev) => prev.filter((s) => s.id !== playerId));
+    }
+    clearHomeRolesFor(player.name);
+  };
+
+  /** Fait entrer un joueur de la réserve sur le banc du match (numéro libre si le sien est déjà pris). */
+  const handleReserveToBench = (rosterId: string) => {
+    const player = (teamRostersMap[activeTeamId] || []).find((p) => p.id === rosterId);
+    if (!player) return;
+    const taken = new Set<number>();
+    currentTokens.forEach((t) => { if (t.type === "player_a" && typeof t.number === "number") taken.add(t.number); });
+    substitutes.forEach((s) => { if (typeof s.number === "number") taken.add(s.number); });
+    let number = player.number;
+    if (taken.has(number)) {
+      number = 1;
+      while (taken.has(number)) number++;
+    }
+    setSubstitutes((prev) => [...prev, { ...rosterPlayerToSub(player), number }]);
+  };
+
+  /** Supprime définitivement une fiche de l'effectif de l'équipe (depuis la réserve). */
+  const handleDeleteRosterPlayer = async (rosterId: string) => {
+    const player = (teamRostersMap[activeTeamId] || []).find((p) => p.id === rosterId);
+    if (!player) return;
+    const ok = await confirmAction({
+      title: "Retirer ce joueur de l'équipe ?",
+      subject: player.name,
+      message: "Sa fiche sera supprimée de l'effectif de l'équipe. Les matchs déjà préparés ne sont pas modifiés.",
+      confirmLabel: "Supprimer",
+    });
+    if (!ok) return;
+    setTeamRostersMap((prev) => ({ ...prev, [activeTeamId]: (prev[activeTeamId] || []).filter((p) => p.id !== rosterId) }));
+  };
+
+  /** Remplace le groupe du match (terrain + banc) par l'effectif de l'équipe, positions conservées. */
+  const applyTeamRosterToGroup = () => {
+    const roster = teamRostersMap[activeTeamId] || [];
+    if (roster.length === 0) return;
+    const { identity, bench } = buildMatchGroupFromRoster(currentTokens, roster);
+    setKeyframes((prev) => prev.map((frame) => applyRosterIdentity(frame, identity)));
+    setSubstitutes(bench);
+    setSetPieceRoles(defaultSetPieceRoles);
+  };
+
+  const handleApplyTeamRosterToGroup = async () => {
+    const ok = await confirmAction({
+      title: "Utiliser l'effectif de l'équipe ?",
+      subject: activeTeam?.name,
+      message: "Les joueurs du terrain et du banc de ce match seront remplacés par les fiches de l'effectif. Les positions sur le terrain sont conservées.",
+      confirmLabel: "Utiliser l'effectif",
+    });
+    if (ok) applyTeamRosterToGroup();
+  };
+
+  // PRO : à l'ouverture de la fenêtre Effectif, un groupe encore vierge (Joueur 1… 26) reprend
+  // automatiquement l'effectif de l'équipe, pour n'afficher que ses joueurs
+  useEffect(() => {
+    if (!isSetPiecesOpen || !isProOrAdmin) return;
+    const roster = teamRostersMap[activeTeamId] || [];
+    if (roster.length === 0) return;
+    const rosterIds = new Set(roster.map((p) => p.id));
+    const group: { name?: string; rosterId?: string }[] = [...currentTokens.filter((t) => t.type === "player_a"), ...substitutes];
+    const linkedHere = group.some((p) => p.rosterId && rosterIds.has(p.rosterId));
+    // Groupe vierge, ou entièrement composé des joueurs d'une autre équipe (changement d'équipe sans match)
+    const fromOtherTeam = group.length > 0 && group.every((p) => p.rosterId && !rosterIds.has(p.rosterId));
+    if (group.length > 0 && !linkedHere && (isGenericGroup(group) || fromOtherTeam)) applyTeamRosterToGroup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSetPiecesOpen]);
+
+  /** Enregistre le groupe actuel du match (terrain + banc) comme effectif de l'équipe. */
+  const handleSaveGroupAsTeamRoster = () => {
+    if (!activeTeamId) return;
+    const stamp = Date.now();
+    const pitchPlayers = currentTokens.filter((t) => t.type === "player_a");
+    const roster: TeamRosterPlayer[] = [];
+    const tokenLinks: Record<string, string> = {};
+    pitchPlayers.forEach((t, i) => {
+      const id = `${activeTeamId}_p${stamp}_${i}`;
+      tokenLinks[t.id] = id;
+      roster.push({ id, name: t.name, number: t.number ?? i + 1, role: t.role, status: toRosterStatus(t.status), photo: t.photo, isStarter: true });
+    });
+    const linkedBench = substitutes.map((s, i) => {
+      const id = `${activeTeamId}_p${stamp}_b${i}`;
+      roster.push({ id, name: s.name, number: s.number ?? pitchPlayers.length + i + 1, role: s.role, status: toRosterStatus(s.status), photo: s.photo, isStarter: false });
+      return { ...s, rosterId: id };
+    });
+    setTeamRostersMap((prev) => ({ ...prev, [activeTeamId]: roster }));
+    setKeyframes((prev) => prev.map((frame) => frame.map((t) => (tokenLinks[t.id] ? { ...t, rosterId: tokenLinks[t.id] } : t))));
+    setSubstitutes(linkedBench);
   };
 
   // Supprime un titulaire de l'effectif : retiré du terrain (toutes les étapes de l'animation) et de ses rôles
@@ -4553,6 +4857,20 @@ export default function TacticsBoard({
     const sourceTeamObj = teams.find((t) => t.id === activeTeamId) || activeTeam;
     const targetTeamObj = teams.find((t) => t.id === swapTargetTeamId);
 
+    // La fiche d'effectif du joueur échangé (mon équipe) reçoit le joueur qui arrive
+    if (swapSourcePlayer.teamTarget !== "away") {
+      const sourceRosterId = swapSourcePlayer.isStarter
+        ? currentTokens.find((t) => t.id === swapSourcePlayer.id)?.rosterId
+        : substitutes.find((s) => s.id === swapSourcePlayer.id)?.rosterId;
+      updateRosterPlayer(sourceRosterId, {
+        name: targetPlayer.name,
+        number: targetPlayer.number,
+        role: targetPlayer.role,
+        status: toRosterStatus(targetPlayer.status),
+        photo: targetPlayer.photo,
+      });
+    }
+
     // 1. Update Source Team (current squad)
     if (swapSourcePlayer.isStarter) {
       // Update token on pitch
@@ -4673,6 +4991,13 @@ export default function TacticsBoard({
       };
       const updatedTargetRoster = [...targetRoster, newTargetPlayer];
 
+      // Le joueur quitte mon équipe : sa fiche sort de l'effectif (et ne réapparaît pas en réserve)
+      const leavingRosterId = swapSourcePlayer.teamTarget === "away"
+        ? undefined
+        : swapSourcePlayer.isStarter
+          ? currentTokens.find((t) => t.id === swapSourcePlayer.id)?.rosterId
+          : substitutes.find((s) => s.id === swapSourcePlayer.id)?.rosterId;
+
       if (!swapSourcePlayer.isStarter) {
         if (swapSourcePlayer.teamTarget === "away") {
           setOpponentSubstitutes((prev) => prev.filter((s) => s.id !== swapSourcePlayer.id));
@@ -4681,10 +5006,14 @@ export default function TacticsBoard({
         }
       } else {
         handleUpdatePitchPlayer(swapSourcePlayer.id, "name", "Nouveau Titulaire");
+        setKeyframes((prev) => prev.map((frame) => frame.map((t) => (t.id === swapSourcePlayer.id ? { ...t, rosterId: undefined } : t))));
       }
 
       setTeamRostersMap((prev) => {
         const nextMap = { ...prev, [swapTargetTeamId]: updatedTargetRoster };
+        if (leavingRosterId && nextMap[activeTeamId]) {
+          nextMap[activeTeamId] = nextMap[activeTeamId].filter((p) => p.id !== leavingRosterId);
+        }
         if (typeof window !== "undefined") {
           localStorage.setItem("thebox_team_rosters", JSON.stringify(nextMap));
         }
@@ -4702,6 +5031,17 @@ export default function TacticsBoard({
         alert("Veuillez sélectionner le joueur à faire venir dans votre équipe.");
         return;
       }
+      // Le renfort rejoint l'effectif de mon équipe (s'il est enregistré) et le banc du match
+      const joinsRoster = isProOrAdmin && !!(activeTeamId && teamRostersMap[activeTeamId]?.length);
+      const arrivingRosterPlayer: TeamRosterPlayer = {
+        id: `${activeTeamId}_p${Date.now()}`,
+        name: targetPlayer.name,
+        number: targetPlayer.number,
+        role: targetPlayer.role,
+        status: toRosterStatus(targetPlayer.status),
+        photo: targetPlayer.photo,
+        isStarter: false,
+      };
       const newSub = {
         id: `sub_${Date.now()}_${targetPlayer.number}`,
         name: targetPlayer.name,
@@ -4710,12 +5050,16 @@ export default function TacticsBoard({
         status: targetPlayer.status || "normal",
         photo: targetPlayer.photo,
         type: "player_a",
+        ...(joinsRoster ? { rosterId: arrivingRosterPlayer.id } : {}),
       };
       setSubstitutes((prev) => [...prev, newSub]);
 
       const updatedTargetRoster = targetRoster.filter((p) => p.id !== targetPlayer.id);
       setTeamRostersMap((prev) => {
         const nextMap = { ...prev, [swapTargetTeamId]: updatedTargetRoster };
+        if (joinsRoster && nextMap[activeTeamId]) {
+          nextMap[activeTeamId] = [...nextMap[activeTeamId], arrivingRosterPlayer];
+        }
         if (typeof window !== "undefined") {
           localStorage.setItem("thebox_team_rosters", JSON.stringify(nextMap));
         }
@@ -13827,7 +14171,7 @@ export default function TacticsBoard({
                       </div>
                       <div>
                         <p className={`text-sm font-black ${pth.text}`}>Nouvelle équipe</p>
-                        <p className={`text-[11px] ${pth.sub}`}>Séniors, U19, Féminines… un effectif type est créé automatiquement.</p>
+                        <p className={`text-[11px] ${pth.sub}`}>Séniors, U19, Féminines… choisissez l&apos;effectif et remplissez les fiches de vos joueurs.</p>
                       </div>
                     </div>
 
@@ -13883,6 +14227,144 @@ export default function TacticsBoard({
                         </div>
                       </div>
                     )}
+
+                    {/* EFFECTIF + FICHES JOUEURS (photo, numéro, nom, poste) : PRO */}
+                    {!isProOrAdmin ? (
+                      <div className={`flex items-center gap-2.5 p-3 rounded-xl border ${pth.goldChip}`}>
+                        <Lock className="w-4 h-4 shrink-0" />
+                        <p className="text-[11px] font-semibold">
+                          Effectif type de 26 joueurs. Choisir le nombre de joueurs et créer leurs fiches (photo, nom, poste) est réservé à la formule PRO.
+                        </p>
+                      </div>
+                    ) : (() => {
+                      const draft = getNewTeamDraft();
+                      const benchCount = Math.max(0, draft.size - draft.starterCount);
+                      const setSize = (n: number) => setNewTeamSquadSize(Math.min(MAX_TEAM_SQUAD_SIZE, Math.max(1, n)));
+                      return (
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap items-end justify-between gap-3">
+                            <div>
+                              <label htmlFor="new-team-squad-size" className={`${premiumLabel} ${pth.sub}`}>Effectif de l&apos;équipe</label>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setSize(draft.size - 1)}
+                                  disabled={draft.size <= 1}
+                                  aria-label="Retirer un joueur"
+                                  className={`w-10 h-10 rounded-xl border flex items-center justify-center transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${pth.ghostBtn}`}
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </button>
+                                <input
+                                  id="new-team-squad-size"
+                                  type="number"
+                                  inputMode="numeric"
+                                  min={1}
+                                  max={MAX_TEAM_SQUAD_SIZE}
+                                  value={draft.size}
+                                  onChange={(e) => {
+                                    const n = parseInt(e.target.value, 10);
+                                    if (!Number.isNaN(n)) setSize(n);
+                                  }}
+                                  className={`w-20 text-center border rounded-xl px-2 py-2.5 text-sm font-black outline-none transition ${pth.input}`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setSize(draft.size + 1)}
+                                  disabled={draft.size >= MAX_TEAM_SQUAD_SIZE}
+                                  aria-label="Ajouter un joueur"
+                                  className={`w-10 h-10 rounded-xl border flex items-center justify-center transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${pth.ghostBtn}`}
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <p className={`text-[11px] font-semibold pb-1 ${pth.sub}`}>
+                              {draft.starterCount} titulaire{draft.starterCount > 1 ? "s" : ""}
+                              {benchCount > 0 && ` + ${benchCount} remplaçant${benchCount > 1 ? "s" : ""}`}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span className={`${premiumLabel} ${pth.sub}`}>Fiches joueurs</span>
+                            <p className={`text-[11px] mb-2 ${pth.faint}`}>Facultatif : un nom laissé vide devient « Joueur N ». Tout reste modifiable ensuite.</p>
+                            <ul className={`max-h-[360px] overflow-y-auto rounded-xl border divide-y ${pth.border} ${pth.divide}`}>
+                              {draft.players.map((p) => {
+                                const roleOptions = draft.positions.includes(p.role) ? draft.positions : [p.role, ...draft.positions];
+                                return (
+                                  <li key={p.index} className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-2">
+                                    <div className="relative shrink-0">
+                                      <label
+                                        className={`w-10 h-10 rounded-full border flex items-center justify-center overflow-hidden cursor-pointer transition ${pth.chip}`}
+                                        title={p.photo ? "Changer la photo" : "Ajouter une photo"}
+                                      >
+                                        {p.photo ? (
+                                          <img src={p.photo} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                          <Camera className="w-4 h-4" />
+                                        )}
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="sr-only"
+                                          aria-label={`Photo du joueur ${p.index + 1}`}
+                                          onChange={(e) => {
+                                            handleNewTeamPlayerPhoto(p.index, e.target.files?.[0]);
+                                            e.target.value = "";
+                                          }}
+                                        />
+                                      </label>
+                                      {p.photo && (
+                                        <button
+                                          type="button"
+                                          onClick={() => updateNewTeamPlayer(p.index, { photo: undefined })}
+                                          aria-label={`Retirer la photo du joueur ${p.index + 1}`}
+                                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center cursor-pointer hover:bg-rose-600"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      maxLength={2}
+                                      value={p.numberText}
+                                      onChange={(e) => updateNewTeamPlayer(p.index, { numberText: e.target.value.replace(/\D/g, "") })}
+                                      aria-label={`Numéro du joueur ${p.index + 1}`}
+                                      className={`w-11 shrink-0 text-center border rounded-lg px-1 py-2 text-sm font-black outline-none transition ${pth.input}`}
+                                    />
+                                    <input
+                                      type="text"
+                                      value={p.name}
+                                      placeholder={`Joueur ${p.number}`}
+                                      onChange={(e) => updateNewTeamPlayer(p.index, { name: e.target.value })}
+                                      aria-label={`Nom du joueur ${p.index + 1}`}
+                                      className={`min-w-0 flex-1 border rounded-lg px-2.5 py-2 text-sm font-semibold outline-none transition ${pth.input}`}
+                                    />
+                                    <select
+                                      value={p.role}
+                                      onChange={(e) => updateNewTeamPlayer(p.index, { role: e.target.value })}
+                                      aria-label={`Poste du joueur ${p.index + 1}`}
+                                      className={`w-[76px] shrink-0 border rounded-lg px-1.5 py-2 text-xs font-bold outline-none cursor-pointer transition ${pth.input} ${pth.option}`}
+                                    >
+                                      {roleOptions.map((r) => (
+                                        <option key={r} value={r}>{r}</option>
+                                      ))}
+                                    </select>
+                                    <span
+                                      className={`hidden sm:inline-flex shrink-0 w-[74px] justify-center text-[9px] font-black uppercase tracking-[0.1em] px-1.5 py-1 rounded-md border ${p.isStarter ? pth.accentChip : pth.chip}`}
+                                    >
+                                      {p.isStarter ? "Titulaire" : "Remplaçant"}
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex justify-end">
                       <button
@@ -14429,6 +14911,18 @@ export default function TacticsBoard({
 
         const filteredStarters = starters.filter(matchesSearch);
         const filteredSubs = activeSubs.filter(matchesSearch);
+
+        // Effectif de l'équipe (mon équipe) : ce qui n'est ni sur le terrain ni sur le banc est en réserve
+        // (PRO uniquement : en gratuit, la fenêtre garde le banc type de 26 joueurs)
+        const teamRoster: TeamRosterPlayer[] = !isAway && isProOrAdmin ? (teamRostersMap[activeTeamId] || []) : [];
+        const groupRosterIds = new Set([...starters, ...activeSubs].map((p: { rosterId?: string }) => p.rosterId).filter(Boolean));
+        const reserve = teamRoster.filter((p) => !groupRosterIds.has(p.id));
+        const filteredReserve = reserve.filter(matchesSearch);
+        const groupLinked = teamRoster.some((p) => groupRosterIds.has(p.id));
+        const showUseRosterBanner = !isAway && teamRoster.length > 0 && !groupLinked;
+        const showSaveRosterBanner = !isAway && isProOrAdmin && !!activeTeam && teamRoster.length === 0;
+        // Le filtre « Réserve » n'existe que pour mon équipe
+        const viewFilter = rosterFilter === "reserve" && (isAway || teamRoster.length === 0) ? "all" : rosterFilter;
         const assignedRolesCount = countSportRoles(currentRoles);
         const teamDisplayName = isAway
           ? (activeMatch.awayTeam || "Équipe B (Adverse)")
@@ -14469,11 +14963,16 @@ export default function TacticsBoard({
         const allCount = starters.length + activeSubs.length;
 
         const sections: { id: "players" | "setpieces"; label: string; icon: React.ElementType; badge: string }[] = [
-          { id: "players", label: "Effectif", icon: Users, badge: String(allCount) },
+          { id: "players", label: "Effectif", icon: Users, badge: String(allCount + reserve.length) },
           { id: "setpieces", label: sportRoles.tabLabel, icon: Target, badge: `${assignedRolesCount}/${sportRoles.roles.length}` },
         ];
         const tabMeta = teamRolesModalTab === "players"
-          ? { title: "Effectif", desc: "Noms, numéros, postes et disponibilité. Les titulaires sont synchronisés avec le terrain." }
+          ? {
+            title: "Effectif",
+            desc: isAway
+              ? "Noms, numéros, postes et disponibilité. Les titulaires sont synchronisés avec le terrain."
+              : "Constituez le groupe du match : titulaires sur le terrain, remplaçants sur le banc, le reste de l'effectif à disposition.",
+          }
           : { title: sportRoles.title, desc: sportRoles.description };
 
         // Rôles propres au sport actif (lib/sportRoles)
@@ -14481,7 +14980,7 @@ export default function TacticsBoard({
           sportRoles.roles.map((r) => ({ key: r.key, icon: ROLE_ICONS[r.icon], label: r.label, badge: r.badge }));
 
         // Carte joueur commune aux titulaires et aux remplaçants
-        const renderPlayerCard = (player: { id: string; name: string; number?: number; role?: string; photo?: string; status?: string }, isStarter: boolean) => {
+        const renderPlayerCard = (player: { id: string; name: string; number?: number; role?: string; photo?: string; status?: string; rosterId?: string }, isStarter: boolean) => {
           const isCaptain = !!player.name && currentRoles.captain === player.name;
           const update = (field: string, val: string) =>
             isStarter ? handleUpdatePitchPlayer(player.id, field as never, val) : handleUpdateSubstitute(player.id, field as never, val);
@@ -14585,7 +15084,17 @@ export default function TacticsBoard({
                       >
                         <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-500" />
                       </button>
-                      {(
+                      {!isAway && isProOrAdmin && player.rosterId ? (
+                        <button
+                          type="button"
+                          onClick={() => handleMoveToReserve(player.id, isStarter)}
+                          className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${th.ghostBtn}`}
+                          title="Mettre à disposition (hors du groupe de ce match)"
+                          aria-label="Mettre à disposition"
+                        >
+                          <Archive className={`w-3.5 h-3.5 ${th.sub}`} />
+                        </button>
+                      ) : (
                         <button
                           type="button"
                           onClick={() => (isStarter ? handleDeleteStarter(player.id, rolesTargetTeam) : handleDeleteSubstitute(player.id, rolesTargetTeam))}
@@ -14629,6 +15138,62 @@ export default function TacticsBoard({
                       );
                     })}
                   </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Carte d'un joueur en réserve : fiche de l'effectif, hors du groupe de ce match
+        const renderReserveCard = (player: TeamRosterPlayer) => {
+          const unavailable = player.status === "injured" || player.status === "suspended";
+          return (
+            <div key={player.id} className={`relative rounded-2xl border overflow-hidden transition ${th.cardMuted}`}>
+              <span className={`absolute left-0 inset-y-0 w-[3px] ${isModernSleek ? "bg-slate-300" : "bg-slate-600"}`} />
+              <div className="p-3 pl-4 flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-xl border overflow-hidden shrink-0 ${th.card}`}>
+                  <img
+                    src={getPlayerDefaultHeadAvatar(player, false)}
+                    alt={player.name}
+                    className={`w-full h-full ${player.photo ? "object-cover" : "object-contain p-0.5"}`}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="text"
+                    value={player.name}
+                    onChange={(e) => updateRosterPlayer(player.id, { name: e.target.value })}
+                    className={`w-full px-2.5 py-1.5 text-[13px] font-bold ${fieldBase}`}
+                    aria-label={`Nom de ${player.name}`}
+                  />
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <span className={`h-6 px-2 rounded-lg border text-[11px] font-black tabular-nums inline-flex items-center ${th.chip}`}>N° {player.number}</span>
+                    <span className={`h-6 px-2 rounded-lg border text-[11px] font-black inline-flex items-center ${th.chip}`}>{player.role}</span>
+                    {unavailable && (
+                      <span className={`h-6 px-2 rounded-lg border text-[10px] font-bold inline-flex items-center ${statusCls(player.status)}`}>
+                        {player.status === "injured" ? "Blessé" : "Suspendu"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleReserveToBench(player.id)}
+                    className={`h-8 px-2.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${th.ghostBtn}`}
+                    title="Ajouter au groupe du match (sur le banc)"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 text-amber-500" /> Banc
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRosterPlayer(player.id)}
+                    className={`h-8 w-8 rounded-lg border flex items-center justify-center transition cursor-pointer ${isModernSleek ? "bg-white border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50" : "bg-white/[0.03] border-white/10 text-slate-500 hover:text-rose-300 hover:border-rose-500/40 hover:bg-rose-500/10"}`}
+                    title="Retirer ce joueur de l'équipe"
+                    aria-label={`Retirer ${player.name} de l'équipe`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -14694,6 +15259,7 @@ export default function TacticsBoard({
                     {[
                       { label: "Titulaires", value: starters.length, cls: acc.text },
                       { label: "Remplaçants", value: activeSubs.length, cls: th.gold },
+                      ...(!isAway && teamRoster.length > 0 ? [{ label: "À disposition", value: reserve.length, cls: th.sub }] : []),
                       { label: "Rôles", value: `${assignedRolesCount}/${sportRoles.roles.length}`, cls: th.text },
                       { label: "Indisponibles", value: unavailableCount, cls: unavailableCount > 0 ? (isModernSleek ? "text-rose-600" : "text-rose-300") : th.text },
                     ].map((k) => (
@@ -14793,18 +15359,19 @@ export default function TacticsBoard({
 
                         <div className={`flex items-center gap-0.5 p-1 rounded-xl border ${th.segment}`}>
                           {([
-                            { v: "all", l: "Tous", n: allCount },
+                            { v: "all", l: "Tous", n: allCount + reserve.length },
                             { v: "starters", l: "Titulaires", n: starters.length },
                             { v: "subs", l: "Banc", n: activeSubs.length },
-                          ] as const).map((f) => (
+                            ...(!isAway && teamRoster.length > 0 ? [{ v: "reserve", l: "À disposition", n: reserve.length }] : []),
+                          ] as { v: "all" | "starters" | "subs" | "reserve"; l: string; n: number }[]).map((f) => (
                             <button
                               key={f.v}
                               type="button"
                               onClick={() => setRosterFilter(f.v)}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer ${rosterFilter === f.v ? th.segmentActive : th.segmentIdle}`}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer ${viewFilter === f.v ? th.segmentActive : th.segmentIdle}`}
                             >
                               {f.l}
-                              <span className={`tabular-nums text-[10px] ${rosterFilter === f.v ? acc.text : th.faint}`}>{f.n}</span>
+                              <span className={`tabular-nums text-[10px] ${viewFilter === f.v ? acc.text : th.faint}`}>{f.n}</span>
                             </button>
                           ))}
                         </div>
@@ -14851,8 +15418,40 @@ export default function TacticsBoard({
                         })}
                       </div>
 
+                      {/* Lien avec l'effectif de l'équipe */}
+                      {showUseRosterBanner && (
+                        <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 flex-wrap ${th.card}`}>
+                          <div className="min-w-0">
+                            <p className={`text-xs font-black ${th.text}`}>Ce match n&apos;utilise pas encore l&apos;effectif de {activeTeam?.name || "l'équipe"}</p>
+                            <p className={`text-[11px] mt-0.5 ${th.sub}`}>{teamRoster.length} joueurs dans l&apos;effectif. Les titulaires prennent les places du terrain, les autres vont sur le banc.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleApplyTeamRosterToGroup}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${acc.btn}`}
+                          >
+                            <Users className="w-4 h-4" /> Utiliser l&apos;effectif
+                          </button>
+                        </div>
+                      )}
+                      {showSaveRosterBanner && (
+                        <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 flex-wrap ${th.card}`}>
+                          <div className="min-w-0">
+                            <p className={`text-xs font-black ${th.text}`}>{activeTeam?.name} n&apos;a pas encore d&apos;effectif enregistré</p>
+                            <p className={`text-[11px] mt-0.5 ${th.sub}`}>Enregistrez ce groupe comme effectif de l&apos;équipe : vous pourrez ensuite gérer les joueurs à disposition et le réutiliser à chaque match.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleSaveGroupAsTeamRoster}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${acc.btn}`}
+                          >
+                            <Save className="w-4 h-4" /> Enregistrer comme effectif
+                          </button>
+                        </div>
+                      )}
+
                       {/* Titulaires */}
-                      {(rosterFilter === "all" || rosterFilter === "starters") && (
+                      {(viewFilter === "all" || viewFilter === "starters") && (
                         <section className="space-y-2.5">
                           {sectionHead("Titulaires", filteredStarters.length, acc.bar, (
                             <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${th.chip}`}>
@@ -14872,7 +15471,7 @@ export default function TacticsBoard({
                       )}
 
                       {/* Remplaçants */}
-                      {(rosterFilter === "all" || rosterFilter === "subs") && (
+                      {(viewFilter === "all" || viewFilter === "subs") && (
                         <section className="space-y-2.5">
                           {sectionHead("Remplaçants", filteredSubs.length, "bg-amber-500", (
                             <button
@@ -14890,6 +15489,26 @@ export default function TacticsBoard({
                           ) : (
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
                               {filteredSubs.map((s) => renderPlayerCard(s, false))}
+                            </div>
+                          )}
+                        </section>
+                      )}
+
+                      {/* Réserve : joueurs de l'effectif hors du groupe de ce match */}
+                      {!isAway && teamRoster.length > 0 && (viewFilter === "all" || viewFilter === "reserve") && (
+                        <section className="space-y-2.5">
+                          {sectionHead("À disposition", filteredReserve.length, isModernSleek ? "bg-slate-300" : "bg-slate-500", (
+                            <span className={`text-[10px] font-bold ${th.faint}`}>Hors du groupe de ce match</span>
+                          ))}
+                          {filteredReserve.length === 0 ? (
+                            <div className={`p-6 text-center rounded-2xl border border-dashed text-xs ${th.cardMuted} ${th.sub}`}>
+                              {reserve.length === 0
+                                ? "Tout l'effectif est dans le groupe du match. Utilisez le bouton « Mettre à disposition » d'un joueur pour l'en sortir."
+                                : "Aucun joueur à disposition ne correspond à votre recherche."}
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
+                              {filteredReserve.map((p) => renderReserveCard(p))}
                             </div>
                           )}
                         </section>
