@@ -446,7 +446,8 @@ export interface TeamRosterPlayer {
   name: string;
   role: string;
   number: number;
-  status?: "normal" | "excellent" | "tired" | "injured" | "suspended" | "absent";
+  /** « reserve » = À disposition : disponible mais hors du groupe du match */
+  status?: "normal" | "excellent" | "tired" | "injured" | "suspended" | "absent" | "reserve";
   photo?: string;
   isStarter?: boolean;
 }
@@ -551,11 +552,12 @@ const readStoredBench = (prefix: string): any[] | null => {
   }
 };
 
-const ROSTER_STATUSES = ["normal", "excellent", "tired", "injured", "suspended", "absent"] as const;
+const ROSTER_STATUSES = ["normal", "excellent", "tired", "injured", "suspended", "absent", "reserve"] as const;
 type TeamRosterStatus = NonNullable<TeamRosterPlayer["status"]>;
 /** Statuts proposés dans les fiches de l'effectif d'équipe */
 const TEAM_PLAYER_STATUS_OPTIONS: { value: TeamRosterStatus; label: string }[] = [
   { value: "normal", label: "Disponible" },
+  { value: "reserve", label: "À disposition" },
   { value: "absent", label: "Absent" },
   { value: "suspended", label: "Suspendu" },
   { value: "injured", label: "Blessé" },
@@ -563,7 +565,10 @@ const TEAM_PLAYER_STATUS_OPTIONS: { value: TeamRosterStatus; label: string }[] =
 /** Joueur indisponible pour le match (absent, suspendu, blessé) */
 const isUnavailableStatus = (status?: string) => status === "absent" || status === "suspended" || status === "injured";
 /** « En forme » et « Fatigué » restent des joueurs disponibles */
-const toTeamStatusOption = (status?: string): TeamRosterStatus => (isUnavailableStatus(status) ? (status as TeamRosterStatus) : "normal");
+const toTeamStatusOption = (status?: string): TeamRosterStatus =>
+  isUnavailableStatus(status) || status === "reserve" ? (status as TeamRosterStatus) : "normal";
+/** Statut d'un joueur placé dans le groupe du match (« À disposition » n'a pas de sens sur le terrain ni sur le banc) */
+const toGroupStatus = (status?: TeamRosterStatus) => (!status || status === "reserve" ? "normal" : status);
 /** Disponibilité conservée dans la fiche d'effectif (les cartons du match n'y vont pas). */
 const toRosterStatus = (status?: string): TeamRosterPlayer["status"] =>
   (ROSTER_STATUSES as readonly string[]).includes(status || "") ? (status as TeamRosterPlayer["status"]) : "normal";
@@ -575,7 +580,7 @@ const rosterPlayerToSub = (p: TeamRosterPlayer) => ({
   name: p.name,
   number: p.number,
   role: p.role,
-  status: p.status || "normal",
+  status: toGroupStatus(p.status),
   photo: p.photo,
   type: "player_a" as const,
 });
@@ -585,7 +590,8 @@ const rosterPlayerToSub = (p: TeamRosterPlayer) => ({
  * prennent les places du terrain (positions conservées), les joueurs suivants vont sur le banc.
  */
 const buildMatchGroupFromRoster = (tokens: Token[], roster: TeamRosterPlayer[]) => {
-  const available = roster.filter((p) => !isUnavailableStatus(p.status));
+  // Les joueurs indisponibles et « À disposition » restent hors du groupe du match
+  const available = roster.filter((p) => !isUnavailableStatus(p.status) && p.status !== "reserve");
   const ordered = [...available.filter((p) => p.isStarter), ...available.filter((p) => !p.isStarter)];
   const identity: Record<string, Partial<Token>> = {};
   tokens
@@ -593,7 +599,7 @@ const buildMatchGroupFromRoster = (tokens: Token[], roster: TeamRosterPlayer[]) 
     .forEach((t, i) => {
       const p = ordered[i];
       if (p) {
-        identity[t.id] = { name: p.name, number: p.number, role: p.role, photo: p.photo, status: p.status || "normal", rosterId: p.id };
+        identity[t.id] = { name: p.name, number: p.number, role: p.role, photo: p.photo, status: toGroupStatus(p.status), rosterId: p.id };
       }
     });
   const used = Object.keys(identity).length;
@@ -1898,7 +1904,8 @@ export default function TacticsBoard({
   const handleEditTeamPlayer = (teamId: string, playerId: string, patch: Partial<TeamRosterPlayer>) => {
     editTeamRoster(teamId, (roster) => roster.map((p) => (p.id === playerId ? { ...p, ...patch } : p)));
     if (teamId !== activeTeamId) return;
-    const { isStarter: _isStarter, id: _id, ...tokenPatch } = patch;
+    const { isStarter: _isStarter, id: _id, status, ...rest } = patch;
+    const tokenPatch: Partial<Token> = { ...rest, ...(status !== undefined ? { status: toGroupStatus(status) } : {}) };
     if (Object.keys(tokenPatch).length === 0) return;
     setKeyframes((prev) => prev.map((frame) => frame.map((t) => (t.type === "player_a" && t.rosterId === playerId ? { ...t, ...tokenPatch } : t))));
     setSubstitutes((prev) => prev.map((s) => (s.rosterId === playerId ? { ...s, ...tokenPatch } : s)));
@@ -4762,6 +4769,7 @@ export default function TacticsBoard({
       while (taken.has(number)) number++;
     }
     setSubstitutes((prev) => [...prev, { ...rosterPlayerToSub(player), number }]);
+    if (player.status === "reserve") updateRosterPlayer(rosterId, { status: "normal" });
   };
 
   /** Supprime définitivement une fiche de l'effectif de l'équipe (depuis la réserve). */
