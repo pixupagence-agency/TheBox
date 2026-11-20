@@ -8,6 +8,13 @@ import SportIcon from "./SportIcon";
 import LogoIcon from "./LogoIcon";
 import TrialCountdownModal, { calculateTrialRemaining, TrialTimeRemaining } from "./TrialCountdownModal";
 import ShareModal, { ShareData } from "./ShareModal";
+import LiveShareModal from "./live/LiveShareModal";
+import { useLiveHost } from "@/lib/live/useLiveHost";
+import {
+  createLiveMatch, deleteLiveMatch, ensureLiveClub, getEditorAccess, regenerateEditorAccess, revokeEditorAccess, updateLiveMatchMeta,
+  type EditorAccess, type LiveMatchMeta, type LiveState,
+} from "@/lib/live/client";
+import { applyLiveOp, statusFor, type LiveCommand, type LiveEvent, type LiveMatchDoc } from "@/lib/live/model";
 import { buildGifTimeline, clampStepDuration, interpolateFrameTokens } from "@/lib/animationExport";
 import SubscriptionPlans from "./SubscriptionPlans";
 import { PWAInstallButton } from "./PWAInstallButton";
@@ -21,7 +28,7 @@ import {
   Search, UserCheck, Upload, ArrowLeftRight, Zap, AlertCircle, Cloud, Filter, Film,
   Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target, Shirt, Circle,
   CreditCard, Box, Scan, Bookmark, CalendarDays, CircleHelp, NotebookPen,
-  Crown, Flag, CornerUpLeft, CornerUpRight, Archive
+  Crown, Flag, CornerUpLeft, CornerUpRight, Archive, QrCode
 } from "lucide-react";
 import { getPremiumTheme, premiumOverlay, premiumShell, premiumLabel } from "@/lib/premiumModalTheme";
 import { auth, logoutUser, saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
@@ -149,40 +156,9 @@ const getSportRatioNum = (sport: string, format?: string): number => {
   return 110 / 73; // football standard FIFA ratio with 2.5m perimeter (~1.5068, matches 110x73 viewBox exactly)
 };
 
-export interface SportScoreAction {
-  id: string;
-  label: string;
-  shortLabel: string;
-  points: number;
-  icon: string;
-  requiresAssisterModal?: boolean;
-}
-
-export const getSportScoreActions = (sport: string): SportScoreAction[] => {
-  switch (sport) {
-    case "rugby":
-      return [
-        { id: "drop", label: "Drop", shortLabel: "Drop (+3)", points: 3, icon: "🥅", requiresAssisterModal: false },
-        { id: "essai", label: "Essai", shortLabel: "Essai (+5)", points: 5, icon: "🏉", requiresAssisterModal: false },
-        { id: "transformation", label: "Transformation", shortLabel: "Transformation (+2)", points: 2, icon: "🎯", requiresAssisterModal: false },
-      ];
-    case "basketball":
-      return [
-        { id: "basket_3", label: "3 points", shortLabel: "3 points (+3)", points: 3, icon: "🎯", requiresAssisterModal: false },
-        { id: "basket_2", label: "2 points", shortLabel: "2 points (+2)", points: 2, icon: "🏀", requiresAssisterModal: false },
-        { id: "basket_1", label: "Lancer franc", shortLabel: "Lancer franc (+1)", points: 1, icon: "⭕", requiresAssisterModal: false },
-      ];
-    case "handball":
-      return [
-        { id: "goal", label: "But", shortLabel: "But", points: 1, icon: "🤾", requiresAssisterModal: true },
-      ];
-    case "football":
-    default:
-      return [
-        { id: "goal", label: "But", shortLabel: "But", points: 1, icon: "⚽", requiresAssisterModal: true },
-      ];
-  }
-};
+import { getSportScoreActions, type SportScoreAction } from "@/lib/sportScoring";
+export { getSportScoreActions };
+export type { SportScoreAction };
 
 export interface SportBallInfo {
   name: string;
@@ -2381,7 +2357,7 @@ export default function TacticsBoard({
     id: string;
     time: string;
     period?: string;
-    type: "goal" | "assist" | "yellow" | "red" | "sub";
+    type: "goal" | "assist" | "yellow" | "red" | "sub" | "note";
     player: string;
     number?: number;
     team: "home" | "away";
@@ -2390,6 +2366,10 @@ export default function TacticsBoard({
     points?: number;
     icon?: string;
     subType?: string;
+    /** Remplacement saisi à la télécommande : place sur le terrain (annulation) */
+    outId?: string;
+    /** Saisi à la télécommande du mode Live */
+    remote?: boolean;
   }>>(() => {
     if (typeof window !== "undefined") {
       const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
@@ -2455,6 +2435,7 @@ export default function TacticsBoard({
       awayScore,
       score: scoreFormatted,
       isFinished: true,
+      finishedAtMs: Date.now(),
       status: `Terminé (${scoreFormatted})`,
       finishedAt: new Date().toLocaleDateString("fr-FR", {
         day: "numeric",
@@ -2623,6 +2604,7 @@ export default function TacticsBoard({
     if (await confirmAction({ title: "Supprimer ce match ?", subject: matchTitle, message: "Toutes ses actions, statistiques et schémas associés seront également supprimés." })) {
       const updatedList = matchesList.filter((m) => m.id !== matchId);
       setMatchesList(updatedList);
+      if (targetM?.livePublicId) deleteLiveMatch(targetM.livePublicId).catch(() => {});
       setSavedTactics((prev) => prev.filter((s) => s.matchId !== matchId));
       if (typeof window !== "undefined") {
         localStorage.removeItem(`thebox_match_events_${matchId}`);
@@ -2673,7 +2655,8 @@ export default function TacticsBoard({
       isFinished: false,
       score: "",
       homeScore: 0,
-      awayScore: 0
+      awayScore: 0,
+      sport: activeSport
     };
 
     const updatedList = [newM, ...matchesList];
@@ -2690,6 +2673,9 @@ export default function TacticsBoard({
 
     setSleekToastMessage("✨ Nouveau match créé ! Vous pouvez éditer ses informations ci-dessous.");
     setTimeout(() => setSleekToastMessage(null), 3500);
+
+    // Mode Live déporté : le QR du match est généré dès la création (PRO+)
+    publishLiveForMatch(newM).catch((err) => console.warn("[Live] publication du match :", err?.message));
   };
 
   // Aucun match sélectionné : on garde le terrain tel quel, on vide les données propres à un match
@@ -4134,7 +4120,8 @@ export default function TacticsBoard({
   };
 
   // Swap a player on pitch with an incoming substitute
-  const handleSwapPlayerOnPitch = (originalToken: Token, newSub: any) => {
+  // opts : remplacement saisi à la télécommande (identifiant d'événement imposé, ou aucun événement pour une annulation)
+  const handleSwapPlayerOnPitch = (originalToken: Token, newSub: any, opts?: { eventId?: string; noEvent?: boolean; remote?: boolean }) => {
     const isOpponent = originalToken.type === "player_b";
 
     // 1. Replace token on pitch
@@ -4204,12 +4191,13 @@ export default function TacticsBoard({
       });
     }
 
-    if (isLiveMatchMode) {
+    if ((isLiveMatchMode || opts?.eventId) && !opts?.noEvent) {
       const timeFormatted = `${Math.floor(liveTimerSeconds / 60)}'`;
       const isHome = originalToken.type === "player_a";
       setMatchEvents((prev) => [
         {
-          id: `evt_${Date.now()}`,
+          id: opts?.eventId || `evt_${Date.now()}`,
+          ...(opts?.eventId ? { outId: originalToken.id, remote: opts.remote } : {}),
           time: timeFormatted,
           period: eventPeriodLabel,
           type: "sub" as const,
@@ -4225,6 +4213,266 @@ export default function TacticsBoard({
     setQuickActionToken(null);
     setSubPickerToken(null);
   };
+
+  // ================= MODE LIVE DÉPORTÉ =================
+  // QR du match (public), télécommande adjoint (privée) et page du club (QR général).
+  // Le tableau tactique est l'hôte : il applique les actions de la télécommande puis publie l'état du match.
+  const [liveClubSlug, setLiveClubSlug] = useState<string | null>(null);
+  const [isLiveShareOpen, setIsLiveShareOpen] = useState(false);
+  const [liveEditorAccess, setLiveEditorAccess] = useState<EditorAccess | null>(null);
+  const [liveShareBusy, setLiveShareBusy] = useState(false);
+  const [liveShareError, setLiveShareError] = useState<string | null>(null);
+  const liveClubName = (activeCoach?.club || "").trim() || activeTeam?.name || "Mon club";
+  const canUseRemoteLive = isProPlusOrAdmin && Boolean(auth.currentUser);
+  const hasAnyLiveMatch = matchesList.some((m) => m.livePublicId);
+  const activeLivePublicId: string | null = hasActiveMatch && activeMatch.livePublicId ? activeMatch.livePublicId : null;
+
+  const liveMetaFor = (m: any): LiveMatchMeta => {
+    const team = teams.find((t) => t.id === (m.teamId || "team_1"));
+    const sport = m.sport || activeSport;
+    const cfg = getLivePeriodConfig(sport, team?.format);
+    return {
+      teamId: m.teamId || "team_1",
+      teamName: team?.name || "",
+      home: m.homeTeam || "",
+      away: m.awayTeam || "",
+      competition: m.competition || "",
+      date: m.date || "",
+      time: m.time || "",
+      dateTime: m.dateTime || "",
+      sport,
+      periods: cfg.periods,
+      periodSeconds: cfg.periodSeconds,
+      breakAfterIndex: cfg.breakAfterIndex,
+    };
+  };
+
+  const liveRunning = isLiveMatchMode && isLiveTimerRunning && currentPeriod !== "MI-TEMPS" && currentPeriod !== "FIN";
+  const liveLineup = useMemo(() => ({
+    onPitch: currentTokens
+      .filter((t) => t.type === "player_a")
+      .map((t) => ({ id: t.id, n: t.number, name: t.name || "" })),
+    bench: substitutes
+      .filter((s) => s.type !== "player_b" && s.removalReason !== "red_card")
+      .map((s) => ({ id: String(s.id), n: s.number, name: s.name || "" })),
+  }), [currentTokens, substitutes]);
+  const liveClock = liveRunning
+    ? { elapsed: 0, runningSince: Date.now() - liveTimerSeconds * 1000 }
+    : { elapsed: liveTimerSeconds, runningSince: null };
+  const liveState: LiveState = {
+    status: statusFor(currentPeriod, liveClock, Boolean(activeMatch.isFinished)),
+    period: activeMatch.isFinished ? "FIN" : currentPeriod,
+    score: { home: homeScore, away: awayScore },
+    clock: liveClock,
+    events: matchEvents as LiveEvent[],
+    lineup: liveLineup,
+    finishedAt: activeMatch.isFinished ? activeMatch.finishedAtMs || null : null,
+  };
+
+  const notifyRemote = (text: string) => {
+    setSleekToastMessage(`📱 Télécommande : ${text}`);
+    setTimeout(() => setSleekToastMessage(null), 3500);
+  };
+
+  // Action saisie à la télécommande → état local du tableau (puis republication)
+  const applyRemoteLiveCommand = (cmdId: string, cmd: LiveCommand) => {
+    const op = cmd.op;
+    if (!op) return;
+    if ((activeMatch.isFinished || currentPeriod === "FIN") && op.kind !== "undo") return;
+    const pseudoDoc = { ...liveMetaFor(activeMatch), ...liveState } as LiveMatchDoc;
+    switch (op.kind) {
+      case "start": {
+        if (currentPeriod === "MI-TEMPS") {
+          handleSelectLivePeriod(livePeriodConfig.periods[livePeriodConfig.breakAfterIndex + 1]);
+        } else {
+          setIsLiveTimerRunning(true);
+        }
+        setIsLiveMatchMode(true);
+        notifyRemote(liveTimerSeconds === 0 ? "coup d'envoi ▶️" : "reprise du chrono ▶️");
+        return;
+      }
+      case "pause":
+        setIsLiveTimerRunning(false);
+        notifyRemote("chrono en pause ⏸");
+        return;
+      case "next": {
+        const seq: LivePeriod[] = [...livePeriodButtons, "FIN"];
+        const next = seq[seq.indexOf(currentPeriod) + 1];
+        if (!next) return;
+        if (next === "FIN") {
+          handleFinishLiveMatch();
+          return;
+        }
+        setIsLiveMatchMode(true);
+        handleSelectLivePeriod(next);
+        notifyRemote(next === "MI-TEMPS" ? breakLongLabel : `début ${next}`);
+        return;
+      }
+      case "goal":
+      case "card":
+      case "note": {
+        const patch = applyLiveOp(pseudoDoc, op, cmdId, Date.now());
+        const ev = patch?.events?.[0];
+        if (!ev) return;
+        setMatchEvents((prev) => (prev.some((e) => e.id === ev.id) ? prev : [ev as any, ...prev]));
+        if (op.kind === "goal") {
+          const pts = ev.points || 1;
+          if (op.team === "home") setHomeScore((prev) => prev + pts);
+          else setAwayScore((prev) => prev + pts);
+          notifyRemote(`${ev.icon || "⚽"} ${op.team === "home" ? ev.player : activeMatch.awayTeam}`);
+        } else if (op.kind === "card") {
+          if (op.color === "yellow" && op.team === "home" && op.player?.id) {
+            setKeyframes((prev) => {
+              const copy = [...prev];
+              copy[currentFrameIdx] = (copy[currentFrameIdx] || []).map((t) => (t.id === op.player?.id ? { ...t, yellowCards: 1 } : t));
+              return copy;
+            });
+          }
+          notifyRemote(op.color === "yellow" ? `carton jaune 🟨 ${ev.player}` : `carton rouge 🟥 ${ev.player}${op.team === "home" ? " (retirez-le du terrain)" : ""}`);
+        } else {
+          notifyRemote(`note 📝 ${ev.player}`);
+        }
+        return;
+      }
+      case "sub": {
+        const token = currentTokens.find((t) => t.id === op.outId && t.type === "player_a");
+        const incoming = substitutes.find((s) => String(s.id) === op.inId);
+        if (!token || !incoming) return;
+        handleSwapPlayerOnPitch(token, incoming, { eventId: `r_${cmdId}`, remote: true });
+        notifyRemote(`remplacement 🔄 ${token.name} ➔ ${incoming.name}`);
+        return;
+      }
+      case "undo": {
+        const target = matchEvents.find((e) => e.id === op.eventId);
+        if (!target) return;
+        handleDeleteMatchEvent(target.id);
+        if (target.type === "sub" && target.outId) {
+          const token = currentTokens.find((t) => t.id === target.outId);
+          const back = substitutes.find((s) => String(s.id) === target.outId);
+          if (token && back) handleSwapPlayerOnPitch(token, back, { noEvent: true });
+        }
+        notifyRemote("dernière action annulée ↩️");
+        return;
+      }
+    }
+  };
+
+  useLiveHost({
+    publicId: activeLivePublicId,
+    clubSlug: liveClubSlug,
+    enabled: canUseRemoteLive && Boolean(activeLivePublicId),
+    state: liveState,
+    onCommand: applyRemoteLiveCommand,
+  });
+
+  // Page du club (QR général) : créée ou mise à jour avec le nom et le logo du club
+  useEffect(() => {
+    if (!canUseRemoteLive || (!hasAnyLiveMatch && !isLiveShareOpen)) return;
+    let alive = true;
+    const timer = setTimeout(() => {
+      ensureLiveClub(liveClubName, clubLogo)
+        .then((slug) => { if (alive && slug) setLiveClubSlug(slug); })
+        .catch((err) => console.warn("[Live] club :", err?.message));
+    }, 800);
+    return () => { alive = false; clearTimeout(timer); };
+  }, [canUseRemoteLive, hasAnyLiveMatch, isLiveShareOpen, liveClubName, clubLogo]);
+
+  // Infos des matchs publiés (adversaire, date, compétition…) tenues à jour
+  const liveMetaSentRef = useRef<Record<string, string>>({});
+  useEffect(() => {
+    if (!canUseRemoteLive || !liveClubSlug) return;
+    const timer = setTimeout(() => {
+      matchesList.forEach((m) => {
+        if (!m.livePublicId) return;
+        const meta = liveMetaFor(m);
+        const key = JSON.stringify(meta) + liveClubSlug + liveClubName;
+        if (liveMetaSentRef.current[m.livePublicId] === key) return;
+        liveMetaSentRef.current[m.livePublicId] = key;
+        updateLiveMatchMeta(m.livePublicId, meta, liveClubSlug, liveClubName).catch((err) => {
+          delete liveMetaSentRef.current[m.livePublicId];
+          console.warn("[Live] infos du match :", err?.message);
+        });
+      });
+    }, 800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchesList, teams, liveClubSlug, canUseRemoteLive, liveClubName, activeSport]);
+
+  /** Publie le live d'un match (QR du match + accès adjoint) ; renvoie son identifiant public */
+  const publishLiveForMatch = async (m: any): Promise<string | null> => {
+    if (!canUseRemoteLive || !m?.id) return null;
+    if (m.livePublicId) return m.livePublicId;
+    const slug = liveClubSlug || (await ensureLiveClub(liveClubName, clubLogo));
+    if (!slug) return null;
+    setLiveClubSlug(slug);
+    const meta = liveMetaFor(m);
+    const initial: LiveState = m.id === activeMatchId
+      ? liveState
+      : {
+        status: m.isFinished ? "finished" : "scheduled",
+        period: m.isFinished ? "FIN" : meta.periods[0],
+        score: { home: m.homeScore || 0, away: m.awayScore || 0 },
+        clock: { elapsed: 0, runningSince: null },
+        events: Array.isArray(m.events) ? m.events : [],
+        lineup: { onPitch: [], bench: [] },
+      };
+    const publicId = await createLiveMatch(meta, slug, liveClubName, initial);
+    if (publicId) {
+      liveMetaSentRef.current[publicId] = JSON.stringify(meta) + slug + liveClubName;
+      updateMatchById(m.id, "livePublicId", publicId);
+    }
+    return publicId;
+  };
+
+  const openLiveShare = async () => {
+    if (!isProPlusOrAdmin) {
+      setIsLiveMatchUpgradeModalOpen(true);
+      return;
+    }
+    if (!auth.currentUser) {
+      setSleekToastMessage("🔒 Connectez-vous à votre compte pour partager le live.");
+      setTimeout(() => setSleekToastMessage(null), 3500);
+      return;
+    }
+    setLiveShareError(null);
+    setLiveEditorAccess(null);
+    setIsLiveShareOpen(true);
+    if (activeLivePublicId) {
+      try {
+        setLiveEditorAccess(await getEditorAccess(activeLivePublicId));
+      } catch (err: any) {
+        setLiveShareError(`Accès adjoint indisponible : ${err?.message || err}`);
+      }
+    }
+  };
+
+  const runLiveShareAction = async (action: () => Promise<void>) => {
+    setLiveShareBusy(true);
+    setLiveShareError(null);
+    try {
+      await action();
+    } catch (err: any) {
+      setLiveShareError(`Opération impossible : ${err?.message || err}`);
+    } finally {
+      setLiveShareBusy(false);
+    }
+  };
+
+  const handlePublishActiveLive = () => runLiveShareAction(async () => {
+    const id = await publishLiveForMatch(activeMatch);
+    if (id) setLiveEditorAccess(await getEditorAccess(id));
+  });
+
+  const handleRegenerateLiveEditor = () => runLiveShareAction(async () => {
+    if (!activeLivePublicId) return;
+    setLiveEditorAccess(await regenerateEditorAccess(activeLivePublicId));
+  });
+
+  const handleRevokeLiveEditor = () => runLiveShareAction(async () => {
+    if (!activeLivePublicId) return;
+    await revokeEditorAccess(activeLivePublicId);
+    setLiveEditorAccess((prev) => (prev ? { ...prev, revoked: true } : prev));
+  });
 
   // Common positions per sport for rapid suggestions
   const getSportCommonPositions = (sport: string): string[] => {
@@ -7355,7 +7603,7 @@ export default function TacticsBoard({
       ctx.font = "700 11px system-ui, sans-serif";
       if (visibleCanvasEvents.length > 0) {
         visibleCanvasEvents.slice(0, 7).forEach((evt, idx) => {
-          const icon = evt.type === "goal" ? "⚽" : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄";
+          const icon = evt.type === "goal" ? "⚽" : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : evt.type === "note" ? "📝" : "🔄";
           const passeurStr = evt.type === "goal" && evt.assister ? ` (${evt.assister})` : "";
           const evtLine = `${icon} ${evt.player}${passeurStr} ${evt.time ? `- ${evt.period ? `${evt.period} ` : ''}${evt.time}` : ''}`;
           ctx.fillText(evtLine, p1X + 15, footerY + 68 + idx * 24);
@@ -12904,6 +13152,25 @@ export default function TacticsBoard({
                     </div>
                   </div>
 
+                  {/* Mode Live déporté : QR du match, télécommande adjoint, QR du club */}
+                  <div className="mt-2 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); openLiveShare(); }}
+                      className={`h-7 px-2.5 rounded-full border text-[11px] font-black inline-flex items-center gap-1.5 transition cursor-pointer ${isModernSleek
+                        ? "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                        : "bg-[#131d2b] hover:bg-[#1a283b] text-slate-200 border-[#26354d]"
+                        }`}
+                      title="QR du match (public), télécommande pour l'adjoint et QR général du club"
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>{activeLivePublicId ? "Partager le live" : "Publier le live"}</span>
+                      {!isProPlusOrAdmin && (
+                        <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm">PRO+</span>
+                      )}
+                    </button>
+                  </div>
+
                   {/* Chrono, Period & Events section */}
                   {isLiveMatchMode ? (
                     <div className={`mt-3 pt-2.5 border-t flex flex-col items-center gap-2 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
@@ -13104,7 +13371,7 @@ export default function TacticsBoard({
                                   <span className="text-xs">
                                     {evt.type === "goal"
                                       ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"))
-                                      : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}
+                                      : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : evt.type === "note" ? "📝" : "🔄"}
                                   </span>
                                   <span className={`font-extrabold truncate max-w-[140px] ${isModernSleek ? "text-slate-800" : "text-white"}`}>
                                     {evt.player}
@@ -14098,7 +14365,7 @@ export default function TacticsBoard({
                           <span>
                             {evt.type === "goal"
                               ? (evt.icon || (activeSport === "rugby" ? "🏉" : activeSport === "basketball" ? "🏀" : activeSport === "handball" ? "🤾" : "⚽"))
-                              : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : "🔄"}
+                              : evt.type === "yellow" ? "🟨" : evt.type === "red" ? "🟥" : evt.type === "note" ? "📝" : "🔄"}
                           </span>
                           <span className={`font-extrabold flex items-center gap-1 ${isModernSleek ? "text-slate-900" : "text-white"
                             }`}>
@@ -14768,6 +15035,22 @@ export default function TacticsBoard({
       )}
 
       {/* LIVE MATCH PRO+ UPGRADE PROMPT MODAL */}
+      <LiveShareModal
+        open={isLiveShareOpen}
+        onClose={() => setIsLiveShareOpen(false)}
+        isLight={isModernSleek}
+        matchTitle={`${activeMatch.homeTeam} vs ${activeMatch.awayTeam}`}
+        clubName={liveClubName}
+        publicId={activeLivePublicId}
+        clubSlug={liveClubSlug}
+        editor={liveEditorAccess}
+        busy={liveShareBusy}
+        error={liveShareError}
+        onPublish={handlePublishActiveLive}
+        onRegenerate={handleRegenerateLiveEditor}
+        onRevoke={handleRevokeLiveEditor}
+      />
+
       {isLiveMatchUpgradeModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">
           <div className={`border max-w-lg w-full rounded-2xl sm:rounded-3xl p-6 shadow-2xl relative overflow-hidden ${isModernSleek ? "bg-white border-amber-500 text-slate-900" : "bg-[#0b0e14] border-amber-500/60 text-white"
