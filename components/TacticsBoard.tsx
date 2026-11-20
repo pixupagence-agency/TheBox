@@ -877,6 +877,44 @@ const LiveTrialCountdownLabel = ({ createdAt, bonusDays, trialEndsAt }: { create
   );
 };
 
+/** Texte sur une ligne qui défile (aller-retour) uniquement s'il dépasse la largeur disponible. */
+const MarqueeText = ({ text, className = "" }: { text: string; className?: string }) => {
+  const boxRef = useRef<HTMLSpanElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [overflow, setOverflow] = useState(0);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    const inner = textRef.current;
+    if (!box || !inner) return;
+    const measure = () => setOverflow(Math.max(0, Math.ceil(inner.scrollWidth - box.clientWidth)));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [text]);
+
+  const scrolling = overflow > 1;
+  return (
+    <span ref={boxRef} className={`block overflow-hidden whitespace-nowrap ${className}`} title={text}>
+      {scrolling && (
+        <style>{`@keyframes tb-marquee{0%,15%{transform:translateX(0)}85%,100%{transform:translateX(calc(-1 * var(--tb-mq-dist)))}}@media (prefers-reduced-motion: reduce){.tb-marquee{animation:none!important}}`}</style>
+      )}
+      <span
+        ref={textRef}
+        className={`inline-block ${scrolling ? "tb-marquee" : ""}`}
+        style={scrolling ? ({
+          "--tb-mq-dist": `${overflow}px`,
+          animation: `tb-marquee ${Math.max(3, overflow / 18 + 2)}s ease-in-out infinite alternate`,
+        } as React.CSSProperties) : undefined}
+      >
+        {text}
+      </span>
+    </span>
+  );
+};
+
 export default function TacticsBoard({
   coaches,
   setCoaches,
@@ -12466,9 +12504,16 @@ export default function TacticsBoard({
                           ? <img src={clubLogo} alt={activeMatch.homeTeam} className="w-full h-full object-contain p-1 rounded-full" />
                           : teamInitials(activeMatch.homeTeam)}
                       </span>
-                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10.5px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
-                        {activeMatch.homeTeam}
-                      </span>
+                      {isLiveMatchMode ? (
+                        <MarqueeText
+                          text={activeMatch.homeTeam || ""}
+                          className={`text-[11px] w-full max-w-[85px] text-center font-black ${isModernSleek ? "text-slate-800" : "text-white"} uppercase`}
+                        />
+                      ) : (
+                        <span className={`text-[10.5px] max-w-[80px] font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                          {activeMatch.homeTeam}
+                        </span>
+                      )}
                       {isLiveMatchMode && (
                         <div className="flex items-center gap-1.5 mt-1.5">
                           <button
@@ -12578,9 +12623,16 @@ export default function TacticsBoard({
                           ? <img src={clubLogo} alt={activeMatch.awayTeam} className="w-full h-full object-contain p-1 rounded-full" />
                           : teamInitials(activeMatch.awayTeam)}
                       </span>
-                      <span className={`${isLiveMatchMode ? "text-[11px] max-w-[85px]" : "text-[10.5px] max-w-[80px]"} font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
-                        {activeMatch.awayTeam}
-                      </span>
+                      {isLiveMatchMode ? (
+                        <MarqueeText
+                          text={activeMatch.awayTeam || ""}
+                          className={`text-[11px] w-full max-w-[85px] text-center font-black ${isModernSleek ? "text-slate-800" : "text-white"} uppercase`}
+                        />
+                      ) : (
+                        <span className={`text-[10.5px] max-w-[80px] font-black ${isModernSleek ? "text-slate-800" : "text-white"} truncate uppercase`}>
+                          {activeMatch.awayTeam}
+                        </span>
+                      )}
                       {isLiveMatchMode && (
                         <div className="flex items-center gap-1.5 mt-1.5">
                           <button
