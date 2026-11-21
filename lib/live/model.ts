@@ -16,7 +16,21 @@ export interface LivePlayer {
   id: string;
   n?: number;
   name: string;
+  /** Titulaire : position sur le tableau tactique du coach (en %, repère paysage : x = longueur, but défendu à x = 0) */
+  x?: number;
+  y?: number;
+  /** Titulaire : poste de gardien */
+  gk?: boolean;
 }
+
+/** Place sur le terrain (position, gardien) d'un titulaire, sans son identité */
+const placeOf = (p: LivePlayer): Pick<LivePlayer, "x" | "y" | "gk"> => {
+  const place: Pick<LivePlayer, "x" | "y" | "gk"> = {};
+  if (typeof p.x === "number") place.x = p.x;
+  if (typeof p.y === "number") place.y = p.y;
+  if (p.gk) place.gk = true;
+  return place;
+};
 
 export interface LiveEvent {
   id: string;
@@ -62,6 +76,8 @@ export interface LiveMatchDoc {
   time: string;
   dateTime: string;
   venue?: string;
+  /** Mot du coach après le match (résumé public) */
+  coachNote?: string;
   sport: string;
   periods: string[];
   periodSeconds: number;
@@ -94,7 +110,26 @@ export type LiveOp =
   | { kind: "card"; color: "yellow" | "red"; team: LiveTeam; player?: LivePlayer }
   | { kind: "sub"; outId: string; inId: string }
   | { kind: "note"; team: LiveTeam; text: string }
+  /** Fait de jeu sans effet sur le score : occasion, penalty (ou jet de 7 m) manqué */
+  | { kind: "action"; action: LiveGameAction; team: LiveTeam; player?: LivePlayer }
   | { kind: "undo"; eventId: string };
+
+export type LiveGameAction = "chance" | "missed_penalty";
+
+/** Sous-types de but et de fait de jeu (champ `subType` des événements) */
+export const GOAL_PENALTY = "penalty";
+export const GOAL_OWN = "own_goal";
+
+/** Le sport a-t-il des buts « au pied / à la main » avec penalty (ou jet de 7 m) et CSC ? */
+export const hasPenaltyGoals = (sport: string) => sport === "football" || sport === "soccer" || sport === "handball" || !sport;
+
+/** Nom du penalty selon le sport */
+export const penaltyName = (sport: string) => (sport === "handball" ? "Jet de 7 m" : "Penalty");
+
+export const gameActionInfo = (action: LiveGameAction, sport: string): { label: string; icon: string } =>
+  action === "chance"
+    ? { label: "Occasion", icon: "💥" }
+    : { label: `${penaltyName(sport)} manqué`, icon: "❌" };
 
 export interface LiveCommand {
   op: LiveOp;
@@ -278,7 +313,8 @@ export const applyLiveOp = (doc: LiveMatchDoc, op: LiveOp, cmdId: string, now: n
       if (!out || !inn) return null;
       // Même logique que le tableau tactique : la place sur le terrain garde son identifiant,
       // le sortant rejoint le banc avec l'identifiant de cette place
-      const onPitch = lineup.onPitch.map((p) => (p.id === op.outId ? { id: op.outId, n: inn.n, name: inn.name } : p));
+      // L'entrant prend la place (position sur le tableau) du sortant
+      const onPitch = lineup.onPitch.map((p) => (p.id === op.outId ? { id: op.outId, n: inn.n, name: inn.name, ...placeOf(p) } : p));
       const bench = [{ id: op.outId, n: out.n, name: out.name }, ...lineup.bench.filter((p) => p.id !== op.inId && p.id !== op.outId)];
       const ev: LiveEvent = {
         ...base,
@@ -297,6 +333,23 @@ export const applyLiveOp = (doc: LiveMatchDoc, op: LiveOp, cmdId: string, now: n
       const ev: LiveEvent = { ...base, type: "note", team: op.team, player: text, note: text };
       return pushEvent(ev);
     }
+    case "action": {
+      // Occasion / penalty manqué : enregistrés comme une note typée (le score ne change pas)
+      const info = gameActionInfo(op.action, doc.sport);
+      const who = op.player ? playerLabel(op.player, op.team) : "";
+      const text = who ? `${info.label} · ${who}` : info.label;
+      const ev: LiveEvent = {
+        ...base,
+        type: "note",
+        team: op.team,
+        player: text,
+        number: op.player?.n,
+        note: text,
+        icon: info.icon,
+        subType: op.action,
+      };
+      return pushEvent(ev);
+    }
     case "undo": {
       const target = (doc.events || []).find((e) => e.id === op.eventId);
       if (!target) return null;
@@ -312,7 +365,7 @@ export const applyLiveOp = (doc: LiveMatchDoc, op: LiveOp, cmdId: string, now: n
         const back = lineup.bench.find((p) => p.id === target.outId);
         if (onField && back) {
           patch.lineup = {
-            onPitch: lineup.onPitch.map((p) => (p.id === target.outId ? { ...back } : p)),
+            onPitch: lineup.onPitch.map((p) => (p.id === target.outId ? { id: back.id, n: back.n, name: back.name, ...placeOf(p) } : p)),
             bench: [{ id: target.outId, n: onField.n, name: onField.name }, ...lineup.bench.filter((p) => p.id !== target.outId)],
           };
         }
@@ -362,6 +415,9 @@ export const sanitizeOp = (raw: unknown): LiveOp | null => {
       return { kind: "sub", outId: str(o.outId), inId: str(o.inId) };
     case "note":
       return str(o.text, 200).trim() ? { kind: "note", team, text: str(o.text, 200) } : null;
+    case "action":
+      if (o.action !== "chance" && o.action !== "missed_penalty") return null;
+      return { kind: "action", action: o.action, team, player: player(o.player) };
     case "undo":
       return str(o.eventId) ? { kind: "undo", eventId: str(o.eventId) } : null;
     default:

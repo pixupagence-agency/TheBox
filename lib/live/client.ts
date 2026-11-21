@@ -27,7 +27,7 @@ import {
 
 export type LiveMatchMeta = Pick<
   LiveMatchDoc,
-  "teamId" | "teamName" | "home" | "away" | "competition" | "date" | "time" | "dateTime" | "venue" | "sport" | "periods" | "periodSeconds" | "breakAfterIndex"
+  "teamId" | "teamName" | "home" | "away" | "competition" | "date" | "time" | "dateTime" | "venue" | "coachNote" | "sport" | "periods" | "periodSeconds" | "breakAfterIndex"
 >;
 
 export type LiveState = Pick<LiveMatchDoc, "status" | "period" | "score" | "clock" | "events" | "lineup"> & { finishedAt?: number | null };

@@ -96,7 +96,11 @@ const TOOLBAR_HIDE_ORDER = ["zoom", "export", "display", "view", "color", "drawi
 
 export interface Token {
   id: string;
-  type: "player_a" | "player_b" | "referee" | "ball" | "cone" | "goal" | "hurdle" | "ladder" | "wall";
+  type: "player_a" | "player_b" | "referee" | "ball" | "cone" | "goal" | "hurdle" | "ladder" | "wall" | "link";
+  /** Liaison (type « link ») : joueurs reliés dans l'ordre ; si le dernier = le premier, la forme est fermée */
+  linkIds?: string[];
+  /** Liaison : trait plein ou pointillé (la couleur est dans `color`) */
+  linkStyle?: "solid" | "dashed";
   /** Mur (type « wall ») : nombre de places et équipe qui le forme */
   wallCount?: number;
   wallTeam?: "home" | "away";
@@ -116,6 +120,218 @@ export interface Token {
   yellowCards?: number;
   /** Joueur de l'effectif de l'équipe que ce pion représente (fiche partagée entre les matchs) */
   rosterId?: string;
+  /** Ballon aimanté : joueur qui porte le ballon (le ballon suit ses déplacements) */
+  ballCarrierId?: string;
+  /** Ballon aimanté : décalage (repère logique, en %) du ballon par rapport au joueur porteur */
+  ballOffsetX?: number;
+  ballOffsetY?: number;
+}
+
+/** Distance (px à l'écran) sous laquelle le ballon est attiré par un joueur */
+const BALL_MAGNET_PX = 36;
+
+/** Retire l'aimantation d'un ballon (il redevient libre) */
+const detachBall = (t: Token): Token => {
+  if (!t.ballCarrierId) return t;
+  const { ballCarrierId: _c, ballOffsetX: _x, ballOffsetY: _y, ...rest } = t;
+  return rest;
+};
+
+/** Longueur maximale du mot du coach publié dans le résumé du live */
+const COACH_NOTE_MAX = 600;
+
+/** Couleurs proposées pour les liaisons entre joueurs */
+const LINK_COLORS = ["#facc15", "#ffffff", "#00E599", "#38bdf8", "#f43f5e", "#a855f7"];
+
+/** Icône de l'outil « Lier des joueurs » : trois pastilles reliées */
+function PlayerLinkIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M6.5 17.5 L12 6.5 L17.5 15" />
+      <circle cx="5.5" cy="18.5" r="2.5" fill="currentColor" />
+      <circle cx="12" cy="5.5" r="2.5" fill="currentColor" />
+      <circle cx="18.5" cy="16" r="2.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+/**
+ * Calque des liaisons entre joueurs : les lignes suivent les pions affichés (y compris pendant
+ * leurs transitions d'animation), en lisant la position réelle des pions dans la page.
+ */
+function PlayerLinksOverlay({
+  links,
+  draft,
+  draftColor,
+  draftDashed,
+  layerRef,
+  selectedLinkId,
+  selectable,
+  onSelect,
+  onDelete,
+  followMs,
+}: {
+  links: Token[];
+  draft: string[];
+  draftColor: string;
+  draftDashed: boolean;
+  layerRef: React.RefObject<HTMLDivElement | null>;
+  selectedLinkId: string | null;
+  selectable: boolean;
+  onSelect: (id: string | null) => void;
+  onDelete: (id: string) => void;
+  followMs: number;
+}) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const linesRef = useRef<Record<string, SVGPolylineElement | null>>({});
+  const hitsRef = useRef<Record<string, SVGPolylineElement | null>>({});
+  const deleteRef = useRef<SVGGElement>(null);
+  const draftRef = useRef<SVGPolylineElement>(null);
+
+  const all = draft.length > 0 ? [...links, { id: "__draft__", linkIds: draft } as Token] : links;
+
+  const update = () => {
+    const svg = svgRef.current;
+    const layer = layerRef.current;
+    if (!svg || !layer) return;
+    const box = svg.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    // Le terrain peut être zoomé (transform) : on revient aux pixels propres du calque
+    const kx = svg.clientWidth / box.width;
+    const ky = svg.clientHeight / box.height;
+    const pointsOf = (ids: string[]) => {
+      const pts: { x: number; y: number }[] = [];
+      ids.forEach((id) => {
+        const el = layer.querySelector<HTMLElement>(`[data-link-anchor="${CSS.escape(id)}"]`);
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        pts.push({ x: (r.left + r.width / 2 - box.left) * kx, y: (r.top + r.height / 2 - box.top) * ky });
+      });
+      return pts;
+    };
+    all.forEach((link) => {
+      const pts = pointsOf(link.linkIds || []);
+      const str = pts.length >= 2 ? pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ") : "";
+      if (link.id === "__draft__") {
+        draftRef.current?.setAttribute("points", str);
+        return;
+      }
+      linesRef.current[link.id]?.setAttribute("points", str);
+      linesRef.current[`${link.id}__halo`]?.setAttribute("points", str);
+      hitsRef.current[link.id]?.setAttribute("points", str);
+      if (link.id === selectedLinkId && deleteRef.current) {
+        const mid = pts.length >= 2 ? { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 } : null;
+        deleteRef.current.setAttribute("transform", mid ? `translate(${mid.x.toFixed(1)} ${mid.y.toFixed(1)})` : "translate(-999 -999)");
+      }
+    });
+  };
+
+  // Suivi des pions : à chaque rendu, on suit leurs positions le temps de leur transition
+  useEffect(() => {
+    if (all.length === 0) return;
+    let raf = 0;
+    const until = performance.now() + followMs;
+    const loop = () => {
+      update();
+      if (performance.now() < until) raf = requestAnimationFrame(loop);
+    };
+    loop();
+    return () => cancelAnimationFrame(raf);
+  });
+
+  // Redimensionnement du terrain
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const ro = new ResizeObserver(() => update());
+    ro.observe(svg);
+    return () => ro.disconnect();
+  });
+
+  if (all.length === 0) return null;
+
+  return (
+    <svg ref={svgRef} className="absolute inset-0 w-full h-full overflow-visible" style={{ zIndex: 25, pointerEvents: "none" }} aria-hidden={!selectable}>
+      {links.map((link) => {
+        const color = link.color || LINK_COLORS[0];
+        const isSel = link.id === selectedLinkId;
+        return (
+          <g key={link.id}>
+            {isSel && (
+              <polyline
+                ref={(el) => { linesRef.current[`${link.id}__halo`] = el; }}
+                fill="none"
+                stroke={color}
+                strokeOpacity={0.35}
+                strokeWidth={10}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points=""
+                data-halo
+              />
+            )}
+            <polyline
+              ref={(el) => { linesRef.current[link.id] = el; }}
+              data-testid="player-link"
+              fill="none"
+              stroke={color}
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray={link.linkStyle === "dashed" ? "9 7" : undefined}
+              style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))" }}
+              points=""
+            />
+            {/* Zone de clic élargie pour sélectionner la liaison */}
+            <polyline
+              ref={(el) => { hitsRef.current[link.id] = el; }}
+              fill="none"
+              stroke="transparent"
+              strokeWidth={16}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              points=""
+              style={{ pointerEvents: selectable ? "stroke" : "none", cursor: "pointer" }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onSelect(isSel ? null : link.id); }}
+            >
+              <title>Liaison entre joueurs (appuyer pour la sélectionner)</title>
+            </polyline>
+          </g>
+        );
+      })}
+      {draft.length > 0 && (
+        <polyline
+          ref={draftRef}
+          fill="none"
+          stroke={draftColor}
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray={draftDashed ? "9 7" : undefined}
+          strokeOpacity={0.85}
+          points=""
+        />
+      )}
+      {selectedLinkId && links.some((l) => l.id === selectedLinkId) && (
+        <g
+          ref={deleteRef}
+          transform="translate(-999 -999)"
+          style={{ pointerEvents: "auto", cursor: "pointer" }}
+          role="button"
+          aria-label="Supprimer la liaison"
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onDelete(selectedLinkId); }}
+        >
+          <title>Supprimer la liaison</title>
+          <circle r={11} fill="#e11d48" stroke="#ffffff" strokeWidth={2} />
+          <path d="M -4 -4 L 4 4 M 4 -4 L -4 4" stroke="#ffffff" strokeWidth={2.2} strokeLinecap="round" />
+        </g>
+      )}
+    </svg>
+  );
 }
 
 export interface DrawingAction {
@@ -1335,7 +1551,7 @@ export default function TacticsBoard({
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1000); // ms per frame
 
   // Drawing Tools State
-  const [activeTool, setActiveTool] = useState<"select" | "move" | "line" | "arrow" | "draw" | "settings">("select");
+  const [activeTool, setActiveTool] = useState<"select" | "move" | "line" | "arrow" | "draw" | "settings" | "link">("select");
   const [drawingTool, setDrawingTool] = useState<DrawingAction["tool"]>("brush");
   const [drawColor, setDrawColor] = useState<string>("#00E599"); // Green by default
   const [drawSize, setDrawSize] = useState<number>(3);
@@ -1395,6 +1611,14 @@ export default function TacticsBoard({
   const [wallPopover, setWallPopover] = useState<{ team: WallTeam; left: number; top: number } | null>(null);
   /** Joueur glissé au-dessus d'un mur : place visée (surbrillance) */
   const [wallDropTarget, setWallDropTarget] = useState<{ team: WallTeam; slot: number } | null>(null);
+  // Aimant du ballon : joueur qui recevra le ballon si on le lâche maintenant (surbrillance pendant le glisser)
+  const [ballMagnetTargetId, setBallMagnetTargetId] = useState<string | null>(null);
+  // Liaisons entre joueurs : chaîne en cours de création (outil « Lier »), réglages et liaison sélectionnée
+  const [linkDraft, setLinkDraft] = useState<string[]>([]);
+  const [linkColor, setLinkColor] = useState<string>(LINK_COLORS[0]);
+  const [linkDashed, setLinkDashed] = useState<boolean>(false);
+  const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
+  const tokensLayerRef = useRef<HTMLDivElement>(null);
   /** Rôles réellement attribués (hors composition du mur) */
   const countSportRoles = (roles: SetPieceRoleConfig) => getSportRoles(activeSport).roles.filter((r) => roles[r.key]).length;
   const [showPlayerNames, setShowPlayerNames] = useState<boolean>(() => {
@@ -3271,6 +3495,8 @@ export default function TacticsBoard({
   // Free pan/drag of the pitch when zoomed or when using the "move" tool
   const handlePitchPanStart = (startEvent: React.MouseEvent | React.TouchEvent) => {
     const isMiddleMouse = "button" in startEvent && startEvent.button === 1;
+    // Appui hors d'une liaison : elle est désélectionnée
+    if (selectedLinkId) setSelectedLinkId(null);
     if (!isMiddleMouse && activeTool !== "select" && activeTool !== "move") return;
     if (!isMiddleMouse && zoomScale === 100 && activeTool !== "move") return;
     if ("button" in startEvent && startEvent.button !== 0 && startEvent.button !== 1) return;
@@ -3332,6 +3558,57 @@ export default function TacticsBoard({
 
     const rect = container.getBoundingClientRect();
 
+    // --- Aimant du ballon -------------------------------------------------
+    // Le ballon lâché près d'un joueur se colle à ses pieds, puis suit ses déplacements.
+    // Un joueur lâché sur un ballon libre le récupère. Alt enfoncé au lâcher : pas d'aimant.
+    const round1 = (v: number) => Math.round(v * 10) / 10;
+    const toScreen = (t: { x: number; y: number }) => ({
+      x: ((aspectRatioMode === "mobile" ? t.y : t.x) / 100) * rect.width,
+      y: ((aspectRatioMode === "mobile" ? 100 - t.x : t.y) / 100) * rect.height,
+    });
+    const toLogical = (px: number, py: number) => {
+      const rx = (px / rect.width) * 100;
+      const ry = (py / rect.height) * 100;
+      return aspectRatioMode === "mobile" ? { x: 100 - ry, y: rx } : { x: rx, y: ry };
+    };
+    const magnetScale = playerScale / 100;
+    const magnetRadius = BALL_MAGNET_PX * magnetScale;
+    /** Joueurs visibles sur le terrain, susceptibles de recevoir le ballon */
+    const magnetPlayers = currentTokens.filter(
+      (t) => t.type.startsWith("player") && (t.type !== "player_b" || showOpponents) && !isInWall(t, currentTokens)
+    );
+    /** Position du ballon collé aux pieds d'un joueur (décalage fixe à l'écran, bas-droite) */
+    const ballSpotFor = (player: Token) => {
+      const p = toScreen(player);
+      const spot = toLogical(p.x + 17 * magnetScale, p.y + 15 * magnetScale);
+      const x = round1(Math.max(0, Math.min(100, spot.x)));
+      const y = round1(Math.max(0, Math.min(100, spot.y)));
+      return { x, y, ballOffsetX: round1(x - player.x), ballOffsetY: round1(y - player.y) };
+    };
+    /** Joueur le plus proche d'un point (px relatifs au terrain), dans le rayon de l'aimant */
+    const nearestPlayer = (px: number, py: number) => {
+      let best: Token | null = null;
+      let bestD = magnetRadius;
+      for (const pl of magnetPlayers) {
+        const s = toScreen(pl);
+        const d = Math.hypot(s.x - px, s.y - py);
+        if (d <= bestD) { best = pl; bestD = d; }
+      }
+      return best;
+    };
+    const draggedTok = currentTokens.find((t) => t.id === tokenId);
+    const isBallDrag = draggedTok?.type === "ball" && showBall;
+    const isPlayerDrag = !!draggedTok && draggedTok.type.startsWith("player");
+    const ballTok = currentTokens.find((t) => t.type === "ball");
+    /** Ballon libre (sans porteur) que le joueur glissé peut récupérer */
+    const freeBall = isPlayerDrag && showBall && ballTok && !currentTokens.some((t) => t.id === ballTok.ballCarrierId) ? ballTok : null;
+    let magnetTarget: string | null = null;
+    const setMagnet = (id: string | null) => {
+      if (id === magnetTarget) return;
+      magnetTarget = id;
+      setBallMagnetTargetId(id);
+    };
+
     const moveHandler = (moveEvent: MouseEvent | TouchEvent) => {
       const clientX = "touches" in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
       const clientY = "touches" in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
@@ -3348,16 +3625,39 @@ export default function TacticsBoard({
 
         const logicalX = aspectRatioMode === "mobile" ? 100 - relativeY : relativeX;
         const logicalY = aspectRatioMode === "mobile" ? relativeX : relativeY;
+        const nx = round1(logicalX);
+        const ny = round1(logicalY);
 
         setKeyframes((prev) => {
           const copy = prev.map((f, fIdx) => {
             if (fIdx === currentFrameIdx) {
-              return f.map((t) => (t.id === tokenId ? { ...t, x: Math.round(logicalX * 10) / 10, y: Math.round(logicalY * 10) / 10 } : t));
+              return f.map((t) => {
+                if (t.id === tokenId) return { ...t, x: nx, y: ny };
+                // Le ballon porté par le joueur glissé le suit
+                if (isPlayerDrag && t.type === "ball" && t.ballCarrierId === tokenId) {
+                  return {
+                    ...t,
+                    x: round1(Math.max(0, Math.min(100, nx + (t.ballOffsetX ?? 0)))),
+                    y: round1(Math.max(0, Math.min(100, ny + (t.ballOffsetY ?? 0)))),
+                  };
+                }
+                return t;
+              });
             }
             return f;
           });
           return copy;
         });
+
+        // Aimant : joueur visé par le ballon glissé, ou ballon libre visé par le joueur glissé
+        const px = clientX - rect.left;
+        const py = clientY - rect.top;
+        if (isBallDrag) {
+          setMagnet(nearestPlayer(px, py)?.id ?? null);
+        } else if (freeBall) {
+          const b = toScreen(freeBall);
+          setMagnet(Math.hypot(b.x - px, b.y - py) <= magnetRadius ? tokenId : null);
+        }
 
         // Joueur glissé au-dessus du mur de son équipe : place visée en surbrillance
         if (dropWall) {
@@ -3375,13 +3675,37 @@ export default function TacticsBoard({
     const dropWall = dropTeam && draggedToken && typeof draggedToken.wallSlot !== "number" ? findWall(dropTeam) : undefined;
     let lastDrop = -1;
 
-    const upHandler = () => {
+    const upHandler = (upEvent: MouseEvent | TouchEvent) => {
       if (userMoved) {
         // Enregistrer l'instant de fin du déplacement pour bloquer l'événement onClick résiduel du navigateur
         dragEndTimeRef.current = Date.now();
+        const noMagnet = upEvent.altKey;
+        const joinsWall = !!(dropWall && dropTeam && lastDrop >= 0);
+        if (isBallDrag) {
+          // Ballon lâché près d'un joueur : il se colle à lui ; sinon il redevient libre
+          const carrier = !noMagnet && magnetTarget ? magnetPlayers.find((p) => p.id === magnetTarget) : undefined;
+          setKeyframes((prev) => prev.map((f, fIdx) => (fIdx !== currentFrameIdx ? f : f.map((t) => {
+            if (t.id !== tokenId) return t;
+            return carrier ? { ...t, ...ballSpotFor(carrier), ballCarrierId: carrier.id } : detachBall(t);
+          }))));
+        } else if (isPlayerDrag && joinsWall) {
+          // Le joueur entre dans le mur : il lâche le ballon
+          setKeyframes((prev) => prev.map((f, fIdx) => (fIdx !== currentFrameIdx ? f : f.map((t) => (
+            t.type === "ball" && t.ballCarrierId === tokenId ? detachBall(t) : t
+          )))));
+        } else if (freeBall && magnetTarget === tokenId && !noMagnet) {
+          // Joueur lâché sur un ballon libre : il le récupère
+          setKeyframes((prev) => prev.map((f, fIdx) => {
+            if (fIdx !== currentFrameIdx) return f;
+            const player = f.find((t) => t.id === tokenId);
+            if (!player) return f;
+            return f.map((t) => (t.id === freeBall.id ? { ...t, ...ballSpotFor(player), ballCarrierId: tokenId } : t));
+          }));
+        }
         // Déposé sur le mur : le joueur y entre
-        if (dropWall && dropTeam && lastDrop >= 0) handleJoinWall(tokenId, dropTeam, lastDrop);
+        if (joinsWall) handleJoinWall(tokenId, dropTeam!, lastDrop);
       }
+      setMagnet(null);
       if (dropWall) setWallDropTarget(null);
       isDraggingTokenRef.current = false;
       setSelectedTokenId(null);
@@ -3479,8 +3803,16 @@ export default function TacticsBoard({
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const coords = getRelativeMouseCoords(e);
 
+    // Outil « Lier » : toucher le terrain valide la chaîne de joueurs en cours
+    if (activeTool === "link") {
+      e.stopPropagation();
+      if (linkDraft.length > 0) commitLink(linkDraft);
+      return;
+    }
+
     // Only in SELECT mode: detect clicks on strokes to show the stroke deletion menu
     if (activeTool === "select") {
+      setSelectedLinkId(null);
       const hitIndex = findStrokeIndexAtCoords(coords, drawingActions);
       if (hitIndex !== null) {
         e.stopPropagation();
@@ -3960,7 +4292,7 @@ export default function TacticsBoard({
     setKeyframes((prev) => {
       const copy = [...prev];
       const activeFrame = copy[currentFrameIdx] || [];
-      const updated = activeFrame.map((token) => token.type === "ball" ? { ...token, x: 50, y: 50 } : token);
+      const updated = activeFrame.map((token) => token.type === "ball" ? { ...detachBall(token), x: 50, y: 50 } : token);
       copy[currentFrameIdx] = updated;
       return copy;
     });
@@ -4240,6 +4572,8 @@ export default function TacticsBoard({
       date: m.date || "",
       time: m.time || "",
       dateTime: m.dateTime || "",
+      // Mot du coach : affiché dans le résumé public une fois le match terminé
+      coachNote: String(m.coachNote || "").trim().slice(0, COACH_NOTE_MAX),
       sport,
       periods: cfg.periods,
       periodSeconds: cfg.periodSeconds,
@@ -4248,14 +4582,28 @@ export default function TacticsBoard({
   };
 
   const liveRunning = isLiveMatchMode && isLiveTimerRunning && currentPeriod !== "MI-TEMPS" && currentPeriod !== "FIN";
+  // Composition publiée dans le suivi live : les titulaires à leur place sur le tableau du coach.
+  // Les positions viennent de la 1re image (la mise en place), pour ne pas suivre une animation en cours de lecture.
+  const liveLineupFrame = keyframes[0];
   const liveLineup = useMemo(() => ({
     onPitch: currentTokens
       .filter((t) => t.type === "player_a")
-      .map((t) => ({ id: t.id, n: t.number, name: t.name || "" })),
+      .map((t) => {
+        const placed = liveLineupFrame?.find((p) => p.id === t.id) || t;
+        const isGk = isGoalkeeperRole(t.role) || (activeSport !== "basketball" && activeSport !== "rugby" && t.number === 1);
+        return {
+          id: t.id,
+          n: t.number,
+          name: t.name || "",
+          x: Math.round(placed.x * 10) / 10,
+          y: Math.round(placed.y * 10) / 10,
+          ...(isGk ? { gk: true } : {}),
+        };
+      }),
     bench: substitutes
       .filter((s) => s.type !== "player_b" && s.removalReason !== "red_card")
       .map((s) => ({ id: String(s.id), n: s.number, name: s.name || "" })),
-  }), [currentTokens, substitutes]);
+  }), [currentTokens, substitutes, liveLineupFrame, activeSport]);
   const liveClock = liveRunning
     ? { elapsed: 0, runningSince: Date.now() - liveTimerSeconds * 1000 }
     : { elapsed: liveTimerSeconds, runningSince: null };
@@ -4310,7 +4658,8 @@ export default function TacticsBoard({
       }
       case "goal":
       case "card":
-      case "note": {
+      case "note":
+      case "action": {
         const patch = applyLiveOp(pseudoDoc, op, cmdId, Date.now());
         const ev = patch?.events?.[0];
         if (!ev) return;
@@ -4329,6 +4678,8 @@ export default function TacticsBoard({
             });
           }
           notifyRemote(op.color === "yellow" ? `carton jaune 🟨 ${ev.player}` : `carton rouge 🟥 ${ev.player}${op.team === "home" ? " (retirez-le du terrain)" : ""}`);
+        } else if (op.kind === "action") {
+          notifyRemote(`${ev.icon || "📝"} ${ev.player}`);
         } else {
           notifyRemote(`note 📝 ${ev.player}`);
         }
@@ -5771,6 +6122,72 @@ export default function TacticsBoard({
    * Fait entrer un joueur dans le mur de son équipe, à la place visée si elle est libre, sinon à la place libre
    * la plus proche ; mur plein : une place de plus (jusqu'à 7).
    */
+  // ---------------------------------------------------------------------------
+  // Liaisons entre joueurs (outil « Lier ») : on touche les joueurs un à un pour former une chaîne.
+  // Toucher à nouveau le dernier joueur (ou le terrain, ou « Terminer ») valide la liaison ;
+  // toucher le premier joueur ferme la forme. La liaison est ajoutée à l'image courante et aux suivantes.
+  // ---------------------------------------------------------------------------
+  const commitLink = (ids: string[]) => {
+    setLinkDraft([]);
+    if (ids.length < 2) return;
+    const link: Token = {
+      id: `link-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      type: "link",
+      name: "Liaison",
+      role: "Liaison",
+      x: 0,
+      y: 0,
+      color: linkColor,
+      linkStyle: linkDashed ? "dashed" : "solid",
+      linkIds: ids,
+    };
+    setKeyframes((prev) => prev.map((frame, fIdx) => {
+      if (fIdx < currentFrameIdx) return frame;
+      // Images suivantes : seulement si tous les joueurs reliés y sont encore
+      if (fIdx > currentFrameIdx && !ids.every((id) => frame.some((t) => t.id === id))) return frame;
+      return [...frame, link];
+    }));
+  };
+
+  const handleLinkTap = (tokenId: string) => {
+    const draft = linkDraft;
+    if (draft.length === 0) { setLinkDraft([tokenId]); return; }
+    // Dernier joueur touché à nouveau : la liaison est terminée
+    if (tokenId === draft[draft.length - 1]) { commitLink(draft); return; }
+    // Premier joueur touché : la forme est fermée
+    if (tokenId === draft[0] && draft.length >= 3) { commitLink([...draft, tokenId]); return; }
+    if (draft.includes(tokenId)) return;
+    setLinkDraft([...draft, tokenId]);
+  };
+
+  const handleDeleteLink = (linkId: string) => {
+    setKeyframes((prev) => prev.map((frame) => frame.filter((t) => t.id !== linkId)));
+    setSelectedLinkId(null);
+  };
+
+  // En quittant l'outil « Lier », la chaîne en cours est validée (2 joueurs ou plus)
+  useEffect(() => {
+    if (activeTool !== "link" && linkDraft.length > 0) commitLink(linkDraft);
+    if (activeTool !== "select") setSelectedLinkId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTool]);
+
+  // Clavier : Entrée valide la chaîne, Échap l'annule ; Suppr efface la liaison sélectionnée
+  useEffect(() => {
+    if (activeTool !== "link" && !selectedLinkId) return;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      if (activeTool === "link" && e.key === "Enter") { e.preventDefault(); commitLink(linkDraft); }
+      else if (activeTool === "link" && e.key === "Escape") { setLinkDraft([]); }
+      else if (selectedLinkId && (e.key === "Delete" || e.key === "Backspace")) { e.preventDefault(); handleDeleteLink(selectedLinkId); }
+      else if (selectedLinkId && e.key === "Escape") setSelectedLinkId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTool, linkDraft, selectedLinkId, linkColor, linkDashed]);
+
   const handleJoinWall = (tokenId: string, team: WallTeam, preferredSlot: number) => {
     const wall = findWall(team);
     if (!wall) return;
@@ -7249,7 +7666,35 @@ export default function TacticsBoard({
       exportTokens = currentTokens;
     }
 
+    // Liaisons entre joueurs : tracées sous les pions, entre les joueurs visibles
+    {
+      const opponentsShown = schemaOverride && !Array.isArray(schemaOverride)
+        ? schemaOverride.showOpponents !== false
+        : schemaOverride ? true : showOpponents;
+      exportTokens.forEach((link: Token) => {
+        if (link.type !== "link" || !link.linkIds) return;
+        const pts = link.linkIds
+          .map((id) => exportTokens.find((t: Token) => t.id === id))
+          .filter((t: Token | undefined): t is Token => !!t && !(t.type === "player_b" && !opponentsShown) && !isInWall(t, exportTokens))
+          .map((t: Token) => ({ x: pitchX + (t.x / 100) * pitchW, y: pitchY + (t.y / 100) * pitchH }));
+        if (pts.length < 2) return;
+        ctx.save();
+        ctx.strokeStyle = link.color || LINK_COLORS[0];
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.setLineDash(link.linkStyle === "dashed" ? [12, 9] : []);
+        ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
+        ctx.shadowBlur = 3;
+        ctx.beginPath();
+        pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
     exportTokens.forEach((token: any) => {
+      if (token.type === "link") return;
       if (token.type === "ball" && !showBall && !schemaOverride) return;
       // Schéma enregistré : on suit l'état des adversaires au moment de l'enregistrement
       // (les anciens schémas, sans cette information, les affichent comme avant)
@@ -11318,6 +11763,17 @@ export default function TacticsBoard({
                   </svg>
                 )}
               </button>
+              {/* Lier des joueurs : lignes qui suivent les joueurs reliés */}
+              <button
+                type="button"
+                onClick={() => { setActiveTool(activeTool === "link" ? "select" : "link"); setSelectedStrokeIndex(null); }}
+                className={topToolBtnClass(activeTool === "link")}
+                title="Lier des joueurs : touchez les joueurs un à un pour les relier par une ligne qui les suit"
+                aria-label="Lier des joueurs"
+                aria-pressed={activeTool === "link"}
+              >
+                <PlayerLinkIcon className="h-[18px] w-[18px] shrink-0" />
+              </button>
               <button
                 type="button"
                 onClick={() => { setActiveTool("arrow"); setDrawingTool("arrow-direct"); setSelectedStrokeIndex(null); }}
@@ -11948,6 +12404,25 @@ export default function TacticsBoard({
                         )}
                       </button>
 
+                      {/* Lier des joueurs */}
+                      <button
+                        type="button"
+                        onClick={() => { setActiveTool(activeTool === "link" ? "select" : "link"); setSelectedStrokeIndex(null); }}
+                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "link"
+                          ? isModernSleek
+                            ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                            : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : isModernSleek
+                            ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title="Lier des joueurs : touchez les joueurs un à un pour les relier par une ligne qui les suit"
+                        aria-label="Lier des joueurs"
+                        aria-pressed={activeTool === "link"}
+                      >
+                        <PlayerLinkIcon className="h-4 w-4 shrink-0" />
+                      </button>
+
                       {/* Flèche */}
                       <button
                         type="button"
@@ -12289,8 +12764,24 @@ export default function TacticsBoard({
                         />
 
                         {/* DRAGGABLE TOKENS */}
-                        <div className="absolute inset-0 z-20 pointer-events-none">
+                        <div ref={tokensLayerRef} className="absolute inset-0 z-20 pointer-events-none">
+                          {/* Liaisons entre joueurs (sous les pions) */}
+                          <PlayerLinksOverlay
+                            links={currentTokens.filter((t) => t.type === "link")}
+                            draft={activeTool === "link" ? linkDraft : []}
+                            draftColor={linkColor}
+                            draftDashed={linkDashed}
+                            layerRef={tokensLayerRef}
+                            selectedLinkId={selectedLinkId}
+                            selectable={activeTool === "select"}
+                            onSelect={setSelectedLinkId}
+                            onDelete={handleDeleteLink}
+                            followMs={(isPlaying ? playbackSpeed : 350) + 150}
+                          />
                           {currentTokens.map((token) => {
+
+                            // Liaison : tracée par le calque des liaisons
+                            if (token.type === "link") return null;
 
                             // Handle visibility toggles
                             if (token.type === "ball" && !showBall) return null;
@@ -12390,7 +12881,10 @@ export default function TacticsBoard({
                             const isHeadMode = isPlayer && playerRepresentation === "head";
 
                             // Transition style for smooth animation of player movement
-                            const isCurrentlyDragging = selectedTokenId === token.id;
+                            // Ballon porté par le joueur en cours de glisser : il le suit sans retard
+                            const isCurrentlyDragging = selectedTokenId === token.id
+                              || (token.type === "ball" && !!token.ballCarrierId && selectedTokenId === token.ballCarrierId);
+                            const isMagnetTarget = ballMagnetTargetId === token.id;
                             const transitionStyle = isCurrentlyDragging
                               ? "none"
                               : `left ${isPlaying ? playbackSpeed * 0.95 : 350}ms ease-in-out, top ${isPlaying ? playbackSpeed * 0.95 : 350}ms ease-in-out`;
@@ -12408,6 +12902,11 @@ export default function TacticsBoard({
                                 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  // Outil « Lier » : le joueur touché rejoint la chaîne en cours
+                                  if (activeTool === "link") {
+                                    if (token.type.startsWith("player")) handleLinkTap(token.id);
+                                    return;
+                                  }
                                   // Lors du déplacement d'un joueur sur le terrain, ne pas ouvrir la fenêtre de remplacement
                                   if (isDraggingTokenRef.current || Date.now() - dragEndTimeRef.current < 250) {
                                     return;
@@ -12487,7 +12986,31 @@ export default function TacticsBoard({
                                         ? "w-9 h-10 sm:w-10 sm:h-11 flex items-center justify-center relative drop-shadow-xl"
                                         : "w-9 h-9 sm:w-10 sm:h-10 text-xs rounded-full border-2 shadow-xl " + tokenBg
                                       } flex items-center justify-center font-black transition-all relative`}
+                                    data-link-anchor={token.id}
                                   >
+                                    {/* Outil « Lier » : joueur déjà dans la chaîne en cours (numéro d'ordre) */}
+                                    {activeTool === "link" && linkDraft.includes(token.id) && (
+                                      <span
+                                        aria-hidden
+                                        className="pointer-events-none absolute -inset-2 rounded-full border-2"
+                                        style={{ borderColor: linkColor, boxShadow: `0 0 12px ${linkColor}` }}
+                                      >
+                                        <span
+                                          className="absolute -top-2 -left-2 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center text-slate-900"
+                                          style={{ background: linkColor }}
+                                        >
+                                          {linkDraft.indexOf(token.id) + 1}
+                                        </span>
+                                      </span>
+                                    )}
+                                    {/* Aimant du ballon : ce joueur recevra le ballon au lâcher */}
+                                    {isMagnetTarget && (
+                                      <span
+                                        aria-hidden
+                                        data-testid="ball-magnet-target"
+                                        className="pointer-events-none absolute -inset-2 rounded-full border-2 border-amber-300 bg-amber-300/15 shadow-[0_0_14px_rgba(252,211,77,0.8)] animate-pulse"
+                                      />
+                                    )}
                                     {isJerseyMode ? (
                                       /* 1. BUSTE (Maillot athlétique avec numéro sur la poitrine) */
                                       <svg viewBox="0 0 44 48" className="w-full h-full overflow-visible" fill="none">
@@ -14234,6 +14757,20 @@ export default function TacticsBoard({
                                   <label className={labelCls}>Score final <span className={`normal-case tracking-normal font-semibold ${pth.faint}`}>(si le match est terminé)</span></label>
                                   <input type="text" value={m.score || ""} onChange={(e) => updateMatchById(m.id, "score", e.target.value)} placeholder="ex : 2 - 1" className={fieldCls} />
                                 </div>
+                                <div className="sm:col-span-2">
+                                  <label htmlFor={`coach-note-${m.id}`} className={labelCls}>
+                                    Le mot du coach <span className={`normal-case tracking-normal font-semibold ${pth.faint}`}>(résumé public du live, {(m.coachNote || "").length}/{COACH_NOTE_MAX})</span>
+                                  </label>
+                                  <textarea
+                                    id={`coach-note-${m.id}`}
+                                    value={m.coachNote || ""}
+                                    onChange={(e) => updateMatchById(m.id, "coachNote", e.target.value.slice(0, COACH_NOTE_MAX))}
+                                    rows={3}
+                                    maxLength={COACH_NOTE_MAX}
+                                    placeholder="Ce que vous voulez dire aux joueurs et aux parents après le match"
+                                    className={`${fieldCls} h-auto py-2 leading-relaxed resize-y`}
+                                  />
+                                </div>
                               </div>
                               <div className="flex justify-end mt-4">
                                 <button
@@ -14384,6 +14921,35 @@ export default function TacticsBoard({
                       </div>
                     ))}
                 </div>
+              </div>
+            )}
+
+            {/* Mot du coach : publié dans le résumé public du live */}
+            {isExportingModalScreen ? (
+              activeMatch.coachNote?.trim() ? (
+                <div className={`mb-4 p-3 rounded-xl border text-xs leading-relaxed whitespace-pre-line ${isModernSleek ? "bg-slate-50 border-slate-200 text-slate-700" : "bg-[#080d14] border-[#1f293d] text-slate-300"}`}>
+                  <span className={`block text-[10px] font-black uppercase tracking-wider mb-1 ${isModernSleek ? "text-slate-500" : "text-[#00E599]"}`}>Le mot du coach</span>
+                  {activeMatch.coachNote}
+                </div>
+              ) : null
+            ) : (
+              <div className="mb-4">
+                <label htmlFor="coach-note-finished" className={`flex items-baseline justify-between gap-2 text-[10px] font-black uppercase tracking-wider mb-1.5 ${isModernSleek ? "text-slate-500" : "text-[#00E599]"}`}>
+                  <span>Le mot du coach <span className="normal-case tracking-normal font-semibold opacity-70">(facultatif)</span></span>
+                  <span className="normal-case tracking-normal font-semibold opacity-70 tabular-nums">{(activeMatch.coachNote || "").length}/{COACH_NOTE_MAX}</span>
+                </label>
+                <textarea
+                  id="coach-note-finished"
+                  value={activeMatch.coachNote || ""}
+                  onChange={(e) => updateMatchById(activeMatchId, "coachNote", e.target.value.slice(0, COACH_NOTE_MAX))}
+                  rows={3}
+                  maxLength={COACH_NOTE_MAX}
+                  placeholder="Ex : Belle réaction après la pause, fiers de l'état d'esprit du groupe. Prochain objectif : la coupe samedi."
+                  className={`w-full rounded-xl border px-3 py-2 text-xs leading-relaxed resize-y outline-none transition ${isModernSleek ? "bg-white border-slate-300 text-slate-900 focus:border-emerald-500" : "bg-[#080d14] border-[#1f293d] text-white placeholder:text-slate-500 focus:border-[#00E599]"}`}
+                />
+                <p className={`mt-1 text-[10.5px] ${isModernSleek ? "text-slate-500" : "text-slate-400"}`}>
+                  {activeMatch.livePublicId ? "Publié automatiquement dans le résumé du match (lien et QR du live)." : "Affiché dans le résumé public si le match est partagé en live."}
+                </p>
               </div>
             )}
 
@@ -15285,6 +15851,69 @@ export default function TacticsBoard({
       {/* ========================================================= */}
       {/* 9. SINGLE TOKEN QUICK EDIT & SUBSTITUTION (NOW INLINE BELOW PITCH) */}
       {/* ========================================================= */}
+
+      {/* Outil « Lier des joueurs » : consigne, couleur, style du trait, valider / annuler */}
+      {activeTool === "link" && (
+        <div
+          role="toolbar"
+          aria-label="Lier des joueurs"
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] w-[min(92vw,460px)] rounded-2xl border shadow-2xl px-3 py-2.5 flex flex-col gap-2 ${isModernSleek ? "bg-white border-slate-200 text-slate-900" : "bg-[#0b1018]/95 border-[#1e293b] text-white"}`}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <p className={`text-[11px] leading-snug font-semibold ${isModernSleek ? "text-slate-600" : "text-slate-300"}`}>
+            {linkDraft.length === 0
+              ? "Touchez les joueurs à relier, un par un."
+              : linkDraft.length === 1
+                ? "Touchez le joueur suivant."
+                : `${linkDraft.length} joueurs reliés. Touchez le dernier à nouveau (ou le terrain) pour terminer${linkDraft.length >= 3 ? ", le premier pour fermer la forme" : ""}.`}
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1" role="radiogroup" aria-label="Couleur de la liaison">
+              {LINK_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  role="radio"
+                  aria-checked={linkColor === c}
+                  aria-label={`Couleur ${c}`}
+                  onClick={() => setLinkColor(c)}
+                  className={`w-6 h-6 rounded-full border-2 cursor-pointer transition ${linkColor === c ? "scale-110 border-slate-900 ring-2 ring-offset-1 ring-emerald-400" : "border-black/20"}`}
+                  style={{ background: c }}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setLinkDashed((v) => !v)}
+              aria-pressed={linkDashed}
+              title={linkDashed ? "Trait pointillé" : "Trait plein"}
+              className={`h-7 px-2 rounded-lg border text-[11px] font-black flex items-center gap-1.5 cursor-pointer ${isModernSleek ? "bg-slate-100 border-slate-300" : "bg-[#0c1017] border-[#1e293b]"}`}
+            >
+              <svg className="w-5 h-3" viewBox="0 0 20 6" aria-hidden>
+                <line x1="1" y1="3" x2="19" y2="3" stroke={linkColor} strokeWidth="2.5" strokeLinecap="round" strokeDasharray={linkDashed ? "4 3" : undefined} />
+              </svg>
+              {linkDashed ? "Pointillé" : "Plein"}
+            </button>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={() => setLinkDraft([])}
+              disabled={linkDraft.length === 0}
+              className={`h-7 px-2.5 rounded-lg border text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-default ${isModernSleek ? "bg-slate-100 border-slate-300" : "bg-[#0c1017] border-[#1e293b]"}`}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={() => { if (linkDraft.length >= 2) commitLink(linkDraft); else setActiveTool("select"); }}
+              className="h-7 px-2.5 rounded-lg border border-emerald-500 bg-emerald-500 text-slate-950 text-[11px] font-black cursor-pointer"
+            >
+              {linkDraft.length >= 2 ? "Terminer" : "Fermer"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Réglage du mur sur coup franc : bouton « Mur » de la barre d'outils, ou appui sur le mur */}
       {wallPopover && isFootballBoard && (() => {

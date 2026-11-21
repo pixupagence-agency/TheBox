@@ -1,8 +1,8 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pause, Play, Undo2, StickyNote, ArrowLeftRight, WifiOff, X, Share2, ChevronRight } from "lucide-react";
+import { Pause, Play, Undo2, StickyNote, ArrowLeftRight, WifiOff, X, Share2, ChevronRight, Crosshair, CircleSlash } from "lucide-react";
 import { useLiveClub, useLiveMatch, useNow } from "./liveHooks";
-import { EventRow, LiveScreen, Message, Spinner, TeamCrest } from "./ui";
+import { EventRow, LiveScreen, Message, SegmentTabs, Spinner, TeamCrest } from "./ui";
 import {
   clockSeconds,
   formatClock,
@@ -12,6 +12,12 @@ import {
   periodLabel,
   FINISHED_PERIOD,
   HALFTIME_PERIOD,
+  GOAL_OWN,
+  GOAL_PENALTY,
+  gameActionInfo,
+  hasPenaltyGoals,
+  penaltyName,
+  type LiveGameAction,
   type LiveOp,
   type LivePlayer,
   type LiveTeam,
@@ -21,8 +27,11 @@ import { getSportScoreActions, type SportScoreAction } from "@/lib/sportScoring"
 type Creds = { token?: string; code?: string };
 type Queued = { cmdId: string; op: LiveOp };
 type Sheet =
-  | { mode: "score"; team: LiveTeam; action: SportScoreAction }
+  /** Choix du buteur ; `penalty` : but sur penalty (ou jet de 7 m), sans passe décisive */
+  | { mode: "score"; team: LiveTeam; action: SportScoreAction; penalty?: boolean }
   | { mode: "assist"; team: LiveTeam; action: SportScoreAction; scorer: LivePlayer }
+  /** Occasion ou penalty manqué : joueur facultatif */
+  | { mode: "action"; team: LiveTeam; action: LiveGameAction }
   | { mode: "card"; team: LiveTeam; color: "yellow" | "red" }
   | { mode: "sub-out" }
   | { mode: "sub-in"; out: LivePlayer }
@@ -62,6 +71,8 @@ export default function LiveRemote({ id }: { id: string }) {
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [noteText, setNoteText] = useState("");
   const [toast, setToast] = useState<Toast | null>(null);
+  /** Texte proposé à la publication (feuille « Publier sur les réseaux ») */
+  const [shareText, setShareText] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushing = useRef(false);
 
@@ -195,7 +206,7 @@ export default function LiveRemote({ id }: { id: string }) {
     writeJson(queueKey(id), next);
     setQueue(next);
     if ("vibrate" in navigator) navigator.vibrate?.(30);
-    const undoable = op.kind === "goal" || op.kind === "card" || op.kind === "sub" || op.kind === "note";
+    const undoable = op.kind === "goal" || op.kind === "card" || op.kind === "sub" || op.kind === "note" || op.kind === "action";
     if (toastText) showToast({ text: toastText, undoId: undoable ? `r_${cmdId}` : undefined, caption });
     setSheet(null);
     flush();
@@ -272,21 +283,40 @@ export default function LiveRemote({ id }: { id: string }) {
     send({ kind: "next" }, `Début : ${periodLabel(next, match.sport)}`);
   };
 
-  const recordGoal = (t: LiveTeam, action: SportScoreAction, scorer?: LivePlayer, assister?: LivePlayer) => {
+  const sport = match.sport || "football";
+  const withPenalty = hasPenaltyGoals(sport);
+  const penaltyLabel = penaltyName(sport);
+
+  /** variant : but normal, sur penalty (jet de 7 m) ou contre son camp */
+  const recordGoal = (t: LiveTeam, action: SportScoreAction, scorer?: LivePlayer, assister?: LivePlayer, variant?: "penalty" | "own_goal") => {
     const home = match.score.home + (t === "home" ? action.points : 0);
     const away = match.score.away + (t === "away" ? action.points : 0);
-    const who = scorer ? (t === "home" ? scorer.name : scorer.name) : t === "home" ? match.home : match.away;
+    const who = scorer ? scorer.name : t === "home" ? match.home : match.away;
     const minute = `${Math.floor(secs / 60)}'`;
+    const label = variant === "penalty" ? `${action.label} sur ${penaltyLabel.toLowerCase()}` : variant === "own_goal" ? "But contre son camp" : action.label;
     send(
-      { kind: "goal", team: t, scorer, assister, points: action.points, label: action.label, icon: action.icon, subType: action.id },
-      `${action.icon} ${action.label} enregistré · ${minute}`,
-      t === "home" ? caption(`${action.label.toUpperCase()} ! ${who} (${minute})`, home, away) : undefined
+      { kind: "goal", team: t, scorer, assister, points: action.points, label, icon: action.icon, subType: variant === "penalty" ? GOAL_PENALTY : variant === "own_goal" ? GOAL_OWN : action.id },
+      `${action.icon} ${label} enregistré · ${minute}`,
+      t === "home"
+        ? caption(variant === "own_goal" ? `BUT ! Contre son camp adverse (${minute})` : `${label.toUpperCase()} ! ${who} (${minute})`, home, away)
+        : undefined
     );
+  };
+
+  /** But contre son camp : marqué par l'équipe d'en face dans son propre but */
+  const recordOwnGoal = (t: LiveTeam, action: SportScoreAction) =>
+    recordGoal(t, action, { id: "csc", name: t === "home" ? "CSC adverse" : "CSC" }, undefined, "own_goal");
+
+  const recordGameAction = (t: LiveTeam, action: LiveGameAction, player?: LivePlayer) => {
+    const info = gameActionInfo(action, sport);
+    send({ kind: "action", action, team: t, player }, `${info.icon} ${info.label} · ${Math.floor(secs / 60)}'`);
   };
 
   const pickPlayer = (p: LivePlayer) => {
     if (!sheet) return;
+    if (sheet.mode === "action") return recordGameAction(sheet.team, sheet.action, p);
     if (sheet.mode === "score") {
+      if (sheet.penalty) return recordGoal(sheet.team, sheet.action, p, undefined, "penalty");
       if (sheet.team === "home" && sheet.action.requiresAssisterModal) {
         setSheet({ mode: "assist", team: sheet.team, action: sheet.action, scorer: p });
         return;
@@ -320,7 +350,14 @@ export default function LiveRemote({ id }: { id: string }) {
   const sheetTitle = () => {
     if (!sheet) return "";
     switch (sheet.mode) {
-      case "score": return sheet.team === "home" ? `${sheet.action.label} · qui a marqué ?` : `${sheet.action.label} adverse · numéro ?`;
+      case "score": {
+        const what = sheet.penalty ? `${sheet.action.label} sur ${penaltyLabel.toLowerCase()}` : sheet.action.label;
+        return sheet.team === "home" ? `${what} · qui a marqué ?` : `${what} adverse · numéro ?`;
+      }
+      case "action": {
+        const info = gameActionInfo(sheet.action, sport);
+        return sheet.team === "home" ? `${info.label} · quel joueur ?` : `${info.label} adverse · numéro ?`;
+      }
       case "assist": return "Passe décisive ?";
       case "card": return sheet.color === "yellow" ? "Carton jaune · quel joueur ?" : "Carton rouge · quel joueur ?";
       case "sub-out": return "Qui sort ?";
@@ -339,152 +376,176 @@ export default function LiveRemote({ id }: { id: string }) {
     return players.length ? players : AWAY_NUMBERS.map((n) => ({ id: `n${n}`, n, name: `N° ${n}` }));
   };
 
-  const actionBtn = "h-[74px] rounded-2xl border flex flex-col items-center justify-center gap-1 text-[13px] font-black transition active:scale-[0.97] disabled:opacity-35";
+  // ---------- Rendu (maquette « Télécommande — saisie live (adjoint) ») ----------
+  const actionBtn = "h-[76px] rounded-2xl flex flex-col items-center justify-center gap-[5px] text-[13px] font-semibold transition active:scale-[0.97] disabled:opacity-35";
+  const neutralBtn = `${actionBtn} border border-[#2A3644] bg-[#131A22] text-[#E6EDF3]`;
+  const clockColor = running ? "text-[#E6EDF3]" : notStarted ? "text-[#8B98A8]" : "text-[#FDBA74]";
+  const sheetSub = sheet && "team" in sheet ? `${sheet.team === "home" ? "Mon équipe" : "Adversaire"} · ${Math.floor(secs / 60)}'` : `${Math.floor(secs / 60)}'`;
 
   return (
     <LiveScreen>
-      {/* En-tête */}
-      <header className="pt-4 pb-3 flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500 text-white px-2.5 py-1 text-[11px] font-black">
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
-        </span>
-        <span className="text-[12px] font-bold text-slate-400">Éditeur</span>
-        <span className={`ml-auto inline-flex items-center gap-1.5 text-[11.5px] font-bold ${coachOnline ? "text-[#00E599]" : "text-slate-500"}`}>
-          <span className={`w-2 h-2 rounded-full ${coachOnline ? "bg-[#00E599]" : "bg-slate-600"}`} />
-          {coachOnline ? "Coach connecté" : "Tableau du coach fermé"}
-        </span>
-      </header>
+      <div className="flex flex-col gap-3 pt-4">
+        {/* En-tête de session */}
+        <header className="flex items-center justify-between gap-2 min-h-9">
+          <span className="text-[12px] text-[#8B98A8]">Télécommande · <strong className="text-[#E6EDF3] font-semibold">Éditeur</strong></span>
+          <span className={`inline-flex items-center gap-1.5 text-[12px] ${coachOnline ? "text-[#8B98A8]" : "text-[#FDBA74]"}`}>
+            <span className={`w-2 h-2 rounded-full ${coachOnline ? "bg-[#00E599]" : "bg-[#FDBA74]"}`} />
+            {coachOnline ? "Coach connecté" : "Tableau du coach fermé"}
+          </span>
+        </header>
 
-      {(!online || queue.length > 0) && (
-        <div className="mb-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[12px] font-semibold text-amber-200 flex items-center gap-2">
-          <WifiOff className="w-4 h-4 shrink-0" />
-          {online ? `Envoi en cours… ${queue.length} action(s)` : `Réseau perdu — ${queue.length} action(s) en attente, elles partiront dès le retour du réseau.`}
-        </div>
-      )}
-
-      {/* Tableau de score */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0B1118] p-3.5">
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <span className="text-[12px] font-black text-slate-300 uppercase">{periodLabel(match.period, match.sport)}</span>
-          {!finished && !notStarted && (
-            <button type="button" onClick={nextPeriod} className="h-8 px-3 rounded-full bg-white/[0.06] border border-white/10 text-[11.5px] font-black inline-flex items-center gap-1">
-              {nextPeriodActionLabel(match)}<ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0 text-center">
-            <p className="text-[10.5px] font-black text-[#00E599]">MON ÉQUIPE</p>
-            <p className="text-[12px] font-bold truncate text-slate-300">{match.home}</p>
-            <p className="text-[40px] leading-none font-black font-mono">{match.score.home}</p>
+        {(!online || queue.length > 0) && (
+          <div role="status" className="-mt-1 px-3 py-2 rounded-[10px] bg-[#2B1A08] text-[#FDBA74] text-[12px] leading-snug flex items-center gap-2">
+            <WifiOff className="w-4 h-4 shrink-0" />
+            {online ? `Envoi en cours… ${queue.length} action(s)` : `Réseau perdu — ${queue.length} action(s) en attente, elles partiront dès le retour du réseau.`}
           </div>
-          <div className="shrink-0 flex flex-col items-center gap-2">
-            <p className={`font-mono text-[22px] font-black ${running ? "text-white" : "text-slate-400"}`}>{formatClock(secs)}</p>
+        )}
+
+        {/* Tableau de score + chrono */}
+        <section aria-label="Score et chrono" className="bg-[#131A22] border border-[#1F2A36] rounded-[20px] px-4 pt-3.5 pb-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#8B98A8]">{notStarted ? "Avant-match" : periodLabel(match.period, match.sport)}</span>
             {!finished && !notStarted && (
-              <button
-                type="button"
-                onClick={startOrPause}
-                aria-label={running ? "Pause" : "Reprendre"}
-                className={`w-14 h-14 rounded-full flex items-center justify-center ${running ? "bg-white/10 text-white" : "bg-[#00E599] text-slate-950"}`}
-              >
-                {running ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+              <button type="button" onClick={nextPeriod} className="min-h-8 px-2.5 rounded-lg border border-[#2A3644] text-[#C9D3DE] text-[12px] font-semibold inline-flex items-center gap-1">
+                {nextPeriodActionLabel(match)}<ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
-          <div className="flex-1 min-w-0 text-center">
-            <p className="text-[10.5px] font-black text-rose-300">ADVERSAIRE</p>
-            <p className="text-[12px] font-bold truncate text-slate-300">{match.away}</p>
-            <p className="text-[40px] leading-none font-black font-mono">{match.score.away}</p>
-          </div>
-        </div>
-      </div>
-
-      {finished ? (
-        <Message title="Match terminé" text="La télécommande est fermée. Le résumé est disponible sur la page publique du match.">
-          <a href={`/live/${id}`} className="mt-3 h-11 px-5 rounded-xl bg-[#00E599] text-slate-950 font-black text-[14px] inline-flex items-center">Voir le résumé</a>
-        </Message>
-      ) : notStarted ? (
-        <div className="mt-5 rounded-2xl border border-[#00E599]/30 bg-[#00E599]/[0.06] p-5 text-center">
-          <button type="button" onClick={startOrPause} className="w-full h-16 rounded-2xl bg-[#00E599] text-slate-950 text-[18px] font-black inline-flex items-center justify-center gap-2">
-            <Play className="w-6 h-6" />Coup d’envoi
-          </button>
-          <p className="mt-2.5 text-[12px] text-slate-400">Le chrono démarre quand l’arbitre siffle, pas à l’horaire prévu.</p>
-        </div>
-      ) : (
-        <>
-          {/* Équipe concernée */}
-          <div className="mt-4 grid grid-cols-2 gap-1 p-1 rounded-xl bg-white/[0.05]">
-            {(["home", "away"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTeam(t)}
-                className={`h-10 rounded-lg text-[13px] font-black transition ${team === t ? (t === "home" ? "bg-[#00E599] text-slate-950" : "bg-rose-500 text-white") : "text-slate-300"}`}
-              >
-                {t === "home" ? "Mon équipe" : "Adversaire"}
-              </button>
-            ))}
-          </div>
-
-          {/* Actions */}
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {scoreActions.map((a) => (
-              <button key={a.id} type="button" onClick={() => setSheet({ mode: "score", team, action: a })} className={`${actionBtn} bg-[#00E599]/10 border-[#00E599]/30 text-[#00E599]`}>
-                <span className="text-[22px] leading-none">{a.icon}</span>{a.points > 1 ? `+${a.points}` : a.label}
-              </button>
-            ))}
-            <button type="button" onClick={() => setSheet({ mode: "card", team, color: "yellow" })} className={`${actionBtn} bg-yellow-400/10 border-yellow-400/30 text-yellow-300`}>
-              <span className="w-4 h-5 rounded-[3px] bg-yellow-400" />Jaune
-            </button>
-            <button type="button" onClick={() => setSheet({ mode: "card", team, color: "red" })} className={`${actionBtn} bg-rose-500/10 border-rose-500/30 text-rose-300`}>
-              <span className="w-4 h-5 rounded-[3px] bg-rose-500" />Rouge
-            </button>
-            <button
-              type="button"
-              disabled={team === "away" || !lineup.onPitch.length || !lineup.bench.length}
-              onClick={() => setSheet({ mode: "sub-out" })}
-              className={`${actionBtn} bg-sky-400/10 border-sky-400/30 text-sky-300`}
-            >
-              <ArrowLeftRight className="w-5 h-5" />Remplacer
-            </button>
-            <button type="button" onClick={() => { setNoteText(""); setSheet({ mode: "note", team }); }} className={`${actionBtn} bg-white/[0.04] border-white/10 text-slate-200`}>
-              <StickyNote className="w-5 h-5" />Note
-            </button>
-            <button type="button" disabled={!events.length} onClick={undoLast} className={`${actionBtn} bg-white/[0.04] border-white/10 text-slate-300`}>
-              <Undo2 className="w-5 h-5" />Annuler
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* Fil des événements */}
-      <div className="mt-5">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-[12px] font-black text-slate-400 uppercase tracking-wider">Événements</p>
-          <span className="text-[11px] font-black text-slate-500">{events.length}</span>
-        </div>
-        {events.length === 0 ? (
-          <p className="text-[12.5px] text-slate-500 py-4 text-center">Aucun événement pour l’instant.</p>
-        ) : (
-          <div className="rounded-xl border border-white/[0.08] bg-[#0B1118] px-3">
-            {events.slice(0, 8).map((ev) => <EventRow key={ev.id} ev={ev} match={match} compact />)}
-          </div>
-        )}
-      </div>
-
-      {/* Sélection du joueur / note */}
-      {sheet && (
-        <div className="fixed inset-0 z-40 bg-black/60 flex items-end justify-center" onClick={() => setSheet(null)}>
-          <div className="w-full max-w-[460px] max-h-[78dvh] overflow-y-auto rounded-t-3xl bg-[#0E1620] border-t border-white/10 p-4 pb-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[15px] font-black">{sheetTitle()}</p>
-              <button type="button" onClick={() => setSheet(null)} aria-label="Fermer" className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center"><X className="w-4 h-4" /></button>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+            <div className="flex flex-col items-center gap-0.5 min-w-0">
+              <span className="text-[11px] font-semibold tracking-[0.04em] text-[#8B98A8]">MON ÉQUIPE</span>
+              <span className="w-full text-center text-[12px] text-[#C9D3DE] truncate">{match.home}</span>
+              <span className="tb-num text-[52px] font-bold leading-none">{match.score.home}</span>
             </div>
-            {sheet.mode === "note" ? (
-              <div className="space-y-3">
+            <div className="flex flex-col items-center gap-2">
+              <span className={`tb-num text-[30px] font-semibold ${clockColor}`}>{formatClock(secs)}</span>
+              {!finished && !notStarted && (
+                <button
+                  type="button"
+                  onClick={startOrPause}
+                  aria-label={running ? "Mettre le chrono en pause" : "Lancer le chrono"}
+                  className={`w-14 h-14 rounded-full flex items-center justify-center ${running ? "bg-[#E6EDF3] text-[#0A0E13]" : "bg-[#00E599] text-[#04120C]"}`}
+                >
+                  {running ? <Pause className="w-[22px] h-[22px]" fill="currentColor" /> : <Play className="w-[22px] h-[22px] ml-0.5" fill="currentColor" />}
+                </button>
+              )}
+            </div>
+            <div className="flex flex-col items-center gap-0.5 min-w-0">
+              <span className="text-[11px] font-semibold tracking-[0.04em] text-[#8B98A8]">ADVERSAIRE</span>
+              <span className="w-full text-center text-[12px] text-[#C9D3DE] truncate">{match.away}</span>
+              <span className="tb-num text-[52px] font-bold leading-none">{match.score.away}</span>
+            </div>
+          </div>
+          {notStarted && (
+            <div className="flex flex-col gap-1.5">
+              <button type="button" onClick={startOrPause} className="min-h-14 rounded-[14px] bg-[#00E599] text-[#04120C] text-[17px] font-bold inline-flex items-center justify-center gap-2.5">
+                <Play className="w-5 h-5" fill="currentColor" />Coup d’envoi
+              </button>
+              <span className="text-[12px] text-[#8B98A8] text-center">Le chrono démarre quand l’arbitre siffle, pas à l’horaire prévu.</span>
+            </div>
+          )}
+        </section>
+
+        {finished ? (
+          <Message title="Match terminé" text="La télécommande est fermée. Le résumé est disponible sur la page publique du match.">
+            <a href={`/live/${id}`} className="mt-3 min-h-11 px-5 rounded-xl bg-[#00E599] text-[#04120C] font-bold text-[14px] inline-flex items-center">Voir le résumé</a>
+          </Message>
+        ) : !notStarted && (
+          <>
+            {/* Équipe concernée */}
+            <SegmentTabs label="Équipe concernée" value={team} onChange={setTeam} tabs={[["home", "Mon équipe"], ["away", "Adversaire"]]} />
+
+            {/* Actions */}
+            <div className="grid grid-cols-4 gap-2">
+              {scoreActions.map((a) => (
+                <button key={a.id} type="button" onClick={() => setSheet({ mode: "score", team, action: a })} className={`${actionBtn} bg-[#00E599] text-[#04120C] font-bold`}>
+                  <span className="text-[22px] leading-none" aria-hidden>{a.icon}</span>{a.points > 1 ? `+${a.points}` : a.label}
+                </button>
+              ))}
+              <button type="button" onClick={() => setSheet({ mode: "action", team, action: "chance" })} className={`${actionBtn} border border-[#5A3A12] bg-[#22180C] text-[#FDBA74]`}>
+                <Crosshair className="w-6 h-6" />Occasion
+              </button>
+              {withPenalty && (
+                <button type="button" onClick={() => setSheet({ mode: "action", team, action: "missed_penalty" })} className={`${neutralBtn} text-[12px] leading-tight text-center px-1`}>
+                  <CircleSlash className="w-6 h-6 text-[#F87171]" />{penaltyLabel} manqué
+                </button>
+              )}
+              <button type="button" onClick={() => setSheet({ mode: "card", team, color: "yellow" })} className={neutralBtn}>
+                <span className="w-[10px] h-[17px] rounded-[2px] bg-[#FACC15]" aria-hidden />Jaune
+              </button>
+              <button type="button" onClick={() => setSheet({ mode: "card", team, color: "red" })} className={neutralBtn}>
+                <span className="w-[10px] h-[17px] rounded-[2px] bg-[#EF4444]" aria-hidden />Rouge
+              </button>
+              <button type="button" disabled={team === "away" || !lineup.onPitch.length || !lineup.bench.length} onClick={() => setSheet({ mode: "sub-out" })} className={neutralBtn}>
+                <ArrowLeftRight className="w-6 h-6 text-[#60A5FA]" />Remplacer
+              </button>
+              <button type="button" onClick={() => { setNoteText(""); setSheet({ mode: "note", team }); }} className={neutralBtn}>
+                <StickyNote className="w-6 h-6 text-[#C4B5FD]" />Note
+              </button>
+              <button type="button" disabled={!events.length} onClick={undoLast} className={`${actionBtn} border border-dashed border-[#2A3644] text-[#C9D3DE]`}>
+                <Undo2 className="w-6 h-6" />Annuler
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Fil des événements */}
+        <section aria-label="Événements" className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between">
+            <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#8B98A8]">Événements</span>
+            <span className="text-[12px] text-[#8B98A8]">{events.length} événement{events.length > 1 ? "s" : ""}</span>
+          </div>
+          {events.length === 0 ? (
+            <div className="px-3.5 py-[18px] border border-dashed border-[#2A3644] rounded-xl text-[13px] text-[#8B98A8] text-center">Aucun événement pour l’instant.</div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {events.slice(0, 8).map((ev) => <EventRow key={ev.id} ev={ev} match={match} />)}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Feuille de sélection : joueur, note, partage */}
+      {(sheet || shareText) && (
+        <div className="fixed inset-0 z-40 bg-[rgba(2,5,8,0.72)] flex flex-col justify-end" onClick={() => { setSheet(null); setShareText(null); }}>
+          <div
+            role="dialog"
+            aria-label={shareText ? "Publier sur les réseaux" : sheetTitle()}
+            className="mx-auto w-full max-w-[460px] max-h-[82dvh] overflow-y-auto bg-[#131A22] border-t border-[#2A3644] rounded-t-3xl px-4 pt-2.5 pb-6 flex flex-col gap-3.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="self-center w-10 h-1 rounded-sm bg-[#2A3644]" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="tb-num text-[20px] font-semibold">{shareText ? "Publier sur les réseaux" : sheetTitle()}</span>
+                <span className="text-[13px] text-[#8B98A8]">{shareText ? "Image et texte générés automatiquement" : sheetSub}</span>
+              </div>
+              <button type="button" onClick={() => { setSheet(null); setShareText(null); }} aria-label="Fermer" className="shrink-0 w-11 h-11 rounded-xl border border-[#2A3644] text-[#C9D3DE] flex items-center justify-center">
+                <X className="w-[18px] h-[18px]" />
+              </button>
+            </div>
+
+            {shareText ? (
+              <div className="flex flex-col gap-3">
+                <div className="self-center w-[230px] h-[230px] rounded-2xl bg-[#0A0E13] border border-[#2A3644] flex flex-col items-center justify-center gap-2 p-4">
+                  <span className="px-2.5 py-1 rounded-md bg-[#00E599] text-[#04120C] text-[12px] font-bold tracking-[0.08em] uppercase">{shareText.split("\n")[0].split("!")[0].slice(0, 22) || "Live"}</span>
+                  <span className="tb-num text-[54px] font-bold leading-none">{match.score.home} – {match.score.away}</span>
+                  <span className="w-full text-center text-[11px] font-semibold text-[#8B98A8] tracking-[0.06em] uppercase truncate">{match.home} · {match.away}</span>
+                  <span className="mt-1.5 text-[10px] text-[#8B98A8] tracking-[0.08em] uppercase truncate max-w-full">{club?.name || match.clubName} · The Box</span>
+                </div>
+                <div className="bg-[#0A0E13] border border-[#1F2A36] rounded-xl p-3 text-[13px] leading-relaxed text-[#C9D3DE] whitespace-pre-line">{shareText}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setShareText(null)} className="min-h-[52px] rounded-[14px] border border-[#2A3644] text-[15px] font-semibold">Plus tard</button>
+                  <button type="button" onClick={() => { shareCaption(shareText); setShareText(null); }} className="min-h-[52px] rounded-[14px] bg-[#00E599] text-[#04120C] text-[15px] font-bold inline-flex items-center justify-center gap-2">
+                    <Share2 className="w-4 h-4" />Publier…
+                  </button>
+                </div>
+              </div>
+            ) : sheet?.mode === "note" ? (
+              <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap gap-2">
                   {NOTE_TAGS.map((tag) => (
-                    <button key={tag} type="button" onClick={() => send({ kind: "note", team: sheet.team, text: tag }, `Note · ${tag}`)} className="h-9 px-3 rounded-full bg-white/[0.06] border border-white/10 text-[12.5px] font-bold">
+                    <button key={tag} type="button" onClick={() => send({ kind: "note", team: sheet.team, text: tag }, `Note · ${tag}`)} className="min-h-12 px-4 rounded-xl border border-[#2A3644] bg-[#0A0E13] text-[14px] font-medium">
                       {tag}
                     </button>
                   ))}
@@ -493,27 +554,58 @@ export default function LiveRemote({ id }: { id: string }) {
                   onSubmit={(e) => { e.preventDefault(); if (noteText.trim()) send({ kind: "note", team: sheet.team, text: noteText.trim() }, "Note enregistrée"); }}
                   className="flex gap-2"
                 >
-                  <input value={noteText} onChange={(e) => setNoteText(e.target.value)} maxLength={200} placeholder="Votre note…" className="flex-1 h-11 rounded-xl bg-white/[0.06] border border-white/10 px-3 text-[14px] outline-none focus:border-[#00E599]" />
-                  <button type="submit" className="h-11 px-4 rounded-xl bg-[#00E599] text-slate-950 font-black text-[13px]">OK</button>
+                  <label htmlFor="remote-note" className="sr-only">Votre note</label>
+                  <input id="remote-note" value={noteText} onChange={(e) => setNoteText(e.target.value)} maxLength={200} placeholder="Votre note…" className="flex-1 min-h-12 rounded-xl bg-[#0A0E13] border border-[#2A3644] px-3 text-[14px] outline-none focus:border-[#00E599]" />
+                  <button type="submit" className="min-h-12 px-4 rounded-xl bg-[#00E599] text-[#04120C] font-bold text-[14px]">OK</button>
                 </form>
               </div>
-            ) : (
+            ) : sheet && (
               <>
+                {/* But : normal ou sur penalty, puis le buteur… ou contre son camp */}
+                {sheet.mode === "score" && withPenalty && (
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-1 p-1 rounded-[14px] bg-[#0A0E13] border border-[#1F2A36]" role="radiogroup" aria-label="Type de but">
+                      {([false, true] as const).map((pen) => (
+                        <button
+                          key={String(pen)}
+                          type="button"
+                          role="radio"
+                          aria-checked={Boolean(sheet.penalty) === pen}
+                          onClick={() => setSheet({ ...sheet, penalty: pen })}
+                          className={`min-h-11 rounded-[10px] text-[14px] font-semibold transition ${Boolean(sheet.penalty) === pen ? "bg-[#00E599] text-[#04120C]" : "text-[#8B98A8]"}`}
+                        >
+                          {pen ? penaltyLabel : "But"}
+                        </button>
+                      ))}
+                    </div>
+                    {!sheet.penalty && (
+                      <button type="button" onClick={() => recordOwnGoal(sheet.team, sheet.action)} className="min-h-12 rounded-xl border border-[#2A3644] text-[14px] font-semibold">
+                        {sheet.team === "home" ? "CSC · contre son camp de l’adversaire" : "CSC · contre notre camp"}
+                      </button>
+                    )}
+                    <span className="text-[12px] font-semibold text-[#8B98A8]">{sheet.team === "home" ? "Ou choisis le buteur :" : "Ou choisis le numéro du buteur :"}</span>
+                  </div>
+                )}
+                {sheet.mode === "action" && (
+                  <button type="button" onClick={() => recordGameAction(sheet.team, sheet.action)} className="min-h-12 rounded-xl border border-[#2A3644] text-[14px] font-semibold">
+                    Sans préciser le joueur
+                  </button>
+                )}
                 {sheet.mode === "assist" && (
-                  <button type="button" onClick={() => recordGoal(sheet.team, sheet.action, sheet.scorer)} className="w-full h-11 mb-3 rounded-xl bg-white/[0.06] border border-white/10 text-[13px] font-black">
+                  <button type="button" onClick={() => recordGoal(sheet.team, sheet.action, sheet.scorer)} className="min-h-[52px] rounded-[14px] border border-[#2A3644] text-[15px] font-semibold">
                     Sans passe décisive
                   </button>
                 )}
-                <div className={`grid gap-2 ${("team" in sheet && sheet.team === "away") || !lineup.onPitch.length ? "grid-cols-5" : "grid-cols-2"}`}>
+                <div className="grid grid-cols-4 gap-2">
                   {sheetPlayers().map((p) => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => pickPlayer(p)}
-                      className="min-h-[48px] rounded-xl bg-white/[0.05] border border-white/10 px-2.5 py-2 flex items-center gap-2 text-left active:bg-white/10"
+                      className="h-[66px] rounded-[14px] border border-[#2A3644] bg-[#0A0E13] flex flex-col items-center justify-center gap-0.5 px-1 active:bg-white/10"
                     >
-                      <span className="w-7 h-7 shrink-0 rounded-full bg-[#00E599]/15 text-[#00E599] text-[12px] font-black flex items-center justify-center">{p.n ?? "–"}</span>
-                      {p.name !== `N° ${p.n}` && <span className="text-[13px] font-bold truncate">{p.name}</span>}
+                      <span className="tb-num text-[22px] font-bold leading-none">{p.n ?? "–"}</span>
+                      <span className="max-w-full text-[11px] text-[#8B98A8] truncate">{p.name !== `N° ${p.n}` ? p.name : "Adv."}</span>
                     </button>
                   ))}
                 </div>
@@ -523,35 +615,22 @@ export default function LiveRemote({ id }: { id: string }) {
         </div>
       )}
 
-      {/* Confirmation + annulation + suggestion de publication */}
-      {toast && (
-        <div className="fixed left-0 right-0 bottom-4 z-50 flex justify-center px-4">
-          <div className={`w-full max-w-[430px] rounded-2xl border shadow-2xl p-3 ${toast.error ? "bg-rose-950 border-rose-500/40" : "bg-[#121c28] border-white/10"}`}>
-            <div className="flex items-center gap-2">
-              <p className="flex-1 text-[13px] font-bold">{toast.text}</p>
-              {toast.undoId && (
-                <button type="button" onClick={() => { send({ kind: "undo", eventId: toast.undoId! }, "Action annulée"); }} className="h-8 px-3 rounded-lg bg-white/10 text-[12px] font-black">
-                  Annuler
-                </button>
-              )}
-            </div>
+      {/* Confirmation : annuler, publier */}
+      {toast && !sheet && !shareText && (
+        <div role="status" className={`fixed left-4 right-4 bottom-5 z-50 mx-auto max-w-[430px] flex items-center justify-between gap-3 py-3 pr-3 pl-4 rounded-[14px] shadow-[0_10px_30px_rgba(0,0,0,0.45)] ${toast.error ? "bg-rose-950 text-white border border-rose-500/40" : "bg-[#E6EDF3] text-[#0A0E13]"}`}>
+          <span className="text-[14px] font-semibold min-w-0">{toast.text}</span>
+          <div className="flex gap-1.5 shrink-0">
             {toast.caption && (
-              <div className="mt-2.5 pt-2.5 border-t border-white/10">
-                <p className="text-[11px] font-black text-[#00E599] uppercase tracking-wider mb-1">Suggestion de post</p>
-                <p className="text-[12px] text-slate-300 whitespace-pre-line line-clamp-3">{toast.caption}</p>
-                <div className="mt-2 flex gap-2">
-                  <button type="button" onClick={() => setToast(null)} className="flex-1 h-9 rounded-lg bg-white/[0.06] text-[12px] font-bold">Plus tard</button>
-                  <button type="button" onClick={() => shareCaption(toast.caption!)} className="flex-1 h-9 rounded-lg bg-[#00E599] text-slate-950 text-[12px] font-black inline-flex items-center justify-center gap-1.5">
-                    <Share2 className="w-3.5 h-3.5" />Publier…
-                  </button>
-                </div>
-              </div>
+              <button type="button" onClick={() => { setShareText(toast.caption!); setToast(null); }} className="min-h-10 px-3 rounded-[10px] bg-[#00E599] text-[#04120C] text-[13px] font-bold">Publier</button>
+            )}
+            {toast.undoId && (
+              <button type="button" onClick={() => send({ kind: "undo", eventId: toast.undoId! }, "Action annulée")} className="min-h-10 px-3 rounded-[10px] bg-[#0A0E13] text-[#E6EDF3] text-[13px] font-bold">Annuler</button>
             )}
           </div>
         </div>
       )}
 
-      <div className="mt-auto pt-6 flex items-center justify-center gap-2 text-[11px] text-slate-600">
+      <div className="mt-auto pt-6 flex items-center justify-center gap-2 text-[11px] text-[#8B98A8]">
         <TeamCrest name={club?.name || match.clubName} logo={club?.logo} size={18} />
         <span>{club?.name || match.clubName} · télécommande privée, ne partagez pas ce lien</span>
       </div>
