@@ -36,6 +36,7 @@ import { clearLocalWorkspace, startWorkspaceSync, stopWorkspaceSync } from "@/li
 import { isSuperAdminEmail } from "@/lib/security";
 import { Language, translations, getStoredLanguage, setStoredLanguage } from "@/lib/i18n";
 import { confirmAction } from "@/components/ConfirmDialog";
+import { formatMatchDateTime } from "@/lib/dateFormat";
 import { exportMatchPdf, type MatchPdfPlayer, type MatchPdfSchema, type MatchPdfSquad } from "@/lib/matchPdf";
 import { prepareClubLogo, CLUB_LOGO_ACCEPT } from "@/lib/clubLogo";
 import { getSportRoles, getPlayerRoleCodes, autoAssignSportRoles, type RoleIconName, type RoleTone } from "@/lib/sportRoles";
@@ -144,6 +145,16 @@ const COACH_NOTE_MAX = 600;
 const LINK_COLORS = ["#facc15", "#ffffff", "#00E599", "#38bdf8", "#f43f5e", "#a855f7"];
 
 /** Icône de l'outil « Lier des joueurs » : trois pastilles reliées */
+/** Icône de l'outil « Courbe fléchée » */
+function CurveArrowIcon({ className = "", dashed = false }: { className?: string; dashed?: boolean }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 19 C 4 9, 13 5, 17.5 7.5" strokeDasharray={dashed ? "3 3" : undefined} />
+      <path d="M15.5 3.8 L 20 8.6 L 13.8 10.2" />
+    </svg>
+  );
+}
+
 function PlayerLinkIcon({ className = "" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -335,11 +346,72 @@ function PlayerLinksOverlay({
 }
 
 export interface DrawingAction {
-  tool: "brush" | "arrow-direct" | "arrow-deep" | "arrow-run" | "shape-circle" | "shape-rect" | "shape-line" | "shape-dashed-line" | "eraser";
+  tool: "brush" | "arrow-direct" | "arrow-deep" | "arrow-run" | "shape-circle" | "shape-rect" | "shape-line" | "shape-dashed-line" | "curve-arrow" | "curve-arrow-dashed" | "eraser";
   color: string;
   size: number;
   points: { x: number; y: number }[]; // percentages 0-100
 }
+
+/** Courbe de Bézier fléchée (pleine ou en pointillé) : points = [départ, contrôle 1, contrôle 2, arrivée] */
+const isCurveTool = (tool: string) => tool === "curve-arrow" || tool === "curve-arrow-dashed";
+
+/** Opacité du remplissage d'une zone rectangulaire (couleur du trait, presque invisible) */
+const ZONE_FILL_ALPHA = 0.12;
+
+type Pt = { x: number; y: number };
+
+/**
+ * Les 4 points (en pixels) d'une courbe. Une courbe en cours de tracé n'a que départ et arrivée :
+ * ses points de contrôle sont alors placés pour former un arc léger, côté gauche du sens de tracé.
+ */
+const curvePointsPx = (pts: Pt[]): [Pt, Pt, Pt, Pt] => {
+  const p0 = pts[0];
+  const p3 = pts[pts.length - 1];
+  if (pts.length >= 4) return [p0, pts[1], pts[2], p3];
+  const dx = p3.x - p0.x;
+  const dy = p3.y - p0.y;
+  const bend = 0.3;
+  const nx = dy * bend;
+  const ny = -dx * bend;
+  return [
+    p0,
+    { x: p0.x + dx * 0.25 + nx, y: p0.y + dy * 0.25 + ny },
+    { x: p0.x + dx * 0.75 + nx, y: p0.y + dy * 0.75 + ny },
+    p3,
+  ];
+};
+
+/** Point d'une Bézier cubique à t ∈ [0, 1] */
+const bezierAt = ([a, b, c, d]: [Pt, Pt, Pt, Pt], t: number): Pt => {
+  const u = 1 - t;
+  return {
+    x: u * u * u * a.x + 3 * u * u * t * b.x + 3 * u * t * t * c.x + t * t * t * d.x,
+    y: u * u * u * a.y + 3 * u * u * t * b.y + 3 * u * t * t * c.y + t * t * t * d.y,
+  };
+};
+
+/** Trace une courbe fléchée sur un canvas (points déjà en pixels) */
+const strokeCurveArrow = (ctx: CanvasRenderingContext2D, ptsPx: Pt[], dashed: boolean, dash: number[], headLen: number) => {
+  const [a, b, c, d] = curvePointsPx(ptsPx);
+  // Direction de la pointe : tangente en fin de courbe (dernier point de contrôle distinct de l'arrivée)
+  const from = Math.hypot(d.x - c.x, d.y - c.y) > 1 ? c : Math.hypot(d.x - b.x, d.y - b.y) > 1 ? b : a;
+  const angle = Math.atan2(d.y - from.y, d.x - from.x);
+  // La ligne s'arrête dans la pointe pour ne pas dépasser de la flèche
+  const endX = d.x - Math.cos(angle) * headLen * 0.6;
+  const endY = d.y - Math.sin(angle) * headLen * 0.6;
+  ctx.beginPath();
+  ctx.setLineDash(dashed ? dash : []);
+  ctx.moveTo(a.x, a.y);
+  ctx.bezierCurveTo(b.x, b.y, c.x, c.y, endX, endY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(d.x, d.y);
+  ctx.lineTo(d.x - headLen * Math.cos(angle - Math.PI / 6), d.y - headLen * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(d.x - headLen * Math.cos(angle + Math.PI / 6), d.y - headLen * Math.sin(angle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fill();
+};
 
 // 7 emplacements de rôles communs à tous les sports : leur sens dépend du sport (voir lib/sportRoles.ts).
 // Ex. penaltyTaker = tireur de penalty (foot), buteur (rugby), lancers francs (basket), jet de 7 m (hand).
@@ -1551,7 +1623,7 @@ export default function TacticsBoard({
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1000); // ms per frame
 
   // Drawing Tools State
-  const [activeTool, setActiveTool] = useState<"select" | "move" | "line" | "arrow" | "draw" | "settings" | "link">("select");
+  const [activeTool, setActiveTool] = useState<"select" | "move" | "line" | "curve" | "arrow" | "draw" | "settings" | "link">("select");
   const [drawingTool, setDrawingTool] = useState<DrawingAction["tool"]>("brush");
   const [drawColor, setDrawColor] = useState<string>("#00E599"); // Green by default
   const [drawSize, setDrawSize] = useState<number>(3);
@@ -2661,7 +2733,7 @@ export default function TacticsBoard({
       isFinished: true,
       finishedAtMs: Date.now(),
       status: `Terminé (${scoreFormatted})`,
-      finishedAt: new Date().toLocaleDateString("fr-FR", {
+      finishedAt: new Date().toLocaleDateString(undefined, {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -3337,6 +3409,49 @@ export default function TacticsBoard({
     };
   }, [isPlaying, keyframes.length, playbackSpeed]);
 
+  /** Courbe dont les poignées sont affichées : courbe sélectionnée (outil Sélection) ou venant d'être tracée (outil Courbe) */
+  const curveHandleIdx =
+    (activeTool === "select" || activeTool === "curve") &&
+    selectedStrokeIndex !== null &&
+    drawingActions[selectedStrokeIndex] &&
+    isCurveTool(drawingActions[selectedStrokeIndex].tool) &&
+    drawingActions[selectedStrokeIndex].points.length >= 4
+      ? selectedStrokeIndex
+      : null;
+
+  /** Déplace une poignée de courbe (départ, contrôles, arrivée) au doigt ou à la souris */
+  const startCurveHandleDrag = (strokeIdx: number, pointIdx: number, e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    const container = pitchContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    let moved = false;
+    const moveHandler = (ev: MouseEvent | TouchEvent) => {
+      const clientX = "touches" in ev ? ev.touches[0].clientX : ev.clientX;
+      const clientY = "touches" in ev ? ev.touches[0].clientY : ev.clientY;
+      const rx = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+      const ry = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
+      const p = aspectRatioMode === "mobile" ? { x: 100 - ry, y: rx } : { x: rx, y: ry };
+      if (!moved) {
+        moved = true;
+        setDrawingHistory((prev) => [...prev, drawingActions]);
+      }
+      setDrawingActions((prev) =>
+        prev.map((a, i) => (i !== strokeIdx ? a : { ...a, points: a.points.map((pt, k) => (k === pointIdx ? p : pt)) }))
+      );
+    };
+    const upHandler = () => {
+      window.removeEventListener("mousemove", moveHandler);
+      window.removeEventListener("mouseup", upHandler);
+      window.removeEventListener("touchmove", moveHandler);
+      window.removeEventListener("touchend", upHandler);
+    };
+    window.addEventListener("mousemove", moveHandler);
+    window.addEventListener("mouseup", upHandler);
+    window.addEventListener("touchmove", moveHandler, { passive: true });
+    window.addEventListener("touchend", upHandler);
+  };
+
   const drawArrowhead = (ctx: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) => {
     const dx = toX - fromX;
     const dy = toY - fromY;
@@ -3425,7 +3540,14 @@ export default function TacticsBoard({
       } else if (action.tool === "shape-rect") {
         ctx.beginPath();
         ctx.rect(startX, startY, endX - startX, endY - startY);
+        ctx.save();
+        ctx.globalAlpha = ZONE_FILL_ALPHA;
+        ctx.fill();
+        ctx.restore();
         ctx.stroke();
+      } else if (isCurveTool(action.tool)) {
+        const ptsPx = action.points.map((p) => ({ x: getPtX(p), y: getPtY(p) }));
+        strokeCurveArrow(ctx, ptsPx, action.tool === "curve-arrow-dashed", [10, 8], 12 + action.size);
       } else if (action.tool === "shape-line" || action.tool === "shape-dashed-line") {
         ctx.beginPath();
         if (action.tool === "shape-dashed-line") {
@@ -3440,6 +3562,26 @@ export default function TacticsBoard({
       }
     };
 
+    // Bras des poignées de la courbe en cours d'édition (départ → contrôle 1, arrivée → contrôle 2)
+    const editedCurve = curveHandleIdx !== null ? drawingActions[curveHandleIdx] : null;
+    const drawCurveArms = () => {
+      if (!editedCurve || editedCurve.points.length < 4) return;
+      const px = (p: Pt) =>
+        aspectRatioMode === "mobile" ? { x: (p.y / 100) * w, y: ((100 - p.x) / 100) * h } : { x: (p.x / 100) * w, y: (p.y / 100) * h };
+      const [a, b, c, d] = editedCurve.points.map(px);
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.75)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(c.x, c.y);
+      ctx.stroke();
+      ctx.restore();
+    };
+
     drawingActions.forEach((action, idx) => {
       renderStroke(action);
       if (activeTool === "select" && idx === selectedStrokeIndex) {
@@ -3452,6 +3594,7 @@ export default function TacticsBoard({
         ctx.restore();
       }
     });
+    drawCurveArms();
 
     const inProgressPoints = drawingTool === "brush" ? brushPointsRef.current : currentActionPoints;
     if (isDrawing && inProgressPoints.length > 0) {
@@ -3764,7 +3907,15 @@ export default function TacticsBoard({
 
       const threshold = 3.5 + (action.size || 3) * 0.3;
 
-      if (action.tool === "brush" || action.tool === "shape-line" || action.tool === "shape-dashed-line" || action.tool.startsWith("arrow")) {
+      if (isCurveTool(action.tool)) {
+        const curve = curvePointsPx(pts);
+        let prev = curve[0];
+        for (let s = 1; s <= 24; s++) {
+          const next = bezierAt(curve, s / 24);
+          if (distToSegment(coords, prev, next) <= threshold) return i;
+          prev = next;
+        }
+      } else if (action.tool === "brush" || action.tool === "shape-line" || action.tool === "shape-dashed-line" || action.tool.startsWith("arrow")) {
         for (let j = 0; j < pts.length - 1; j++) {
           if (distToSegment(coords, pts[j], pts[j + 1]) <= threshold) return i;
         }
@@ -3881,8 +4032,30 @@ export default function TacticsBoard({
     if (!isDrawing) return;
     setIsDrawing(false);
 
-    const finalPoints = drawingTool === "brush" ? brushPointsRef.current : currentActionPoints;
+    let finalPoints = drawingTool === "brush" ? brushPointsRef.current : currentActionPoints;
     brushPointsRef.current = [];
+    const isCurve = isCurveTool(drawingTool);
+    if (isCurve) {
+      // Un simple clic ne crée pas de courbe
+      const a = finalPoints[0];
+      const b = finalPoints[finalPoints.length - 1];
+      if (finalPoints.length < 2 || !a || !b || Math.hypot(b.x - a.x, b.y - a.y) < 1.5) finalPoints = [];
+      else {
+        // Points de contrôle calculés en pixels (arc régulier quel que soit le format du terrain), puis remis en %
+        const canvas = canvasRef.current;
+        const cw = canvas?.width || 100;
+        const ch = canvas?.height || 100;
+        const mobile = aspectRatioMode === "mobile";
+        const toPx = (p: Pt) => (mobile ? { x: (p.y / 100) * cw, y: ((100 - p.x) / 100) * ch } : { x: (p.x / 100) * cw, y: (p.y / 100) * ch });
+        const toPct = (p: Pt) => {
+          const rx = Math.max(0, Math.min(100, (p.x / cw) * 100));
+          const ry = Math.max(0, Math.min(100, (p.y / ch) * 100));
+          return mobile ? { x: 100 - ry, y: rx } : { x: rx, y: ry };
+        };
+        const [, c1, c2] = curvePointsPx([toPx(a), toPx(b)]);
+        finalPoints = [a, toPct(c1), toPct(c2), b];
+      }
+    }
     if (finalPoints.length > 0) {
       const newAction: DrawingAction = {
         tool: drawingTool,
@@ -3895,8 +4068,34 @@ export default function TacticsBoard({
       setDrawingActions((prev) => [...prev, newAction]);
     }
     setCurrentActionPoints([]);
-    setSelectedStrokeIndex(null);
+    // La courbe tracée garde ses poignées pour être cintrée tout de suite
+    setSelectedStrokeIndex(isCurve && finalPoints.length > 0 ? drawingActions.length : null);
   };
+
+  // Pendant un tracé, le pointeur peut passer ou être relâché au-dessus d'un joueur (calque posé sur le canvas) :
+  // on suit alors le mouvement et le relâchement au niveau de la fenêtre pour que le trait se termine bien.
+  useEffect(() => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    const onMove = (ev: MouseEvent | TouchEvent) => {
+      if (ev.target === canvas) return; // déjà traité par le canvas
+      handleCanvasMouseMove(ev as unknown as React.MouseEvent<HTMLCanvasElement>);
+    };
+    const onUp = (ev: MouseEvent | TouchEvent) => {
+      if (ev.target === canvas) return;
+      handleCanvasMouseUp();
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchend", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onUp);
+    };
+  });
 
   // Formations Coordinates Presets for all sports
   const getFormationCoordinates = (sport: string, formationName: string, isOpponent: boolean): { x: number; y: number }[] => {
@@ -6379,6 +6578,21 @@ export default function TacticsBoard({
     }
   };
 
+  /** Courbe fléchée : 1er clic = trait plein, clics suivants = bascule plein / pointillé */
+  const handleToggleCurveTool = () => {
+    setSelectedStrokeIndex(null);
+    if (activeTool !== "curve") {
+      setActiveTool("curve");
+      if (!isCurveTool(drawingTool)) setDrawingTool("curve-arrow");
+    } else {
+      setDrawingTool((prev) => (prev === "curve-arrow-dashed" ? "curve-arrow" : "curve-arrow-dashed"));
+    }
+  };
+  const curveToolTitle =
+    activeTool === "curve"
+      ? `Courbe fléchée ${drawingTool === "curve-arrow-dashed" ? "en pointillé" : "pleine"} : glissez pour tracer, puis déplacez les poignées pour la cintrer. Recliquez pour passer en ${drawingTool === "curve-arrow-dashed" ? "trait plein" : "pointillé"}`
+      : "Courbe fléchée : glissez pour tracer, puis déplacez les poignées pour la cintrer (recliquez pour le pointillé)";
+
   // Keyboard shortcuts for drawing undo (Ctrl+Z / Cmd+Z)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -6470,7 +6684,7 @@ export default function TacticsBoard({
       return;
     }
     setIsSaveAnimationMode(false);
-    setTacticName(`Schéma ${activeSport.toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}`);
+    setTacticName(`Schéma ${activeSport.toUpperCase()} - ${new Date().toLocaleDateString(undefined)}`);
     setSaveTacticMatchId(activeMatchId);
     setIsSaveModalOpen(true);
   };
@@ -6502,7 +6716,7 @@ export default function TacticsBoard({
       matchId: targetMatchId,
       teamId: targetTeam?.id || "",
       teamName: targetTeam?.name || "",
-      date: new Date().toLocaleDateString("fr-FR", {
+      date: new Date().toLocaleDateString(undefined, {
         day: "numeric",
         month: "short",
         hour: "2-digit",
@@ -6757,7 +6971,7 @@ export default function TacticsBoard({
       };
     });
 
-    const defaultSchemaTitle = schema?.name || (isAnim ? `Animation ${(schema?.sport || activeSport).toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}` : `Schéma ${(schema?.sport || activeSport).toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}`);
+    const defaultSchemaTitle = schema?.name || (isAnim ? `Animation ${(schema?.sport || activeSport).toUpperCase()} - ${new Date().toLocaleDateString(undefined)}` : `Schéma ${(schema?.sport || activeSport).toUpperCase()} - ${new Date().toLocaleDateString(undefined)}`);
     const defaultSchemaNotes = schema?.description || tacticalNotes || (activeMatch?.notes ? activeMatch.notes : (isAnim ? "Animation tactique séquentielle de référence" : "Schéma tactique de référence"));
 
     // Pre-generate GIF if it is a multi-step animation
@@ -6947,7 +7161,7 @@ export default function TacticsBoard({
         squad,
         matchTitle,
         competition: hasActiveMatch ? activeMatch.competition : undefined,
-        dateTime: hasActiveMatch ? activeMatch.dateTime || (activeMatch as any).date : undefined,
+        dateTime: hasActiveMatch ? formatMatchDateTime(activeMatch) || undefined : undefined,
         clubName: activeTeam?.name || displayClubTitle,
         clubLogo: clubLogo || undefined,
         sport: activeSport,
@@ -7124,7 +7338,7 @@ export default function TacticsBoard({
     ctx.fillStyle = "#cbd5e1";
     ctx.font = "700 12px system-ui, sans-serif";
     const matchSubInfo = exportMatch
-      ? `Compétition : ${exportMatch.competition || "Regular"}  |  Date & Heure : ${exportMatch.dateTime || exportMatch.date || "Prochainement"}`
+      ? `Compétition : ${exportMatch.competition || "Regular"}  |  Date & Heure : ${formatMatchDateTime(exportMatch) || "Prochainement"}`
       : `Sport : ${targetSport.toUpperCase()}  |  Club : ${targetClub}`;
     ctx.fillText(matchSubInfo, 30, 72);
 
@@ -7141,7 +7355,7 @@ export default function TacticsBoard({
       ctx.fillStyle = "#94a3b8";
       ctx.font = "700 12px system-ui, sans-serif";
       ctx.textAlign = "right";
-      const rightHeader = `Coach : ${activeCoach?.firstName || "Coach"} ${activeCoach?.lastName || "Principal"}  |  Généré le ${new Date().toLocaleDateString("fr-FR")}`;
+      const rightHeader = `Coach : ${activeCoach?.firstName || "Coach"} ${activeCoach?.lastName || "Principal"}  |  Généré le ${new Date().toLocaleDateString(undefined)}`;
       ctx.fillText(rightHeader, w - 30, 48);
     }
 
@@ -7614,7 +7828,14 @@ export default function TacticsBoard({
         ctx.arc(startX, startY, r, 0, 2 * Math.PI);
         ctx.stroke();
       } else if (action.tool === "shape-rect") {
+        ctx.save();
+        ctx.globalAlpha = ZONE_FILL_ALPHA;
+        ctx.fillRect(startX, startY, endX - startX, endY - startY);
+        ctx.restore();
         ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+      } else if (isCurveTool(action.tool)) {
+        const ptsPx = action.points.map((p: Pt) => ({ x: getExportX(p), y: getExportY(p) }));
+        strokeCurveArrow(ctx, ptsPx, action.tool === "curve-arrow-dashed", [12, 9], 16 + (action.size || 4));
       } else if (action.tool === "shape-line" || action.tool === "shape-dashed-line") {
         ctx.beginPath();
         if (action.tool === "shape-dashed-line") {
@@ -8078,7 +8299,7 @@ export default function TacticsBoard({
       ctx.font = "800 12px system-ui, sans-serif";
       ctx.fillText(`Score Final : ${homeScore} - ${awayScore}`, p2X + 15, footerY + 70);
       ctx.fillText(`Compétition : ${activeMatch?.competition || "Regular"}`, p2X + 15, footerY + 98);
-      ctx.fillText(`Date & Heure : ${activeMatch?.dateTime || activeMatch?.date || "Non renseignée"}`, p2X + 15, footerY + 126);
+      ctx.fillText(`Date & Heure : ${formatMatchDateTime(activeMatch) || "Non renseignée"}`, p2X + 15, footerY + 126);
       ctx.fillText(`Temps de Jeu : ${formatLiveTime(liveTimerSeconds)}`, p2X + 15, footerY + 154);
       ctx.fillText(`Buts enregistrés : ${matchEvents.filter(e => e.type === "goal").length}`, p2X + 15, footerY + 182);
       ctx.fillText(`Schémas tactiques liés : ${savedTactics.filter(sc => schemaBelongsToMatch(sc, activeMatchId)).length}`, p2X + 15, footerY + 210);
@@ -8201,8 +8422,8 @@ export default function TacticsBoard({
     if (activeMatch?.competition) {
       msg += `🏆 *Compétition :* ${activeMatch.competition}\n`;
     }
-    if (activeMatch?.dateTime) {
-      msg += `📅 *Date & Heure :* ${activeMatch.dateTime}\n`;
+    if (formatMatchDateTime(activeMatch)) {
+      msg += `📅 *Date & Heure :* ${formatMatchDateTime(activeMatch)}\n`;
     }
     msg += `⏱️ *Temps de jeu :* ${formatLiveTime(liveTimerSeconds)}\n\n`;
 
@@ -9136,7 +9357,7 @@ export default function TacticsBoard({
                         <button
                           type="button"
                           onClick={() => {
-                            setTacticName(`Animation ${activeSport.toUpperCase()} - ${new Date().toLocaleDateString("fr-FR")}`);
+                            setTacticName(`Animation ${activeSport.toUpperCase()} - ${new Date().toLocaleDateString(undefined)}`);
                             setSaveTacticMatchId(activeMatchId);
                             setIsSaveAnimationMode(true);
                             setIsSaveModalOpen(true);
@@ -11783,6 +12004,17 @@ export default function TacticsBoard({
               >
                 <ArrowUpRight className="h-[18px] w-[18px] shrink-0" />
               </button>
+              {/* Courbe fléchée (Bézier), pleine ou pointillée sur le même bouton */}
+              <button
+                type="button"
+                onClick={handleToggleCurveTool}
+                className={topToolBtnClass(activeTool === "curve")}
+                title={curveToolTitle}
+                aria-label="Courbe fléchée"
+                aria-pressed={activeTool === "curve"}
+              >
+                <CurveArrowIcon dashed={activeTool === "curve" && drawingTool === "curve-arrow-dashed"} className="h-[18px] w-[18px] shrink-0" />
+              </button>
               <button
                 type="button"
                 onClick={() => { setActiveTool("draw"); setDrawingTool("shape-rect"); setSelectedStrokeIndex(null); }}
@@ -12441,6 +12673,25 @@ export default function TacticsBoard({
                         <ArrowUpRight className="h-4 w-4 shrink-0" />
                       </button>
 
+                      {/* Courbe fléchée */}
+                      <button
+                        type="button"
+                        onClick={handleToggleCurveTool}
+                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "curve"
+                          ? isModernSleek
+                            ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
+                            : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
+                          : isModernSleek
+                            ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title={curveToolTitle}
+                        aria-label="Courbe fléchée"
+                        aria-pressed={activeTool === "curve"}
+                      >
+                        <CurveArrowIcon dashed={activeTool === "curve" && drawingTool === "curve-arrow-dashed"} className="h-4 w-4 shrink-0" />
+                      </button>
+
                       {/* Crayon */}
                       <button
                         type="button"
@@ -12762,6 +13013,26 @@ export default function TacticsBoard({
                               : "cursor-crosshair pointer-events-auto"
                             }`}
                         />
+
+                        {/* Poignées de la courbe fléchée : départ, 2 points de contrôle, arrivée */}
+                        {curveHandleIdx !== null && drawingActions[curveHandleIdx].points.slice(0, 4).map((pt, k) => {
+                          const isControl = k === 1 || k === 2;
+                          return (
+                            <div
+                              key={`curve-handle-${k}`}
+                              role="button"
+                              aria-label={isControl ? `Point de contrôle ${k} de la courbe` : k === 0 ? "Départ de la courbe" : "Arrivée de la courbe"}
+                              title={isControl ? "Glissez pour cintrer la courbe" : "Glissez pour déplacer ce bout de la courbe"}
+                              onMouseDown={(e) => startCurveHandleDrag(curveHandleIdx, k, e)}
+                              onTouchStart={(e) => startCurveHandleDrag(curveHandleIdx, k, e)}
+                              className={`absolute z-30 -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing border-2 shadow-md ${isControl ? "w-4 h-4 rounded-full bg-white border-[#00E599]" : "w-3.5 h-3.5 rounded-sm bg-[#00E599] border-white"}`}
+                              style={{
+                                left: `${aspectRatioMode === "mobile" ? pt.y : pt.x}%`,
+                                top: `${aspectRatioMode === "mobile" ? 100 - pt.x : pt.y}%`,
+                              }}
+                            />
+                          );
+                        })}
 
                         {/* DRAGGABLE TOKENS */}
                         <div ref={tokensLayerRef} className="absolute inset-0 z-20 pointer-events-none">
@@ -13950,7 +14221,7 @@ export default function TacticsBoard({
                         </p>
                       )}
                       <p className={`text-[11px] font-bold ${isModernSleek ? "text-emerald-800" : "text-slate-400"} mt-0.5`}>
-                        {activeMatch.dateTime}
+                        {formatMatchDateTime(activeMatch)}
                       </p>
                     </div>
                   )}
@@ -14499,7 +14770,7 @@ export default function TacticsBoard({
             m.homeTeam?.toLowerCase().includes(q) ||
             m.awayTeam?.toLowerCase().includes(q) ||
             m.competition?.toLowerCase().includes(q) ||
-            m.dateTime?.toLowerCase().includes(q)
+            (m.dateTime?.toLowerCase().includes(q) || formatMatchDateTime(m).toLowerCase().includes(q))
           );
         });
         const fieldCls = `w-full rounded-xl px-3 py-2 text-xs font-semibold border outline-none transition ${pth.input} ${pth.option}`;
@@ -14660,7 +14931,7 @@ export default function TacticsBoard({
                               <p className={`text-sm font-black truncate ${pth.text}`}>
                                 {m.homeTeam} <span className={`font-bold ${pth.faint}`}>vs</span> {m.awayTeam}
                               </p>
-                              <p className={`text-[11px] truncate ${pth.sub}`}>{[m.competition, m.dateTime].filter(Boolean).join(" · ")}</p>
+                              <p className={`text-[11px] truncate ${pth.sub}`}>{[m.competition, formatMatchDateTime(m)].filter(Boolean).join(" · ")}</p>
                             </div>
 
                             {scoreLabel && (
@@ -14826,7 +15097,7 @@ export default function TacticsBoard({
               </h3>
               <p className={`text-[11px] font-medium mt-0.5 ${isModernSleek ? "text-slate-500" : "text-slate-300"
                 }`}>
-                {activeMatch.competition} • {activeMatch.dateTime}
+                {activeMatch.competition} • {formatMatchDateTime(activeMatch)}
               </p>
               {!isExportingModalScreen && (
                 <button
@@ -15085,7 +15356,7 @@ export default function TacticsBoard({
                         >
                           {matchesList.map((m) => (
                             <option key={m.id} value={m.id}>
-                              {m.homeTeam} vs {m.awayTeam} · {m.competition || "Match"}{m.dateTime ? ` · ${m.dateTime}` : ""}
+                              {m.homeTeam} vs {m.awayTeam} · {m.competition || "Match"}{formatMatchDateTime(m) ? ` · ${formatMatchDateTime(m)}` : ""}
                             </option>
                           ))}
                         </select>
