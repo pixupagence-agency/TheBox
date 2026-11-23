@@ -13407,32 +13407,30 @@ export default function TacticsBoard({
                                       )}
                                     </div>
 
-                                    {/* LEFT BADGES (Set-Piece Roles: Captain, Corner, Free Kick) */}
-                                    {token.type === "player_a" && (
-                                      <div className="absolute -left-3.5 top-1/2 -translate-y-1/2 flex flex-col items-end justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
-                                        {/* Captain 👑 */}
-                                        {setPieceRoles.captain === token.name && (
-                                          <span
-                                            className="bg-amber-400 text-slate-950 rounded-full font-black text-[8.5px] h-4 w-4 shadow-md border border-amber-200 flex items-center justify-center leading-none"
-                                            title={t.tactics.pitchBadges.captain}
-                                          >
-                                            👑
-                                          </span>
-                                        )}
-
-                                      </div>
+                                    {/* CAPITAINE : « C » cerclé collé au numéro du joueur
+                                        (à droite de la pastille du numéro en mode Tête, en haut à droite du joueur sinon) */}
+                                    {token.type === "player_a" && setPieceRoles.captain === token.name && (
+                                      <span
+                                        className={`absolute ${isHeadMode ? "-top-[5px] -right-[19px]" : "-top-1 -right-1.5"} w-3 h-3 rounded-full border-[1.5px] border-amber-300 bg-[#0b0f17]/85 text-amber-300 font-black text-[7px] leading-none flex items-center justify-center shadow-sm z-30 pointer-events-none`}
+                                        title={t.tactics.pitchBadges.captain}
+                                        aria-label={t.tactics.pitchBadges.captain}
+                                      >
+                                        C
+                                      </span>
                                     )}
 
-                                    {/* RIGHT BADGES : rôles du sport (PK, CF, CK au foot ; BUT, OUV, LAN au rugby ; LF, MEN au basket ; 7M, JF au hand) */}
+                                    {/* LEFT BADGES : rôles du sport (PK, CF, CK au foot ; BUT, OUV, LAN au rugby ; LF, MEN au basket ; 7M, JF au hand).
+                                        Petits et calés en bas à gauche du joueur : ils ne masquent ni le numéro ni le joueur,
+                                        et laissent la droite libre pour le ballon quand l'équipe attaque vers la droite. */}
                                     {token.type === "player_a" && (() => {
                                       const codes = getPlayerRoleCodes(activeSport, setPieceRoles, token.name);
                                       if (codes.length === 0) return null;
                                       return (
-                                        <div className="absolute -right-3.5 top-1/2 -translate-y-1/2 flex flex-col items-start justify-center gap-0.5 z-30 whitespace-nowrap pointer-events-none">
+                                        <div className="absolute right-full -mr-1 bottom-0 flex flex-col items-end justify-end gap-px z-30 whitespace-nowrap pointer-events-none">
                                           {codes.map((c) => (
                                             <span
                                               key={c.code}
-                                              className={`${ROLE_TONE_CHIP[c.tone]} rounded font-black text-[7.5px] px-1 h-3.5 shadow-md border flex items-center justify-center leading-none`}
+                                              className={`${ROLE_TONE_CHIP[c.tone]} rounded-[3px] font-black text-[6px] tracking-tight px-[3px] h-[10px] shadow-sm border flex items-center justify-center leading-none`}
                                               title={c.label}
                                             >
                                               {c.code}
