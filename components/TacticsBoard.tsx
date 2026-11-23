@@ -53,7 +53,7 @@ const ROLE_TONE_CHIP: Record<RoleTone, string> = {
   cyan: "bg-cyan-400 text-slate-950 border-cyan-200",
   rose: "bg-rose-500 text-white border-rose-300",
 };
-import { useToolbarOverflow } from "@/lib/useToolbarOverflow";
+import { useHorizontalScroll } from "@/lib/useHorizontalScroll";
 import {
   getGameFormatOptions, getGameFormatOption, resolveGameFormat,
   getFormatDefaultPlayers, getFormatFormations, getFormatFormationCoords, getFormatPeriodSeconds,
@@ -91,9 +91,6 @@ const getLivePeriodConfig = (sport: string, format?: string): LivePeriodConfig =
 
 // Groupes de la barre d'outils du terrain, dans l'ordre d'affichage
 const TOOLBAR_GROUP_KEYS = ["view", "display", "drawing", "color", "export", "zoom"] as const;
-// Ordre dans lequel les groupes passent dans le menu chevron quand la ligne manque de place
-// (les outils de dessin, les plus utilisés, restent visibles le plus longtemps)
-const TOOLBAR_HIDE_ORDER = ["zoom", "export", "display", "view", "color", "drawing"] as const;
 
 export interface Token {
   id: string;
@@ -1224,36 +1221,9 @@ export default function TacticsBoard({
   onOpenSupportModal
 }: TacticsBoardProps) {
 
-  // Barre d'outils du terrain sur une seule ligne. Les outils qui ne tiennent pas sont repliés
-  // derrière un chevron ; au clic, ils se déroulent horizontalement dans la barre (défilement latéral).
-  const toolbarOverflow = useToolbarOverflow(TOOLBAR_GROUP_KEYS, TOOLBAR_HIDE_ORDER);
-  const [isToolbarOverflowOpen, setIsToolbarOverflowOpen] = useState(false);
-  const toolbarScrollerRef = useRef<HTMLDivElement>(null);
-  const hasToolbarOverflow = toolbarOverflow.hiddenKeys.length > 0;
-
-  useEffect(() => {
-    if (!hasToolbarOverflow) setIsToolbarOverflowOpen(false);
-  }, [hasToolbarOverflow]);
-
-  // Déroulé : on fait défiler jusqu'aux outils révélés (à côté du chevron) ; replié : retour au début
-  useEffect(() => {
-    const scroller = toolbarScrollerRef.current;
-    if (!scroller) return;
-    if (isToolbarOverflowOpen) {
-      requestAnimationFrame(() => scroller.scrollTo({ left: scroller.scrollWidth, behavior: "smooth" }));
-    } else {
-      scroller.scrollTo({ left: 0 });
-    }
-  }, [isToolbarOverflowOpen]);
-
-  useEffect(() => {
-    if (!isToolbarOverflowOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsToolbarOverflowOpen(false);
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isToolbarOverflowOpen]);
+  // Barre d'outils du terrain sur une seule ligne : tous les outils sont affichés d'emblée
+  // et la ligne défile horizontalement quand l'écran est trop étroit (doigt, molette ou flèches de bord).
+  const toolbarScroll = useHorizontalScroll<HTMLDivElement>();
 
   // Active coach helper & live trial calculation
   const activeCoach = coaches.find(c => c.id === activeCoachId) || coaches[0];
@@ -6623,7 +6593,7 @@ export default function TacticsBoard({
     }
   };
 
-  // Format du terrain depuis la barre d'outils (foot à 11 / 8 / 5, rugby à XV / 7).
+  // Format du terrain depuis la barre d'outils (foot à 11 / 8 / 5, rugby à XV / 7) — formule gratuite uniquement.
   // Ne modifie pas le format enregistré de l'équipe : il reprend la main au prochain changement d'équipe.
   const handleSwitchBoardFormat = async (format: string) => {
     const option = getGameFormatOption(activeSport, format);
@@ -9106,10 +9076,10 @@ export default function TacticsBoard({
   // Dynamic calculation for Fullscreen mode: subtract exact top & bottom bars height from 100vh
   // Animation : 200px couvrent le bandeau du haut (même replié sur 2 lignes) + la barre d'animation dockée en bas
   const fullscreenHeightExpr = !isLiveMatchMode && isAnimationCreatorOpen
-    ? "calc(100vh - 200px)"
+    ? "calc(100vh - 215px)"
     : isToolboxVisible
-      ? "calc(100vh - 125px)"
-      : "calc(100vh - 75px)";
+      ? "calc(100vh - 140px)"
+      : "calc(100vh - 90px)";
 
   // L'ouverture de la barre d'animation ne réduit pas le terrain : la barre s'ajoute sous la barre d'outils
   // et la zone centrale défile si besoin.
@@ -11031,64 +11001,45 @@ export default function TacticsBoard({
     }`;
   const topToolGroupClass = `flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`;
 
-  // Groupes de la barre du terrain : affichés dans la ligne, ou mis de côté derrière le chevron.
-  // renderToolbarHiddenGroups est appelé après les groupes, la liste est donc complète à ce moment-là.
-  const toolbarHiddenNodes: { key: string; node: React.ReactNode }[] = [];
+  // Groupes de la barre du terrain : tous affichés dans la ligne défilante.
   const toolbarSeparator = (
     <div aria-hidden="true" className={`h-5 w-px mx-0.5 shrink-0 ${isModernSleek ? "bg-slate-300" : "bg-[#2a3344]"}`} />
   );
-  const renderToolbarGroup = (key: (typeof TOOLBAR_GROUP_KEYS)[number], withSeparator: boolean, node: React.ReactNode) => {
-    if (toolbarOverflow.hiddenKeys.includes(key)) {
-      toolbarHiddenNodes.push({ key, node });
-      return null;
-    }
+  const renderToolbarGroup = (key: (typeof TOOLBAR_GROUP_KEYS)[number], withSeparator: boolean, node: React.ReactNode) => (
+    <div
+      key={key}
+      data-toolbar-key={key}
+      className={`flex items-center gap-[inherit] shrink-0 ${key === "zoom" ? "ml-auto" : ""}`}
+    >
+      {withSeparator && toolbarSeparator}
+      {node}
+    </div>
+  );
+
+  // Flèche de bord : signale qu'il reste des outils de ce côté et fait défiler d'une « page »
+  const renderToolbarScrollArrow = (side: "left" | "right") => {
+    const visible = side === "left" ? toolbarScroll.canScrollLeft : toolbarScroll.canScrollRight;
+    if (!visible) return null;
+    const label = side === "left"
+      ? (currentLang === "fr" ? "Outils précédents" : "Previous tools")
+      : (currentLang === "fr" ? "Outils suivants" : "Next tools");
     return (
       <div
-        key={key}
-        data-toolbar-key={key}
-        className={`flex items-center gap-[inherit] shrink-0 ${key === "zoom" ? "ml-auto" : ""}`}
+        className={`pointer-events-none absolute inset-y-0 ${side === "left" ? "left-0 pr-6 bg-gradient-to-r" : "right-0 pl-6 bg-gradient-to-l"} from-[var(--cockpit-toolbar)] from-60% to-transparent flex items-center z-10`}
       >
-        {withSeparator && toolbarSeparator}
-        {node}
+        <button
+          type="button"
+          onClick={() => toolbarScroll.scrollByPage(side === "left" ? -1 : 1)}
+          className={`pointer-events-auto h-8 w-8 rounded-full shadow-md flex items-center justify-center transition cursor-pointer border ${isModernSleek
+            ? "bg-white border-slate-300 text-slate-700 hover:text-emerald-700"
+            : "bg-[#132338] border-[#00E599]/50 text-[#00E599] hover:bg-[#1a2d47]"
+            }`}
+          title={label}
+          aria-label={label}
+        >
+          {side === "left" ? <ChevronLeft className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+        </button>
       </div>
-    );
-  };
-
-  // Outils repliés, déroulés à la suite des outils visibles quand le chevron est ouvert
-  const renderToolbarHiddenGroups = () => {
-    if (!isToolbarOverflowOpen || toolbarHiddenNodes.length === 0) return null;
-    return toolbarHiddenNodes.map(({ key, node }) => (
-      <div key={key} data-toolbar-key={key} className="flex items-center gap-[inherit] shrink-0 animate-fade-in">
-        {toolbarSeparator}
-        {node}
-      </div>
-    ));
-  };
-
-  const renderToolbarChevron = () => {
-    if (toolbarHiddenNodes.length === 0) return null;
-    const label = isToolbarOverflowOpen
-      ? (currentLang === "fr" ? "Replier les outils" : "Collapse tools")
-      : (currentLang === "fr" ? "Plus d'outils" : "More tools");
-    return (
-      <button
-        type="button"
-        onClick={() => setIsToolbarOverflowOpen((open) => !open)}
-        className={`${topToolBtnClass(isToolbarOverflowOpen)} h-8 w-8 sm:w-8 shrink-0`}
-        title={label}
-        aria-label={label}
-        aria-expanded={isToolbarOverflowOpen}
-      >
-        <ChevronRight className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isToolbarOverflowOpen ? "rotate-180" : ""}`} />
-        {!isToolbarOverflowOpen && (
-          <span
-            aria-hidden="true"
-            className={`absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full text-[8.5px] font-black leading-[14px] text-center ${isModernSleek ? "bg-emerald-600 text-white" : "bg-[#00E599] text-[#04120c]"}`}
-          >
-            {toolbarHiddenNodes.length}
-          </span>
-        )}
-      </button>
     );
   };
   const teamInitials = (name?: string) => {
@@ -11156,23 +11107,23 @@ export default function TacticsBoard({
         id="tour-top-header"
         className={`${isModernSleek
           ? isCompactUI
-            ? "h-14 px-4 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 shadow-xs text-slate-900"
-            : "h-16 px-6 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 shadow-sm text-slate-900"
+            ? "h-14 px-3 sm:px-4 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 shadow-xs text-slate-900"
+            : "h-14 sm:h-16 px-3 sm:px-6 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 shadow-sm text-slate-900"
           : isCompactUI
-            ? "h-12 px-3.5 border-b border-[#1f293d] bg-[#0d1117]"
-            : "h-16 px-6 border-b border-[#1f293d] bg-[#0d1117]"
-          } flex items-center justify-between relative z-40 flex-shrink-0 transition-all duration-300`}
+            ? "h-12 px-2.5 sm:px-3.5 border-b border-[#1f293d] bg-[#0d1117]"
+            : "h-14 sm:h-16 px-3 sm:px-6 border-b border-[#1f293d] bg-[#0d1117]"
+          } flex items-center justify-between gap-2 relative z-40 flex-shrink-0 transition-all duration-300`}
       >
 
         {/* Left Brand info */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 overflow-hidden">
           {/* Logo badge SVG */}
           {/* Identique au logo de la landing page (LandingPage.tsx) */}
-          <div className="flex items-center gap-3.5 shrink-0">
-            <LogoIcon className={`w-10 h-10 ${isModernSleek ? "text-slate-900" : "text-white"} flex-shrink-0`} />
+          <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
+            <LogoIcon className={`w-8 h-8 sm:w-10 sm:h-10 ${isModernSleek ? "text-slate-900" : "text-white"} flex-shrink-0`} />
             <div className="text-left select-none">
               <div className="flex items-center gap-2">
-                <h1 className={`text-2xl font-black tracking-wider leading-none lowercase whitespace-nowrap ${isModernSleek ? "text-slate-900" : "text-white"}`}>
+                <h1 className={`text-xl sm:text-2xl font-black tracking-wider leading-none lowercase whitespace-nowrap ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                   the box
                 </h1>
                 {(isUserAdmin || isPaidSubscriber) && (
@@ -11181,7 +11132,7 @@ export default function TacticsBoard({
                   </span>
                 )}
               </div>
-              <p className={`whitespace-nowrap text-[8.5px] ${isModernSleek ? "text-slate-500" : "text-white/70"} font-black uppercase tracking-[0.22em] leading-none mt-1`}>
+              <p className={`hidden sm:block whitespace-nowrap text-[8.5px] ${isModernSleek ? "text-slate-500" : "text-white/70"} font-black uppercase tracking-[0.22em] leading-none mt-1`}>
                 zone de décision tactique
               </p>
             </div>
@@ -11189,7 +11140,7 @@ export default function TacticsBoard({
         </div>
 
         {/* CENTER CONTROLS: TRIAL COUNTDOWN BADGE & USER ACCOUNT */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Trial / Creator / Subscriber Badge */}
           {isUserAdmin ? null : isPaidSubscriber ? (
             <button
@@ -11251,7 +11202,7 @@ export default function TacticsBoard({
           )}
 
           {/* Right tools and account card */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
             {/* Guide / Tutoriel Coach Button - Only for non-admin coaches */}
             {!isUserAdmin && (
@@ -11259,7 +11210,7 @@ export default function TacticsBoard({
                 onClick={() => {
                   if (onOpenTutorial) onOpenTutorial();
                 }}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl ${isModernSleek
+                className={`hidden sm:flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl ${isModernSleek
                   ? "bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-500 shadow-xs"
                   : "bg-[#0d141f] hover:bg-[#152030] border-[#1f293d] hover:border-[#00E599] text-slate-200"
                   } border text-[10px] font-bold transition cursor-pointer shadow-sm group`}
@@ -11579,17 +11530,15 @@ export default function TacticsBoard({
             className={`relative z-30 flex flex-wrap items-center justify-start ${isCompactUI ? "py-1.5 px-3 gap-1.5 mb-2 text-[90%]" : "py-2 px-4 gap-2 mb-3"
               } tb-toolbar ${isModernSleek ? "text-slate-800" : ""} transition-all duration-300`}
           >
-            {/* Ligne unique : les groupes qui ne tiennent pas passent dans le menu du chevron */}
-            <div ref={toolbarOverflow.rowRef} className="flex items-center flex-nowrap gap-[inherit] w-full basis-full min-w-0">
-            {/* Zone des groupes : défile horizontalement quand les outils repliés sont déroulés */}
+            {/* Ligne unique : tous les outils sont affichés, la zone des groupes défile horizontalement si besoin */}
+            <div className="flex items-center flex-nowrap gap-[inherit] w-full basis-full min-w-0">
+            <div className="relative flex-1 min-w-0 flex items-center">
+            {renderToolbarScrollArrow("left")}
+            {/* Zone des groupes : défilement au doigt, à la molette ou par les flèches de bord */}
             <div
-              ref={toolbarScrollerRef}
-              onWheel={(e) => {
-                // Molette verticale → défilement horizontal de la barre déroulée
-                if (!isToolbarOverflowOpen || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-                e.currentTarget.scrollLeft += e.deltaY;
-              }}
-              className={`flex items-center flex-nowrap gap-[inherit] flex-1 min-w-0 py-1 -my-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${isToolbarOverflowOpen ? "overflow-x-auto overscroll-x-contain" : "overflow-hidden"}`}
+              ref={toolbarScroll.scrollerRef}
+              onWheel={toolbarScroll.onWheel}
+              className="flex items-center flex-nowrap gap-[inherit] flex-1 min-w-0 py-1 -my-1 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
 
             {/* GROUP 1: Vue du terrain (complet / demi-terrain, paysage / portrait) */}
@@ -11672,8 +11621,9 @@ export default function TacticsBoard({
                 <Smartphone className="h-[18px] w-[18px] shrink-0" />
               </button>
 
-              {/* Format de jeu du terrain : foot à 11 / 8 / 5 (rugby à XV / 7) */}
-              {getGameFormatOptions(activeSport).length > 1 && (
+              {/* Format de jeu du terrain : foot à 11 / 8 / 5 (rugby à XV / 7).
+                  Formule gratuite uniquement : en PRO, le format est celui de l'équipe, choisi à sa création. */}
+              {!isProOrAdmin && getGameFormatOptions(activeSport).length > 1 && (
                 <>
                   <div className={`h-4 w-px mx-0.5 ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
                   <div
@@ -12185,15 +12135,12 @@ export default function TacticsBoard({
             </div>
             )}
 
-            {/* Outils repliés, déroulés à la suite quand le chevron est ouvert */}
-            {renderToolbarHiddenGroups()}
+            </div>
+            {renderToolbarScrollArrow("right")}
             </div>
 
-            {/* Chevron : déroule / replie les outils qui ne tiennent pas sur la ligne */}
-            {renderToolbarChevron()}
-
             {/* GROUP 5: Animation (ouvre les contrôles en seconde ligne) — reste à droite, ouvert ou fermé */}
-            <div ref={toolbarOverflow.pinnedRef} className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               <div className={`flex items-center h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                 <button
                   type="button"
@@ -12225,7 +12172,8 @@ export default function TacticsBoard({
                   aria-label={t.tactics.pitchModes.animationVideoInactive}
                 >
                   <Video className="h-[18px] w-[18px] shrink-0" />
-                  <span className="text-[10.5px] font-bold whitespace-nowrap">Animation</span>
+                  {/* Libellé masqué sur smartphone pour laisser la place aux outils */}
+                  <span className="hidden sm:inline text-[10.5px] font-bold whitespace-nowrap">Animation</span>
                 </button>
                 </div>
             </div>
@@ -12237,7 +12185,7 @@ export default function TacticsBoard({
 
 
           {/* PITCH WORKSPACE WITH FLANKING PANELS (LEFT: MON EQUIPE + SUBS, CENTER: PITCH, RIGHT: COMPO ADVERSE) */}
-          <div className="tb-workspace flex-1 flex flex-col lg:flex-row items-stretch lg:items-center justify-center gap-2 xl:gap-3.5 w-full m-auto min-h-0">
+          <div className="tb-workspace flex-1 flex flex-col lg:flex-row items-stretch lg:items-center-safe justify-center-safe gap-2 xl:gap-3.5 w-full m-auto min-h-0">
 
             {/* 1. LEFT FLANKING PANEL: MON EQUIPE (USER CLUB + SUBS) */}
             {!isPitchFullscreen && renderTeamAPanel(false)}
@@ -12274,7 +12222,7 @@ export default function TacticsBoard({
                       if (el.scrollWidth <= el.clientWidth || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
                       el.scrollLeft += e.deltaY;
                     }}
-                    className="max-w-full flex flex-nowrap items-center gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:thin] pb-0.5 [&>*]:shrink-0"
+                    className="max-w-full flex flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:thin] pb-0.5 [&>*]:shrink-0"
                   >
 
                     {/* Mode Live Indicator & Score Pill in Top Fullscreen Bar */}
@@ -12291,11 +12239,11 @@ export default function TacticsBoard({
                           <span className={`text-[8.5px] font-black tracking-wider uppercase ${isModernSleek ? "text-rose-700" : "text-rose-300"}`}>
                             LIVE
                           </span>
-                          <div className={`h-3 w-px ${isModernSleek ? "bg-rose-300" : "bg-rose-800/60"}`} />
+                          <div className={`h-4 w-px ${isModernSleek ? "bg-rose-300" : "bg-rose-800/60"}`} />
                           <span className={`text-[9.5px] font-mono font-black ${isModernSleek ? "text-amber-600" : "text-amber-300"}`}>
                             {homeScore} - {awayScore}
                           </span>
-                          <div className={`h-3 w-px ${isModernSleek ? "bg-rose-300" : "bg-rose-800/60"}`} />
+                          <div className={`h-4 w-px ${isModernSleek ? "bg-rose-300" : "bg-rose-800/60"}`} />
                           <span className={`text-[9px] font-mono font-bold ${isHalftime
                             ? halftimeSecondsLeft === 0 ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-amber-700" : "text-[#e9c349]")
                             : isPeriodOvertime ? (isModernSleek ? "text-rose-600" : "text-rose-400") : (isModernSleek ? "text-slate-600" : "text-slate-300")
@@ -12303,16 +12251,16 @@ export default function TacticsBoard({
                             {isHalftime ? `${breakShortLabel} ${formatLiveTime(halftimeSecondsLeft)}` : formatLiveTime(liveTimerSeconds)}
                           </span>
                         </div>
-                        <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
+                        <div className={`h-6 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
                       </>
                     )}
 
                     {/* GROUP 1: Pitch View Modes (Full Pitch & Half Pitch) & Animation Video Toggle */}
-                    <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
+                    <div className={`flex items-center gap-1.5 h-11 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                       <button
                         type="button"
                         onClick={() => setTerrainComplet(true)}
-                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${terrainComplet
+                        className={`h-10 px-3 rounded-lg transition cursor-pointer flex items-center justify-center ${terrainComplet
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12323,7 +12271,7 @@ export default function TacticsBoard({
                         title={t.tactics.pitchModes.fullPitch}
                         aria-label={t.tactics.pitchModes.fullPitch}
                       >
-                        <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="2" y="4" width="20" height="16" rx="2" />
                           <line x1="12" y1="4" x2="12" y2="20" />
                           <circle cx="12" cy="12" r="3" />
@@ -12332,7 +12280,7 @@ export default function TacticsBoard({
                       <button
                         type="button"
                         onClick={() => setTerrainComplet(false)}
-                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${!terrainComplet
+                        className={`h-10 px-3 rounded-lg transition cursor-pointer flex items-center justify-center ${!terrainComplet
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12343,7 +12291,7 @@ export default function TacticsBoard({
                         title={t.tactics.pitchModes.halfPitch}
                         aria-label={t.tactics.pitchModes.halfPitch}
                       >
-                        <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M4 3h16v18H4z" />
                           <line x1="4" y1="21" x2="20" y2="21" />
                           <path d="M8 3v5h8V3" />
@@ -12351,7 +12299,7 @@ export default function TacticsBoard({
                         </svg>
                       </button>
 
-                      <div className={`h-4 w-px mx-0.5 ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
+                      <div className={`h-6 w-px mx-0.5 ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
 
                       <button
                         type="button"
@@ -12369,7 +12317,7 @@ export default function TacticsBoard({
                             }, 100);
                           }
                         }}
-                        className={`h-7 px-2.5 rounded-lg transition flex items-center justify-center ${isLiveMatchMode
+                        className={`h-10 px-3 rounded-lg transition flex items-center justify-center ${isLiveMatchMode
                           ? "opacity-30 cursor-not-allowed bg-[#0c1017] border border-[#1e293b] text-slate-500"
                           : isAnimationCreatorOpen
                             ? isModernSleek
@@ -12382,16 +12330,16 @@ export default function TacticsBoard({
                         title={isLiveMatchMode ? t.tactics.pitchModes.animationLiveDisabled : (isAnimationCreatorOpen ? t.tactics.pitchModes.animationVideoActive : t.tactics.pitchModes.animationVideoInactive)}
                         aria-label={t.tactics.pitchModes.animationVideoInactive}
                       >
-                        <Video className="h-4 w-4 shrink-0" />
+                        <Video className="h-5 w-5 shrink-0" />
                       </button>
                     </div>
 
                     {/* GROUP 2: Display Device Ratios (Paysage & Portrait) */}
-                    <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
+                    <div className={`flex items-center gap-1.5 h-11 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                       <button
                         type="button"
                         onClick={() => setAspectRatioMode("desktop")}
-                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${aspectRatioMode === "desktop"
+                        className={`h-10 px-3 rounded-lg transition cursor-pointer flex items-center justify-center ${aspectRatioMode === "desktop"
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12402,12 +12350,12 @@ export default function TacticsBoard({
                         title={t.tactics.pitchModes.aspectDesktop}
                         aria-label={t.tactics.pitchModes.aspectDesktop}
                       >
-                        <Laptop className="h-4 w-4 shrink-0" />
+                        <Laptop className="h-5 w-5 shrink-0" />
                       </button>
                       <button
                         type="button"
                         onClick={() => setAspectRatioMode("mobile")}
-                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${aspectRatioMode === "mobile"
+                        className={`h-10 px-3 rounded-lg transition cursor-pointer flex items-center justify-center ${aspectRatioMode === "mobile"
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12418,16 +12366,16 @@ export default function TacticsBoard({
                         title={t.tactics.pitchModes.aspectMobile}
                         aria-label={t.tactics.pitchModes.aspectMobile}
                       >
-                        <Smartphone className="h-4 w-4 shrink-0" />
+                        <Smartphone className="h-5 w-5 shrink-0" />
                       </button>
                     </div>
 
                     {/* GROUP 3: Pitch Interactive Elements (Ballon & Adversaires & Noms & Volets) */}
-                    <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
+                    <div className={`flex items-center gap-1.5 h-11 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                       <button
                         type="button"
                         onClick={() => setShowBall(!showBall)}
-                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 ${showBall
+                        className={`h-10 px-3 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 ${showBall
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12441,14 +12389,14 @@ export default function TacticsBoard({
                         }
                         aria-label={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
                       >
-                        <span className="text-sm leading-none shrink-0" aria-hidden="true">
+                        <span className="text-lg leading-none shrink-0" aria-hidden="true">
                           {getSportBallInfo(activeSport).emoji}
                         </span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowOpponents(!showOpponents)}
-                        className={`h-7 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${showOpponents
+                        className={`h-10 px-3 rounded-lg transition cursor-pointer flex items-center justify-center ${showOpponents
                           ? isModernSleek
                             ? "bg-rose-50 border border-rose-400 text-rose-700 shadow-xs font-black"
                             : "bg-[#28131a] border border-rose-500/60 text-rose-400 shadow-xs"
@@ -12459,12 +12407,12 @@ export default function TacticsBoard({
                         title={showOpponents ? t.tactics.pitchModes.opponentsHide : t.tactics.pitchModes.opponentsShow}
                         aria-label={showOpponents ? t.tactics.pitchModes.opponentsHide : t.tactics.pitchModes.opponentsShow}
                       >
-                        <Users className="h-4 w-4 shrink-0" />
+                        <Users className="h-5 w-5 shrink-0" />
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowPlayerNames(!showPlayerNames)}
-                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${!showPlayerNames
+                        className={`h-10 w-10 rounded-lg transition cursor-pointer flex items-center justify-center ${!showPlayerNames
                           ? isModernSleek
                             ? "bg-amber-50 border border-amber-400 text-amber-800 shadow-xs font-black"
                             : "bg-[#382810] border border-amber-400 text-amber-300 shadow-xs font-black"
@@ -12475,7 +12423,7 @@ export default function TacticsBoard({
                         title={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
                         aria-label={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
                       >
-                        <Hash className="h-4 w-4 shrink-0" />
+                        <Hash className="h-5 w-5 shrink-0" />
                       </button>
                       <button
                         type="button"
@@ -12484,7 +12432,7 @@ export default function TacticsBoard({
                           setIsTeamAPanelCollapsed(shouldCollapse);
                           setIsTeamBPanelCollapsed(shouldCollapse);
                         }}
-                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${isTeamAPanelCollapsed && isTeamBPanelCollapsed
+                        className={`h-10 w-10 rounded-lg transition cursor-pointer flex items-center justify-center ${isTeamAPanelCollapsed && isTeamBPanelCollapsed
                           ? isModernSleek
                             ? "bg-purple-50 border border-purple-400 text-purple-700 shadow-xs font-black"
                             : "bg-[#361942] border border-purple-400 text-purple-200 shadow-xs font-black"
@@ -12503,19 +12451,19 @@ export default function TacticsBoard({
                             : t.tactics.pitchModes.panelsCollapse
                         }
                       >
-                        <Columns className="h-4 w-4 shrink-0" />
+                        <Columns className="h-5 w-5 shrink-0" />
                       </button>
                     </div>
 
                     {/* GROUP 3.5: Représentation des Joueurs (Fullscreen) */}
                     <div
-                      className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}
+                      className={`flex items-center gap-1.5 h-11 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}
                       title={t.tactics.pitchModes.repTitle}
                     >
                       <button
                         type="button"
                         onClick={() => setPlayerRepresentation("dot")}
-                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "dot"
+                        className={`h-10 w-10 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "dot"
                           ? isModernSleek
                             ? "bg-white border border-emerald-500 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs font-black"
@@ -12526,13 +12474,13 @@ export default function TacticsBoard({
                         title={t.tactics.pitchModes.repPastille}
                         aria-label={t.tactics.pitchModes.repPastille}
                       >
-                        <Circle className="h-4 w-4 shrink-0" />
+                        <Circle className="h-5 w-5 shrink-0" />
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setPlayerRepresentation("jersey")}
-                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "jersey"
+                        className={`h-10 w-10 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "jersey"
                           ? isModernSleek
                             ? "bg-white border border-emerald-500 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs font-black"
@@ -12543,13 +12491,13 @@ export default function TacticsBoard({
                         title={t.tactics.pitchModes.repBuste}
                         aria-label={t.tactics.pitchModes.repBuste}
                       >
-                        <Shirt className="h-4 w-4 shrink-0" />
+                        <Shirt className="h-5 w-5 shrink-0" />
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setPlayerRepresentation("head")}
-                        className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "head"
+                        className={`h-10 w-10 rounded-lg transition cursor-pointer flex items-center justify-center ${playerRepresentation === "head"
                           ? isModernSleek
                             ? "bg-white border border-emerald-500 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs font-black"
@@ -12560,19 +12508,19 @@ export default function TacticsBoard({
                         title={t.tactics.pitchModes.repTete}
                         aria-label={t.tactics.pitchModes.repTete}
                       >
-                        <User className="h-4 w-4 shrink-0" />
+                        <User className="h-5 w-5 shrink-0" />
                       </button>
                     </div>
 
-                    <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
+                    <div className={`h-6 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
 
                     {/* GROUP 4: Drawing Tools (Select, Move, Line, Arrow, Draw) */}
-                    <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
+                    <div className={`flex items-center gap-1.5 h-11 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                       {/* Sélecteur */}
                       <button
                         type="button"
                         onClick={() => { setActiveTool("select"); setDrawingTool("brush"); }}
-                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "select"
+                        className={`h-10 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "select"
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12583,14 +12531,14 @@ export default function TacticsBoard({
                         title={t.tactics.tools.select}
                         aria-label={t.tactics.tools.select}
                       >
-                        <MousePointer className="h-4 w-4 shrink-0" />
+                        <MousePointer className="h-5 w-5 shrink-0" />
                       </button>
 
                       {/* Déplacer */}
                       <button
                         type="button"
                         onClick={() => { setActiveTool("move"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
-                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "move"
+                        className={`h-10 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "move"
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12601,14 +12549,14 @@ export default function TacticsBoard({
                         title={t.tactics.tools.move}
                         aria-label={t.tactics.tools.move}
                       >
-                        <Move className="h-4 w-4 shrink-0" />
+                        <Move className="h-5 w-5 shrink-0" />
                       </button>
 
                       {/* Ligne Pleine & Pointillée */}
                       <button
                         type="button"
                         onClick={handleToggleLineTool}
-                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "line"
+                        className={`h-10 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "line"
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12626,11 +12574,11 @@ export default function TacticsBoard({
                         aria-label={t.tactics.tools.line}
                       >
                         {activeTool === "line" && drawingTool === "shape-dashed-line" ? (
-                          <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                             <line x1="4" y1="20" x2="20" y2="4" strokeDasharray="3 3" />
                           </svg>
                         ) : (
-                          <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                             <line x1="5" y1="19" x2="19" y2="5" />
                           </svg>
                         )}
@@ -12640,7 +12588,7 @@ export default function TacticsBoard({
                       <button
                         type="button"
                         onClick={() => { setActiveTool(activeTool === "link" ? "select" : "link"); setSelectedStrokeIndex(null); }}
-                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "link"
+                        className={`h-10 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "link"
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12652,14 +12600,14 @@ export default function TacticsBoard({
                         aria-label="Lier des joueurs"
                         aria-pressed={activeTool === "link"}
                       >
-                        <PlayerLinkIcon className="h-4 w-4 shrink-0" />
+                        <PlayerLinkIcon className="h-5 w-5 shrink-0" />
                       </button>
 
                       {/* Flèche */}
                       <button
                         type="button"
                         onClick={() => { setActiveTool("arrow"); setDrawingTool("arrow-direct"); setSelectedStrokeIndex(null); }}
-                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "arrow"
+                        className={`h-10 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "arrow"
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12670,14 +12618,14 @@ export default function TacticsBoard({
                         title={t.tactics.tools.arrow}
                         aria-label={t.tactics.tools.arrow}
                       >
-                        <ArrowUpRight className="h-4 w-4 shrink-0" />
+                        <ArrowUpRight className="h-5 w-5 shrink-0" />
                       </button>
 
                       {/* Courbe fléchée */}
                       <button
                         type="button"
                         onClick={handleToggleCurveTool}
-                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "curve"
+                        className={`h-10 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "curve"
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12689,14 +12637,14 @@ export default function TacticsBoard({
                         aria-label="Courbe fléchée"
                         aria-pressed={activeTool === "curve"}
                       >
-                        <CurveArrowIcon dashed={activeTool === "curve" && drawingTool === "curve-arrow-dashed"} className="h-4 w-4 shrink-0" />
+                        <CurveArrowIcon dashed={activeTool === "curve" && drawingTool === "curve-arrow-dashed"} className="h-5 w-5 shrink-0" />
                       </button>
 
                       {/* Crayon */}
                       <button
                         type="button"
                         onClick={() => { setActiveTool("draw"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
-                        className={`h-7 px-2 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "draw"
+                        className={`h-10 px-2.5 rounded-lg transition cursor-pointer flex items-center justify-center ${activeTool === "draw"
                           ? isModernSleek
                             ? "bg-white border border-emerald-400 text-emerald-800 shadow-xs font-black"
                             : "bg-[#132338] border border-[#00E599]/60 text-[#00E599] shadow-xs"
@@ -12707,38 +12655,38 @@ export default function TacticsBoard({
                         title={t.tactics.tools.draw}
                         aria-label={t.tactics.tools.draw}
                       >
-                        <Pencil className="h-4 w-4 shrink-0" />
+                        <Pencil className="h-5 w-5 shrink-0" />
                       </button>
                     </div>
 
-                    <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
+                    <div className={`h-6 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
 
                     {/* Couleur de trait bleue */}
                     <button
                       type="button"
                       onClick={() => setDrawColor("#3b82f6")}
-                      className={`h-7 w-8 rounded-lg shadow-xs cursor-pointer flex items-center justify-center transition ${isModernSleek
+                      className={`h-10 w-11 rounded-lg shadow-xs cursor-pointer flex items-center justify-center transition ${isModernSleek
                         ? "bg-slate-100 border border-blue-400 hover:bg-slate-200"
                         : "bg-[#0c1017] border border-[#3b82f6]/50 hover:bg-[#151e2d]"
                         }`}
                       title={`${t.tactics.strokeSection} : #3b82f6`}
                       aria-label={`${t.tactics.strokeSection} : #3b82f6`}
                     >
-                      <span className="w-3.5 h-3.5 rounded-full bg-[#3b82f6] border border-white/50 ring-2 ring-[#3b82f6]/50 shadow-sm" />
+                      <span className="w-4 h-4 rounded-full bg-[#3b82f6] border border-white/50 ring-2 ring-[#3b82f6]/50 shadow-sm" />
                     </button>
 
                     {/* Sélecteur d'épaisseur */}
-                    <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
+                    <div className={`flex items-center gap-1.5 h-11 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                       {[
-                        { size: 2, label: t.tactics.pitchModes.strokeThin, dot: "w-1.5 h-1.5" },
-                        { size: 3, label: t.tactics.pitchModes.strokeMedium, dot: "w-2.5 h-2.5" },
-                        { size: 5, label: t.tactics.pitchModes.strokeThick, dot: "w-3.5 h-3.5" }
+                        { size: 2, label: t.tactics.pitchModes.strokeThin, dot: "w-2 h-2" },
+                        { size: 3, label: t.tactics.pitchModes.strokeMedium, dot: "w-3 h-3" },
+                        { size: 5, label: t.tactics.pitchModes.strokeThick, dot: "w-4 h-4" }
                       ].map(({ size, label, dot }) => (
                         <button
                           key={size}
                           type="button"
                           onClick={() => setDrawSize(size)}
-                          className={`h-7 w-6 rounded-md transition cursor-pointer flex items-center justify-center ${drawSize === size
+                          className={`h-10 w-9 rounded-md transition cursor-pointer flex items-center justify-center ${drawSize === size
                             ? isModernSleek
                               ? "bg-white text-blue-600 border border-blue-300 shadow-xs font-bold"
                               : "bg-[#132338] text-[#3b82f6] border border-[#3b82f6]/50 font-bold"
@@ -12759,7 +12707,7 @@ export default function TacticsBoard({
                       type="button"
                       onClick={handleClearDrawings}
                       disabled={drawingActions.length === 0}
-                      className={`h-7 px-2.5 rounded-lg border flex items-center justify-center transition cursor-pointer ${drawingActions.length > 0
+                      className={`h-10 px-3 rounded-lg border flex items-center justify-center transition cursor-pointer ${drawingActions.length > 0
                         ? isModernSleek
                           ? "bg-rose-100 hover:bg-rose-200 border-rose-300 text-rose-700 shadow-xs"
                           : "bg-rose-950/80 hover:bg-rose-900 border-rose-800 text-rose-300 hover:text-white shadow-sm"
@@ -12770,16 +12718,16 @@ export default function TacticsBoard({
                       title={t.tactics.tools.clearDrawings}
                       aria-label={t.tactics.tools.clearDrawings}
                     >
-                      <Trash2 className="w-4 h-4 shrink-0" />
+                      <Trash2 className="w-5 h-5 shrink-0" />
                     </button>
 
-                    <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
+                    <div className={`h-6 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
 
                     {/* GROUP 5: Zooms (Échelle Terrain & Taille Joueurs) */}
-                    <div className={`flex items-center gap-2 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 px-2 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]"}`}>
+                    <div className={`flex items-center gap-2 h-11 ${isModernSleek ? "bg-slate-100 p-0.5 px-2 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]"}`}>
                       {/* Pitch Zoom */}
                       <div title={t.tactics.pitchModes.pitchZoom} className="flex items-center gap-1">
-                        <ZoomIn className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
+                        <ZoomIn className={`h-5 w-5 shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
                         <button
                           type="button"
                           onClick={() =>
@@ -12789,7 +12737,7 @@ export default function TacticsBoard({
                               return next;
                             })
                           }
-                          className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
+                          className={`h-10 w-9 rounded-md flex items-center justify-center text-base font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                             }`}
@@ -12803,7 +12751,7 @@ export default function TacticsBoard({
                             setZoomScale(100);
                             setPitchPan({ x: 0, y: 0 });
                           }}
-                          className={`text-[10px] font-black w-7 text-center font-mono cursor-pointer transition ${isModernSleek ? "text-slate-900 hover:text-emerald-700" : "text-white hover:text-[#00E599]"}`}
+                          className={`text-xs font-black w-10 text-center font-mono cursor-pointer transition ${isModernSleek ? "text-slate-900 hover:text-emerald-700" : "text-white hover:text-[#00E599]"}`}
                           title="Réinitialiser le zoom et centrer le terrain (100%)"
                         >
                           {zoomScale}%
@@ -12817,7 +12765,7 @@ export default function TacticsBoard({
                               return next;
                             })
                           }
-                          className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
+                          className={`h-10 w-9 rounded-md flex items-center justify-center text-base font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                             }`}
@@ -12827,15 +12775,15 @@ export default function TacticsBoard({
                         </button>
                       </div>
 
-                      <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
+                      <div className={`h-6 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
 
                       {/* Players Scale */}
                       <div title={t.tactics.pitchModes.playerZoom} className="flex items-center gap-1">
-                        <User className={`h-4 w-4 shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
+                        <User className={`h-5 w-5 shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
                         <button
                           type="button"
                           onClick={() => setPlayerScale(prev => Math.max(20, prev - 10))}
-                          className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
+                          className={`h-10 w-9 rounded-md flex items-center justify-center text-base font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                             }`}
@@ -12843,11 +12791,11 @@ export default function TacticsBoard({
                         >
                           -
                         </button>
-                        <span className={`text-[10px] font-black w-7 text-center font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{playerScale}%</span>
+                        <span className={`text-xs font-black w-10 text-center font-mono ${isModernSleek ? "text-slate-900" : "text-white"}`}>{playerScale}%</span>
                         <button
                           type="button"
                           onClick={() => setPlayerScale(prev => Math.min(130, prev + 10))}
-                          className={`h-7 w-6 rounded-md flex items-center justify-center text-xs font-bold transition cursor-pointer ${isModernSleek
+                          className={`h-10 w-9 rounded-md flex items-center justify-center text-base font-bold transition cursor-pointer ${isModernSleek
                             ? "bg-white border border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
                             : "bg-[#0c1017] border border-[#1e293b] text-[#718096] hover:bg-[#151e2d] hover:text-white"
                             }`}
@@ -12858,19 +12806,19 @@ export default function TacticsBoard({
                       </div>
                     </div>
 
-                    <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
+                    <div className={`h-6 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1f293d]"}`} />
 
                     {/* GROUP 6: Quitter plein écran */}
                     <div className="flex items-center">
                       <button
                         type="button"
                         onClick={togglePitchFullscreen}
-                        className="h-8 px-3 bg-rose-600 hover:bg-rose-500 border border-rose-400 text-white rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 font-black text-xs shadow-md shadow-rose-950/50"
+                        className="h-11 px-4 bg-rose-600 hover:bg-rose-500 border border-rose-400 text-white rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 font-black text-xs shadow-md shadow-rose-950/50"
                         title={t.tactics.pitchModes.fullscreenExit}
                         aria-label={t.tactics.pitchModes.fullscreenExit}
                       >
-                        <Minimize2 className="h-4 w-4 shrink-0 stroke-[2.5]" />
-                        <span className="uppercase tracking-wider text-[10px]">{t.tactics.pitchModes.fullscreenExit}</span>
+                        <Minimize2 className="h-5 w-5 shrink-0 stroke-[2.5]" />
+                        <span className="uppercase tracking-wider text-xs">{t.tactics.pitchModes.fullscreenExit}</span>
                       </button>
                     </div>
                   </div>

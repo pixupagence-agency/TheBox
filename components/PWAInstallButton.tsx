@@ -19,15 +19,16 @@ export const PWAInstallButton: React.FC<{ isModernSleek?: boolean }> = ({ isMode
       <button
         onClick={install}
         type="button"
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-black transition cursor-pointer shadow-sm ${
+        className={`h-8 shrink-0 flex items-center gap-1.5 px-2 sm:px-2.5 rounded-xl text-xs font-black transition cursor-pointer shadow-sm ${
           isModernSleek
             ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
             : "bg-[#00E599] hover:bg-[#00c978] text-[#0d1117] font-black"
         }`}
         title="Installer The Box sur votre écran d'accueil"
+        aria-label="Installer l'application"
       >
         <Download className="w-3.5 h-3.5 shrink-0" />
-        <span>Installer l&apos;App</span>
+        <span className="hidden sm:inline whitespace-nowrap">Installer l&apos;App</span>
       </button>
     );
   }
@@ -39,15 +40,16 @@ export const PWAInstallButton: React.FC<{ isModernSleek?: boolean }> = ({ isMode
         <button
           onClick={() => setShowIOSGuide(true)}
           type="button"
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-black transition cursor-pointer border ${
+          className={`h-8 shrink-0 flex items-center gap-1.5 px-2 sm:px-2.5 rounded-xl text-xs font-black transition cursor-pointer border ${
             isModernSleek
               ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
               : "bg-[#102420] text-[#00E599] border-[#00e599]/40 hover:bg-[#18362b]"
           }`}
           title="Installer sur iPhone / iPad"
+          aria-label="Installer sur iPhone / iPad"
         >
           <Smartphone className="w-3.5 h-3.5 shrink-0" />
-          <span>Installer (iOS)</span>
+          <span className="hidden sm:inline whitespace-nowrap">Installer (iOS)</span>
         </button>
 
         {showIOSGuide && (
