@@ -28,7 +28,7 @@ import {
   Search, UserCheck, Upload, ArrowLeftRight, Zap, AlertCircle, Cloud, Filter, Film,
   Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target, Shirt, Circle,
   CreditCard, Box, Scan, Bookmark, CalendarDays, CircleHelp, NotebookPen,
-  Crown, Flag, CornerUpLeft, CornerUpRight, Archive, QrCode
+  Crown, Flag, CornerUpLeft, CornerUpRight, Archive, QrCode, Tag
 } from "lucide-react";
 import { getPremiumTheme, premiumOverlay, premiumShell, premiumLabel } from "@/lib/premiumModalTheme";
 import { auth, logoutUser, saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
@@ -1678,6 +1678,26 @@ export default function TacticsBoard({
       localStorage.setItem("thebox_show_player_names", String(showPlayerNames));
     }
   }, [showPlayerNames]);
+
+  // Rôles des joueurs sur le terrain (« C » du capitaine, CF, PK, CK…) : masquables depuis la barre d'outils
+  const [showPlayerRoles, setShowPlayerRoles] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("thebox_show_player_roles");
+        if (saved !== null) return saved === "true";
+      } catch { }
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("thebox_show_player_roles", String(showPlayerRoles));
+    } catch { }
+  }, [showPlayerRoles]);
+  const playerRolesToggleLabel = showPlayerRoles
+    ? (currentLang === "en" ? "Hide player roles (captain, set pieces)" : "Masquer les rôles des joueurs (capitaine, coups de pied arrêtés)")
+    : (currentLang === "en" ? "Show player roles (captain, set pieces)" : "Afficher les rôles des joueurs (capitaine, coups de pied arrêtés)");
 
   // Choix de la représentation des joueurs : Pastille ("dot"), Buste ("jersey") ou Tête ("head")
   const [playerRepresentation, setPlayerRepresentation] = useState<"dot" | "jersey" | "head">(() => {
@@ -11792,6 +11812,24 @@ export default function TacticsBoard({
               >
                 <Hash className="h-[18px] w-[18px] shrink-0" />
               </button>
+              {/* Afficher / masquer les rôles des joueurs (capitaine, coups de pied arrêtés…) */}
+              <button
+                type="button"
+                onClick={() => setShowPlayerRoles(!showPlayerRoles)}
+                aria-pressed={!showPlayerRoles}
+                className={`h-7 w-7 sm:w-8 rounded-lg transition cursor-pointer flex items-center justify-center ${!showPlayerRoles
+                  ? isModernSleek
+                    ? "bg-amber-500 border border-amber-600 text-white shadow-xs font-black"
+                    : "bg-[#382810] border border-amber-400 text-amber-300 shadow-xs font-black"
+                  : isModernSleek
+                    ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
+                    : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                  }`}
+                title={playerRolesToggleLabel}
+                aria-label={playerRolesToggleLabel}
+              >
+                <Tag className="h-[18px] w-[18px] shrink-0" />
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -12414,6 +12452,24 @@ export default function TacticsBoard({
                         aria-label={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
                       >
                         <Hash className="h-5 w-5 shrink-0" />
+                      </button>
+                      {/* Afficher / masquer les rôles des joueurs (capitaine, coups de pied arrêtés…) */}
+                      <button
+                        type="button"
+                        onClick={() => setShowPlayerRoles(!showPlayerRoles)}
+                        aria-pressed={!showPlayerRoles}
+                        className={`h-10 w-10 rounded-lg transition cursor-pointer flex items-center justify-center ${!showPlayerRoles
+                          ? isModernSleek
+                            ? "bg-amber-50 border border-amber-400 text-amber-800 shadow-xs font-black"
+                            : "bg-[#382810] border border-amber-400 text-amber-300 shadow-xs font-black"
+                          : isModernSleek
+                            ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
+                            : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
+                          }`}
+                        title={playerRolesToggleLabel}
+                        aria-label={playerRolesToggleLabel}
+                      >
+                        <Tag className="h-5 w-5 shrink-0" />
                       </button>
                       <button
                         type="button"
@@ -13409,7 +13465,7 @@ export default function TacticsBoard({
 
                                     {/* CAPITAINE : « C » cerclé collé au numéro du joueur
                                         (à droite de la pastille du numéro en mode Tête, en haut à droite du joueur sinon) */}
-                                    {token.type === "player_a" && setPieceRoles.captain === token.name && (
+                                    {showPlayerRoles && token.type === "player_a" && setPieceRoles.captain === token.name && (
                                       <span
                                         className={`absolute ${isHeadMode ? "-top-[5px] -right-[19px]" : "-top-1 -right-1.5"} w-3 h-3 rounded-full border-[1.5px] border-amber-300 bg-[#0b0f17]/85 text-amber-300 font-black text-[7px] leading-none flex items-center justify-center shadow-sm z-30 pointer-events-none`}
                                         title={t.tactics.pitchBadges.captain}
@@ -13422,7 +13478,7 @@ export default function TacticsBoard({
                                     {/* LEFT BADGES : rôles du sport (PK, CF, CK au foot ; BUT, OUV, LAN au rugby ; LF, MEN au basket ; 7M, JF au hand).
                                         Petits et calés en bas à gauche du joueur : ils ne masquent ni le numéro ni le joueur,
                                         et laissent la droite libre pour le ballon quand l'équipe attaque vers la droite. */}
-                                    {token.type === "player_a" && (() => {
+                                    {showPlayerRoles && token.type === "player_a" && (() => {
                                       const codes = getPlayerRoleCodes(activeSport, setPieceRoles, token.name);
                                       if (codes.length === 0) return null;
                                       return (
