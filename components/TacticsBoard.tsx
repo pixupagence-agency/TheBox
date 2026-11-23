@@ -7049,18 +7049,23 @@ export default function TacticsBoard({
         try {
           const source = renderCompositeTacticsCanvas(s);
           if (source) {
-            // Sans le bandeau de l'image (85 px : logo, titre, coach), déjà repris par le PDF : le terrain est plus grand
-            const cropTop = Math.min(85, Math.max(0, source.height - 1));
-            const srcH = source.height - cropTop;
+            // Recadrage au plus près du terrain : sans le bandeau (85 px, déjà repris par le PDF) ni les marges
+            // sombres (35 px sur les côtés, 15 px en haut, 25 px en bas), on garde 10 px autour des lignes
+            // pour les joueurs posés sur le bord. Le terrain occupe ainsi quasiment toute la page.
+            const keep = 10;
+            const cropX = Math.max(0, 35 - keep);
+            const cropTop = Math.min(85 + 15 - keep, Math.max(0, source.height - 1));
+            const srcW = Math.max(1, source.width - cropX * 2);
+            const srcH = Math.max(1, source.height - cropTop - (25 - keep));
             // Image réduite et compressée : le PDF reste léger même avec beaucoup de schémas
-            const scale = Math.min(1, 2000 / source.width);
+            const scale = Math.min(1, 2400 / srcW);
             const out = document.createElement("canvas");
-            out.width = Math.round(source.width * scale);
+            out.width = Math.round(srcW * scale);
             out.height = Math.round(srcH * scale);
             const outCtx = out.getContext("2d");
             if (outCtx) {
               outCtx.imageSmoothingQuality = "high";
-              outCtx.drawImage(source, 0, cropTop, source.width, srcH, 0, 0, out.width, out.height);
+              outCtx.drawImage(source, cropX, cropTop, srcW, srcH, 0, 0, out.width, out.height);
               image = out.toDataURL("image/jpeg", 0.88);
               imageWidth = out.width;
               imageHeight = out.height;
@@ -7998,38 +8003,23 @@ export default function TacticsBoard({
         ctx.fillText(String(token.number ?? token.role ?? (isTeamB ? "B" : "A")), 0, 7);
         ctx.restore();
       } else if (playerRepresentation === "head" && portrait) {
-        // Mode Tête du joueur : même rendu que sur le terrain (cadre arrondi aux couleurs de l'équipe, numéro en pastille)
+        // Mode Tête du joueur : même rendu que sur le terrain (joueur détouré sans vignette ni contour,
+        // ombre qui suit la silhouette, numéro en pastille aux couleurs de l'équipe)
         const isTeamB = token.type === "player_b";
         const teamColor = isTeamB ? (teamBColor || "#e11d48") : (teamAColor || "#00E599");
         const half = radius + 2;
-        const traceFrame = () => {
-          ctx.beginPath();
-          if (typeof ctx.roundRect === "function") {
-            ctx.roundRect(tokX - half, tokY - half, half * 2, half * 2, 11);
-          } else {
-            ctx.rect(tokX - half, tokY - half, half * 2, half * 2);
-          }
-        };
-
-        traceFrame();
-        ctx.fillStyle = "#0b1512";
-        ctx.fill();
-        ctx.shadowColor = "transparent";
 
         ctx.save();
-        traceFrame();
-        ctx.clip();
+        ctx.shadowColor = "rgba(0, 0, 0, 0.65)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetY = 2;
         ctx.imageSmoothingQuality = "high";
         const fitScale = Math.min((half * 2) / portrait.naturalWidth, (half * 2) / portrait.naturalHeight);
         const drawW = portrait.naturalWidth * fitScale;
         const drawH = portrait.naturalHeight * fitScale;
         ctx.drawImage(portrait, tokX - drawW / 2, tokY - drawH / 2, drawW, drawH);
         ctx.restore();
-
-        traceFrame();
-        ctx.strokeStyle = teamColor;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
+        ctx.shadowColor = "transparent";
 
         if (token.number !== undefined && token.number !== null) {
           ctx.beginPath();
@@ -13308,14 +13298,13 @@ export default function TacticsBoard({
 
                                         return (
                                           <div className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center relative">
-                                            <div
-                                              className="w-full h-full rounded-[10px] overflow-hidden border-2 bg-[#0b1512] shadow-lg"
-                                              style={{ borderColor: isTeamB ? (teamBColor || "#e11d48") : (teamAColor || "#00E599") }}
-                                            >
+                                            {/* Joueur détouré, sans vignette ni contour : le maillot de l'avatar suffit à distinguer les équipes.
+                                                L'ombre suit la silhouette pour rester lisible sur le gazon. */}
+                                            <div className="w-full h-full">
                                               <img
                                                 src={photoSrc}
                                                 alt={token.name}
-                                                className="w-full h-full object-contain select-none pointer-events-none"
+                                                className="w-full h-full object-contain select-none pointer-events-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)]"
                                               />
                                             </div>
                                             {(token.number ?? null) !== null && (

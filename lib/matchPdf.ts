@@ -2,7 +2,7 @@
 //   page 1 : couverture sombre (logo THE BOX, nom du match, compétition / date / coach / équipe)
 //   page 2 : groupe de joueurs et rôles attribués pour la rencontre
 //   puis   : notes tactiques
-//   puis   : schémas tactiques, un par page
+//   puis   : schémas tactiques, un par page, le terrain occupant quasiment toute la page
 // jsPDF est chargé à la demande pour ne pas alourdir le tableau tactique.
 
 import type { jsPDF as JsPDF } from "jspdf";
@@ -453,31 +453,26 @@ export async function exportMatchPdf(data: MatchPdfData): Promise<void> {
     writeParagraph("Aucun schéma enregistré pour ce match.", 11, MUTED);
   }
 
+  // Pages de schéma : mise en page dédiée, le terrain prend quasiment toute la page
+  // (marges de 6 mm, une seule ligne de titre en haut, pas de bandeau ni de pied de page).
+  const schemaPages = new Set<number>();
+  const sMargin = 6;
+  const sContentW = pageW - sMargin * 2;
+  const titleRowH = 8;
   const total = data.schemas.length;
   data.schemas.forEach((schema, index) => {
-    newLightPage();
-    y = contentTop - 2;
+    doc.addPage();
+    schemaPages.add(doc.getNumberOfPages());
     const hasImage = Boolean(schema.image && schema.imageWidth && schema.imageHeight);
 
-    // Place réservée à la description sous l'image (lignes réelles)
-    const description = schema.description ? pdfSafe(schema.description).replace(/ {2,}/g, " ") : "";
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    const descLines: string[] = description ? doc.splitTextToSize(description, contentW) : [];
-    const descH = Math.min(descLines.length, 3) * 10 * 0.3528 * 1.45 + (descLines.length ? 3 : 0);
-
-    const maxImgH = bottom - (y + 8) - descH;
-    let imgW = contentW;
-    let imgH = hasImage ? (contentW * schema.imageHeight!) / schema.imageWidth! : 0;
-    if (imgH > maxImgH) {
-      imgW = (imgW * maxImgH) / imgH;
-      imgH = maxImgH;
-    }
-
+    // Ligne de titre : emblème + nom du schéma à gauche, infos à droite (numéro de page ajouté à la fin)
+    drawEmblem(doc, sMargin, sMargin - 0.5, 5.5, GREEN_DARK);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12.5);
+    doc.setFontSize(11);
     doc.setTextColor(...DARK);
-    doc.text(pdfSafe(`Schéma ${index + 1} / ${total}  -  ${schema.name || "Sans nom"}`), margin, y + 4.5);
+    const titleText = pdfSafe(`Schéma ${index + 1} / ${total}  -  ${schema.name || "Sans nom"}`);
+    const titleLines: string[] = doc.splitTextToSize(titleText, sContentW * 0.6);
+    doc.text(titleLines[0], sMargin + 7.5, sMargin + 3.8);
 
     const meta = [
       schema.isAnimation ? `Animation${schema.steps ? ` - ${schema.steps} étapes` : ""}` : "",
@@ -485,20 +480,48 @@ export async function exportMatchPdf(data: MatchPdfData): Promise<void> {
     ].filter(Boolean).join("   |   ");
     if (meta) {
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
       doc.setTextColor(...MUTED);
-      doc.text(pdfSafe(meta), pageW - margin, y + 4.5, { align: "right" });
+      doc.text(pdfSafe(meta), pageW - sMargin - 22, sMargin + 3.8, { align: "right" });
     }
-    y += 8;
+
+    // Description sous le terrain : 2 lignes au plus, pour laisser la place au terrain
+    const description = schema.description ? pdfSafe(schema.description).replace(/ {2,}/g, " ") : "";
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    const descLines: string[] = description ? doc.splitTextToSize(description, sContentW) : [];
+    const shownDesc = descLines.slice(0, 2);
+    if (descLines.length > 2) shownDesc[1] = `${shownDesc[1].replace(/\s*\S*$/, "")}...`;
+    const descLineH = 9 * 0.3528 * 1.4;
+    const descH = shownDesc.length ? shownDesc.length * descLineH + 2 : 0;
+
+    const imgTop = sMargin + titleRowH;
+    const maxImgH = pageH - sMargin - imgTop - descH;
+    let imgW = sContentW;
+    let imgH = hasImage ? (sContentW * schema.imageHeight!) / schema.imageWidth! : 0;
+    if (imgH > maxImgH) {
+      imgW = (imgW * maxImgH) / imgH;
+      imgH = maxImgH;
+    }
 
     if (hasImage) {
       const format = schema.image!.startsWith("data:image/png") ? "PNG" : "JPEG";
-      doc.addImage(schema.image!, format, margin + (contentW - imgW) / 2, y, imgW, imgH, undefined, "FAST");
-      y += imgH + 3;
+      doc.addImage(schema.image!, format, sMargin + (sContentW - imgW) / 2, imgTop, imgW, imgH, undefined, "FAST");
+    } else {
+      doc.setFontSize(11);
+      doc.setTextColor(...MUTED);
+      doc.text("Image du schéma indisponible.", pageW / 2, pageH / 2, { align: "center" });
     }
 
-    if (description) {
-      writeParagraph(description, 10, DARK);
+    if (shownDesc.length) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...DARK);
+      let dy = imgTop + (hasImage ? imgH : 0) + 2 + descLineH * 0.75;
+      for (const line of shownDesc) {
+        doc.text(line, sMargin, dy);
+        dy += descLineH;
+      }
     }
   });
 
@@ -507,6 +530,14 @@ export async function exportMatchPdf(data: MatchPdfData): Promise<void> {
   const generated = `Généré le ${new Date().toLocaleDateString("fr-FR")}`;
   for (let p = 2; p <= pageCount; p++) {
     doc.setPage(p);
+    if (schemaPages.has(p)) {
+      // Page de schéma : seulement le numéro de page, dans la ligne de titre
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...MUTED);
+      doc.text(`Page ${p} / ${pageCount}`, pageW - sMargin, sMargin + 3.8, { align: "right" });
+      continue;
+    }
     drawEmblem(doc, margin, 8, 7, GREEN_DARK);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
