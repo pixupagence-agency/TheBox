@@ -93,7 +93,24 @@ export interface LiveMatchDoc {
   createdAt: number;
   updatedAt: number;
   finishedAt?: number | null;
+  /** Réactions des suiveurs (compteurs par emoji), écrites par le serveur (/api/live/react) */
+  reactions?: Partial<Record<LiveReactionId, number>>;
 }
+
+/** Réactions proposées aux suiveurs d'un match (identifiants stables : clés du compteur en base) */
+export const LIVE_REACTIONS = [
+  { id: "clap", emoji: "👏", label: "Bravo" },
+  { id: "fire", emoji: "🔥", label: "Feu" },
+  { id: "muscle", emoji: "💪", label: "Allez" },
+  { id: "wow", emoji: "😱", label: "Waouh" },
+  { id: "heart", emoji: "❤️", label: "Cœur" },
+  { id: "sad", emoji: "😢", label: "Dommage" },
+] as const;
+
+export type LiveReactionId = (typeof LIVE_REACTIONS)[number]["id"];
+
+export const reactionTotal = (reactions?: LiveMatchDoc["reactions"]) =>
+  LIVE_REACTIONS.reduce((sum, r) => sum + Math.max(0, Number(reactions?.[r.id]) || 0), 0);
 
 export interface LiveClubDoc {
   ownerUid: string;

@@ -1,7 +1,7 @@
 "use client";
 // Suivi public d'un match (parents, club) et résumé une fois terminé — d'après les maquettes
 // « Suiveur — lecture seule » et « Résumé d'un match terminé » du canvas Télécommande Live.
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Share2, Link2 } from "lucide-react";
 import { useLiveClub, useLiveMatch, useNow } from "./liveHooks";
 import {
@@ -18,7 +18,10 @@ import {
   eventTitle,
   resultLetter,
 } from "./ui";
-import { clockSeconds, formatKickoff, kickoffTime, periodLabel, type LiveEvent, type LiveMatchDoc, type LivePlayer } from "@/lib/live/model";
+import {
+  LIVE_REACTIONS, clockSeconds, formatKickoff, kickoffTime, periodLabel, reactionTotal,
+  type LiveEvent, type LiveMatchDoc, type LivePlayer, type LiveReactionId,
+} from "@/lib/live/model";
 
 const countdown = (ms: number) => {
   if (ms <= 0) return "Coup d'envoi imminent";
@@ -393,10 +396,113 @@ function Summary({ match, events, logo, clubName, onToast }: { match: LiveMatchD
 }
 
 // ---------------------------------------------------------------------------
+// Réactions des suiveurs
+// ---------------------------------------------------------------------------
+
+const REACTION_STYLES = `
+@keyframes tb-react-rise{0%{transform:translate(-50%,0) scale(.6);opacity:0}15%{opacity:1;transform:translate(-50%,-10px) scale(1.15)}100%{transform:translate(-50%,-70px) scale(1);opacity:0}}
+.tb-react-burst{position:absolute;left:50%;bottom:60%;pointer-events:none;font-size:20px;animation:tb-react-rise .9s ease-out forwards}
+`;
+
+const formatCount = (n: number) =>
+  n >= 10000 ? `${Math.round(n / 1000)} k` : n >= 1000 ? `${(n / 1000).toFixed(1).replace(".", ",")} k` : String(n);
+
+/**
+ * Barre d'emojis : chaque touche ajoute une réaction au match. Les touches sont regroupées et envoyées
+ * au serveur toutes les ~0,8 s ; l'affichage reprend tout de suite les touches pas encore comptées en ligne.
+ */
+function Reactions({ match, onToast }: { match: LiveMatchDoc & { id?: string }; onToast: (t: string) => void }) {
+  const [unsent, setUnsent] = useState<Partial<Record<LiveReactionId, number>>>({});
+  const [bursts, setBursts] = useState<{ key: number; id: LiveReactionId; emoji: string }[]>([]);
+  const queue = useRef<Partial<Record<LiveReactionId, number>>>({});
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const burstKey = useRef(0);
+  const matchId = match.id || "";
+
+  const flush = async () => {
+    timer.current = null;
+    const batch = queue.current;
+    queue.current = {};
+    for (const [reaction, count] of Object.entries(batch) as [LiveReactionId, number][]) {
+      let ok = false;
+      try {
+        const res = await fetch("/api/live/react", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: matchId, reaction, count }),
+        });
+        ok = res.ok;
+        if (res.status === 429) onToast("Doucement ! Réessayez dans un instant.");
+      } catch {
+        /* hors ligne */
+      }
+      // Compté en ligne (le compteur du match arrive par la mise à jour en temps réel) ou abandonné
+      setUnsent((prev) => ({ ...prev, [reaction]: Math.max(0, (prev[reaction] || 0) - count) }));
+      if (!ok) break;
+    }
+  };
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  const react = (id: LiveReactionId, emoji: string) => {
+    if (!matchId) return;
+    queue.current[id] = (queue.current[id] || 0) + 1;
+    setUnsent((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+    const key = ++burstKey.current;
+    setBursts((prev) => [...prev.slice(-8), { key, id, emoji }]);
+    window.setTimeout(() => setBursts((prev) => prev.filter((b) => b.key !== key)), 950);
+    if (!timer.current) timer.current = setTimeout(() => void flush(), 800);
+  };
+
+  const countOf = (id: LiveReactionId) => Math.max(0, Number(match.reactions?.[id]) || 0) + (unsent[id] || 0);
+  const total = reactionTotal(match.reactions) + Object.values(unsent).reduce((a, b) => a + (b || 0), 0);
+
+  return (
+    <section
+      aria-label="Réactions"
+      className="sticky bottom-0 z-30 -mx-4 -mb-8 px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-[#0A0E13]/95 backdrop-blur border-t border-[#1F2A36] flex flex-col gap-1.5"
+    >
+      <style>{REACTION_STYLES}</style>
+      <div className="flex items-center justify-between gap-2 px-0.5">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8B98A8]">Réagissez</span>
+        <span className="tb-num text-[11px] font-semibold text-[#C9D3DE]" aria-live="polite">
+          {formatCount(total)} réaction{total > 1 ? "s" : ""}
+        </span>
+      </div>
+      <div className="grid grid-cols-6 gap-1">
+        {LIVE_REACTIONS.map((r) => {
+          const n = countOf(r.id);
+          return (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => react(r.id, r.emoji)}
+              aria-label={`${r.label} (${n})`}
+              className="relative h-10 rounded-full bg-[#131A22] border border-[#2A3644] flex items-center justify-center gap-1 transition active:scale-90 hover:border-[#3A4858] select-none [-webkit-tap-highlight-color:transparent]"
+            >
+              <span className="text-[18px] leading-none" aria-hidden>{r.emoji}</span>
+              {n > 0 && <span className="tb-num text-[10px] font-semibold text-[#8B98A8]">{formatCount(n)}</span>}
+              {bursts.filter((b) => b.id === r.id).map((b) => (
+                <span key={b.key} className="tb-react-burst" aria-hidden>{b.emoji}</span>
+              ))}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
-export default function LiveFollower({ id }: { id: string }) {
+/**
+ * @param fromClub vrai quand le match est ouvert depuis la page des matchs du club : le retour vers
+ *   la liste n'est proposé qu'à ce moment-là. Arrivé par le QR (ou le lien) du match, le visiteur
+ *   ne voit que ce match.
+ */
+export default function LiveFollower({ id, fromClub = false }: { id: string; fromClub?: boolean }) {
   const { match, state } = useLiveMatch(id);
   const { club } = useLiveClub(match?.clubSlug);
   const now = useNow(1000);
@@ -422,7 +528,7 @@ export default function LiveFollower({ id }: { id: string }) {
         {/* En-tête : retour aux matchs du club, équipe, statut */}
         <header className="flex items-center justify-between gap-2 min-h-[44px]">
           <div className="flex items-center gap-2.5 min-w-0">
-            {match.clubSlug && <BackSquare href={`/club/${match.clubSlug}`} label="Retour à tous les matchs" />}
+            {fromClub && match.clubSlug && <BackSquare href={`/club/${match.clubSlug}`} label="Retour à tous les matchs" />}
             <div className="flex flex-col min-w-0">
               <span className="text-[14px] font-semibold truncate">
                 {finished ? "Résumé du match" : [clubName, match.teamName].filter(Boolean).join(" · ") || match.home}
@@ -470,10 +576,13 @@ export default function LiveFollower({ id }: { id: string }) {
         )}
       </div>
 
-      <p className="mt-auto pt-6 text-center text-[11px] text-[#8B98A8]">Lecture seule · Mis à jour en temps réel · The Box</p>
+      <p className="mt-auto pt-6 pb-3 text-center text-[11px] text-[#8B98A8]">Lecture seule · Mis à jour en temps réel · The Box</p>
+
+      {/* Réactions : barre fixée en bas de l'écran, toujours à portée de pouce */}
+      <Reactions match={match} onToast={showToast} />
 
       {toast && (
-        <div role="status" className="fixed left-4 right-4 bottom-6 z-50 mx-auto max-w-[430px] px-4 py-3.5 rounded-[14px] bg-[#E6EDF3] text-[#0A0E13] text-[14px] font-semibold shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
+        <div role="status" className="fixed left-4 right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-[430px] px-4 py-3.5 rounded-[14px] bg-[#E6EDF3] text-[#0A0E13] text-[14px] font-semibold shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
           {toast}
         </div>
       )}

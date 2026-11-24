@@ -9,7 +9,15 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#05080B" };
 
-export default async function LiveMatchPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function LiveMatchPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { id } = await params;
-  return <LiveFollower id={id} />;
+  // « ?depuis=club » : ouvert depuis la liste des matchs du club (le QR du match n'a pas ce paramètre)
+  const fromClub = (await searchParams).depuis === "club";
+  return <LiveFollower id={id} fromClub={fromClub} />;
 }

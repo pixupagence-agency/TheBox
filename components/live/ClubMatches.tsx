@@ -102,7 +102,7 @@ export default function ClubMatches({ slug }: { slug: string }) {
             {live.map((m) => {
               const last = (m.events || []).find((e) => e.type !== "assist");
               return (
-                <Link key={m.id} href={`/live/${m.id}`} className="flex flex-col gap-3 p-4 rounded-[18px] bg-[#131A22] border border-[#5B1A1D] hover:border-[#7A2329]">
+                <Link key={m.id} href={`/live/${m.id}?depuis=club`} className="flex flex-col gap-3 p-4 rounded-[18px] bg-[#131A22] border border-[#5B1A1D] hover:border-[#7A2329]">
                   <span className="flex justify-between items-center gap-2 text-[12px] text-[#8B98A8]">
                     <span className="truncate">{[m.teamName, m.competition].filter(Boolean).join(" · ") || "Match"}</span>
                     <span className="tb-num shrink-0 text-[14px] font-semibold" style={{ color: ACCENT }}>
@@ -135,7 +135,7 @@ export default function ClubMatches({ slug }: { slug: string }) {
           <>
             <span className={sectionTitle}>À venir</span>
             {upcoming.map((m) => (
-              <Link key={m.id} href={`/live/${m.id}`} className="flex items-center gap-3 px-3.5 py-3 rounded-[14px] bg-[#131A22] border border-[#1F2A36] hover:border-[#2A3644]">
+              <Link key={m.id} href={`/live/${m.id}?depuis=club`} className="flex items-center gap-3 px-3.5 py-3 rounded-[14px] bg-[#131A22] border border-[#1F2A36] hover:border-[#2A3644]">
                 <DateBlock m={m} />
                 <span className="flex-1 min-w-0 flex flex-col gap-[3px]">
                   <span className="text-[14px] font-semibold truncate">{m.home} vs {m.away}</span>
@@ -154,7 +154,7 @@ export default function ClubMatches({ slug }: { slug: string }) {
               const res = resultLetter(m);
               const resCls = res.letter === "V" ? "bg-[#00E599] text-[#04120C]" : res.letter === "D" ? "bg-[#7F1D1D] text-white" : "bg-[#334155] text-[#E6EDF3]";
               return (
-                <Link key={m.id} href={`/live/${m.id}`} className="flex items-center gap-3 px-3.5 py-3 rounded-[14px] bg-[#131A22] border border-[#1F2A36] hover:border-[#2A3644]">
+                <Link key={m.id} href={`/live/${m.id}?depuis=club`} className="flex items-center gap-3 px-3.5 py-3 rounded-[14px] bg-[#131A22] border border-[#1F2A36] hover:border-[#2A3644]">
                   <span className={`shrink-0 w-[30px] h-[30px] rounded-lg flex items-center justify-center text-[13px] font-bold ${resCls}`} aria-label={res.letter === "V" ? "Victoire" : res.letter === "D" ? "Défaite" : "Match nul"}>{res.letter}</span>
                   <span className="flex-1 min-w-0 flex flex-col gap-[3px]">
                     <span className="text-[14px] font-semibold truncate">{m.home} vs {m.away}</span>
