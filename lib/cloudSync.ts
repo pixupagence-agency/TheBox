@@ -33,6 +33,8 @@ const SYNCED_EXACT_KEYS = new Set([
   "thebox_active_match_id",
   "thebox_active_team_id",
   "thebox_tactical_notes",
+  // Convocations (matchs et entraînements) : document settings/thebox_convocations
+  "thebox_convocations",
 ]);
 
 const SYNCED_KEY_PREFIXES = [
@@ -396,6 +398,11 @@ const handlePageHide = () => {
 const handleVisibilityChange = () => {
   if (document.visibilityState === "hidden") void syncWorkspaceNow();
 };
+
+/** Vrai si la synchro tourne déjà pour ce compte (ex. arrivée depuis le tableau tactique sans rechargement). */
+export function isWorkspaceSyncActive(uid: string): boolean {
+  return currentUid === uid && intervalId !== null;
+}
 
 /** Démarre la surveillance et l'envoi automatique des changements pour ce compte. */
 export function startWorkspaceSync(uid: string) {
