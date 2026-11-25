@@ -145,10 +145,14 @@ describe("super admin", () => {
     await assertSucceeds(setDoc(doc(superAdmin(), "admins/free"), { email: "free@e2e.test" }));
   });
 
-  test("admins/ : lecture réservée aux comptes connectés", async () => {
+  test("admins/ : chacun ne voit que sa propre entrée, la liste est réservée aux super admins", async () => {
     await assertFails(getDoc(doc(anon(), "admins/listedAdmin")));
-    // NB : tout compte connecté peut lister les admins (point 9 de l'audit : custom claims)
-    await assertSucceeds(getDocs(collection(as("free"), "admins")));
+    await assertFails(getDoc(doc(as("free"), "admins/listedAdmin")));
+    await assertFails(getDocs(collection(as("free"), "admins")));
+    await assertSucceeds(getDoc(doc(as("listedAdmin"), "admins/listedAdmin")));
+    await assertSucceeds(getDoc(doc(as("free"), "admins/free"))); // « suis-je admin ? » : non, sans fuite
+    await assertSucceeds(getDocs(collection(superAdmin(), "admins")));
+    await assertSucceeds(getDocs(collection(as("listedAdmin"), "admins")));
   });
 });
 

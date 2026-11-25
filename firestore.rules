@@ -60,13 +60,14 @@ service cloud.firestore {
     // tenu à jour par le serveur (lib/accountStatus.ts). Sans accès, le coach ne peut plus enregistrer
     // d'équipes, de matchs, de notes ni de schémas en ligne (lecture et suppression restent possibles).
     function hasProAccess(userId) {
+      // isSuperAdmin() en dernier : son exists() sur admins/ compte une lecture, inutile pour un coach PRO ou en essai
       let u = get(/databases/$(database)/documents/users/$(userId)).data;
-      return isSuperAdmin() ||
-        u.get('isAdmin', false) == true ||
+      return u.get('isAdmin', false) == true ||
         u.get('activePlan', 'free') in ['pro', 'mensuel', 'pro_plus', 'club', 'annuel'] ||
         (u.get('hasHadSubscription', false) != true &&
           u.get('trialEndsAt', null) is timestamp &&
-          u.trialEndsAt > request.time);
+          u.trialEndsAt > request.time) ||
+        isSuperAdmin();
     }
 
     function hasSafeBillingOnCreate() {
@@ -118,8 +119,11 @@ service cloud.firestore {
     }
 
     // --- Admins Whitelist ---
+    // Lue par le serveur (Admin SDK) et par isSuperAdmin() via exists(), qui ne dépend pas de ces droits :
+    // un compte ne voit que sa propre entrée, la liste complète est réservée aux super admins.
     match /admins/{adminId} {
-      allow read: if isSignedIn();
+      allow get: if isOwner(adminId) || isSuperAdmin();
+      allow list: if isSuperAdmin();
       allow write: if isSuperAdmin();
     }
 
