@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LiveScreen, Message } from "./ui";
 import { normalizeCode } from "@/lib/live/model";
+import { appCheckHeaders } from "@/lib/firebase";
 
 /** Saisie du code adjoint (alternative au QR) : retrouve le match et ouvre la télécommande */
 export default function RemoteCodeEntry() {
@@ -20,7 +21,7 @@ export default function RemoteCodeEntry() {
     try {
       const res = await fetch("/api/live/remote", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await appCheckHeaders()) },
         body: JSON.stringify({ action: "redeem", code: clean }),
       });
       const data = await res.json().catch(() => ({}));

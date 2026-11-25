@@ -17,6 +17,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import { Language, getStoredLanguage, translations } from "@/lib/i18n";
+import { appCheckHeaders } from "@/lib/firebase";
 
 const TARGET_CONTACT_EMAIL = "contact@thebox-tactique.com";
 
@@ -96,7 +97,7 @@ export default function LandingContactSection({ isAdmin = false, language: propL
     try {
       const res = await fetch("/api/send-contact-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await appCheckHeaders()) },
         body: JSON.stringify({
           name: name.trim() || "Visiteur Landing Page",
           email: email.trim(),

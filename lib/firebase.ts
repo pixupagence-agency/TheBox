@@ -27,10 +27,42 @@ import {
   onSnapshot,
   Timestamp
 } from "firebase/firestore";
+import { getToken, initializeAppCheck, ReCaptchaV3Provider, type AppCheck } from "firebase/app-check";
 import firebaseConfig from "../firebase-config.json";
 
 // Initialize Firebase App singleton
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// App Check (reCAPTCHA v3) : prouve que les requêtes viennent de l'application (Firestore, routes /api).
+// Actif seulement si NEXT_PUBLIC_RECAPTCHA_SITE_KEY est défini, avant toute requête Firestore / Auth.
+// En local (localhost) et dans les tests e2e : jeton de débogage, à enregistrer dans la console Firebase
+// (App Check > Applications > Gérer les jetons de débogage) ; NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN le fixe.
+let appCheck: AppCheck | null = null;
+if (typeof window !== "undefined") {
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  if (siteKey) {
+    const debugToken = process.env.NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN;
+    if (debugToken || window.location.hostname === "localhost") {
+      (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: string | boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken || true;
+    }
+    try {
+      appCheck = initializeAppCheck(app, { provider: new ReCaptchaV3Provider(siteKey), isTokenAutoRefreshEnabled: true });
+    } catch (err) {
+      console.warn("[App Check] initialisation impossible :", (err as Error)?.message);
+    }
+  }
+}
+
+/** En-tête App Check pour les routes /api publiques (vide si App Check n'est pas configuré) */
+export async function appCheckHeaders(): Promise<Record<string, string>> {
+  if (!appCheck) return {};
+  try {
+    const { token } = await getToken(appCheck, false);
+    return token ? { "X-Firebase-AppCheck": token } : {};
+  } catch {
+    return {};
+  }
+}
 
 // CRITICAL: Must pass firebaseConfig.firestoreDatabaseId as second argument
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
@@ -147,7 +179,7 @@ export async function resetPassword(email: string): Promise<void> {
   try {
     const res = await fetch("/api/auth/reset-password", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await appCheckHeaders()) },
       body: JSON.stringify({ email: cleanEmail }),
     });
     if (res.ok) return;

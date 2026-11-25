@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAppCheck } from "@/lib/appCheck";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminFirestore } from "@/lib/firebase-admin";
 import type { LiveReactionId } from "@/lib/live/model";
@@ -20,6 +21,9 @@ const isReactionId = (v: unknown): v is LiveReactionId => typeof v === "string" 
 const fail = (status: number, error: string) => NextResponse.json({ ok: false, error }, { status });
 
 export async function POST(req: NextRequest) {
+  const appCheckRefusal = await requireAppCheck(req, "live/react");
+  if (appCheckRefusal) return appCheckRefusal;
+
   const db = getAdminFirestore();
   if (!db) return fail(503, "Service indisponible");
 

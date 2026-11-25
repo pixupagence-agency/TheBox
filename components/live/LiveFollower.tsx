@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Share2, Link2 } from "lucide-react";
 import { useLiveClub, useLiveMatch, useNow } from "./liveHooks";
+import { appCheckHeaders } from "@/lib/firebase";
 import {
   ACCENT,
   BackSquare,
@@ -428,7 +429,7 @@ function Reactions({ match, onToast }: { match: LiveMatchDoc & { id?: string }; 
       try {
         const res = await fetch("/api/live/react", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(await appCheckHeaders()) },
           body: JSON.stringify({ id: matchId, reaction, count }),
         });
         ok = res.ok;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAppCheck } from "@/lib/appCheck";
 import { getMailTransporter, DEFAULT_FROM_EMAIL } from "@/lib/mailer";
 import { isValidEmail, getClientIp, isAllowedOrigin } from "@/lib/security";
 import { rateLimit } from "@/lib/rateLimit";
@@ -14,6 +15,9 @@ import { passwordResetEmail, APP_PUBLIC_URL } from "@/lib/email-templates";
  *    le client bascule alors sur l'e-mail standard de Firebase.
  */
 export async function POST(req: NextRequest) {
+  const appCheckRefusal = await requireAppCheck(req, "auth/reset-password");
+  if (appCheckRefusal) return appCheckRefusal;
+
   if (!isAllowedOrigin(req)) {
     return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
   }

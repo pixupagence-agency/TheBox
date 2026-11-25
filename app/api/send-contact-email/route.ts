@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAppCheck } from "@/lib/appCheck";
 import { getMailTransporter } from "@/lib/mailer";
 import { 
   escapeHtml, 
@@ -14,6 +15,9 @@ import { rateLimit } from "@/lib/rateLimit";
 const TARGET_CONTACT_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "contact@thebox-tactique.com";
 
 export async function POST(req: NextRequest) {
+  const appCheckRefusal = await requireAppCheck(req, "send-contact-email");
+  if (appCheckRefusal) return appCheckRefusal;
+
   try {
     // CSRF Protection
     if (!isAllowedOrigin(req)) {

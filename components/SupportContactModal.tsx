@@ -17,6 +17,7 @@ import {
   Tag
 } from "lucide-react";
 import { getPremiumTheme, premiumOverlay, premiumShell, premiumLabel } from "@/lib/premiumModalTheme";
+import { appCheckHeaders } from "@/lib/firebase";
 
 interface SupportContactModalProps {
   isOpen: boolean;
@@ -112,7 +113,7 @@ export default function SupportContactModal({
     try {
       const res = await fetch("/api/send-support-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await appCheckHeaders()) },
         body: JSON.stringify({
           name: name.trim() || "Coach The Box",
           email: email.trim(),

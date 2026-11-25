@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAppCheck } from "@/lib/appCheck";
 import type { Firestore } from "firebase-admin/firestore";
 import { getAdminFirestore } from "@/lib/firebase-admin";
 import {
@@ -87,6 +88,9 @@ async function checkAccess(db: Firestore, body: Credentials, codeBlocked: () => 
 }
 
 export async function POST(req: NextRequest) {
+  const appCheckRefusal = await requireAppCheck(req, "live/remote");
+  if (appCheckRefusal) return appCheckRefusal;
+
   const db = getAdminFirestore();
   if (!db) return fail(503, "Service indisponible (configuration serveur)");
 

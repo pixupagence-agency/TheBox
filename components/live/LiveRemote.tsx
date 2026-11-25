@@ -23,6 +23,7 @@ import {
   type LiveTeam,
 } from "@/lib/live/model";
 import { getSportScoreActions, type SportScoreAction } from "@/lib/sportScoring";
+import { appCheckHeaders } from "@/lib/firebase";
 
 type Creds = { token?: string; code?: string };
 type Queued = { cmdId: string; op: LiveOp };
@@ -100,7 +101,7 @@ export default function LiveRemote({ id }: { id: string }) {
   const post = useCallback(async (body: Record<string, unknown>) => {
     const res = await fetch("/api/live/remote", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await appCheckHeaders()) },
       body: JSON.stringify({ id, ...creds, ...body }),
     });
     const data = await res.json().catch(() => ({}));
