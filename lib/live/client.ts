@@ -151,6 +151,8 @@ export async function updateLiveMatchMeta(publicId: string, meta: LiveMatchMeta,
   const patch = stripUndefined({ ...meta, clubSlug, clubName, updatedAt: Date.now() });
   // L'index du club reçoit le résumé complet (match publié avant la création de l'index compris)
   const current = (await getDoc(doc(db, "liveMatches", publicId))).data() as LiveMatchDoc | undefined;
+  // Live supprimé entre-temps (par le coach sur un autre appareil, ou avec ses données) : rien à mettre à jour
+  if (!current) return;
   const batch = writeBatch(db);
   batch.update(doc(db, "liveMatches", publicId), patch);
   batch.set(clubMatchRef(clubSlug, publicId), clubMatchSummary(toPublicLive({ ...(current || {}), ...patch })), { merge: true });
