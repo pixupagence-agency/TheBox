@@ -2,7 +2,7 @@
 // du tableau qu'il utilise arrivent dans boardCtx).
 import React from "react";
 import { type LiveMatchMeta, type LiveState } from "@/lib/live/client";
-import { applyLiveOp, type LiveCommand, type LiveMatchDoc } from "@/lib/live/model";
+import { applyLiveOp, type LiveCommand, type LiveMatchDoc, type LiveOp, type LivePlayer } from "@/lib/live/model";
 import { type LivePeriod, type LivePeriodConfig } from "@/lib/tactics/livePeriods";
 import { type Token } from "@/lib/tactics/types";
 
@@ -70,7 +70,18 @@ export function applyRemoteLiveCommand(boardCtx: ApplyRemoteLiveCommandCtx, cmdI
     case "card":
     case "note":
     case "action": {
-      const patch = applyLiveOp(pseudoDoc, op, cmdId, Date.now());
+      // La télécommande ne connaît que les noms publics (« Prénom I. ») : le tableau du coach
+      // reprend le nom complet du joueur, retrouvé par son identifiant
+      const localPlayer = (p?: LivePlayer): LivePlayer | undefined => {
+        if (!p?.id) return p;
+        const local = currentTokens.find((t) => t.id === p.id) || substitutes.find((s) => String(s.id) === p.id);
+        return local?.name ? { ...p, name: local.name } : p;
+      };
+      const localOp: LiveOp =
+        op.kind === "goal" ? { ...op, scorer: localPlayer(op.scorer), assister: localPlayer(op.assister) }
+        : op.kind === "card" || op.kind === "action" ? { ...op, player: localPlayer(op.player) }
+        : op;
+      const patch = applyLiveOp(pseudoDoc, localOp, cmdId, Date.now());
       const ev = patch?.events?.[0];
       if (!ev) return;
       setMatchEvents((prev) => (prev.some((e) => e.id === ev.id) ? prev : [ev as any, ...prev]));

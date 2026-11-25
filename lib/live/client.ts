@@ -11,8 +11,10 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { clubMatchSummary, toPublicLive } from "@/lib/live/privacy";
 import {
   newClubSlug,
   newEditorCode,
@@ -46,6 +48,38 @@ export const liveUrls = (origin: string, publicId: string, clubSlug?: string, to
 });
 
 const uid = () => auth.currentUser?.uid || null;
+
+/**
+ * Index des matchs d'un club (page du club, QR général) : liveClubs/{slug}/matches/{publicId}.
+ * La collection liveMatches n'est pas listable (RGPD : pas d'accès à tous les matchs de tous les clubs) ;
+ * la page d'un club lit cet index, accessible seulement en connaissant l'adresse du club.
+ */
+const clubMatchRef = (clubSlug: string, publicId: string) => doc(db, "liveClubs", clubSlug, "matches", publicId);
+
+/**
+ * Attestation du coach (RGPD) : les joueurs, ou leurs parents pour les mineurs, ont donné leur accord
+ * pour l'affichage de leur prénom et de l'initiale de leur nom sur les pages publiques du Live.
+ * Demandée au premier partage ; sans elle, aucun match n'est publié automatiquement.
+ */
+const LIVE_ATTESTATION_KEY = "thebox_live_attestation_v1";
+
+export function hasLiveAttestation(): boolean {
+  try {
+    const owner = uid();
+    const raw = typeof window !== "undefined" ? localStorage.getItem(LIVE_ATTESTATION_KEY) : null;
+    if (!raw || !owner) return false;
+    return (JSON.parse(raw) as { uid?: string }).uid === owner;
+  } catch {
+    return false;
+  }
+}
+
+export function recordLiveAttestation() {
+  try {
+    const owner = uid();
+    if (owner) localStorage.setItem(LIVE_ATTESTATION_KEY, JSON.stringify({ uid: owner, at: new Date().toISOString() }));
+  } catch { /* stockage indisponible : l'attestation sera redemandée */ }
+}
 
 let clubSlugCache: { uid: string; slug: string } | null = null;
 
@@ -100,23 +134,36 @@ export async function createLiveMatch(
     clubSlug,
     clubName,
     ...meta,
-    ...state,
+    ...toPublicLive(state),
     hostSeenAt: now,
     createdAt: now,
     updatedAt: now,
   });
-  await setDoc(doc(db, "liveMatches", publicId), data);
+  const batch = writeBatch(db);
+  batch.set(doc(db, "liveMatches", publicId), data);
+  batch.set(clubMatchRef(clubSlug, publicId), clubMatchSummary(data));
+  await batch.commit();
   await regenerateEditorAccess(publicId);
   return publicId;
 }
 
 export async function updateLiveMatchMeta(publicId: string, meta: LiveMatchMeta, clubSlug: string, clubName: string) {
-  await updateDoc(doc(db, "liveMatches", publicId), stripUndefined({ ...meta, clubSlug, clubName, updatedAt: Date.now() }));
+  const patch = stripUndefined({ ...meta, clubSlug, clubName, updatedAt: Date.now() });
+  // L'index du club reçoit le résumé complet (match publié avant la création de l'index compris)
+  const current = (await getDoc(doc(db, "liveMatches", publicId))).data() as LiveMatchDoc | undefined;
+  const batch = writeBatch(db);
+  batch.update(doc(db, "liveMatches", publicId), patch);
+  batch.set(clubMatchRef(clubSlug, publicId), clubMatchSummary(toPublicLive({ ...(current || {}), ...patch })), { merge: true });
+  await batch.commit();
 }
 
 export async function publishLiveState(publicId: string, state: LiveState, clubSlug: string) {
   const now = Date.now();
-  await updateDoc(doc(db, "liveMatches", publicId), stripUndefined({ ...state, clubSlug, hostSeenAt: now, updatedAt: now }));
+  const published = stripUndefined({ ...toPublicLive(state), clubSlug, hostSeenAt: now, updatedAt: now });
+  const batch = writeBatch(db);
+  batch.update(doc(db, "liveMatches", publicId), published);
+  batch.set(clubMatchRef(clubSlug, publicId), clubMatchSummary(published), { merge: true });
+  await batch.commit();
 }
 
 export async function touchLiveHost(publicId: string) {
@@ -131,6 +178,8 @@ export async function deleteLiveMatch(publicId: string) {
     await Promise.all(cmds.docs.map((d) => deleteDoc(d.ref)));
   } catch { /* ignore */ }
   await deleteDoc(doc(db, "liveEditorKeys", publicId)).catch(() => {});
+  const slug = ((await getDoc(doc(db, "liveMatches", publicId)).catch(() => null))?.data() as LiveMatchDoc | undefined)?.clubSlug;
+  if (slug) await deleteDoc(clubMatchRef(slug, publicId)).catch(() => {});
   await deleteDoc(doc(db, "liveMatches", publicId)).catch(() => {});
 }
 

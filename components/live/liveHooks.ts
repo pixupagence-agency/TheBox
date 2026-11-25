@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
+import { collection, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { LiveClubDoc, LiveMatchDoc } from "@/lib/live/model";
 
@@ -47,14 +47,14 @@ export function useLiveClub(slug: string | undefined) {
   return { club, state };
 }
 
-/** Tous les matchs publiés d'un club */
+/** Tous les matchs publiés d'un club (index liveClubs/{slug}/matches, voir lib/live/client.ts) */
 export function useClubMatches(slug: string) {
   const [matches, setMatches] = useState<LiveMatchWithId[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
     if (!slug) return;
     return onSnapshot(
-      query(collection(db, "liveMatches"), where("clubSlug", "==", slug)),
+      collection(db, "liveClubs", slug, "matches"),
       (snap) => {
         setMatches(snap.docs.map((d) => ({ id: d.id, ...(d.data() as LiveMatchDoc) })));
         setState("ready");

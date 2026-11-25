@@ -13,7 +13,7 @@ import MatchConvocationModal from "./convocations/MatchConvocationModal";
 import { useRouter } from "next/navigation";
 import { useLiveHost } from "@/lib/live/useLiveHost";
 import {
-  createLiveMatch, deleteLiveMatch, ensureLiveClub, getEditorAccess, regenerateEditorAccess, revokeEditorAccess, updateLiveMatchMeta,
+  createLiveMatch, deleteLiveMatch, ensureLiveClub, getEditorAccess, hasLiveAttestation, regenerateEditorAccess, revokeEditorAccess, updateLiveMatchMeta,
   type EditorAccess, type LiveMatchMeta, type LiveState,
 } from "@/lib/live/client";
 import { applyLiveOp, statusFor, type LiveCommand, type LiveEvent, type LiveMatchDoc } from "@/lib/live/model";
@@ -1709,8 +1709,11 @@ export default function TacticsBoard({
     setSleekToastMessage("✨ Nouveau match créé ! Vous pouvez éditer ses informations ci-dessous.");
     setTimeout(() => setSleekToastMessage(null), 3500);
 
-    // Mode Live déporté : le QR du match est généré dès la création (PRO+)
-    publishLiveForMatch(newM).catch((err) => console.warn("[Live] publication du match :", err?.message));
+    // Mode Live déporté : le QR du match est généré dès la création (PRO+), seulement si le coach a déjà
+    // attesté l'accord des joueurs / parents (RGPD, demandé au premier partage du live)
+    if (hasLiveAttestation()) {
+      publishLiveForMatch(newM).catch((err) => console.warn("[Live] publication du match :", err?.message));
+    }
   };
 
   // Aucun match sélectionné : on garde le terrain tel quel, on vide les données propres à un match

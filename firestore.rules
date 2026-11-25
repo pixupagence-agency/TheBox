@@ -184,10 +184,13 @@ service cloud.firestore {
     }
 
     // --- Mode Live déporté (lib/live/model.ts) ---
-    // Document public d'un match : lu par tous (QR du match, QR du club), écrit par le coach propriétaire.
+    // Document public d'un match : lu par quiconque a son lien (QR du match), écrit par le coach propriétaire.
+    // RGPD (joueurs souvent mineurs) : la collection n'est pas listable, on ne peut pas parcourir les
+    // matchs de tous les clubs ; la page du club passe par son index liveClubs/{slug}/matches.
     // La télécommande (adjoint sans compte) écrit via l'API serveur (Admin SDK), jamais directement.
     match /liveMatches/{publicId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if false;
 
       allow create: if isSignedIn() &&
         isValidId(publicId) &&
@@ -219,14 +222,24 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (existing().ownerUid == request.auth.uid || isSuperAdmin());
     }
 
-    // Page publique du club (QR général) : nom et logo
+    // Page publique du club (QR général) : nom et logo, lus par quiconque a l'adresse du club.
+    // Liste : uniquement ses propres clubs (recherche de sa page par le coach, lib/live/client.ts).
     match /liveClubs/{slug} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
       allow create: if isSignedIn() && isValidId(slug) && incoming().ownerUid == request.auth.uid &&
         (!('logo' in incoming()) || (incoming().logo is string && incoming().logo.size() <= 300000));
       allow update: if isSignedIn() && existing().ownerUid == request.auth.uid && incoming().ownerUid == request.auth.uid &&
         (!('logo' in incoming()) || (incoming().logo is string && incoming().logo.size() <= 300000));
       allow delete: if isSignedIn() && (existing().ownerUid == request.auth.uid || isSuperAdmin());
+
+      // Index des matchs du club (résumés sans composition) : lisible avec l'adresse du club,
+      // écrit par le coach propriétaire du club (et par l'API de la télécommande, Admin SDK)
+      match /matches/{publicId} {
+        allow read: if true;
+        allow write: if isSignedIn() && isValidId(publicId) &&
+          get(/databases/$(database)/documents/liveClubs/$(slug)).data.ownerUid == request.auth.uid;
+      }
     }
 
     // --- Global App Config (Admin Managed) ---

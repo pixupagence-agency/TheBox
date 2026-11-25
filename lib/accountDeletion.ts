@@ -20,7 +20,7 @@ import { isSuperAdminEmail } from "@/lib/security";
 /** Sous-collections de users/{uid} contenant les données du coach */
 const COACH_DATA_COLLECTIONS = ["teams", "players", "matches", "matchData", "settings", "schemas"];
 
-/** Supprime équipes, joueurs, matchs, notes et schémas du coach (y compris les anciennes structures). */
+/** Supprime équipes, joueurs, matchs, notes, schémas et lives du coach (y compris les anciennes structures). */
 export async function deleteCoachData(db: Firestore, uid: string): Promise<void> {
   const userRef = db.collection("users").doc(uid);
   for (const coll of COACH_DATA_COLLECTIONS) {
@@ -31,6 +31,20 @@ export async function deleteCoachData(db: Firestore, uid: string): Promise<void>
     const snap = await db.collection(legacy).where("userId", "==", uid).get();
     for (const doc of snap.docs) await db.recursiveDelete(doc.ref);
   }
+  await deleteCoachLiveData(db, uid);
+}
+
+/**
+ * Données publiques du mode Live (RGPD, droit à l'effacement) : matchs publiés et leurs actions de
+ * télécommande, accès adjoints, page du club et son index de matchs.
+ */
+export async function deleteCoachLiveData(db: Firestore, uid: string): Promise<void> {
+  const matches = await db.collection("liveMatches").where("ownerUid", "==", uid).get();
+  for (const doc of matches.docs) await db.recursiveDelete(doc.ref); // + sous-collection commands
+  const keys = await db.collection("liveEditorKeys").where("ownerUid", "==", uid).get();
+  for (const doc of keys.docs) await doc.ref.delete();
+  const clubs = await db.collection("liveClubs").where("ownerUid", "==", uid).get();
+  for (const doc of clubs.docs) await db.recursiveDelete(doc.ref); // + sous-collection matches
 }
 
 /** Résilie immédiatement les abonnements Stripe en cours du coach (aucun nouveau prélèvement). */

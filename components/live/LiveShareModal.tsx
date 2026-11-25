@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Copy, Check, Download, Maximize2, Printer, RefreshCw, Share2, ShieldOff, X, Radio, Lock, Globe } from "lucide-react";
-import { liveUrls, type EditorAccess } from "@/lib/live/client";
+import { hasLiveAttestation, liveUrls, recordLiveAttestation, type EditorAccess } from "@/lib/live/client";
 
 interface Props {
   open: boolean;
@@ -68,7 +68,11 @@ export default function LiveShareModal(props: Props) {
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  // RGPD : attestation de l'accord des joueurs / parents, demandée une fois avant la 1re publication
+  const [attested, setAttested] = useState(false);
+  const [attestChecked, setAttestChecked] = useState(false);
   useEffect(() => { setOrigin(window.location.origin); }, []);
+  useEffect(() => { if (open) setAttested(hasLiveAttestation()); }, [open]);
 
   const urls = publicId ? liveUrls(origin, publicId, clubSlug || undefined, editor && !editor.revoked ? editor.token : undefined) : null;
   const matchQr = useQr(urls?.match || "");
@@ -132,8 +136,35 @@ export default function LiveShareModal(props: Props) {
         {!publicId ? (
           <div className={`rounded-xl border p-5 text-center ${card}`}>
             <p className="text-[13px] font-bold mb-1">Ce match n’est pas encore publié</p>
-            <p className={`text-[12px] mb-4 ${sub}`}>La publication crée le lien public du match, l’accès adjoint et la page de votre club.</p>
-            <button type="button" disabled={busy} onClick={props.onPublish} className={`${btn} ${primary}`}>
+            <p className={`text-[12px] mb-2 ${sub}`}>La publication crée le lien public du match, l’accès adjoint et la page de votre club.</p>
+            <p className={`text-[12px] mb-4 ${sub}`}>
+              Sur les pages publiques, les joueurs apparaissent en <strong>prénom + initiale</strong> (ex. « Lucas M. »).
+              Le live n’est visible que par les personnes à qui vous donnez le lien ou le QR.
+            </p>
+            {!attested && (
+              <label className={`mb-4 mx-auto max-w-xl flex items-start gap-2.5 text-left rounded-lg border p-3 cursor-pointer ${isLight ? "bg-white border-slate-200" : "bg-white/[0.03] border-white/10"}`}>
+                <input
+                  type="checkbox"
+                  data-testid="live-attestation"
+                  checked={attestChecked}
+                  onChange={(e) => setAttestChecked(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-500"
+                />
+                <span className="text-[12px] leading-snug">
+                  J’atteste avoir informé les joueurs et obtenu leur accord — <strong>celui de leurs parents pour les mineurs</strong> —
+                  pour l’affichage de leur prénom et de l’initiale de leur nom sur les pages publiques du live.
+                </span>
+              </label>
+            )}
+            <button
+              type="button"
+              disabled={busy || (!attested && !attestChecked)}
+              onClick={() => {
+                if (!attested) recordLiveAttestation();
+                props.onPublish();
+              }}
+              className={`${btn} ${primary}`}
+            >
               {busy ? "Publication…" : "Publier le live de ce match"}
             </button>
           </div>

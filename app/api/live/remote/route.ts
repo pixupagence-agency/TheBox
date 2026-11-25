@@ -9,6 +9,7 @@ import {
   stripUndefined,
   type LiveMatchDoc,
 } from "@/lib/live/model";
+import { clubMatchSummary } from "@/lib/live/privacy";
 import { getClientIp } from "@/lib/security";
 import { isRateLimited, recordRateLimitHit, type RateLimitResult } from "@/lib/rateLimit";
 
@@ -149,7 +150,14 @@ export async function POST(req: NextRequest) {
       const now = Date.now();
       const patch = applyLiveOp(doc, op, cmdId, now);
       tx.create(cmdRef, stripUndefined({ op, createdAt: now, applied: false }));
-      if (patch) tx.update(matchRef, stripUndefined({ ...patch, updatedAt: now }));
+      if (patch) {
+        tx.update(matchRef, stripUndefined({ ...patch, updatedAt: now }));
+        // Index de la page du club, tenu à jour en même temps (voir lib/live/client.ts)
+        if (doc.clubSlug) {
+          const clubMatchRef = db.collection("liveClubs").doc(doc.clubSlug).collection("matches").doc(access.id);
+          tx.set(clubMatchRef, clubMatchSummary({ ...patch, updatedAt: now }), { merge: true });
+        }
+      }
       return { status: 200 };
     });
     if (result.status !== 200) return fail(result.status, result.error || "Erreur");
