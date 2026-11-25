@@ -31,3 +31,8 @@ next-env.d.ts
 
 # Sauvegardes de la base (npm run backup) : chiffrées, mais à garder hors du dépôt
 /backups/
+
+# Scripts ponctuels et essais locaux (jamais versionnés)
+/scratch/
+# Anciennes images de fond (non utilisées), gardées en local
+/src/assets/images/
