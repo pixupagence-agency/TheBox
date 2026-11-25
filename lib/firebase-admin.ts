@@ -23,7 +23,10 @@ export function getAdminFirestore(): Firestore | null {
     if (!getApps().length) {
       const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-      if (rawServiceAccount) {
+      if (process.env.FIRESTORE_EMULATOR_HOST) {
+        // Tests e2e : émulateurs locaux uniquement, jamais la clé du projet de production
+        adminApp = initializeApp({ projectId: firebaseConfig.projectId });
+      } else if (rawServiceAccount) {
         let serviceAccount: any;
         try {
           // If stored as JSON string

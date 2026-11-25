@@ -1,6 +1,8 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  // Serveur des tests e2e : dossier de compilation séparé, pour ne pas perturber le `next dev` du développeur
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: false,

@@ -1,8 +1,10 @@
 import { test } from '@playwright/test';
 
 // Identifiants des comptes de test, lus dans .env.local (jamais écrits dans le code) :
-//   E2E_EMAIL / E2E_PASSWORD             → compte coach de test (obligatoire)
+//   E2E_EMAIL / E2E_PASSWORD             → compte coach de test (période d'essai)
 //   E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD → compte admin (facultatif, sinon le compte coach est utilisé)
+// Les comptes n'existent que dans les émulateurs Firebase : scripts/e2e-seed.mjs les crée à chaque
+// passage (mêmes valeurs par défaut qu'ici si .env.local ne les définit pas).
 try {
   process.loadEnvFile('.env.local');
 } catch {
@@ -10,13 +12,13 @@ try {
 }
 
 export const COACH = {
-  email: process.env.E2E_EMAIL || '',
-  password: process.env.E2E_PASSWORD || '',
+  email: process.env.E2E_EMAIL || 'coach@e2e.test',
+  password: process.env.E2E_PASSWORD || 'e2e-coach-password',
 };
 
 export const ADMIN = {
-  email: process.env.E2E_ADMIN_EMAIL || COACH.email,
-  password: process.env.E2E_ADMIN_PASSWORD || COACH.password,
+  email: process.env.E2E_ADMIN_EMAIL || (process.env.E2E_EMAIL ? COACH.email : 'admin@e2e.test'),
+  password: process.env.E2E_ADMIN_PASSWORD || (process.env.E2E_PASSWORD ? COACH.password : 'e2e-admin-password'),
 };
 
 /** À appeler en tête des fichiers qui ont besoin d'un compte : saute les tests si aucun compte n'est configuré. */

@@ -11,9 +11,11 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   updateProfile,
+  connectAuthEmulator,
 } from "firebase/auth";
-import { 
-  getFirestore, 
+import {
+  connectFirestoreEmulator,
+  getFirestore,
   doc, 
   getDoc, 
   getDocFromServer, 
@@ -68,6 +70,21 @@ export async function appCheckHeaders(): Promise<Record<string, string>> {
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Tests e2e : émulateurs Firebase locaux (Auth 9099, Firestore 8080) au lieu de la base de production.
+// Activé uniquement par NEXT_PUBLIC_FIREBASE_EMULATORS=true (serveur de test lancé par Playwright).
+if (process.env.NEXT_PUBLIC_FIREBASE_EMULATORS === "true") {
+  const g = globalThis as unknown as { __theboxEmulators?: boolean };
+  if (!g.__theboxEmulators) {
+    g.__theboxEmulators = true;
+    try {
+      connectFirestoreEmulator(db, "127.0.0.1", 8080);
+      connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+    } catch (err) {
+      console.warn("[Émulateurs] connexion impossible :", (err as Error)?.message);
+    }
+  }
+}
 
 // Standardized Operation Types & Error Handler
 export enum OperationType {

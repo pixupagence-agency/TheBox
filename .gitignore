@@ -19,3 +19,12 @@ coverage/
 
 # Captures et logs du MCP Playwright
 .playwright-mcp/
+
+# Tests e2e : serveur de test et journaux des émulateurs Firebase
+/.next-e2e/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Généré par Next à chaque démarrage (dépend du dossier de compilation : .next ou .next-e2e)
+next-env.d.ts

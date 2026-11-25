@@ -4,6 +4,10 @@ import nodemailer from "nodemailer";
 const DEFAULT_SMTP_USER = "pixup.agence@gmail.com";
 
 export function getMailTransporter() {
+  // Tests e2e (émulateurs Firebase) : les e-mails sont construits mais jamais envoyés
+  if (process.env.MAIL_TRANSPORT === "json") {
+    return nodemailer.createTransport({ jsonTransport: true });
+  }
   const host = process.env.SMTP_HOST || "smtp.gmail.com";
   const user = process.env.SMTP_USER || DEFAULT_SMTP_USER;
   const rawPass = process.env.SMTP_PASS || "";

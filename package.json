@@ -9,9 +9,9 @@
     "lint": "eslint .",
     "clean": "next clean",
     "security:check": "npm audit",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed",
+    "test:e2e": "firebase emulators:exec --only auth,firestore --project thebox-tactique \"node scripts/e2e-seed.mjs && playwright test --project=chromium\"",
+    "test:e2e:ui": "firebase emulators:exec --only auth,firestore --project thebox-tactique \"node scripts/e2e-seed.mjs && playwright test --project=chromium --ui\"",
+    "test:e2e:headed": "firebase emulators:exec --only auth,firestore --project thebox-tactique \"node scripts/e2e-seed.mjs && playwright test --project=chromium --headed\"",
     "test:report": "playwright show-report"
   },
   "dependencies": {
