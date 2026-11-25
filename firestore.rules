@@ -94,7 +94,7 @@ service cloud.firestore {
       allow create: if isOwner(userId) &&
         isValidId(userId) &&
         incoming().id == userId &&
-        (incoming().isAdmin != true || isSuperAdmin()) &&
+        (incoming().get('isAdmin', false) != true || isSuperAdmin()) &&
         hasSafeBillingOnCreate() &&
         (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 254)) &&
         (!('firstName' in incoming()) || (incoming().firstName is string && incoming().firstName.size() <= 100)) &&
