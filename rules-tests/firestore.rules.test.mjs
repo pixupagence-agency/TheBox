@@ -216,10 +216,26 @@ describe("liveMatches/ : page publique d'un match", () => {
   });
 
   test("création par un coach avec accès PRO, à son nom", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "liveClubs/fc-essai"), { ownerUid: "trial", name: "FC Essai" });
+      await setDoc(doc(ctx.firestore(), "liveClubs/fc-free"), { ownerUid: "free", name: "FC Free" });
+    });
     await assertSucceeds(setDoc(doc(as("trial"), "liveMatches/m2"), { ownerUid: "trial", clubSlug: "fc-essai" }));
     await assertFails(setDoc(doc(as("trial"), "liveMatches/m3"), { ownerUid: "pro", clubSlug: "fc-essai" }));
     await assertFails(setDoc(doc(as("free"), "liveMatches/m4"), { ownerUid: "free", clubSlug: "fc-free" }));
     await assertFails(setDoc(doc(anon(), "liveMatches/m5"), { ownerUid: "x", clubSlug: "x" }));
+  });
+
+  test("un match ne peut être rattaché qu'à un club du même coach", async () => {
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), "liveClubs/fc-essai"), { ownerUid: "trial", name: "FC Essai" }));
+    // club d'un autre coach (son nom et son logo s'afficheraient sur le match) ou club inexistant
+    await assertFails(setDoc(doc(as("trial"), "liveMatches/m6"), { ownerUid: "trial", clubSlug: "the-box-fc" }));
+    await assertFails(setDoc(doc(as("trial"), "liveMatches/m7"), { ownerUid: "trial", clubSlug: "inconnu" }));
+    await assertFails(setDoc(doc(as("trial"), "liveMatches/m8"), { ownerUid: "trial", clubSlug: "" }));
+    // changement de club après coup
+    await assertSucceeds(setDoc(doc(as("trial"), "liveMatches/m9"), { ownerUid: "trial", clubSlug: "fc-essai" }));
+    await assertFails(updateDoc(doc(as("trial"), "liveMatches/m9"), { clubSlug: "the-box-fc" }));
+    await assertSucceeds(updateDoc(doc(as("trial"), "liveMatches/m9"), { homeScore: 2, clubSlug: "fc-essai" }));
   });
 
   test("mise à jour et suppression par le propriétaire seulement", async () => {

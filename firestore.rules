@@ -38,6 +38,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Club de la page publique (liveClubs/{slug}) appartenant au coach connecté
+    function ownsClub(slug) {
+      return slug is string && isValidId(slug) &&
+        get(/databases/$(database)/documents/liveClubs/$(slug)).data.ownerUid == request.auth.uid;
+    }
+
     function hasUnchangedCreatedAt() {
       return !('createdAt' in existing()) || !('createdAt' in incoming()) || incoming().createdAt == existing().createdAt;
     }
@@ -196,16 +202,19 @@ service cloud.firestore {
       allow get: if true;
       allow list: if false;
 
+      // Le match ne peut être rattaché qu'à un club du même coach : sinon sa page afficherait le nom et
+      // le logo d'un autre club, et la télécommande l'inscrirait dans l'index de ce club.
+      // Contrôlé à la création et au changement de club seulement (une lecture de moins à chaque mise à jour du score).
       allow create: if isSignedIn() &&
         isValidId(publicId) &&
         incoming().ownerUid == request.auth.uid &&
         hasProAccess(request.auth.uid) &&
-        incoming().clubSlug is string && incoming().clubSlug.size() <= 64;
+        ownsClub(incoming().clubSlug);
 
       allow update: if isSignedIn() &&
         existing().ownerUid == request.auth.uid &&
         incoming().ownerUid == existing().ownerUid &&
-        incoming().clubSlug is string && incoming().clubSlug.size() <= 64;
+        (incoming().clubSlug == existing().clubSlug || ownsClub(incoming().clubSlug));
 
       allow delete: if isSignedIn() && (existing().ownerUid == request.auth.uid || isSuperAdmin());
 

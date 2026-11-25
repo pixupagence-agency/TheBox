@@ -20,6 +20,7 @@ import { isRateLimited, recordRateLimitHit, type RateLimitResult } from "@/lib/r
 
 const ID_RE = /^[a-z0-9]{6,32}$/;
 const CMD_RE = /^[a-zA-Z0-9_-]{6,48}$/;
+const CLUB_SLUG_RE = /^[a-zA-Z0-9_-]{1,64}$/;
 
 // Essais de code ratés : au-delà, le code est refusé pendant la fenêtre (le lien secret reste valable).
 // Par adresse (un appareil qui essaie des codes au hasard) et par match (essais répartis sur plusieurs adresses).
@@ -151,14 +152,19 @@ export async function POST(req: NextRequest) {
       if (cmdSnap.exists) return { status: 200 };
       const doc = snap.data() as LiveMatchDoc;
       if (doc.status === "finished" && op.kind !== "undo") return { status: 403, error: "Le match est terminé : la télécommande est fermée" };
+      // Index du club tenu à jour seulement si le club appartient bien au coach du match
+      // (jamais d'écriture dans la page d'un autre club). Lecture faite avant toute écriture (transaction).
+      const clubRef = doc.clubSlug && CLUB_SLUG_RE.test(doc.clubSlug) ? db.collection("liveClubs").doc(doc.clubSlug) : null;
+      const clubSnap = clubRef ? await tx.get(clubRef) : null;
+      const ownsClub = Boolean(clubSnap?.exists && clubSnap.get("ownerUid") === doc.ownerUid);
       const now = Date.now();
       const patch = applyLiveOp(doc, op, cmdId, now);
       tx.create(cmdRef, stripUndefined({ op, createdAt: now, applied: false }));
       if (patch) {
         tx.update(matchRef, stripUndefined({ ...patch, updatedAt: now }));
         // Index de la page du club, tenu à jour en même temps (voir lib/live/client.ts)
-        if (doc.clubSlug) {
-          const clubMatchRef = db.collection("liveClubs").doc(doc.clubSlug).collection("matches").doc(access.id);
+        if (clubRef && ownsClub) {
+          const clubMatchRef = clubRef.collection("matches").doc(access.id);
           tx.set(clubMatchRef, clubMatchSummary({ ...patch, updatedAt: now }), { merge: true });
         }
       }
