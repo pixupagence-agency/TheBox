@@ -5,10 +5,10 @@ import {
   sanitizeSubject, 
   isValidEmail, 
   sanitizeText,
-  checkRateLimit,
   getClientIp,
   isAllowedOrigin
 } from "@/lib/security";
+import { rateLimit } from "@/lib/rateLimit";
 import { getAdminFirestore, verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import { hasProAccess } from "@/lib/accountStatus";
 
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     // IP Rate Limiting (10 requests per minute per IP)
     const clientIp = getClientIp(req);
-    const rateCheck = checkRateLimit(`schema_${clientIp}`, 10, 60000);
+    const rateCheck = await rateLimit(`schema_${clientIp}`, 10, 60000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },
@@ -53,9 +53,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const hourCheck = checkRateLimit(`schema_uid_h_${user.uid}`, 20, 60 * 60_000);
+    const hourCheck = await rateLimit(`schema_uid_h_${user.uid}`, 20, 60 * 60_000);
     const dayCheck = hourCheck.allowed
-      ? checkRateLimit(`schema_uid_d_${user.uid}`, 60, 24 * 60 * 60_000)
+      ? await rateLimit(`schema_uid_d_${user.uid}`, 60, 24 * 60 * 60_000)
       : hourCheck;
     if (!dayCheck.allowed) {
       return NextResponse.json(

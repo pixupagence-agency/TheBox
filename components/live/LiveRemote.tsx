@@ -151,6 +151,11 @@ export default function LiveRemote({ id }: { id: string }) {
         }
         setOnline(true);
         if (!r.ok && r.status >= 500) break;
+        // Trop d'essais de code sur ce match : l'action reste en file d'attente et repartira plus tard
+        if (r.status === 429) {
+          showToast({ text: r.error || "Trop d'essais, réessayez dans quelques minutes", error: true });
+          break;
+        }
         current = current.slice(1);
         writeJson(queueKey(id), current);
         setQueue(current);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter, DEFAULT_FROM_EMAIL } from "@/lib/mailer";
-import { isValidEmail, checkRateLimit, getClientIp, isAllowedOrigin } from "@/lib/security";
+import { isValidEmail, getClientIp, isAllowedOrigin } from "@/lib/security";
+import { rateLimit } from "@/lib/rateLimit";
 import { generatePasswordResetLinkFor } from "@/lib/firebase-admin";
 import { passwordResetEmail, APP_PUBLIC_URL } from "@/lib/email-templates";
 
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   const clientIp = getClientIp(req);
-  const ipCheck = checkRateLimit(`pwreset_ip_${clientIp}`, 5, 10 * 60_000);
+  const ipCheck = await rateLimit(`pwreset_ip_${clientIp}`, 5, 10 * 60_000);
   if (!ipCheck.allowed) {
     return NextResponse.json(
       { error: `Trop de demandes. Patientez ${ipCheck.retryAfterSeconds} secondes avant de réessayer.` },
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Limite par adresse : évite d'inonder une boîte mail
-  const emailCheck = checkRateLimit(`pwreset_email_${email}`, 3, 15 * 60_000);
+  const emailCheck = await rateLimit(`pwreset_email_${email}`, 3, 15 * 60_000);
   if (!emailCheck.allowed) {
     return NextResponse.json({ success: true });
   }

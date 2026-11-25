@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe, isStripeConfigured, getSubscriptionAccessEnd } from "@/lib/stripe";
 import { verifyFirebaseIdToken, findCoachProfile, updateCoachPlanInFirestore } from "@/lib/firebase-admin";
-import { checkRateLimit, getClientIp, isAllowedOrigin } from "@/lib/security";
+import { getClientIp, isAllowedOrigin } from "@/lib/security";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * Résilie l'abonnement Stripe du coach connecté à la fin de la période déjà payée.
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
     }
 
-    const rateCheck = checkRateLimit(`cancel_${getClientIp(req)}`, 5, 60000);
+    const rateCheck = await rateLimit(`cancel_${getClientIp(req)}`, 5, 60000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes.` },

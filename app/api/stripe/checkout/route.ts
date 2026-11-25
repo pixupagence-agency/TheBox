@@ -4,10 +4,10 @@ import {
   validateSafeReturnUrl, 
   isValidEmail, 
   sanitizeText,
-  checkRateLimit,
   getClientIp,
   isAllowedOrigin
 } from "@/lib/security";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     // IP Rate Limiting (15 checkout sessions per minute per IP)
     const clientIp = getClientIp(req);
-    const rateCheck = checkRateLimit(`checkout_${clientIp}`, 15, 60000);
+    const rateCheck = await rateLimit(`checkout_${clientIp}`, 15, 60000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },

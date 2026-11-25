@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminFirestore, verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import { deleteCoachData, isSuperAdminUser } from "@/lib/accountDeletion";
-import { checkRateLimit, getClientIp, isAllowedOrigin } from "@/lib/security";
+import { getClientIp, isAllowedOrigin } from "@/lib/security";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
   if (!isAllowedOrigin(req)) {
     return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
   }
-  const rateCheck = checkRateLimit(`admin_delete_data_${getClientIp(req)}`, 20, 60_000);
+  const rateCheck = await rateLimit(`admin_delete_data_${getClientIp(req)}`, 20, 60_000);
   if (!rateCheck.allowed) {
     return NextResponse.json({ error: "Trop de requêtes." }, { status: 429 });
   }

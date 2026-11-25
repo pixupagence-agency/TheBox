@@ -3,10 +3,10 @@ import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { verifyFirebaseIdToken, findCoachProfile } from "@/lib/firebase-admin";
 import {
   validateSafeReturnUrl,
-  checkRateLimit,
   getClientIp,
   isAllowedOrigin
 } from "@/lib/security";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     // IP Rate Limiting (15 portal sessions per minute per IP)
     const clientIp = getClientIp(req);
-    const rateCheck = checkRateLimit(`portal_${clientIp}`, 15, 60000);
+    const rateCheck = await rateLimit(`portal_${clientIp}`, 15, 60000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },

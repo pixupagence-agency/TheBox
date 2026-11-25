@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
-import { checkRateLimit, getClientIp, isAllowedOrigin } from "@/lib/security";
+import { getClientIp, isAllowedOrigin } from "@/lib/security";
+import { rateLimit } from "@/lib/rateLimit";
 import { getAdminFirestore, verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import { hasProAccess } from "@/lib/accountStatus";
 
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const clientIp = getClientIp(req);
-    const rateCheck = checkRateLimit(`gif_${clientIp}`, 15, 60000);
+    const rateCheck = await rateLimit(`gif_${clientIp}`, 15, 60000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes.` },

@@ -5,11 +5,11 @@ import {
   sanitizeSubject, 
   isValidEmail, 
   sanitizeText, 
-  checkRateLimit, 
   getClientIp, 
   isAllowedOrigin, 
   isBotDetected 
 } from "@/lib/security";
+import { rateLimit } from "@/lib/rateLimit";
 
 const TARGET_CONTACT_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "contact@thebox-tactique.com";
 
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     // IP Rate Limiting (5 requests per 5 minutes per IP)
     const clientIp = getClientIp(req);
-    const rateCheck = checkRateLimit(`contact_${clientIp}`, 5, 300000);
+    const rateCheck = await rateLimit(`contact_${clientIp}`, 5, 300000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },

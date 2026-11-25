@@ -4,10 +4,10 @@ import {
   escapeHtml, 
   isValidEmail, 
   sanitizeText, 
-  checkRateLimit, 
   getClientIp, 
   isAllowedOrigin 
 } from "@/lib/security";
+import { rateLimit } from "@/lib/rateLimit";
 import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     // IP Rate Limiting (10 requests per minute per IP)
     const clientIp = getClientIp(req);
-    const rateCheck = checkRateLimit(`welcome_${clientIp}`, 10, 60000);
+    const rateCheck = await rateLimit(`welcome_${clientIp}`, 10, 60000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Connexion requise.", requiresAuth: true }, { status: 401 });
     }
 
-    const userCheck = checkRateLimit(`welcome_uid_${user.uid}`, 3, 24 * 60 * 60_000);
+    const userCheck = await rateLimit(`welcome_uid_${user.uid}`, 3, 24 * 60 * 60_000);
     if (!userCheck.allowed) {
       return NextResponse.json({ error: "E-mail de bienvenue déjà envoyé récemment." }, { status: 429 });
     }
