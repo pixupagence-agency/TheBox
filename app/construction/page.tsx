@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import LogoIcon from "@/components/LogoIcon";
 
-// Page affichée sur thebox-tactic.com tant que le site n'est pas ouvert au public (voir middleware.ts)
+// Page affichée sur thebox-tactic.com tant que le site n'est pas ouvert au public (voir proxy.ts)
 export const metadata: Metadata = {
   title: "The Box - Bientôt disponible",
   description: "The Box, l'application de coaching et de tableau tactique, arrive bientôt.",

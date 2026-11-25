@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Pour ouvrir le site au public : vider cette liste et redéployer.
 const UNDER_CONSTRUCTION_HOSTS = ["thebox-tactic.com", "www.thebox-tactic.com"];
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const host = (req.headers.get("host") || "").split(":")[0].toLowerCase();
   if (!UNDER_CONSTRUCTION_HOSTS.includes(host)) return NextResponse.next();
   if (req.nextUrl.pathname === "/construction") return NextResponse.next();
