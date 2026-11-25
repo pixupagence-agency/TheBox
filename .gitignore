@@ -28,3 +28,6 @@ ui-debug.log
 
 # Généré par Next à chaque démarrage (dépend du dossier de compilation : .next ou .next-e2e)
 next-env.d.ts
+
+# Sauvegardes de la base (npm run backup) : chiffrées, mais à garder hors du dépôt
+/backups/

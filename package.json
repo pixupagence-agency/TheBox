@@ -9,6 +9,8 @@
     "lint": "eslint .",
     "clean": "next clean",
     "security:check": "npm audit",
+    "backup": "node scripts/firestore-backup.mjs",
+    "backup:restore": "node scripts/firestore-restore.mjs",
     "test:rules": "firebase emulators:exec --only firestore --project thebox-tactique \"node --test rules-tests/firestore.rules.test.mjs\"",
     "test:e2e": "firebase emulators:exec --only auth,firestore --project thebox-tactique \"node scripts/e2e-seed.mjs && playwright test --project=chromium\"",
     "test:e2e:ui": "firebase emulators:exec --only auth,firestore --project thebox-tactique \"node scripts/e2e-seed.mjs && playwright test --project=chromium --ui\"",
