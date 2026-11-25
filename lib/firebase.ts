@@ -29,13 +29,13 @@ import {
   onSnapshot,
   Timestamp
 } from "firebase/firestore";
-import { getToken, initializeAppCheck, ReCaptchaV3Provider, type AppCheck } from "firebase/app-check";
+import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from "firebase/app-check";
 import firebaseConfig from "../firebase-config.json";
 
 // Initialize Firebase App singleton
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// App Check (reCAPTCHA v3) : prouve que les requêtes viennent de l'application (Firestore, routes /api).
+// App Check (reCAPTCHA Enterprise, clé « site Web » créée dans Google Cloud) : prouve que les requêtes viennent de l'application (Firestore, routes /api).
 // Actif seulement si NEXT_PUBLIC_RECAPTCHA_SITE_KEY est défini, avant toute requête Firestore / Auth.
 // En local (localhost) et dans les tests e2e : jeton de débogage, à enregistrer dans la console Firebase
 // (App Check > Applications > Gérer les jetons de débogage) ; NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN le fixe.
@@ -48,7 +48,7 @@ if (typeof window !== "undefined") {
       (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: string | boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken || true;
     }
     try {
-      appCheck = initializeAppCheck(app, { provider: new ReCaptchaV3Provider(siteKey), isTokenAutoRefreshEnabled: true });
+      appCheck = initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(siteKey), isTokenAutoRefreshEnabled: true });
     } catch (err) {
       console.warn("[App Check] initialisation impossible :", (err as Error)?.message);
     }
