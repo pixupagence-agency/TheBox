@@ -235,13 +235,13 @@ describe("liveMatches/ : page publique d'un match", () => {
     // changement de club après coup
     await assertSucceeds(setDoc(doc(as("trial"), "liveMatches/m9"), { ownerUid: "trial", clubSlug: "fc-essai" }));
     await assertFails(updateDoc(doc(as("trial"), "liveMatches/m9"), { clubSlug: "the-box-fc" }));
-    await assertSucceeds(updateDoc(doc(as("trial"), "liveMatches/m9"), { homeScore: 2, clubSlug: "fc-essai" }));
+    await assertSucceeds(updateDoc(doc(as("trial"), "liveMatches/m9"), { score: { home: 2, away: 0 }, clubSlug: "fc-essai" }));
   });
 
   test("mise à jour et suppression par le propriétaire seulement", async () => {
-    await assertSucceeds(updateDoc(doc(as("pro"), "liveMatches/m1"), { homeScore: 1 }));
+    await assertSucceeds(updateDoc(doc(as("pro"), "liveMatches/m1"), { score: { home: 1, away: 0 } }));
     await assertFails(updateDoc(doc(as("pro"), "liveMatches/m1"), { ownerUid: "trial" }));
-    await assertFails(updateDoc(doc(as("trial"), "liveMatches/m1"), { homeScore: 9 }));
+    await assertFails(updateDoc(doc(as("trial"), "liveMatches/m1"), { score: { home: 9, away: 0 } }));
     await assertFails(deleteDoc(doc(as("trial"), "liveMatches/m1")));
     await assertSucceeds(deleteDoc(doc(as("pro"), "liveMatches/m1")));
   });
@@ -281,8 +281,8 @@ describe("liveClubs/ : page publique du club", () => {
 
   test("index des matchs du club : public en lecture, écrit par le propriétaire du club", async () => {
     await assertSucceeds(getDocs(collection(anon(), "liveClubs/the-box-fc/matches")));
-    await assertSucceeds(setDoc(doc(as("pro"), "liveClubs/the-box-fc/matches/m2"), { homeName: "The Box" }));
-    await assertFails(setDoc(doc(as("trial"), "liveClubs/the-box-fc/matches/m3"), { homeName: "Faux" }));
+    await assertSucceeds(setDoc(doc(as("pro"), "liveClubs/the-box-fc/matches/m2"), { home: "The Box" }));
+    await assertFails(setDoc(doc(as("trial"), "liveClubs/the-box-fc/matches/m3"), { home: "Faux" }));
     await assertFails(deleteDoc(doc(as("trial"), "liveClubs/the-box-fc/matches/m1")));
   });
 });
@@ -310,5 +310,85 @@ describe("refus par défaut", () => {
     await assertFails(getDoc(doc(superAdmin(), "rateLimits/ip_1")));
     await assertFails(setDoc(doc(as("pro"), "rateLimits/ip_1"), { count: 0 }));
     await assertFails(setDoc(doc(as("pro"), "inconnue/x"), { a: 1 }));
+  });
+});
+
+describe("Live : structure des documents publics", () => {
+  // Match tel que le publie l'app tactique (lib/live/client.ts, createLiveMatch)
+  const liveDoc = (over = {}) => ({
+    ownerUid: "pro", clubSlug: "the-box-fc", clubName: "The Box FC", teamId: "team_1", teamName: "U13",
+    home: "The Box", away: "FC Rival", competition: "Championnat", date: "2026-11-29", time: "10:30",
+    dateTime: "2026-11-29T10:30", coachNote: "", sport: "football", periods: ["1MT", "2MT"],
+    periodSeconds: 2700, breakAfterIndex: 0, status: "scheduled", period: "1MT",
+    score: { home: 0, away: 0 }, clock: { elapsed: 0, runningSince: null },
+    events: [{ id: "e1", type: "goal", team: "home", time: "3'", player: "Lucas M.", points: 1 }],
+    lineup: { onPitch: [{ id: "p1", n: 9, name: "Lucas M.", x: 50, y: 50 }], bench: [] },
+    hostSeenAt: 1, createdAt: 1, updatedAt: 1, ...over,
+  });
+  const db = () => as("pro");
+
+  test("un match publié par l'app est accepté, avec ses mises à jour habituelles", async () => {
+    await assertSucceeds(setDoc(doc(db(), "liveMatches/s1"), liveDoc()));
+    await assertSucceeds(updateDoc(doc(db(), "liveMatches/s1"), { score: { home: 1, away: 0 }, status: "live", clock: { elapsed: 10, runningSince: 5 } }));
+    await assertSucceeds(updateDoc(doc(db(), "liveMatches/s1"), { status: "finished", period: "FIN", finishedAt: 9, coachNote: "Bravo à tous" }));
+    await assertSucceeds(updateDoc(doc(db(), "liveMatches/s1"), { hostSeenAt: 99 }));
+    // ancien champ déjà présent (m1 en contient un) : les mises à jour restent possibles
+    await assertSucceeds(updateDoc(doc(db(), "liveMatches/m1"), { hostSeenAt: 99 }));
+  });
+
+  test("champs inconnus, réactions et date de création refusés", async () => {
+    await assertFails(setDoc(doc(db(), "liveMatches/s2"), liveDoc({ pub: "<script>" })));
+    await assertFails(setDoc(doc(db(), "liveMatches/s3"), liveDoc({ reactions: { clap: 9999 } })));
+    await assertSucceeds(setDoc(doc(db(), "liveMatches/s4"), liveDoc()));
+    await assertFails(updateDoc(doc(db(), "liveMatches/s4"), { reactions: { clap: 9999 } }));
+    await assertFails(updateDoc(doc(db(), "liveMatches/s4"), { createdAt: 5 }));
+    await assertFails(updateDoc(doc(db(), "liveMatches/s4"), { extra: true }));
+  });
+
+  test("types et tailles bornés", async () => {
+    const bad = [
+      { coachNote: "x".repeat(601) },
+      { home: "x".repeat(201) },
+      { status: "hacked" },
+      { score: { home: "1", away: 0 } },
+      { score: { home: 1, away: 0, bonus: 3 } },
+      { clock: { elapsed: 0, runningSince: null, x: 1 } },
+      { events: Array.from({ length: 1001 }, (_, i) => ({ id: `e${i}` })) },
+      { lineup: { onPitch: [], bench: [], staff: [] } },
+      { periods: "1MT" },
+      { finishedAt: "demain" },
+    ];
+    for (const [i, over] of bad.entries()) {
+      await assertFails(setDoc(doc(db(), `liveMatches/bad${i}`), liveDoc(over)));
+    }
+    await assertSucceeds(setDoc(doc(db(), "liveMatches/s5"), liveDoc()));
+    await assertFails(updateDoc(doc(db(), "liveMatches/s5"), { coachNote: "x".repeat(601) }));
+  });
+
+  test("index du club : résumé sans composition ni identifiant du coach", async () => {
+    const { ownerUid: _o, lineup: _l, hostSeenAt: _h, ...summary } = liveDoc();
+    await assertSucceeds(setDoc(doc(db(), "liveClubs/the-box-fc/matches/s6"), summary));
+    await assertFails(setDoc(doc(db(), "liveClubs/the-box-fc/matches/s7"), { ...summary, lineup: liveDoc().lineup }));
+    await assertFails(setDoc(doc(db(), "liveClubs/the-box-fc/matches/s8"), { ...summary, ownerUid: "pro" }));
+    await assertFails(setDoc(doc(db(), "liveClubs/the-box-fc/matches/s9"), { ...summary, pub: "x" }));
+    await assertSucceeds(setDoc(doc(db(), "liveClubs/the-box-fc/matches/s6"), { score: { home: 2, away: 1 } }, { merge: true }));
+  });
+
+  test("logo du club : image intégrée uniquement, jamais une adresse externe", async () => {
+    const club = doc(db(), "liveClubs/the-box-fc");
+    await assertSucceeds(setDoc(club, { ownerUid: "pro", name: "The Box FC", logo: "data:image/png;base64,AAAA", updatedAt: 1 }));
+    await assertSucceeds(setDoc(club, { ownerUid: "pro", name: "The Box FC", updatedAt: 1 }));
+    await assertFails(setDoc(club, { ownerUid: "pro", name: "The Box FC", logo: "https://pisteur.example/p.gif", updatedAt: 1 }));
+    await assertFails(setDoc(club, { ownerUid: "pro", name: "The Box FC", extra: 1 }));
+    await assertFails(setDoc(club, { ownerUid: "pro", name: "x".repeat(201) }));
+  });
+
+  test("accès télécommande : format du code et de l'empreinte", async () => {
+    const key = { ownerUid: "pro", token: "a".repeat(32), tokenHash: "0".repeat(64), code: "AB23CD", revoked: false, createdAt: 1 };
+    await assertSucceeds(setDoc(doc(db(), "liveEditorKeys/m1"), key));
+    await assertSucceeds(updateDoc(doc(db(), "liveEditorKeys/m1"), { ownerUid: "pro", revoked: true }));
+    await assertFails(setDoc(doc(db(), "liveEditorKeys/m1"), { ...key, code: "A" }));
+    await assertFails(setDoc(doc(db(), "liveEditorKeys/m1"), { ...key, tokenHash: "x" }));
+    await assertFails(setDoc(doc(db(), "liveEditorKeys/m1"), { ...key, expiresAt: 9e15 }));
   });
 });

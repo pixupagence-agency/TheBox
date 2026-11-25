@@ -44,6 +44,72 @@ service cloud.firestore {
         get(/databases/$(database)/documents/liveClubs/$(slug)).data.ownerUid == request.auth.uid;
     }
 
+    // --- Structure des documents publics du mode Live (lib/live/model.ts, LiveMatchDoc) ---
+    // Tout ce qui est écrit ici s'affiche sur des pages publiques : champs connus, types et tailles bornés.
+    // (Le contenu de chaque fait de match n'est pas inspectable par les règles : leur nombre est borné.)
+    function optStr(d, k, max) {
+      return !(k in d) || (d[k] is string && d[k].size() <= max);
+    }
+
+    function optNum(d, k) {
+      return !(k in d) || d[k] is number;
+    }
+
+    // Champs d'un match écrits par l'app du coach (les réactions sont écrites par le serveur seulement)
+    function liveMatchKeys() {
+      return ['ownerUid', 'clubSlug', 'clubName', 'teamId', 'teamName', 'home', 'away', 'competition',
+              'date', 'time', 'dateTime', 'venue', 'coachNote', 'sport', 'periods', 'periodSeconds',
+              'breakAfterIndex', 'status', 'period', 'score', 'clock', 'events', 'lineup', 'hostSeenAt',
+              'createdAt', 'updatedAt', 'finishedAt'];
+    }
+
+    // Résumé publié dans l'index du club : sans composition, réactions ni identifiant du coach (lib/live/privacy.ts)
+    function clubMatchKeys() {
+      return liveMatchKeys().removeAll(['ownerUid', 'lineup', 'hostSeenAt']);
+    }
+
+    function liveFieldsOk(d) {
+      return optStr(d, 'clubSlug', 64) && optStr(d, 'clubName', 200) && optStr(d, 'teamId', 128) &&
+        optStr(d, 'teamName', 200) && optStr(d, 'home', 200) && optStr(d, 'away', 200) &&
+        optStr(d, 'competition', 200) && optStr(d, 'date', 20) && optStr(d, 'time', 10) &&
+        optStr(d, 'dateTime', 80) && optStr(d, 'venue', 300) && optStr(d, 'coachNote', 600) &&
+        optStr(d, 'sport', 40) && optStr(d, 'period', 20) &&
+        (!('status' in d) || d.status in ['scheduled', 'live', 'halftime', 'finished']) &&
+        (!('periods' in d) || (d.periods is list && d.periods.size() <= 8)) &&
+        optNum(d, 'periodSeconds') && optNum(d, 'breakAfterIndex') && optNum(d, 'hostSeenAt') &&
+        optNum(d, 'createdAt') && optNum(d, 'updatedAt') &&
+        (!('finishedAt' in d) || d.finishedAt == null || d.finishedAt is number) &&
+        (!('score' in d) || (d.score is map && d.score.keys().hasOnly(['home', 'away']) &&
+          d.score.get('home', 0) is number && d.score.get('away', 0) is number)) &&
+        (!('clock' in d) || (d.clock is map && d.clock.keys().hasOnly(['elapsed', 'runningSince']))) &&
+        (!('events' in d) || (d.events is list && d.events.size() <= 1000)) &&
+        (!('lineup' in d) || (d.lineup is map && d.lineup.keys().hasOnly(['onPitch', 'bench']) &&
+          d.lineup.get('onPitch', []) is list && d.lineup.get('onPitch', []).size() <= 40 &&
+          d.lineup.get('bench', []) is list && d.lineup.get('bench', []).size() <= 60));
+    }
+
+    // Mise à jour : seuls les champs modifiés doivent être connus (tolère d'éventuels anciens champs)
+    function changesOnly(keys) {
+      return incoming().diff(existing()).affectedKeys().hasOnly(keys);
+    }
+
+    // Logo d'un club : image intégrée uniquement (jamais une adresse externe, qui pisterait les visiteurs)
+    function validClub(d) {
+      return d.keys().hasOnly(['ownerUid', 'name', 'logo', 'updatedAt']) &&
+        optStr(d, 'name', 200) && optNum(d, 'updatedAt') &&
+        (!('logo' in d) || (d.logo is string && d.logo.size() <= 300000 &&
+          (d.logo == '' || d.logo.matches('^data:image/(png|jpeg|webp);base64,.*'))));
+    }
+
+    // Accès télécommande (lib/live/client.ts, regenerateEditorAccess) : code de 6 caractères, empreinte SHA-256
+    function validEditorKey(d) {
+      return d.keys().hasOnly(['ownerUid', 'token', 'tokenHash', 'code', 'revoked', 'createdAt']) &&
+        optStr(d, 'token', 64) &&
+        (!('tokenHash' in d) || (d.tokenHash is string && d.tokenHash.matches('^[0-9a-f]{64}$'))) &&
+        (!('code' in d) || (d.code is string && d.code.matches('^[A-Z0-9]{6}$'))) &&
+        (!('revoked' in d) || d.revoked is bool) && optNum(d, 'createdAt');
+    }
+
     function hasUnchangedCreatedAt() {
       return !('createdAt' in existing()) || !('createdAt' in incoming()) || incoming().createdAt == existing().createdAt;
     }
@@ -209,11 +275,13 @@ service cloud.firestore {
         isValidId(publicId) &&
         incoming().ownerUid == request.auth.uid &&
         hasProAccess(request.auth.uid) &&
+        incoming().keys().hasOnly(liveMatchKeys()) && liveFieldsOk(incoming()) &&
         ownsClub(incoming().clubSlug);
 
       allow update: if isSignedIn() &&
         existing().ownerUid == request.auth.uid &&
         incoming().ownerUid == existing().ownerUid &&
+        changesOnly(liveMatchKeys().removeAll(['ownerUid', 'createdAt'])) && liveFieldsOk(incoming()) &&
         (incoming().clubSlug == existing().clubSlug || ownsClub(incoming().clubSlug));
 
       allow delete: if isSignedIn() && (existing().ownerUid == request.auth.uid || isSuperAdmin());
@@ -230,8 +298,9 @@ service cloud.firestore {
     match /liveEditorKeys/{publicId} {
       allow get: if isSignedIn() && (resource == null || existing().ownerUid == request.auth.uid);
       allow list: if false;
-      allow create: if isSignedIn() && isValidId(publicId) && incoming().ownerUid == request.auth.uid;
-      allow update: if isSignedIn() && existing().ownerUid == request.auth.uid && incoming().ownerUid == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(publicId) && incoming().ownerUid == request.auth.uid && validEditorKey(incoming());
+      allow update: if isSignedIn() && existing().ownerUid == request.auth.uid && incoming().ownerUid == request.auth.uid &&
+        validEditorKey(incoming());
       allow delete: if isSignedIn() && (existing().ownerUid == request.auth.uid || isSuperAdmin());
     }
 
@@ -240,17 +309,22 @@ service cloud.firestore {
     match /liveClubs/{slug} {
       allow get: if true;
       allow list: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(slug) && incoming().ownerUid == request.auth.uid &&
-        (!('logo' in incoming()) || (incoming().logo is string && incoming().logo.size() <= 300000));
+      allow create: if isSignedIn() && isValidId(slug) && incoming().ownerUid == request.auth.uid && validClub(incoming());
       allow update: if isSignedIn() && existing().ownerUid == request.auth.uid && incoming().ownerUid == request.auth.uid &&
-        (!('logo' in incoming()) || (incoming().logo is string && incoming().logo.size() <= 300000));
+        validClub(incoming());
       allow delete: if isSignedIn() && (existing().ownerUid == request.auth.uid || isSuperAdmin());
 
       // Index des matchs du club (résumés sans composition) : lisible avec l'adresse du club,
       // écrit par le coach propriétaire du club (et par l'API de la télécommande, Admin SDK)
       match /matches/{publicId} {
         allow read: if true;
-        allow write: if isSignedIn() && isValidId(publicId) &&
+        allow create: if isSignedIn() && isValidId(publicId) &&
+          get(/databases/$(database)/documents/liveClubs/$(slug)).data.ownerUid == request.auth.uid &&
+          incoming().keys().hasOnly(clubMatchKeys()) && liveFieldsOk(incoming());
+        allow update: if isSignedIn() &&
+          get(/databases/$(database)/documents/liveClubs/$(slug)).data.ownerUid == request.auth.uid &&
+          changesOnly(clubMatchKeys()) && liveFieldsOk(incoming());
+        allow delete: if isSignedIn() &&
           get(/databases/$(database)/documents/liveClubs/$(slug)).data.ownerUid == request.auth.uid;
       }
     }

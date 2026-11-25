@@ -90,7 +90,8 @@ export async function ensureLiveClub(name: string, logo?: string): Promise<strin
   const payload: LiveClubDoc = stripUndefined({
     ownerUid: owner,
     name: (name || "Mon club").slice(0, 120),
-    logo: logo && logo.length <= 300000 ? logo : undefined,
+    // Image intégrée uniquement (règles Firestore) : jamais une adresse externe
+    logo: logo && logo.length <= 300000 && /^data:image\/(png|jpeg|webp);base64,/.test(logo) ? logo : undefined,
     updatedAt: Date.now(),
   });
   if (clubSlugCache?.uid === owner) {
