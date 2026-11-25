@@ -2,9 +2,6 @@
   "name": "the-box",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": ">=22"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -23,7 +20,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^13.4.0",
-    "firebase-admin": "^14.5.1",
+    "firebase-admin": "^13.10.0",
     "html-to-image": "^1.11.11",
     "html2canvas": "^1.4.1",
     "jspdf": "4.2.1",
