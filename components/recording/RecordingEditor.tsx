@@ -13,6 +13,8 @@ import { confirmAction } from "@/components/ConfirmDialog";
 import VideoStage, { type PlayerHandle, type StageSource } from "./VideoStage";
 import Transport from "./Transport";
 import LibraryPanel from "./LibraryPanel";
+import MatchSummaryPanel from "./MatchSummaryPanel";
+import { readMatchSummary } from "@/lib/recording/matchSummary";
 import SequencePanel from "./SequencePanel";
 import {
   deleteImage, deleteSequence, listImages, listSequences, loadImageFile, loadVideoBlob, newId, requestPersistentStorage, saveImage, saveSequence,
@@ -81,10 +83,15 @@ const insertKey = (keys: TrackKey[], key: TrackKey): TrackKey[] => {
   return out;
 };
 
-export default function RecordingEditor() {
+/**
+ * @param teamId  équipe du match analysé (sinon l'équipe active du tableau tactique)
+ * @param matchId match terminé dont le résumé s'affiche en tête du menu de droite
+ */
+export default function RecordingEditor({ teamId, matchId }: { teamId?: string; matchId?: string } = {}) {
   const [isLight, setIsLight] = useState<boolean>(() => readThemePreference());
   const th = getRecordingTheme(isLight);
-  const roster = useMemo(() => readActiveRoster(), []);
+  const [matchSummary, setMatchSummary] = useState(() => readMatchSummary(teamId, matchId));
+  const roster = useMemo(() => readActiveRoster(matchSummary?.teamId || teamId), [matchSummary?.teamId, teamId]);
   const playerRef = useRef<PlayerHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -137,7 +144,8 @@ export default function RecordingEditor() {
   const [linkError, setLinkError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  // Arrivée depuis un match terminé : le menu de droite (résumé du match) est ouvert d'emblée
+  const [panelOpen, setPanelOpen] = useState(() => Boolean(matchSummary));
   const [dragOver, setDragOver] = useState(false);
 
   const fps = seq?.fps || 25;
@@ -1298,6 +1306,7 @@ export default function RecordingEditor() {
             <div className="xl:hidden flex justify-end p-2">
               <button type="button" onClick={() => setPanelOpen(false)} aria-label="Fermer le panneau" className={`h-9 w-9 rounded-lg flex items-center justify-center cursor-pointer ${toolIdle}`}><X className="w-4 h-4" /></button>
             </div>
+            {matchSummary && <MatchSummaryPanel summary={matchSummary} onClose={() => setMatchSummary(null)} />}
             {seq ? (
               <SequencePanel
                 sequence={seq}

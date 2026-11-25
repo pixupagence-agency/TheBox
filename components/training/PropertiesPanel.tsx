@@ -16,6 +16,7 @@ import { FREE_PITCH_LIMITS, PITCH_FORMATS, makePitchConfig } from "@/lib/trainin
 import type { RosterPlayer } from "@/lib/training/storage";
 import { useTrainingTheme } from "@/lib/training/theme";
 import { LAYER_LABELS, LAYER_OF, type LayerId, type PitchFormatId, type TrainingElement } from "@/lib/training/types";
+import CollapsibleCard from "./CollapsibleCard";
 
 const bigBtn = "h-12 rounded-xl border text-sm font-black transition cursor-pointer flex items-center justify-center gap-1.5";
 
@@ -45,7 +46,7 @@ function Swatches({ colors, value, onChange }: { colors: Array<{ id: string; lab
   );
 }
 
-function Stepper({ value, min, max, step = 1, suffix, onChange }: { value: number; min: number; max: number; step?: number; suffix?: string; onChange: (v: number) => void }) {
+export function Stepper({ value, min, max, step = 1, suffix, onChange }: { value: number; min: number; max: number; step?: number; suffix?: string; onChange: (v: number) => void }) {
   const { th, idleBtn } = useStyles();
   const set = (v: number) => onChange(Math.min(max, Math.max(min, Math.round(v * 100) / 100)));
   return (
@@ -348,8 +349,7 @@ function PitchSettings({ state, dispatch }: { state: EditorState; dispatch: Reac
 
   return (
     <div className="space-y-3">
-      <div className={card}>
-        <span className={label}>Terrain</span>
+      <CollapsibleCard id="pitch" title="Terrain">
         <div className="grid grid-cols-2 gap-1.5">
           {PITCH_FORMATS.map((f) => (
             <button key={f.id} type="button" aria-pressed={pitch.format === f.id} onClick={() => setFormat(f.id)} className={`${bigBtn} h-16 flex-col gap-0 px-2 ${pitch.format === f.id ? activeBtn : idleBtn}`}>
@@ -364,20 +364,18 @@ function PitchSettings({ state, dispatch }: { state: EditorState; dispatch: Reac
             <div><span className={label}>Largeur</span><Stepper value={pitch.width} min={FREE_PITCH_LIMITS.min} max={FREE_PITCH_LIMITS.max} step={1} suffix="m" onChange={(width) => setFree({ length: pitch.length, width })} /></div>
           </div>
         )}
-      </div>
+      </CollapsibleCard>
 
-      <div className={card}>
-        <span className={label}>Grille et magnétisme</span>
+      <CollapsibleCard id="grid" title="Grille et magnétisme">
         <div className="grid grid-cols-2 gap-1.5">
           <button type="button" aria-pressed={state.grid.visible} onClick={() => dispatch({ type: "setGrid", grid: { visible: !state.grid.visible } })} className={`${bigBtn} ${state.grid.visible ? activeBtn : idleBtn}`}>Grille</button>
           <button type="button" aria-pressed={state.grid.snap} onClick={() => dispatch({ type: "setGrid", grid: { snap: !state.grid.snap } })} className={`${bigBtn} ${state.grid.snap ? activeBtn : idleBtn}`}>Magnétisme</button>
         </div>
         <span className={label}>Pas de la grille</span>
         <Choice cols={3} options={[0.5, 1, 2, 5, 10].map((v) => ({ value: v, label: `${String(v).replace(".", ",")} m` }))} value={state.grid.size} onChange={(size) => dispatch({ type: "setGrid", grid: { size } })} />
-      </div>
+      </CollapsibleCard>
 
-      <div className={card}>
-        <span className={label}>Calques</span>
+      <CollapsibleCard id="layers" title="Calques">
         {(Object.keys(LAYER_LABELS) as LayerId[]).map((layer) => {
           const hidden = state.hiddenLayers.includes(layer);
           return (
@@ -387,7 +385,7 @@ function PitchSettings({ state, dispatch }: { state: EditorState; dispatch: Reac
             </button>
           );
         })}
-      </div>
+      </CollapsibleCard>
 
       <div className={`rounded-xl border border-dashed p-3 text-[13px] leading-relaxed space-y-1 ${th.hint}`}>
         <p><b className={th.text}>Poser :</b> appuyez sur un élément de la palette puis sur le terrain (ou glissez-le).</p>

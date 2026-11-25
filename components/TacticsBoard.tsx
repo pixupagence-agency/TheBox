@@ -9,6 +9,8 @@ import LogoIcon from "./LogoIcon";
 import TrialCountdownModal, { calculateTrialRemaining, TrialTimeRemaining } from "./TrialCountdownModal";
 import ShareModal, { ShareData } from "./ShareModal";
 import LiveShareModal from "./live/LiveShareModal";
+import MatchConvocationModal from "./convocations/MatchConvocationModal";
+import { useRouter } from "next/navigation";
 import { useLiveHost } from "@/lib/live/useLiveHost";
 import {
   createLiveMatch, deleteLiveMatch, ensureLiveClub, getEditorAccess, regenerateEditorAccess, revokeEditorAccess, updateLiveMatchMeta,
@@ -28,7 +30,7 @@ import {
   Search, UserCheck, Upload, ArrowLeftRight, Zap, AlertCircle, Cloud, Filter, Film,
   Video, CircleDot, ZoomIn, Map, Hash, Minus, Columns, Activity, Target, Shirt, Circle,
   CreditCard, Box, Scan, Bookmark, CalendarDays, CircleHelp, NotebookPen,
-  Crown, Flag, CornerUpLeft, CornerUpRight, Archive, QrCode, Tag
+  Crown, Flag, CornerUpLeft, CornerUpRight, Archive, QrCode, Tag, ClipboardCheck, Clapperboard
 } from "lucide-react";
 import { getPremiumTheme, premiumOverlay, premiumShell, premiumLabel } from "@/lib/premiumModalTheme";
 import { auth, logoutUser, saveTacticToFirestore, deleteTacticFromFirestore, saveUserProfileToFirestore } from "@/lib/firebase";
@@ -4740,6 +4742,9 @@ export default function TacticsBoard({
   // Le tableau tactique est l'hôte : il applique les actions de la télécommande puis publie l'état du match.
   const [liveClubSlug, setLiveClubSlug] = useState<string | null>(null);
   const [isLiveShareOpen, setIsLiveShareOpen] = useState(false);
+  // Convocation du match (envoyée au module Convocations) : joueurs du groupe du match
+  const [isMatchConvocationOpen, setIsMatchConvocationOpen] = useState(false);
+  const router = useRouter();
   const [liveEditorAccess, setLiveEditorAccess] = useState<EditorAccess | null>(null);
   const [liveShareBusy, setLiveShareBusy] = useState(false);
   const [liveShareError, setLiveShareError] = useState<string | null>(null);
@@ -4962,6 +4967,50 @@ export default function TacticsBoard({
       updateMatchById(m.id, "livePublicId", publicId);
     }
     return publicId;
+  };
+
+  /** Convocation du match actif : réservée aux formules PRO, un match doit être sélectionné */
+  const openMatchConvocation = () => {
+    if (!isProOrAdmin) {
+      setSleekToastMessage("🔒 Les convocations sont réservées aux formules PRO & PRO+.");
+      setTimeout(() => setSleekToastMessage(null), 3500);
+      setIsCheckoutOpen(true);
+      return;
+    }
+    if (!activeMatch.id) {
+      setSleekToastMessage("⚽ Créez d'abord le match pour convoquer vos joueurs.");
+      setTimeout(() => setSleekToastMessage(null), 3500);
+      return;
+    }
+    setIsMatchConvocationOpen(true);
+  };
+
+  /** Groupe du match : joueurs proposés à la convocation, reliés à leur fiche d'effectif */
+  const matchConvocationGroup = () => {
+    // Pion sans lien vers sa fiche (groupe par défaut) : fiche retrouvée par le nom, sinon par le numéro,
+    // pour que le joueur garde le même identifiant que dans le module Convocations
+    const roster = teamRostersMap[activeMatch.teamId || activeTeamId] || [];
+    const used = new Set<string>();
+    const resolve = (rosterId: string | undefined, fallbackId: string, name: string, number?: number) => {
+      if (rosterId) { used.add(rosterId); return rosterId; }
+      const key = name.trim().toLowerCase();
+      const found =
+        roster.find((r) => !used.has(r.id) && r.name.trim().toLowerCase() === key) ||
+        (typeof number === "number" ? roster.find((r) => !used.has(r.id) && r.number === number) : undefined);
+      if (found) { used.add(found.id); return found.id; }
+      return fallbackId;
+    };
+    // Les fiches déjà reliées sont réservées avant de chercher les autres
+    substitutes.forEach((p: any) => { if (p?.rosterId) used.add(String(p.rosterId)); });
+    currentTokens.forEach((t) => { if (t.type === "player_a" && t.rosterId) used.add(t.rosterId); });
+    return [
+      ...currentTokens
+        .filter((t) => t.type === "player_a" && t.name)
+        .map((t) => ({ id: resolve(t.rosterId, t.id, t.name, t.number), name: t.name, number: t.number, status: t.status })),
+      ...substitutes
+        .filter((p: any) => p && p.name)
+        .map((p: any) => ({ id: resolve(p.rosterId ? String(p.rosterId) : undefined, String(p.id), String(p.name), typeof p.number === "number" ? p.number : undefined), name: String(p.name), number: typeof p.number === "number" ? p.number : undefined, status: p.status })),
+    ];
   };
 
   const openLiveShare = async () => {
@@ -13937,25 +13986,6 @@ export default function TacticsBoard({
                     </div>
                   </div>
 
-                  {/* Mode Live déporté : QR du match, télécommande adjoint, QR du club */}
-                  <div className="mt-2 flex justify-center">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); openLiveShare(); }}
-                      className={`h-7 px-2.5 rounded-full border text-[11px] font-black inline-flex items-center gap-1.5 transition cursor-pointer ${isModernSleek
-                        ? "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
-                        : "bg-[#131d2b] hover:bg-[#1a283b] text-slate-200 border-[#26354d]"
-                        }`}
-                      title="QR du match (public), télécommande pour l'adjoint et QR général du club"
-                    >
-                      <QrCode className="w-3.5 h-3.5" />
-                      <span>{activeLivePublicId ? "Partager le live" : "Publier le live"}</span>
-                      {!isProPlusOrAdmin && (
-                        <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm">PRO+</span>
-                      )}
-                    </button>
-                  </div>
-
                   {/* Chrono, Period & Events section */}
                   {isLiveMatchMode ? (
                     <div className={`mt-3 pt-2.5 border-t flex flex-col items-center gap-2 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
@@ -14215,6 +14245,59 @@ export default function TacticsBoard({
                         {formatMatchDateTime(activeMatch)}
                       </p>
                     </div>
+                  )}
+
+                  {/* Bas de la section : match terminé → analyse vidéo (Recording, équipe et match ouverts) ;
+                      sinon partage du live (QR du match, télécommande, QR du club) et convocation des joueurs du groupe */}
+                  {activeMatch.id && (activeMatch.isFinished || currentPeriod === "FIN") ? (
+                  <div className={`mt-2.5 pt-2.5 border-t ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const teamId = activeMatch.teamId || activeTeamId;
+                        router.push(`/recording?equipe=${encodeURIComponent(teamId)}&match=${encodeURIComponent(activeMatch.id)}`);
+                      }}
+                      className="w-full h-8 px-2.5 rounded-lg text-[11px] font-black uppercase tracking-wide inline-flex items-center justify-center gap-1.5 transition cursor-pointer bg-[#FF5A4E] hover:bg-[#E8483D] text-white shadow-md shadow-[#FF5A4E]/15"
+                      title="Ouvrir le module Recording avec ce match et son résumé"
+                    >
+                      <Clapperboard className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Passez à l&apos;analyse vidéo</span>
+                    </button>
+                  </div>
+                  ) : (
+                  <div className={`mt-2.5 pt-2.5 border-t grid grid-cols-2 gap-1.5 ${isModernSleek ? "border-slate-200" : "border-[#1f293d]"}`}>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); openLiveShare(); }}
+                      className={`h-9 px-2 rounded-xl border text-[11px] font-black inline-flex items-center justify-center gap-1.5 min-w-0 transition cursor-pointer ${isModernSleek
+                        ? "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                        : "bg-[#131d2b] hover:bg-[#1a283b] text-slate-200 border-[#26354d]"
+                        }`}
+                      title="QR du match (public), télécommande pour l'adjoint et QR général du club"
+                    >
+                      <QrCode className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{activeLivePublicId ? "Partager le live" : "Publier le live"}</span>
+                      {!isProPlusOrAdmin && (
+                        <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm">PRO+</span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); openMatchConvocation(); }}
+                      className={`h-9 px-2 rounded-xl border text-[11px] font-black inline-flex items-center justify-center gap-1.5 min-w-0 transition cursor-pointer ${isModernSleek
+                        ? "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
+                        : "bg-[#FF8A1F]/10 hover:bg-[#FF8A1F]/20 text-[#FFA34D] border-[#FF8A1F]/35"
+                        }`}
+                      title="Convoquer les joueurs du groupe du match (envoi au module Convocations)"
+                    >
+                      <ClipboardCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Convocations</span>
+                      {!isProOrAdmin && (
+                        <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-1 rounded-sm">PRO</span>
+                      )}
+                    </button>
+                  </div>
                   )}
                 </div>
               )}
@@ -15878,6 +15961,27 @@ export default function TacticsBoard({
         onRegenerate={handleRegenerateLiveEditor}
         onRevoke={handleRevokeLiveEditor}
       />
+
+      {isMatchConvocationOpen && activeMatch.id && (() => {
+        const awayIsClub = isClubTeamName(activeMatch.awayTeam) && !isClubTeamName(activeMatch.homeTeam);
+        const teamId = activeMatch.teamId || activeTeamId;
+        return (
+          <MatchConvocationModal
+            isModernSleek={isModernSleek}
+            teamId={teamId}
+            teamName={teams.find((t) => t.id === teamId)?.name || (awayIsClub ? activeMatch.awayTeam : activeMatch.homeTeam) || "Mon équipe"}
+            match={{ id: activeMatch.id, competition: activeMatch.competition, date: (activeMatch as any).date, time: (activeMatch as any).time }}
+            opponent={(awayIsClub ? activeMatch.homeTeam : activeMatch.awayTeam) || ""}
+            isHome={!awayIsClub}
+            players={matchConvocationGroup()}
+            onClose={() => setIsMatchConvocationOpen(false)}
+            onSent={(msg) => {
+              setSleekToastMessage(msg);
+              setTimeout(() => setSleekToastMessage(null), 3500);
+            }}
+          />
+        );
+      })()}
 
       {isLiveMatchUpgradeModalOpen && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in backdrop-blur-md overflow-y-auto">

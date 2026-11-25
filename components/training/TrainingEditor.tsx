@@ -12,13 +12,14 @@ import LogoIcon from "@/components/LogoIcon";
 import TrainingCanvas, { type CanvasMode, type TrainingCanvasHandle } from "./TrainingCanvas";
 import Palette from "./Palette";
 import PropertiesPanel from "./PropertiesPanel";
+import SessionsPanel from "./SessionsPanel";
 import SeriesDialog, { type SeriesRequest } from "./SeriesDialog";
 import { confirmAction } from "@/components/ConfirmDialog";
 import { createElement, type PaletteItem } from "@/lib/training/catalog";
 import { editorReducer, initialEditorState, round2, seriesPositions, snapValue } from "@/lib/training/editorState";
 import { pitchFormatOption } from "@/lib/training/pitch";
 import { loadDraft, readActiveRoster, saveDraft } from "@/lib/training/storage";
-import type { TrainingElement } from "@/lib/training/types";
+import type { TrainingDiagram, TrainingElement } from "@/lib/training/types";
 import { TrainingThemeContext, getTrainingTheme, readThemePreference, storeThemePreference } from "@/lib/training/theme";
 
 // Boutons de la barre d'outils : même forme que ceux du tableau tactique, en plus grand (usage tactile au bord du terrain)
@@ -37,6 +38,21 @@ export default function TrainingEditor() {
   const [showThirds, setShowThirds] = useState(false);
   const [polygonCommand, setPolygonCommand] = useState<{ id: number; action: "finish" | "cancel" } | null>(null);
   const canvasRef = useRef<TrainingCanvasHandle>(null);
+  // Exercice de séance dont le schéma est affiché : ses modifications y sont enregistrées (mémorisé sur l'appareil)
+  const [activeExerciseId, setActiveExerciseIdState] = useState<string | null>(() => {
+    try { return localStorage.getItem("thebox_training_active_exercise"); } catch { return null; }
+  });
+  const setActiveExerciseId = useCallback((id: string | null) => {
+    setActiveExerciseIdState(id);
+    try {
+      if (id) localStorage.setItem("thebox_training_active_exercise", id);
+      else localStorage.removeItem("thebox_training_active_exercise");
+    } catch { /* indisponible */ }
+  }, []);
+  const loadExerciseDiagram = useCallback((diagram: TrainingDiagram) => {
+    dispatch({ type: "load", diagram });
+    setTimeout(() => canvasRef.current?.fit(), 0);
+  }, []);
   const roster = useMemo(() => readActiveRoster(), []);
   // Même thème (sombre « cockpit » / clair) que le tableau tactique, accent bleu
   const [isLight, setIsLight] = useState<boolean>(() => readThemePreference());
@@ -111,7 +127,10 @@ export default function TrainingEditor() {
       confirmLabel: "Tout effacer",
       tone: "warning",
     });
-    if (ok) dispatch({ type: "clear" });
+    if (!ok) return;
+    // Nouveau schéma : l'exercice affiché reste tel quel dans sa séance
+    setActiveExerciseId(null);
+    dispatch({ type: "clear" });
   };
 
   // Raccourcis clavier (ordinateur / tablette avec clavier)
@@ -273,6 +292,15 @@ export default function TrainingEditor() {
             ${panelOpen ? "max-lg:translate-x-0" : "max-lg:translate-x-full max-lg:pointer-events-none"}`}
           aria-label="Propriétés"
         >
+          {/* Séance d'entraînement : exercices affectés (durée, joueurs, ballons) */}
+          <div className={`p-3 border-b ${th.sectionBorder}`}>
+            <SessionsPanel
+              diagram={state.diagram}
+              activeExerciseId={activeExerciseId}
+              onActiveExerciseChange={setActiveExerciseId}
+              onLoadDiagram={loadExerciseDiagram}
+            />
+          </div>
           <div className={`sticky top-0 z-10 px-3 py-2.5 border-b flex items-center gap-1.5 ${th.sidebar}`}>
             <SlidersHorizontal className={`w-4 h-4 shrink-0 ${th.sectionIcon}`} aria-hidden="true" />
             <span className={`flex-1 text-xs font-black uppercase tracking-wider ${th.sectionTitle}`}>

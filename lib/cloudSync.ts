@@ -35,6 +35,8 @@ const SYNCED_EXACT_KEYS = new Set([
   "thebox_tactical_notes",
   // Convocations (matchs et entraînements) : document settings/thebox_convocations
   "thebox_convocations",
+  // Séances d'entraînement du module Training (exercices, durées, joueurs, ballons)
+  "thebox_training_sessions",
 ]);
 
 const SYNCED_KEY_PREFIXES = [

@@ -63,7 +63,7 @@ function storeCollapsed(id: string, collapsed: boolean) {
   }
 }
 
-function Section({ id, icon: Icon, title, children }: { id: string; icon: React.ElementType; title: string; children: React.ReactNode }) {
+export function Section({ id, icon: Icon, title, children }: { id: string; icon: React.ElementType; title: string; children: React.ReactNode }) {
   const th = useRecordingTheme();
   const [collapsed, setCollapsed] = useState(() => readCollapsed(id));
   const toggle = () => setCollapsed((v) => { storeCollapsed(id, !v); return !v; });

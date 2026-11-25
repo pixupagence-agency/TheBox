@@ -14,7 +14,7 @@ const Loading = () => (
 // Lecteurs vidéo et stockage local : l'éditeur n'est jamais rendu côté serveur
 const RecordingEditor = dynamic(() => import("./RecordingEditor"), { ssr: false, loading: Loading });
 
-export default function RecordingApp() {
+export default function RecordingApp({ teamId, matchId }: { teamId?: string; matchId?: string }) {
   const [user, setUser] = useState<User | null | undefined>(undefined);
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u)), []);
@@ -34,5 +34,5 @@ export default function RecordingApp() {
       </div>
     );
   }
-  return <RecordingEditor />;
+  return <RecordingEditor teamId={teamId} matchId={matchId} />;
 }

@@ -1,6 +1,6 @@
 // Module Training : brouillon local du schéma en cours et lecture (seule) de l'effectif existant.
 // Les clés « thebox_training_… » ne font pas partie des clés synchronisées par lib/cloudSync.ts :
-// le module n'interfère pas avec la synchronisation actuelle. La sauvegarde en ligne des exercices
+// le module n'interfère pas avec la synchronisation actuelle (seules les séances, lib/training/sessions.ts, sont synchronisées). La sauvegarde en ligne des exercices
 // arrive en phase 3 (collections Firestore dédiées).
 import { emptyDiagram } from "./editorState";
 import { PITCH_FORMATS } from "./pitch";
@@ -51,11 +51,11 @@ export interface RosterPlayer {
   role: string;
 }
 
-/** Effectif de l'équipe active du tableau tactique (lecture seule) */
-export function readActiveRoster(): { teamName: string; players: RosterPlayer[] } {
+/** Effectif de l'équipe active du tableau tactique, ou de l'équipe indiquée (lecture seule) */
+export function readActiveRoster(forTeamId?: string): { teamName: string; players: RosterPlayer[] } {
   if (typeof window === "undefined") return { teamName: "", players: [] };
   try {
-    const teamId = localStorage.getItem("thebox_active_team_id") || "team_1";
+    const teamId = forTeamId || localStorage.getItem("thebox_active_team_id") || "team_1";
     const rosters = JSON.parse(localStorage.getItem("thebox_team_rosters") || "{}") as Record<string, RosterPlayer[]>;
     const teams = JSON.parse(localStorage.getItem("thebox_teams") || "[]") as Array<{ id: string; name: string }>;
     const players = Array.isArray(rosters[teamId]) ? rosters[teamId] : [];
