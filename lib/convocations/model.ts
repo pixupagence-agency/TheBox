@@ -10,6 +10,8 @@
 // Les convocations sont enregistrées dans le localStorage (clé CONVOCATIONS_KEY), synchronisée en ligne
 // par lib/cloudSync.ts comme les équipes et les matchs.
 
+import { isRecord, parseList, str, type ItemSchema, type Migrations } from "../localData";
+
 export const CONVOCATIONS_KEY = "thebox_convocations";
 
 export type ConvocationKind = "match" | "training";
@@ -312,22 +314,38 @@ export function sortPlayers<T extends { number?: number; name: string }>(players
   });
 }
 
-/** Lecture tolérante d'une liste enregistrée (données anciennes ou partielles ignorées) */
+// --- Format enregistré (lecture versionnée, lib/localData.ts) ---
+// Pour changer le format : incrémenter CONVOCATION_VERSION, ajouter CONVOCATION_MIGRATIONS[ancienne
+// version] et écrire « v: CONVOCATION_VERSION » dans les convocations créées.
+export const CONVOCATION_VERSION = 1;
+const CONVOCATION_MIGRATIONS: Migrations = {};
+const RESPONSES: ConvocationResponse[] = ["pending", "present", "maybe", "absent"];
+
+function readPlayer(raw: unknown): ConvocationPlayer | null {
+  if (!isRecord(raw) || typeof raw.playerId !== "string") return null;
+  const repairs: Record<string, unknown> = {};
+  if (typeof raw.name !== "string") repairs.name = "Joueur";
+  if (!RESPONSES.includes(raw.response as ConvocationResponse)) repairs.response = "pending";
+  if (raw.number !== undefined && !(typeof raw.number === "number" && Number.isFinite(raw.number))) repairs.number = undefined;
+  return (Object.keys(repairs).length ? { ...raw, ...repairs } : raw) as unknown as ConvocationPlayer;
+}
+
+export const CONVOCATION_SCHEMA: ItemSchema<Convocation> = {
+  version: CONVOCATION_VERSION,
+  versionField: "v",
+  migrations: CONVOCATION_MIGRATIONS,
+  normalize: (c) => {
+    if (typeof c.id !== "string" || (c.kind !== "match" && c.kind !== "training")) return null;
+    if (typeof c.teamId !== "string" || typeof c.date !== "string" || !Array.isArray(c.players)) return null;
+    const players = c.players.map(readPlayer).filter((p): p is ConvocationPlayer => !!p);
+    const repairs: Record<string, unknown> = { players };
+    if (typeof c.createdAt !== "string") repairs.createdAt = "";
+    if (typeof c.updatedAt !== "string") repairs.updatedAt = str(c.createdAt);
+    return { ...c, ...repairs } as unknown as Convocation;
+  },
+};
+
+/** Lecture tolérante d'une liste enregistrée (entrées illisibles écartées de l'affichage, joueurs réparés) */
 export function parseConvocations(raw: string | null): Convocation[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (c): c is Convocation =>
-        !!c &&
-        typeof c.id === "string" &&
-        (c.kind === "match" || c.kind === "training") &&
-        typeof c.teamId === "string" &&
-        typeof c.date === "string" &&
-        Array.isArray(c.players)
-    );
-  } catch {
-    return [];
-  }
+  return parseList(raw, CONVOCATION_SCHEMA).items;
 }

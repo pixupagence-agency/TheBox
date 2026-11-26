@@ -1,6 +1,7 @@
 // Module Recording : bibliothèque enregistrée SUR L'APPAREIL (IndexedDB).
 // Les fichiers vidéo restent sur l'appareil : rien n'est envoyé en ligne tant qu'on ne partage pas.
 import type { LibraryImage, Sequence } from "./types";
+import { readRecords } from "./records";
 
 const DB_NAME = "thebox_recording";
 const DB_VERSION = 2;
@@ -53,7 +54,7 @@ function run<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore)
 }
 
 export const listSequences = async (): Promise<Sequence[]> => {
-  const all = await run<Sequence[]>(SEQUENCES, "readonly", (s) => s.getAll() as IDBRequest<Sequence[]>);
+  const all = readRecords<Sequence>(await run<unknown[]>(SEQUENCES, "readonly", (s) => s.getAll()), "sequence");
   return all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 };
 
@@ -62,10 +63,10 @@ export const saveSequence = (seq: Sequence) => run(SEQUENCES, "readwrite", (s) =
 export const deleteSequence = async (seq: Sequence) => {
   await run(SEQUENCES, "readwrite", (s) => s.delete(seq.id));
   if (seq.source.kind === "file") {
-    // La vidéo n'est supprimée que si plus aucune séquence ne l'utilise
-    const others = await listSequences();
+    // La vidéo n'est supprimée que si plus aucune fiche ne l'utilise (fiches illisibles comprises)
+    const others = await run<unknown[]>(SEQUENCES, "readonly", (s) => s.getAll());
     const videoId = seq.source.videoId;
-    if (!others.some((o) => o.source.kind === "file" && o.source.videoId === videoId)) {
+    if (!others.some((o) => (o as Partial<Sequence>)?.source?.kind === "file" && (o as { source: { videoId?: unknown } }).source.videoId === videoId)) {
       await run(VIDEOS, "readwrite", (s) => s.delete(videoId));
     }
   }
@@ -76,7 +77,7 @@ export const saveVideoBlob = (videoId: string, blob: Blob) => run(VIDEOS, "readw
 export const loadVideoBlob = (videoId: string) => run<Blob | undefined>(VIDEOS, "readonly", (s) => s.get(videoId) as IDBRequest<Blob | undefined>);
 
 export const listImages = async (): Promise<LibraryImage[]> => {
-  const all = await run<LibraryImage[]>(IMAGES, "readonly", (s) => s.getAll() as IDBRequest<LibraryImage[]>);
+  const all = readRecords<LibraryImage>(await run<unknown[]>(IMAGES, "readonly", (s) => s.getAll()), "image");
   return all.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 };
 

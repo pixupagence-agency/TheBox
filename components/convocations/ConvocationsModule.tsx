@@ -22,6 +22,7 @@ import {
   type RosterPlayerLike,
 } from "@/lib/convocations/model";
 import { loadConvocations, saveConvocations } from "@/lib/convocations/storage";
+import { nearQuotaWarning } from "@/lib/localData";
 
 export interface ConvocationMatchLike {
   id: string;
@@ -149,6 +150,7 @@ export default function ConvocationsModule({
   useEffect(() => {
     if (firstSave.current) { firstSave.current = false; return; }
     if (!saveConvocations(list)) flash("⚠️ Enregistrement impossible : stockage de l'appareil plein.");
+    else { const warning = nearQuotaWarning(); if (warning) flash(warning); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list]);
 

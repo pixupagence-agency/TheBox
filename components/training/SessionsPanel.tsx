@@ -14,6 +14,7 @@ import {
   storeActiveSessionId, suggestedCounts, todayIso, totalDuration,
   type SessionExercise, type TrainingSession,
 } from "@/lib/training/sessions";
+import { nearQuotaWarning } from "@/lib/localData";
 import CollapsibleCard from "./CollapsibleCard";
 import { Stepper } from "./PropertiesPanel";
 
@@ -57,6 +58,7 @@ export default function SessionsPanel({ diagram, activeExerciseId, onActiveExerc
   useEffect(() => {
     if (firstSave.current) { firstSave.current = false; return; }
     if (!saveSessions(sessions)) flash("⚠️ Enregistrement impossible : stockage de l'appareil plein.");
+    else { const warning = nearQuotaWarning(); if (warning) flash(warning); }
   }, [sessions]);
 
   useEffect(() => { storeActiveSessionId(session?.id ?? null); }, [session?.id]);

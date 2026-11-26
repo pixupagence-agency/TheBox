@@ -1,22 +1,13 @@
 // Module Convocations : enregistrement sur l'appareil (clé synchronisée en ligne par lib/cloudSync.ts).
-import { CONVOCATIONS_KEY, parseConvocations, type Convocation } from "./model";
+// Lecture versionnée et sans perte : voir lib/localData.ts et CONVOCATION_SCHEMA.
+import { loadList, saveList } from "../localData";
+import { CONVOCATIONS_KEY, CONVOCATION_SCHEMA, type Convocation } from "./model";
 
 export function loadConvocations(): Convocation[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return parseConvocations(localStorage.getItem(CONVOCATIONS_KEY));
-  } catch {
-    return [];
-  }
+  return loadList(CONVOCATIONS_KEY, CONVOCATION_SCHEMA);
 }
 
-/** Enregistre la liste ; renvoie false si le stockage est plein ou indisponible. */
+/** Enregistre la liste (les convocations illisibles sur cette version sont conservées) ; false si le stockage est plein ou indisponible. */
 export function saveConvocations(list: Convocation[]): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    localStorage.setItem(CONVOCATIONS_KEY, JSON.stringify(list));
-    return true;
-  } catch {
-    return false;
-  }
+  return saveList(CONVOCATIONS_KEY, list, CONVOCATION_SCHEMA);
 }

@@ -1,6 +1,8 @@
 // Module Training : séances d'entraînement (comme la section « Match » du tableau tactique, pour les entraînements).
 // Une séance regroupe des exercices ; chaque exercice garde son schéma, sa durée, le nombre de joueurs
 // et le nombre de ballons utiles. Clé « thebox_training_sessions », synchronisée en ligne (lib/cloudSync.ts).
+import { isRecord, loadList, num, saveList, str, type ItemSchema, type Migrations } from "../localData";
+import { readDiagram } from "./diagramData";
 import type { TrainingDiagram } from "./types";
 
 export const TRAINING_SESSIONS_KEY = "thebox_training_sessions";
@@ -77,35 +79,58 @@ export function sortSessions(list: TrainingSession[]): TrainingSession[] {
   return [...upcoming, ...past];
 }
 
-const isDiagram = (d: unknown): d is TrainingDiagram =>
-  !!d && typeof d === "object" && (d as TrainingDiagram).version === 1 && Array.isArray((d as TrainingDiagram).elements) && !!(d as TrainingDiagram).pitch;
+// --- Format enregistré (lecture versionnée, lib/localData.ts) ---
+// Pour changer le format d'une séance : incrémenter SESSION_VERSION, ajouter SESSION_MIGRATIONS[ancienne
+// version] et écrire « v: SESSION_VERSION » dans les séances créées. Les schémas des exercices ont leur
+// propre version (lib/training/diagramData.ts).
+export const SESSION_VERSION = 1;
+const SESSION_MIGRATIONS: Migrations = {};
+
+/** Exercice lisible, ou null (identifiant manquant, schéma illisible ou d'un format plus récent) */
+function readExercise(raw: unknown): SessionExercise | null {
+  if (!isRecord(raw) || typeof raw.id !== "string") return null;
+  const diagram = readDiagram(raw.diagram);
+  if (!diagram) return null;
+  const ok = typeof raw.title === "string" && finiteNum(raw.duration) && finiteNum(raw.players) && finiteNum(raw.balls);
+  return {
+    ...(ok ? raw : { ...raw, title: str(raw.title, "Exercice"), duration: num(raw.duration), players: num(raw.players), balls: num(raw.balls) }),
+    diagram,
+  } as SessionExercise;
+}
+const finiteNum = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+
+const SESSION_SCHEMA: ItemSchema<TrainingSession> = {
+  version: SESSION_VERSION,
+  versionField: "v",
+  migrations: SESSION_MIGRATIONS,
+  normalize: (s) => {
+    if (typeof s.id !== "string") return null;
+    const exercises = (Array.isArray(s.exercises) ? s.exercises : []).map(readExercise).filter((e): e is SessionExercise => !!e);
+    const repairs: Record<string, unknown> = { exercises };
+    if (typeof s.title !== "string") repairs.title = "Séance";
+    if (typeof s.date !== "string") repairs.date = "";
+    if (typeof s.createdAt !== "string") repairs.createdAt = "";
+    if (typeof s.updatedAt !== "string") repairs.updatedAt = str(s.createdAt);
+    return { ...s, ...repairs } as unknown as TrainingSession;
+  },
+};
 
 export function loadSessions(): TrainingSession[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = JSON.parse(localStorage.getItem(TRAINING_SESSIONS_KEY) || "[]");
-    if (!Array.isArray(raw)) return [];
-    return raw
-      .filter((s) => s && typeof s.id === "string")
-      .map((s) => ({
-        ...s,
-        title: typeof s.title === "string" ? s.title : "Séance",
-        date: typeof s.date === "string" ? s.date : "",
-        exercises: (Array.isArray(s.exercises) ? s.exercises : []).filter((e: SessionExercise) => e && typeof e.id === "string" && isDiagram(e.diagram)),
-      }));
-  } catch {
-    return [];
-  }
+  return loadList(TRAINING_SESSIONS_KEY, SESSION_SCHEMA);
 }
 
-/** Enregistre les séances ; false si le stockage est plein ou indisponible */
+/**
+ * Enregistre les séances ; false si le stockage est plein ou indisponible.
+ * Les séances et exercices illisibles sur cette version de l'application sont conservés tels quels.
+ */
 export function saveSessions(list: TrainingSession[]): boolean {
-  try {
-    localStorage.setItem(TRAINING_SESSIONS_KEY, JSON.stringify(list));
-    return true;
-  } catch {
-    return false;
-  }
+  return saveList(TRAINING_SESSIONS_KEY, list, SESSION_SCHEMA, (session, stored) => {
+    const shown = new Set(session.exercises.map((e) => e.id));
+    const hidden = (Array.isArray(stored.exercises) ? stored.exercises : []).filter(
+      (e) => isRecord(e) && !readExercise(e) && (typeof e.id !== "string" || !shown.has(e.id))
+    );
+    return hidden.length ? { ...session, exercises: [...session.exercises, ...(hidden as SessionExercise[])] } : session;
+  });
 }
 
 export function readActiveSessionId(): string | null {

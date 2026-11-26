@@ -2,22 +2,27 @@
 // Les clés « thebox_training_… » ne font pas partie des clés synchronisées par lib/cloudSync.ts :
 // le module n'interfère pas avec la synchronisation actuelle (seules les séances, lib/training/sessions.ts, sont synchronisées). La sauvegarde en ligne des exercices
 // arrive en phase 3 (collections Firestore dédiées).
+import { backupRaw } from "../localData";
+import { readDiagram } from "./diagramData";
 import { emptyDiagram } from "./editorState";
-import { PITCH_FORMATS } from "./pitch";
 import type { TrainingDiagram } from "./types";
 
 export const TRAINING_DRAFT_KEY = "thebox_training_draft_v1";
 
+/** Brouillon en cours (migré si besoin). S'il a fallu le réparer ou l'abandonner, le texte
+ *  d'origine est copié sous « thebox_backup_… » avant d'être remplacé. */
 export function loadDraft(): TrainingDiagram {
   if (typeof window === "undefined") return emptyDiagram();
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(TRAINING_DRAFT_KEY);
+    raw = localStorage.getItem(TRAINING_DRAFT_KEY);
     if (!raw) return emptyDiagram();
-    const parsed = JSON.parse(raw) as TrainingDiagram;
-    const validPitch = parsed?.pitch && PITCH_FORMATS.some((f) => f.id === parsed.pitch.format);
-    if (parsed?.version !== 1 || !validPitch || !Array.isArray(parsed.elements)) return emptyDiagram();
-    return parsed;
+    const parsed = JSON.parse(raw);
+    const diagram = readDiagram(parsed);
+    if (!diagram || diagram.elements.length !== parsed.elements.length) backupRaw(TRAINING_DRAFT_KEY, raw);
+    return diagram || emptyDiagram();
   } catch {
+    backupRaw(TRAINING_DRAFT_KEY, raw);
     return emptyDiagram();
   }
 }
