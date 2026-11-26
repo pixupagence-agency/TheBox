@@ -81,8 +81,17 @@ const archive = {
   auth,
 };
 
-const dir = path.resolve(root, process.env.BACKUP_DIR || "backups");
-fs.mkdirSync(dir, { recursive: true });
+// BACKUP_DIR peut être un dossier synchronisé (Google Drive, OneDrive) : s'il est indisponible
+// (lecteur non monté), l'archive est écrite dans backups/ plutôt que perdue
+const localDir = path.resolve(root, "backups");
+let dir = path.resolve(root, process.env.BACKUP_DIR || "backups");
+try {
+  fs.mkdirSync(dir, { recursive: true });
+} catch (err) {
+  console.warn(`⚠️  Dossier ${dir} indisponible (${err.code}) : archive écrite dans ${localDir}`);
+  dir = localDir;
+  fs.mkdirSync(dir, { recursive: true });
+}
 const stamp = new Date().toISOString().slice(0, 16).replace("T", "-").replace(":", "");
 const file = path.join(dir, `thebox-${emulator ? "emulateur-" : ""}${stamp}.backup`);
 fs.writeFileSync(file, encrypt(JSON.stringify(archive), pass));
