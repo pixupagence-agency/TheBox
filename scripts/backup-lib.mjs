@@ -97,3 +97,44 @@ export function decrypt(buf, pass) {
     throw new Error("Phrase secrète incorrecte ou fichier abîmé.");
   }
 }
+
+// --- Rotation des archives de production ---
+/** Nombre d'archives récentes toujours conservées (une par nuit avec la tâche planifiée) */
+export const KEEP_RECENT = 14;
+/** Au-delà : une archive par semaine, pendant 8 semaines */
+export const KEEP_WEEKLY_DAYS = 56;
+const ARCHIVE_RE = /^thebox-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})\.backup$/;
+
+/** Lundi (UTC) de la semaine d'une date : clé de regroupement hebdomadaire */
+const weekKey = (d) => {
+  const monday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - ((d.getUTCDay() + 6) % 7)));
+  return monday.toISOString().slice(0, 10);
+};
+
+/**
+ * Archives de production à supprimer : on garde les KEEP_RECENT plus récentes, puis la plus récente
+ * de chaque semaine sur KEEP_WEEKLY_DAYS jours. Les autres fichiers (émulateur, noms inconnus) ne sont jamais touchés.
+ * Les plus récentes sont comptées en nombre, pas en jours : après des semaines PC éteint, rien n'est perdu.
+ */
+export function archivesToDelete(fileNames, now = new Date()) {
+  const archives = fileNames
+    .map((name) => {
+      const m = ARCHIVE_RE.exec(name);
+      return m ? { name, date: new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5])) } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.date - a.date);
+  const limit = now.getTime() - KEEP_WEEKLY_DAYS * 86400000;
+  const weeks = new Set();
+  const remove = [];
+  archives.forEach((a, i) => {
+    if (i < KEEP_RECENT) {
+      weeks.add(weekKey(a.date));
+      return;
+    }
+    const week = weekKey(a.date);
+    if (a.date.getTime() >= limit && !weeks.has(week)) weeks.add(week);
+    else remove.push(a.name);
+  });
+  return remove;
+}

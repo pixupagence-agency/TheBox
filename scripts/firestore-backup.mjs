@@ -2,6 +2,10 @@
 //
 //   npm run backup                → production (lit toute la base : 1 lecture par document)
 //   npm run backup -- --emulator  → émulateur local (essais)
+//   npm run backup -- --no-prune  → sans rotation des anciennes archives
+//
+// Rotation (production) : les 14 archives les plus récentes, puis une par semaine sur 8 semaines ;
+// les plus anciennes sont supprimées. Tâche planifiée Windows (chaque nuit) : scripts/install-backup-task.ps1
 //
 // Archive : backups/thebox-AAAA-MM-JJ-HHMM.backup (dossier modifiable avec BACKUP_DIR), chiffrée avec
 // BACKUP_PASSPHRASE (.env.local). Copiez-la régulièrement hors de ce PC (clé USB, cloud) : chiffrée,
@@ -10,7 +14,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { connect, encode, encrypt, passphrase, projectId, root } from "./backup-lib.mjs";
+import { archivesToDelete, connect, encode, encrypt, passphrase, projectId, root } from "./backup-lib.mjs";
 
 const emulator = process.argv.includes("--emulator");
 // Compteurs de limitation (temporaires, recréés à la volée) : inutile de les sauvegarder
@@ -88,4 +92,11 @@ console.log(`[backup] ${total} documents (${Object.entries(counts).map(([k, v]) 
   (auth ? `, ${auth.users?.length ?? 0} comptes Auth` : ""));
 console.log(`[backup] ≈ ${reads} lectures Firestore, ${((Date.now() - started) / 1000).toFixed(1)} s`);
 console.log(`[backup] ✅ ${path.relative(root, file)} (${(fs.statSync(file).size / 1024).toFixed(0)} Ko, chiffré)`);
+
+// Rotation : uniquement après une sauvegarde de production réussie
+if (!emulator && !process.argv.includes("--no-prune")) {
+  const old = archivesToDelete(fs.readdirSync(dir));
+  for (const name of old) fs.rmSync(path.join(dir, name));
+  if (old.length) console.log(`[backup] Rotation : ${old.length} ancienne(s) archive(s) supprimée(s) (${old.join(", ")})`);
+}
 process.exit(0);
