@@ -1,4 +1,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import { renderAdminNotification } from '../lib/email/adminNotification';
 import { ADMIN } from './e2e-credentials';
 
@@ -82,6 +85,70 @@ test.describe('Section 16 : Routes e-mail (FT-MAIL)', () => {
 
     const welcome = await post(request, 'send-welcome-email', { firstName: 'Admin' }, { authorization });
     expect(welcome.status(), await welcome.text()).toBe(200);
+  });
+
+  test('FT-MAIL-06 : Un seul e-mail de bienvenue par compte, indicateur tenu par le serveur', async ({ request }) => {
+    test.skip(!process.env.FIREBASE_AUTH_EMULATOR_HOST, 'Émulateur Auth requis (npm run test:e2e)');
+    const app = getApps()[0] || initializeApp({ projectId: 'thebox-tactique' });
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const tokenFor = async (email: string, password: string) => {
+      const res = await request.post(
+        `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=e2e`,
+        { data: { email, password, returnSecureToken: true } }
+      );
+      return `Bearer ${(await res.json()).idToken}`;
+    };
+
+    // Compte tout juste créé : profil présent, e-mail pas encore envoyé
+    const email = `bienvenue-${Date.now()}@example.com`;
+    const user = await auth.createUser({ email, password: 'motdepasse-e2e', emailVerified: true });
+    const authorization = await tokenFor(email, 'motdepasse-e2e');
+    try {
+      // Pas encore de profil : rien n'est envoyé, aucun document partiel créé
+      const early = await post(request, 'send-welcome-email', { firstName: 'Léa' }, { authorization });
+      expect(early.status()).toBe(409);
+      expect((await db.doc(`users/${user.uid}`).get()).exists).toBe(false);
+
+      await db.doc(`users/${user.uid}`).set({ id: user.uid, email, createdAt: new Date().toISOString() });
+      // Deux connexions simultanées (deux onglets) : un seul envoi
+      const [a, b] = await Promise.all([
+        post(request, 'send-welcome-email', { firstName: 'Léa' }, { authorization }),
+        post(request, 'send-welcome-email', { firstName: 'Léa' }, { authorization }),
+      ]);
+      const bodies = [await a.json(), await b.json()];
+      expect(bodies.filter((r) => r.messageId)).toHaveLength(1);
+      expect(bodies.filter((r) => r.alreadySent)).toHaveLength(1);
+      expect((await db.doc(`users/${user.uid}`).get()).get('welcomeEmailSent')).toBe(true);
+
+      // Connexions suivantes : succès sans nouvel envoi
+      const again = await (await post(request, 'send-welcome-email', { firstName: 'Léa' }, { authorization })).json();
+      expect(again).toMatchObject({ success: true, alreadySent: true });
+      expect(again.messageId).toBeUndefined();
+    } finally {
+      await db.doc(`users/${user.uid}`).delete();
+      await auth.deleteUser(user.uid);
+    }
+
+    // Compte créé il y a 30 jours, jamais marqué (créé avant l'indicateur) : marqué, aucun e-mail
+    const oldUid = `ancien-${Date.now()}`;
+    const oldEmail = `${oldUid}@example.com`;
+    await auth.importUsers([{ uid: oldUid, email: oldEmail, emailVerified: true, metadata: { creationTime: new Date(Date.now() - 30 * 86400_000).toUTCString(), lastSignInTime: new Date().toUTCString() } }]);
+    try {
+      await db.doc(`users/${oldUid}`).set({ id: oldUid, email: oldEmail });
+      const signIn = await request.post(
+        `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=e2e`,
+        { data: { token: await auth.createCustomToken(oldUid), returnSecureToken: true } }
+      );
+      const oldAuth = `Bearer ${(await signIn.json()).idToken}`;
+      const res = await (await post(request, 'send-welcome-email', {}, { authorization: oldAuth })).json();
+      expect(res).toMatchObject({ success: true, skipped: 'account_too_old' });
+      expect(res.messageId).toBeUndefined();
+      expect((await db.doc(`users/${oldUid}`).get()).get('welcomeEmailSent')).toBe(true);
+    } finally {
+      await db.doc(`users/${oldUid}`).delete();
+      await auth.deleteUser(oldUid);
+    }
   });
 
   test('FT-MAIL-04 : Gabarit des notifications : valeurs échappées, lignes vides omises', () => {

@@ -3,8 +3,15 @@ import { getMailTransporter, DEFAULT_FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from
 import { escapeHtml, isValidEmail, sanitizeText } from "@/lib/security";
 import { rateLimit } from "@/lib/rateLimit";
 import { guardEmailRoute, readJsonBody, requireUser } from "@/lib/email/routeHelpers";
+import { getAdminFirestore } from "@/lib/firebase-admin";
+import { getAuth } from "firebase-admin/auth";
+
+/** Au-delà, un compte ne reçoit plus l'e-mail de bienvenue (il est seulement marqué comme traité) */
+const WELCOME_MAX_ACCOUNT_AGE_MS = 7 * 24 * 60 * 60_000;
 
 export async function POST(req: NextRequest) {
+  // Annule la réservation de l'indicateur si l'envoi n'aboutit pas
+  let releaseClaim: (() => Promise<unknown>) | null = null;
   try {
     // Origine, 10 envois par minute et par IP
     const refusal = await guardEmailRoute(req, { rateKey: "welcome", limit: 10, windowMs: 60_000 });
@@ -19,16 +26,50 @@ export async function POST(req: NextRequest) {
     if (auth.error) return auth.error;
     const { user } = auth;
 
-    const userCheck = await rateLimit(`welcome_uid_${user.uid}`, 3, 24 * 60 * 60_000);
-    if (!userCheck.allowed) {
-      return NextResponse.json({ error: "E-mail de bienvenue déjà envoyé récemment." }, { status: 429 });
-    }
-
     const { firstName, lastName } = parsed.body as Record<string, string | undefined>;
     const email = user.email || user.unverifiedEmail;
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: "Aucune adresse e-mail valide sur ce compte." }, { status: 400 });
+    }
+
+    // Un seul e-mail de bienvenue par compte, décidé ici et non par le navigateur :
+    // l'indicateur welcomeEmailSent est réservé avant l'envoi (deux onglets ne déclenchent qu'un envoi)
+    // et libéré si l'envoi échoue (nouvel essai à la connexion suivante).
+    const adminDb = getAdminFirestore();
+    if (!adminDb) {
+      return NextResponse.json({ error: "Service indisponible." }, { status: 503 });
+    }
+    const profileRef = adminDb.collection("users").doc(user.uid);
+    const claim = await adminDb.runTransaction(async (tx) => {
+      const snap = await tx.get(profileRef);
+      // Profil pas encore enregistré par le navigateur : on ne crée pas de document partiel
+      if (!snap.exists) return "no_profile" as const;
+      if (snap.get("welcomeEmailSent") === true) return "already_sent" as const;
+      tx.update(profileRef, { welcomeEmailSent: true });
+      return "claimed" as const;
+    });
+    if (claim === "no_profile") {
+      return NextResponse.json({ error: "Profil introuvable." }, { status: 409 });
+    }
+    if (claim === "already_sent") {
+      return NextResponse.json({ success: true, alreadySent: true });
+    }
+
+    // Compte déjà ancien (créé avant l'indicateur, ou envoi resté en échec plusieurs jours) :
+    // l'e-mail « Bienvenue, 14 jours d'essai » n'a plus de sens, le compte est simplement marqué.
+    const createdAt = Date.parse((await getAuth().getUser(user.uid)).metadata.creationTime);
+    if (!Number.isFinite(createdAt) || Date.now() - createdAt > WELCOME_MAX_ACCOUNT_AGE_MS) {
+      return NextResponse.json({ success: true, skipped: "account_too_old" });
+    }
+
+    releaseClaim = () =>
+      profileRef.update({ welcomeEmailSent: false }).catch((e) => console.error("[welcome] Libération de l'indicateur impossible :", e));
+
+    const userCheck = await rateLimit(`welcome_uid_${user.uid}`, 3, 24 * 60 * 60_000);
+    if (!userCheck.allowed) {
+      await releaseClaim();
+      return NextResponse.json({ error: "E-mail de bienvenue déjà envoyé récemment." }, { status: 429 });
     }
 
     const cleanEmail = email.trim().slice(0, 254);
@@ -278,6 +319,7 @@ Vous recevez cet e-mail suite à votre inscription sur l'application The Box.`;
     return NextResponse.json({ success: true, message: "Welcome email sent successfully", messageId: info.messageId });
   } catch (err: any) {
     console.error("Error in welcome email API:", err);
+    await releaseClaim?.();
     return NextResponse.json({ error: "Échec de l'envoi de l'e-mail de bienvenue. Veuillez réessayer ultérieurement." }, { status: 500 });
   }
 }

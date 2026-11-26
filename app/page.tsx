@@ -384,7 +384,7 @@ export default function Home() {
 
         // Persist/Update profile in Firestore
         try {
-          // welcomeEmailSent n'est volontairement pas écrit ici : il ne passe à true qu'après un envoi réussi.
+          // welcomeEmailSent n'est volontairement pas écrit ici : seule la route /api/send-welcome-email le tient.
           await saveUserProfileToFirestore({
             ...coachData,
             activePlan: resolvedPlan,
@@ -455,7 +455,8 @@ export default function Home() {
         coachData.dataHidden = !hasAccess;
         coachData.deletionScheduledAt = serverStatus?.deletionScheduledAt ?? null;
 
-        // Send welcome email if new account created (retried at next login if the send failed)
+        // E-mail de bienvenue : le serveur décide (un seul envoi par compte, rien pour un compte ancien)
+        // et tient lui-même l'indicateur welcomeEmailSent ; nouvel essai à la connexion suivante en cas d'échec.
         if (isNewUser && email) {
           firebaseUser
             .getIdToken()
@@ -474,12 +475,7 @@ export default function Home() {
               if (!res.ok || !data?.success) {
                 throw new Error(data?.error || `HTTP ${res.status}`);
               }
-              console.log("Welcome email sent for user:", data);
-              await saveUserProfileToFirestore({
-                ...coachData,
-                activePlan: resolvedPlan,
-                welcomeEmailSent: true,
-              });
+              if (data.messageId) console.log("Welcome email sent for user:", data.messageId);
             })
             .catch((err) => console.error("Failed to send welcome email (will retry at next login):", err));
         }
