@@ -1,48 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter, DEFAULT_FROM_EMAIL } from "@/lib/mailer";
-import { 
-  escapeHtml, 
-  sanitizeSubject, 
-  isValidEmail, 
-  sanitizeText,
-  getClientIp,
-  isAllowedOrigin
-} from "@/lib/security";
+import { escapeHtml, sanitizeSubject, isValidEmail, sanitizeText } from "@/lib/security";
 import { rateLimit } from "@/lib/rateLimit";
-import { getAdminFirestore, verifyFirebaseIdToken } from "@/lib/firebase-admin";
+import { getAdminFirestore } from "@/lib/firebase-admin";
+import { guardEmailRoute, readJsonBody, requireUser, tooManyRequests } from "@/lib/email/routeHelpers";
 import { hasProAccess } from "@/lib/accountStatus";
 
 export async function POST(req: NextRequest) {
   try {
-    // CSRF Protection
-    if (!isAllowedOrigin(req)) {
-      return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
-    }
-
-    // IP Rate Limiting (10 requests per minute per IP)
-    const clientIp = getClientIp(req);
-    const rateCheck = await rateLimit(`schema_${clientIp}`, 10, 60000);
-    if (!rateCheck.allowed) {
-      return NextResponse.json(
-        { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },
-        { 
-          status: 429, 
-          headers: { "Retry-After": String(rateCheck.retryAfterSeconds || 60) } 
-        }
-      );
-    }
+    // Origine, 10 envois par minute et par IP
+    const refusal = await guardEmailRoute(req, { rateKey: "schema", limit: 10, windowMs: 60_000 });
+    if (refusal) return refusal;
 
     // Réservé aux coachs connectés, avec un plafond d'envois par compte (le destinataire est libre :
     // le coach peut viser un joueur ou un adjoint).
-    const authHeader = req.headers.get("authorization") || "";
-    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-    const user = await verifyFirebaseIdToken(idToken);
-    if (!user) {
-      return NextResponse.json(
-        { error: "Veuillez vous connecter à votre compte coach pour envoyer un schéma par e-mail.", requiresAuth: true },
-        { status: 401 }
-      );
-    }
+    const auth = await requireUser(req, "Veuillez vous connecter à votre compte coach pour envoyer un schéma par e-mail.");
+    if (auth.error) return auth.error;
+    const { user } = auth;
 
     // Partage des schémas : réservé aux formules PRO & PRO+ (et à l'essai en cours)
     const adminDb = getAdminFirestore();
@@ -58,18 +32,16 @@ export async function POST(req: NextRequest) {
       ? await rateLimit(`schema_uid_d_${user.uid}`, 60, 24 * 60 * 60_000)
       : hourCheck;
     if (!dayCheck.allowed) {
-      return NextResponse.json(
-        { error: `Limite d'envois atteinte. Réessayez dans ${Math.ceil((dayCheck.retryAfterSeconds || 60) / 60)} min.` },
-        { status: 429, headers: { "Retry-After": String(dayCheck.retryAfterSeconds || 60) } }
+      return tooManyRequests(
+        dayCheck.retryAfterSeconds,
+        `Limite d'envois atteinte. Réessayez dans ${Math.ceil((dayCheck.retryAfterSeconds || 60) / 60)} min.`
       );
     }
 
-    const bodyData = await req.json().catch(() => null);
-    if (!bodyData || typeof bodyData !== "object") {
-      return NextResponse.json({ error: "Données de schéma invalides." }, { status: 400 });
-    }
+    const parsed = await readJsonBody(req, "Données de schéma invalides.");
+    if (parsed.error) return parsed.error;
 
-    const { email, subject, body, imageUrl, title, clubLabel } = bodyData;
+    const { email, subject, body, imageUrl, title, clubLabel } = parsed.body as Record<string, string | undefined>;
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: "Une adresse email valide est requise." }, { status: 400 });
@@ -96,7 +68,7 @@ export async function POST(req: NextRequest) {
       /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(imageUrl)
     );
 
-    if (hasImage) {
+    if (hasImage && typeof imageUrl === "string") {
       const commaIndex = imageUrl.indexOf(",");
       if (commaIndex !== -1) {
         const header = imageUrl.slice(0, commaIndex);
@@ -271,7 +243,7 @@ export async function POST(req: NextRequest) {
             </div>
 
             <div class="cta-box">
-              <a href="https://theboxlarena.com/" class="cta-button">Ouvrir The Box</a>
+              <a href="https://thebox-tactic.com/" class="cta-button">Ouvrir The Box</a>
             </div>
           </div>
           <div class="footer">

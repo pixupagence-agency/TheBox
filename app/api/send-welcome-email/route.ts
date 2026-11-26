@@ -1,55 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMailTransporter, DEFAULT_FROM_EMAIL, ADMIN_NOTIFICATION_EMAIL } from "@/lib/mailer";
-import { 
-  escapeHtml, 
-  isValidEmail, 
-  sanitizeText, 
-  getClientIp, 
-  isAllowedOrigin 
-} from "@/lib/security";
+import { escapeHtml, isValidEmail, sanitizeText } from "@/lib/security";
 import { rateLimit } from "@/lib/rateLimit";
-import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
+import { guardEmailRoute, readJsonBody, requireUser } from "@/lib/email/routeHelpers";
 
 export async function POST(req: NextRequest) {
   try {
-    // CSRF Protection
-    if (!isAllowedOrigin(req)) {
-      return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
-    }
+    // Origine, 10 envois par minute et par IP
+    const refusal = await guardEmailRoute(req, { rateKey: "welcome", limit: 10, windowMs: 60_000 });
+    if (refusal) return refusal;
 
-    // IP Rate Limiting (10 requests per minute per IP)
-    const clientIp = getClientIp(req);
-    const rateCheck = await rateLimit(`welcome_${clientIp}`, 10, 60000);
-    if (!rateCheck.allowed) {
-      return NextResponse.json(
-        { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },
-        { 
-          status: 429, 
-          headers: { "Retry-After": String(rateCheck.retryAfterSeconds || 60) } 
-        }
-      );
-    }
-
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") {
-      return NextResponse.json({ error: "Données de bienvenue invalides." }, { status: 400 });
-    }
+    const parsed = await readJsonBody(req, "Données de bienvenue invalides.");
+    if (parsed.error) return parsed.error;
 
     // Seul un coach connecté peut déclencher l'e-mail, et uniquement vers sa propre adresse :
     // l'adresse envoyée par le navigateur est ignorée (sinon la route servirait à envoyer du spam).
-    const authHeader = req.headers.get("authorization") || "";
-    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-    const user = await verifyFirebaseIdToken(idToken);
-    if (!user) {
-      return NextResponse.json({ error: "Connexion requise.", requiresAuth: true }, { status: 401 });
-    }
+    const auth = await requireUser(req, "Connexion requise.");
+    if (auth.error) return auth.error;
+    const { user } = auth;
 
     const userCheck = await rateLimit(`welcome_uid_${user.uid}`, 3, 24 * 60 * 60_000);
     if (!userCheck.allowed) {
       return NextResponse.json({ error: "E-mail de bienvenue déjà envoyé récemment." }, { status: 429 });
     }
 
-    const { firstName, lastName } = body;
+    const { firstName, lastName } = parsed.body as Record<string, string | undefined>;
     const email = user.email || user.unverifiedEmail;
 
     if (!email || !isValidEmail(email)) {
@@ -241,7 +216,7 @@ export async function POST(req: NextRequest) {
               Aucune carte de crédit n'est requise pour votre essai de 14 jours. Vous disposez de la pleine puissance de l'application dès maintenant.
             </p>
             
-            <a href="https://theboxlarena.com/" class="cta-button">Accéder à ma Planche Tactique</a>
+            <a href="https://thebox-tactic.com/" class="cta-button">Accéder à ma Planche Tactique</a>
           </div>
           <div class="footer">
             &copy; 2026 The Box - L'outil tactique des coachs d'élite.<br>
@@ -283,7 +258,7 @@ VOS AVANTAGES PRO+ ACTIVÉS :
 
 Aucune carte de crédit n'est requise pour votre essai de 14 jours. Vous disposez de la pleine puissance de l'application dès maintenant.
 
-Accéder à ma Planche Tactique : https://theboxlarena.com/
+Accéder à ma Planche Tactique : https://thebox-tactic.com/
 
 © 2026 The Box - L'outil tactique des coachs d'élite.
 Vous recevez cet e-mail suite à votre inscription sur l'application The Box.`;

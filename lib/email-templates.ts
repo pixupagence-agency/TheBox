@@ -1,7 +1,7 @@
 // Templates des e-mails transactionnels liés à l'abonnement (résiliation).
 // Volontairement sans import pour pouvoir être prévisualisés hors de Next.js.
 
-export const APP_PUBLIC_URL = "https://theboxlarena.com/";
+export const APP_PUBLIC_URL = "https://thebox-tactic.com/";
 
 export interface RenderedEmail {
   subject: string;

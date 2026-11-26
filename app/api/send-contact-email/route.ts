@@ -1,309 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAppCheck } from "@/lib/appCheck";
 import { getMailTransporter } from "@/lib/mailer";
-import { 
-  escapeHtml, 
-  sanitizeSubject, 
-  isValidEmail, 
-  sanitizeText, 
-  getClientIp, 
-  isAllowedOrigin, 
-  isBotDetected 
-} from "@/lib/security";
-import { rateLimit } from "@/lib/rateLimit";
+import { isBotDetected, isValidEmail, sanitizeSubject, sanitizeText } from "@/lib/security";
+import { guardEmailRoute, parisDateTime, readJsonBody } from "@/lib/email/routeHelpers";
+import { renderAdminNotification } from "@/lib/email/adminNotification";
 
+// Formulaire de contact de la page d'accueil (visiteurs sans compte) → boîte de l'équipe The Box
 const TARGET_CONTACT_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "contact@thebox-tactique.com";
 
 export async function POST(req: NextRequest) {
-  const appCheckRefusal = await requireAppCheck(req, "send-contact-email");
-  if (appCheckRefusal) return appCheckRefusal;
-
   try {
-    // CSRF Protection
-    if (!isAllowedOrigin(req)) {
-      return NextResponse.json({ error: "Requête non autorisée (origine invalide)." }, { status: 403 });
-    }
+    // App Check, origine, 5 envois par 5 minutes et par IP
+    const refusal = await guardEmailRoute(req, { appCheckRoute: "send-contact-email", rateKey: "contact", limit: 5, windowMs: 300_000 });
+    if (refusal) return refusal;
 
-    // IP Rate Limiting (5 requests per 5 minutes per IP)
-    const clientIp = getClientIp(req);
-    const rateCheck = await rateLimit(`contact_${clientIp}`, 5, 300000);
-    if (!rateCheck.allowed) {
-      return NextResponse.json(
-        { error: `Trop de requêtes. Veuillez patienter ${rateCheck.retryAfterSeconds} secondes avant de réessayer.` },
-        { 
-          status: 429, 
-          headers: { "Retry-After": String(rateCheck.retryAfterSeconds || 60) } 
-        }
-      );
-    }
+    const { body, error } = await readJsonBody(req, "Données de formulaire invalides.");
+    if (error) return error;
 
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") {
-      return NextResponse.json({ error: "Données de formulaire invalides." }, { status: 400 });
-    }
+    // Piège à robots : succès apparent, aucun e-mail
+    if (isBotDetected(body)) return NextResponse.json({ success: true, message: "Message transmis." });
 
-    // Bot Honeypot Trap Check
-    if (isBotDetected(body)) {
-      // Silently succeed for bots without sending real email
-      return NextResponse.json({ success: true, message: "Message transmis." });
-    }
-
-    const { name, email, subject, message, club, sport, phone } = body;
-
+    const { name, email, subject, message, club, sport, phone } = body as Record<string, string | undefined>;
     if (!email || !isValidEmail(email)) {
-      return NextResponse.json(
-        { error: "L'adresse email renseignée n'est pas valide." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "L'adresse email renseignée n'est pas valide." }, { status: 400 });
     }
-
     if (!message || typeof message !== "string" || !message.trim()) {
-      return NextResponse.json(
-        { error: "Le message ne peut pas être vide." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Le message ne peut pas être vide." }, { status: 400 });
     }
 
-    // Bounds checking to prevent payload inflation / DoS
     const cleanEmail = email.trim().slice(0, 254);
-    const rawSenderName = sanitizeText(name, 100) || "Visiteur Landing Page";
-    const rawMessage = sanitizeText(message, 10000);
-    const rawClub = sanitizeText(club, 100);
-    const rawSport = sanitizeText(sport, 50);
-    const rawPhone = sanitizeText(phone, 30);
+    const senderName = sanitizeText(name, 100) || "Visiteur Landing Page";
     const inputSubject = sanitizeSubject(subject, 150) || "Demande de contact";
-    
-    // Ensure the subject strictly starts with [Contact] and has no CRLF
-    const finalSubject = sanitizeSubject(
-      inputSubject.startsWith("[Contact]") ? inputSubject : `[Contact] ${inputSubject}`,
-      200
-    );
+    const finalSubject = sanitizeSubject(inputSubject.startsWith("[Contact]") ? inputSubject : `[Contact] ${inputSubject}`, 200);
+    const sportName = sanitizeText(sport, 50);
+    const date = parisDateTime();
 
-    const dateStr = new Date().toLocaleString("fr-FR", {
-      timeZone: "Europe/Paris",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    const { html, text } = renderAdminNotification({
+      badge: "Nouveau Contact Landing Page",
+      heading: "The Box • Message de Contact",
+      rows: [
+        { label: "Téléphone", value: sanitizeText(phone, 30) },
+        { label: "Objet / Motif", value: inputSubject },
+        { label: "Club / Structure", value: sanitizeText(club, 100) },
+        { label: "Discipline", value: sportName.toUpperCase(), text: sportName },
+        { label: "Date de réception", value: date },
+      ],
+      messageTitle: "Message transmis",
+      message: sanitizeText(message, 10000),
+      senderName,
+      replyTo: cleanEmail,
+      subject: finalSubject,
+      replyLabel: `Répondre à ${senderName}`,
+      footer: `Message reçu directement depuis le formulaire de contact de la landing page sur ${TARGET_CONTACT_EMAIL}.`,
+      textHeading: "NOUVEAU MESSAGE CONTACT THE BOX (LANDING PAGE)",
+      date,
     });
 
-    // Escaped versions for safe HTML rendering
-    const safeSenderName = escapeHtml(rawSenderName);
-    const safeEmail = escapeHtml(cleanEmail);
-    const safePhone = escapeHtml(rawPhone);
-    const safeSubject = escapeHtml(inputSubject);
-    const safeClub = escapeHtml(rawClub);
-    const safeSport = escapeHtml(rawSport);
-    const safeMessage = escapeHtml(rawMessage);
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html lang="fr">
-      <head>
-        <meta charset="utf-8">
-        <title>${finalSubject}</title>
-        <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #07090e;
-            color: #ffffff;
-            margin: 0;
-            padding: 20px 0;
-          }
-          .container {
-            max-width: 650px;
-            margin: 0 auto;
-            background-color: #0d1117;
-            border: 2px solid #00e599;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-          }
-          .header {
-            background: linear-gradient(135deg, #0f141d 0%, #161f2e 100%);
-            padding: 25px 30px;
-            border-bottom: 1px solid #1f293d;
-            text-align: center;
-          }
-          .badge {
-            display: inline-block;
-            background-color: rgba(0, 229, 153, 0.15);
-            color: #00e599;
-            border: 1px solid #00e599;
-            font-size: 11px;
-            font-weight: 800;
-            padding: 4px 10px;
-            border-radius: 6px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-          }
-          .header h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 900;
-            color: #ffffff;
-            letter-spacing: -0.5px;
-          }
-          .content {
-            padding: 30px;
-          }
-          .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #121824;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 25px;
-            border: 1px solid #1e293b;
-          }
-          .info-table td {
-            padding: 12px 16px;
-            font-size: 13px;
-            border-bottom: 1px solid #1a2233;
-          }
-          .info-table tr:last-child td {
-            border-bottom: none;
-          }
-          .info-table td.label {
-            color: #94a3b8;
-            font-weight: 600;
-            width: 35%;
-          }
-          .info-table td.value {
-            color: #ffffff;
-            font-weight: 700;
-          }
-          .message-box {
-            background-color: #161c28;
-            border-left: 4px solid #00e599;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-          }
-          .message-title {
-            font-size: 12px;
-            font-weight: 800;
-            color: #00e599;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
-          }
-          .message-body {
-            font-size: 14px;
-            line-height: 1.6;
-            color: #e2e8f0;
-            white-space: pre-wrap;
-            margin: 0;
-            font-family: inherit;
-          }
-          .cta-box {
-            text-align: center;
-            margin: 30px 0 10px;
-          }
-          .cta-button {
-            display: inline-block;
-            background-color: #00e599;
-            color: #07090e;
-            padding: 12px 28px;
-            font-size: 14px;
-            font-weight: 900;
-            text-decoration: none;
-            border-radius: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          .footer {
-            background-color: #0a0d14;
-            padding: 20px;
-            text-align: center;
-            font-size: 11px;
-            color: #64748b;
-            border-top: 1px solid #1a2233;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <span class="badge">Nouveau Contact Landing Page</span>
-            <h1>The Box • Message de Contact</h1>
-          </div>
-          <div class="content">
-            <table class="info-table">
-              <tr>
-                <td class="label">Expéditeur :</td>
-                <td class="value">${safeSenderName}</td>
-              </tr>
-              <tr>
-                <td class="label">Email de réponse :</td>
-                <td class="value"><a href="mailto:${safeEmail}" style="color: #00e599; text-decoration: none;">${safeEmail}</a></td>
-              </tr>
-              ${rawPhone ? `<tr><td class="label">Téléphone :</td><td class="value">${safePhone}</td></tr>` : ""}
-              <tr>
-                <td class="label">Objet / Motif :</td>
-                <td class="value">${safeSubject}</td>
-              </tr>
-              ${rawClub ? `<tr><td class="label">Club / Structure :</td><td class="value">${safeClub}</td></tr>` : ""}
-              ${rawSport ? `<tr><td class="label">Discipline :</td><td class="value">${safeSport.toUpperCase()}</td></tr>` : ""}
-              <tr>
-                <td class="label">Date de réception :</td>
-                <td class="value">${dateStr}</td>
-              </tr>
-            </table>
-
-            <div class="message-box">
-              <div class="message-title">Message transmis</div>
-              <p class="message-body">${safeMessage}</p>
-            </div>
-
-            <div class="cta-box">
-              <a href="mailto:${safeEmail}?subject=Re:%20${encodeURIComponent(finalSubject)}" class="cta-button">
-                Répondre à ${safeSenderName}
-              </a>
-            </div>
-          </div>
-          <div class="footer">
-            &copy; 2026 The Box - Plateforme de coaching et décision tactique.<br>
-            Message reçu directement depuis le formulaire de contact de la landing page sur ${TARGET_CONTACT_EMAIL}.
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const textContent = `
-=== NOUVEAU MESSAGE CONTACT THE BOX (LANDING PAGE) ===
-Objet: ${finalSubject}
-Date: ${dateStr}
-
-COORDONNÉES DU CONTACT:
-- Nom: ${rawSenderName}
-- Email: ${cleanEmail}
-${rawPhone ? `- Téléphone: ${rawPhone}\n` : ""}${rawClub ? `- Club / Organisation: ${rawClub}\n` : ""}${rawSport ? `- Sport: ${rawSport}\n` : ""}
-
-MESSAGE:
-----------------------------------------
-${rawMessage}
-----------------------------------------
-
-Pour répondre directement à ce contact : ${cleanEmail}
-    `.trim();
-
-    // Configure SMTP transport
-    const transporter = getMailTransporter();
-
-    const mailOptions = {
+    const info = await getMailTransporter().sendMail({
       from: process.env.SMTP_FROM || `"The Box Contact" <${TARGET_CONTACT_EMAIL}>`,
       to: TARGET_CONTACT_EMAIL,
       replyTo: cleanEmail,
       subject: finalSubject,
-      text: textContent,
-      html: htmlContent,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
+      text,
+      html,
+    });
     console.log("Contact email sent successfully to", TARGET_CONTACT_EMAIL, "MessageId:", info.messageId);
 
     return NextResponse.json({
@@ -311,7 +70,7 @@ Pour répondre directement à ce contact : ${cleanEmail}
       message: `Votre message a été envoyé avec succès à l'équipe The Box (${TARGET_CONTACT_EMAIL}). Nous vous répondrons rapidement.`,
       messageId: info.messageId,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error in send-contact-email API:", err);
     return NextResponse.json(
       { error: "Échec de l'envoi du message de contact. Veuillez réessayer ultérieurement." },
