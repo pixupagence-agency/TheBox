@@ -8,7 +8,7 @@ import { type TrialTimeRemaining } from "../../TrialCountdownModal";
 import { LiveTrialCountdownLabel } from "@/components/tactics/LiveTrialCountdownLabel";
 import { type Language, type translations } from "@/lib/i18n";
 import { type CoachProfile } from "@/lib/tactics/types";
-import { ChevronDown, ChevronLeft, ChevronRight, LogOut, Maximize2, Minimize2, type User } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, LogOut, Maximize2, Minimize2, Target, type User } from "lucide-react";
 
 export interface TopHeaderProps {
   activeCoach: CoachProfile;
@@ -83,7 +83,8 @@ export default function TopHeader({
           {/* Left Brand info */}
           <div className="flex items-center gap-3 min-w-0 overflow-hidden">
             {/* Logo badge SVG */}
-            {/* Identique au logo de la landing page (LandingPage.tsx) */}
+            {/* Identique au logo de la landing page (LandingPage.tsx) ; pastille « Tactic » en vert,
+                comme « Training » (bleu) et « Recording » (rouge corail) dans les autres modules */}
             <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
               <LogoIcon className={`w-8 h-8 sm:w-10 sm:h-10 ${isModernSleek ? "text-slate-900" : "text-white"} flex-shrink-0`} />
               <div className="text-left select-none">
@@ -91,13 +92,11 @@ export default function TopHeader({
                   <h1 className={`text-xl sm:text-2xl font-black tracking-wider leading-none lowercase whitespace-nowrap ${isModernSleek ? "text-slate-900" : "text-white"}`}>
                     the box
                   </h1>
-                  {(isUserAdmin || isPaidSubscriber) && (
-                    <span className="tb-pro-badge hidden sm:inline-block text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded whitespace-nowrap">
-                      {isUserAdmin || currentPlan === "club" ? "Pro Club" : currentPlan === "pro_plus" || currentPlan === "annuel" ? "Pro+" : "Pro"}
-                    </span>
-                  )}
+                  <span className={`hidden sm:inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border whitespace-nowrap ${isModernSleek ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-[#00E599]/10 border-[#00E599]/30 text-[#A7F3D0]"}`}>
+                    <Target className="w-3 h-3" aria-hidden="true" />Tactic
+                  </span>
                 </div>
-                <p className={`hidden sm:block whitespace-nowrap text-[8.5px] ${isModernSleek ? "text-slate-500" : "text-white/70"} font-black uppercase tracking-[0.22em] leading-none mt-1`}>
+                <p className={`hidden sm:block whitespace-nowrap text-[8.5px] ${isModernSleek ? "text-emerald-700" : "text-[#00E599]"} font-black uppercase tracking-[0.22em] leading-none mt-1`}>
                   zone de décision tactique
                 </p>
               </div>
