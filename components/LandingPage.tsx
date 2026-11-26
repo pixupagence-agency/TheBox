@@ -771,6 +771,17 @@ export default function LandingPage({
                   <span>{t.footer.cgv}</span>
                 </button>
                 <span className="text-slate-700">•</span>
+                {(["mentions", "privacy", "dpa"] as const).map((id) => (
+                  <React.Fragment key={id}>
+                    <button
+                      onClick={() => onOpenLegalModal(id)}
+                      className="hover:text-[#00E599] transition cursor-pointer"
+                    >
+                      {t.footer[id]}
+                    </button>
+                    <span className="text-slate-700">•</span>
+                  </React.Fragment>
+                ))}
               </>
             )}
             <a

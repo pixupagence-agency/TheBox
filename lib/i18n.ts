@@ -585,6 +585,9 @@ export const translations = {
         faqHelp: "FAQ & Aide",
         cgu: "CGU",
         cgv: "CGV",
+        mentions: "Mentions légales",
+        privacy: "Confidentialité",
+        dpa: "Sous-traitance des données",
         contactUs: "Nous Contacter",
         contactSupport: "Contact Support",
         copyright: (year: number) => `© ${year} the box. Tous droits réservés.`
@@ -1171,6 +1174,9 @@ export const translations = {
         faqHelp: "FAQ & Help",
         cgu: "Terms of Use",
         cgv: "Terms of Sale",
+        mentions: "Legal notice",
+        privacy: "Privacy",
+        dpa: "Data processing",
         contactUs: "Contact Us",
         contactSupport: "Support Contact",
         copyright: (year: number) => `© ${year} the box. All rights reserved.`

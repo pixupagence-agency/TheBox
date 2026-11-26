@@ -13,15 +13,34 @@ import {
   CreditCard,
   Lock,
   Scale,
-  CheckCircle2,
-  Zap,
-  Users,
-  Trophy
+  Building2,
+  FileLock2,
 } from "lucide-react";
 import LogoIcon from "./LogoIcon";
+import LegalText from "./legal/LegalText";
 import { getPremiumTheme, premiumOverlay, premiumShell } from "@/lib/premiumModalTheme";
+import { LEGAL_DOC_IDS, LEGAL_DOC_META, type LegalDocId, type LegalDocument } from "@/lib/legal/documents";
+import { subscribeLegalDocument } from "@/lib/legal/store";
 
-export type LegalTab = "faq" | "cgu" | "cgv";
+export type LegalTab = "faq" | LegalDocId;
+
+const LEGAL_ICONS: Record<LegalDocId, React.ElementType> = {
+  mentions: Building2,
+  cgu: FileText,
+  cgv: Scale,
+  privacy: Lock,
+  dpa: FileLock2,
+};
+
+/** Document légal publié (suivi en direct), null pendant le chargement */
+function useLegalDocument(id: LegalDocId | null): LegalDocument | null {
+  const [state, setState] = useState<{ id: LegalDocId; doc: LegalDocument } | null>(null);
+  useEffect(() => {
+    if (!id) return;
+    return subscribeLegalDocument(id, (doc) => setState({ id, doc }));
+  }, [id]);
+  return state && state.id === id ? state.doc : null;
+}
 
 interface LegalAndFaqModalProps {
   isOpen: boolean;
@@ -160,6 +179,8 @@ export default function LegalAndFaqModal({
   const [openFaqIds, setOpenFaqIds] = useState<string[]>(["f1", "f3", "f4"]);
   const [faqSearch, setFaqSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("Toutes");
+  const legalId = isOpen && activeTab !== "faq" ? activeTab : null;
+  const legalDoc = useLegalDocument(legalId);
 
   // Ouvre sur l'onglet demandé à chaque ouverture (ajusté pendant le rendu, sans effet)
   const openKey = isOpen ? defaultTab : null;
@@ -212,92 +233,53 @@ export default function LegalAndFaqModal({
     }
   };
 
-  const lastUpdate = new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-
   const tabs: { id: LegalTab; label: string; short: string; title: string; desc: string; icon: React.ElementType }[] = [
     { id: "faq", label: "Foire aux questions", short: "FAQ", title: "Foire aux questions", desc: "Les réponses aux questions les plus fréquentes des coachs.", icon: HelpCircle },
-    { id: "cgu", label: "Conditions d'utilisation", short: "CGU", title: "Conditions générales d'utilisation", desc: "Les règles d'accès et d'utilisation de la plateforme The Box.", icon: FileText },
-    { id: "cgv", label: "Conditions de vente", short: "CGV", title: "Conditions générales de vente", desc: "Les conditions applicables aux abonnements payants.", icon: Scale },
+    ...LEGAL_DOC_IDS.map((id) => ({ id, ...LEGAL_DOC_META[id], icon: LEGAL_ICONS[id] })),
   ];
   const current = tabs.find((x) => x.id === activeTab) || tabs[0];
 
-  const cguSections: { title: string; body: React.ReactNode }[] = [
-    { title: "Éditeur de la plateforme", body: <>La plateforme <strong>The Box</strong> est éditée, exploitée et gérée par la société <strong>PixUp</strong>, ci-après « l&apos;éditeur ». PixUp est responsable du fonctionnement du service ainsi que du traitement des données personnelles des utilisateurs.</> },
-    { title: "Objet et présentation du service", body: <>La plateforme <strong>The Box</strong> est un service SaaS d&apos;animation tactique, de gestion d&apos;effectifs et de préparation de séances sportives destiné aux entraîneurs, éducateurs et clubs sportifs. L&apos;accès au service implique l&apos;acceptation pleine et entière des présentes CGU par l&apos;utilisateur.</> },
-    { title: "Accès au service et création de compte", body: <>L&apos;accès aux fonctionnalités avancées nécessite la création d&apos;un compte utilisateur sécurisé. L&apos;utilisateur s&apos;engage à fournir des informations exactes et à préserver la confidentialité de ses identifiants de connexion. Toute action effectuée depuis son compte est présumée être réalisée par l&apos;utilisateur titulaire.</> },
-    { title: "Formules d'accès et données enregistrées", body: <>Chaque nouveau compte bénéficie d&apos;une période d&apos;essai gratuite de 14 jours, accordée une seule fois par compte et par adresse e-mail. À la fin de l&apos;essai ou d&apos;un abonnement PRO / PRO+, le compte passe en <strong>Formule Gratuite</strong> : les fonctionnalités réservées aux formules payantes sont désactivées et les contenus enregistrés (équipes, effectifs, matchs, notes et schémas) sont <strong>masqués mais conservés</strong>. Ils sont de nouveau accessibles dès la souscription d&apos;une formule PRO ou PRO+. Aucune suppression automatique n&apos;est appliquée à ces contenus.</> },
-    { title: "Propriété intellectuelle", body: <>L&apos;ensemble de l&apos;application (interface, visuels, moteurs d&apos;animation, terrains vectoriels, codes sources et marques « The Box ») est la propriété exclusive de PixUp. L&apos;utilisateur conserve la propriété intellectuelle de ses contenus créés (schémas tactiques, compositions et notes personnelles), mais concède à la plateforme une licence technique nécessaire au stockage et à la restitution du service.</> },
-    {
-      title: "Protection des données personnelles (RGPD)",
-      body: (
-        <>
-          <p>Conformément au Règlement Général sur la Protection des Données (RGPD), PixUp, en tant que responsable du traitement des données des coachs, s&apos;engage à protéger la vie privée des entraîneurs et de leurs effectifs. Les données collectées (identité et adresse e-mail du coach, club, effectifs, matchs, notes et schémas) sont uniquement utilisées pour l&apos;exécution du service et ne sont en aucun cas vendues ou cédées à des tiers.</p>
-          <p className="mt-2"><strong>Données des joueurs :</strong> les informations sur les joueurs (noms, numéros, postes, photos, statistiques de match) sont saisies par le coach pour son club. Pour ces données, le club ou le coach est responsable du traitement et PixUp agit en qualité de sous-traitant (article 28 du RGPD) : elles ne sont utilisées que pour fournir le service au coach. Il appartient au club ou au coach d&apos;informer les joueurs et de recueillir, le cas échéant, l&apos;accord de leurs représentants légaux pour les joueurs mineurs.</p>
-          <p className="mt-2"><strong>Mode Live (pages publiques) :</strong> lorsqu&apos;un coach publie le live d&apos;un match, une page publique est créée (QR du match, page du club). Elle affiche le nom du club et des équipes, la date, le lieu, le score, le chronomètre et les faits de match. Les joueurs y apparaissent uniquement sous la forme <strong>prénom + initiale du nom</strong> (ex. « Lucas M. »), sans photo. Ces pages ne sont accessibles qu&apos;aux personnes disposant du lien ou du QR code et ne sont pas répertoriées. Avant la première publication, le coach atteste avoir obtenu l&apos;accord des joueurs ou, pour les mineurs, de leurs parents. Un live reste consultable jusqu&apos;à sa suppression par le coach ; il est effacé avec les autres données lors de la suppression du compte.</p>
-          <p className="mt-2"><strong>Prestataires techniques :</strong> hébergement de l&apos;application (Vercel), stockage des données et authentification (Google Firebase, base de données hébergée dans l&apos;Union européenne), paiement des abonnements (Stripe). Ces prestataires n&apos;agissent que sur instruction de PixUp.</p>
-          <p className="mt-2"><strong>Durée de conservation :</strong> les données du compte sont conservées tant que le compte existe, y compris en Formule Gratuite, et jusqu&apos;à la demande de suppression de l&apos;utilisateur.</p>
-          <p className="mt-2"><strong>Vos droits :</strong> vous disposez d&apos;un droit d&apos;accès, de rectification, de portabilité et d&apos;effacement de vos données, exerçable depuis votre espace (Paramètres &gt; Profil) ou via <strong>support@thebox-tactique.com</strong>. Vous pouvez également introduire une réclamation auprès de la CNIL.</p>
-        </>
-      ),
-    },
-    {
-      title: "Suppression du compte",
-      body: (
-        <>
-          <p>L&apos;utilisateur peut supprimer définitivement son compte à tout moment depuis <strong>Paramètres &gt; Profil &gt; « Supprimer mon compte »</strong>, ou sur simple demande au support. La suppression efface de manière irréversible le compte, les identifiants de connexion et l&apos;ensemble des contenus enregistrés. Si un abonnement est en cours, la suppression prend effet à la fin de la période déjà payée : l&apos;utilisateur conserve l&apos;accès à l&apos;application jusqu&apos;à cette date et peut annuler sa demande d&apos;ici là depuis le même espace (voir CGV). Sans abonnement en cours, la suppression est immédiate.</p>
-          <p className="mt-2">Sont seules conservées après la suppression : les factures et données de paiement détenues par le prestataire de paiement, pendant la durée imposée par les obligations comptables (10 ans), ainsi qu&apos;une empreinte chiffrée et non réversible de l&apos;adresse e-mail des anciens abonnés, utilisée uniquement pour éviter l&apos;attribution d&apos;une nouvelle période d&apos;essai gratuite.</p>
-          <p className="mt-2">PixUp peut également, sur décision motivée (demande de l&apos;utilisateur, compte inactif ou manquement aux présentes CGU), supprimer les contenus enregistrés d&apos;un compte.</p>
-        </>
-      ),
-    },
-    { title: "Disponibilité et responsabilité", body: <>The Box met en œuvre tous les moyens raisonnables pour assurer un accès continu et fluide au service 24h/24 et 7j/7. Néanmoins, l&apos;accès peut être temporairement interrompu pour des raisons de maintenance technique ou de mise à jour des terrains. PixUp ne saurait être tenue responsable des pertes indirectes liées à une interruption momentanée du réseau internet.</> },
-    { title: "Modification des CGU", body: <>PixUp se réserve le droit de modifier les présentes CGU à tout moment afin de les adapter aux évolutions réglementaires et techniques. Les utilisateurs seront informés de toute modification majeure lors de leur connexion.</> },
-  ];
-
-  const cgvSections: { title: string; body: React.ReactNode }[] = [
-    { title: "Éditeur de la plateforme", body: <>La plateforme <strong>The Box</strong> est éditée, exploitée et gérée par la société <strong>PixUp</strong>, ci-après « l&apos;éditeur ». Les abonnements payants sont conclus entre l&apos;utilisateur et PixUp, qui en assure la vente, l&apos;encaissement et la facturation.</> },
-    {
-      title: "Offres et tarifications",
-      body: (
-        <>
-          <p>The Box propose trois formules d&apos;accès :</p>
-          <ul className="mt-2 space-y-1.5">
-            <li className="flex gap-2"><CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${th.accent}`} /><span><strong>Formule Gratuite :</strong> Accès de base au tableau tactique 2D, gestion d&apos;effectif et exports PNG (0.00 €/mois).</span></li>
-            <li className="flex gap-2"><CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${th.accent}`} /><span><strong>Formule PRO :</strong> Accès multi-équipes, sauvegarde illimitée des schémas, préparation de l&apos;équipe adverse et causeries vocales (9.90 €/mois TTC).</span></li>
-            <li className="flex gap-2"><CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${th.accent}`} /><span><strong>Formule PRO+ :</strong> Toutes les fonctionnalités PRO + activation du mode Live Match en direct avec chronomètre et statistiques (14.90 €/mois TTC).</span></li>
-          </ul>
-        </>
-      ),
-    },
-    { title: "Période d'essai gratuite", body: <>Tout nouveau compte bénéficie automatiquement d&apos;une période d&apos;essai gratuite de 14 jours à toutes les fonctionnalités de la formule PRO+ (y compris le Mode Live Match), sans carte bancaire. L&apos;essai est accordé <strong>une seule fois par compte et par adresse e-mail</strong> : il n&apos;est plus proposé à un utilisateur ayant déjà souscrit un abonnement payant, y compris après une résiliation. À l&apos;issue des 14 jours, l&apos;utilisateur repasse automatiquement en Formule Gratuite sans aucuns frais prélevés si aucun abonnement payant n&apos;a été activé.</> },
-    { title: "Modalités de paiement", body: <>Les paiements s&apos;effectuent de manière mensuelle et récurrente par Carte Bancaire via une infrastructure de paiement hautement sécurisée et chiffrée. L&apos;abonnement est prélevé à la date anniversaire de la souscription.</> },
-    { title: "Sans engagement & résiliation", body: <>Tous nos abonnements payants sont strictement <strong>sans engagement de durée</strong>. Vous pouvez mettre fin à votre renouvellement automatique à tout moment en un clic dans votre espace utilisateur. La résiliation prend effet à la fin de la période mensuelle en cours. Le compte repasse alors en Formule Gratuite : les contenus enregistrés (équipes, effectifs, matchs, notes et schémas) sont masqués mais conservés, et redeviennent accessibles en cas de nouvel abonnement. La résiliation n&apos;ouvre pas droit à une nouvelle période d&apos;essai gratuite.</> },
-    { title: "Suppression du compte", body: <>La suppression du compte par l&apos;utilisateur (voir CGU) met fin à l&apos;abonnement en cours <strong>à l&apos;échéance de la période déjà payée</strong> : l&apos;abonnement n&apos;est pas renouvelé, l&apos;utilisateur conserve l&apos;accès à l&apos;application et à sa formule jusqu&apos;à cette date, puis le compte est supprimé. Aucun nouveau prélèvement n&apos;est effectué et la période en cours n&apos;est pas remboursée, sous réserve du droit de rétractation ci-dessous. Jusqu&apos;à l&apos;échéance, l&apos;utilisateur peut annuler sa demande de suppression : l&apos;abonnement reprend alors normalement. Les factures restent disponibles sur demande auprès du support pendant la durée légale de conservation.</> },
-    { title: "Droit de rétractation", body: <>Conformément aux dispositions de l&apos;article L.221-18 du Code de la Consommation, vous disposez d&apos;un délai de rétractation de 14 jours à compter de la souscription initiale pour annuler votre contrat et en demander le remboursement intégral en contactant support@thebox-tactique.com.</> },
-    { title: "Support client et facturation", body: <>Pour toute question concernant vos factures ou votre abonnement, notre service client est disponible par courrier électronique à l&apos;adresse <strong>support@thebox-tactique.com</strong>.</> },
-  ];
-
-  const renderLegal = (intro: string, list: { title: string; body: React.ReactNode }[]) => (
-    <article className="max-w-3xl mx-auto space-y-4">
-      <div className={`p-4 rounded-2xl border ${th.cardMuted}`}>
-        <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${th.faint}`}>Dernière mise à jour : {lastUpdate}</p>
-        <p className={`mt-1 text-sm font-semibold ${th.text}`}>{intro}</p>
-      </div>
-      {list.map((sec, i) => (
-        <section key={sec.title} className={`p-5 rounded-2xl border ${th.card}`}>
-          <h3 className={`text-sm font-black tracking-tight flex items-center gap-3 ${th.text}`}>
-            <span className={`w-7 h-7 rounded-lg border flex items-center justify-center text-[11px] font-black tabular-nums shrink-0 ${th.accentChip}`}>{i + 1}</span>
-            {sec.title}
-          </h3>
-          <div className={`mt-2.5 text-[13px] leading-6 ${th.body}`}>{sec.body}</div>
-        </section>
-      ))}
-    </article>
-  );
+  const renderLegal = (doc: LegalDocument | null) => {
+    if (!doc) {
+      return (
+        <div className={`max-w-3xl mx-auto py-16 text-center text-xs font-semibold ${th.sub}`} role="status">
+          Chargement du document…
+        </div>
+      );
+    }
+    const updated = doc.updatedAt
+      ? new Date(doc.updatedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+      : null;
+    return (
+      <article className="max-w-3xl mx-auto space-y-4" data-testid={`legal-doc-${doc.id}`}>
+        <div className={`p-4 rounded-2xl border ${th.cardMuted}`}>
+          <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${th.faint}`}>
+            {updated ? <>Dernière mise à jour : {updated}{doc.version > 0 && <> · version {doc.version}</>}</> : "Version initiale"}
+          </p>
+          {doc.intro && <p className={`mt-1 text-sm font-semibold ${th.text}`}>{doc.intro}</p>}
+        </div>
+        {doc.sections.map((sec, i) => (
+          <section key={sec.id} className={`p-5 rounded-2xl border ${th.card}`}>
+            <h3 className={`text-sm font-black tracking-tight flex items-center gap-3 ${th.text}`}>
+              <span className={`w-7 h-7 rounded-lg border flex items-center justify-center text-[11px] font-black tabular-nums shrink-0 ${th.accentChip}`}>{i + 1}</span>
+              {sec.title}
+            </h3>
+            <div className={`mt-2.5 text-[13px] leading-6 ${th.body}`}>
+              <LegalText
+                text={sec.body}
+                bulletClass={isModernSleek ? "bg-emerald-500" : "bg-[#00E599]"}
+                placeholderClass={isModernSleek ? "bg-amber-100 text-amber-900" : "bg-amber-400/20 text-amber-200"}
+              />
+            </div>
+          </section>
+        ))}
+      </article>
+    );
+  };
 
   return (
     <div className={`${premiumOverlay} z-[120]`}>
-      <div className={`${premiumShell} w-full max-w-5xl h-[94vh] sm:h-[88vh] ${th.panel}`}>
+      <div role="dialog" aria-modal="true" aria-label="Aide & informations" className={`${premiumShell} w-full max-w-5xl h-[94vh] sm:h-[88vh] ${th.panel}`}>
         {!isModernSleek && (
           <div className="absolute -top-40 left-32 w-[460px] h-[300px] bg-[#00E599]/[0.05] rounded-full blur-3xl pointer-events-none" />
         )}
@@ -331,7 +313,9 @@ export default function LegalAndFaqModal({
                   {isActive && <span className={`absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full ${th.navIndicator}`} />}
                   <Icon className={`h-4 w-4 shrink-0 ${isActive ? th.accent : ""}`} />
                   <span className="flex-1 text-left">{tab.label}</span>
-                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md border ${th.chip}`}>{tab.short}</span>
+                  {tab.short.length <= 8 && (
+                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md border ${th.chip}`}>{tab.short}</span>
+                  )}
                 </button>
               );
             })}
@@ -376,13 +360,13 @@ export default function LegalAndFaqModal({
             </div>
 
             {/* Onglets mobiles */}
-            <div className={`md:hidden mt-4 flex gap-1 p-1 rounded-xl border ${th.segment}`}>
+            <div className={`md:hidden mt-4 flex gap-1 p-1 rounded-xl border overflow-x-auto scrollbar-none ${th.segment}`}>
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer ${current.id === tab.id ? th.segmentActive : th.segmentIdle}`}
+                  className={`flex-1 px-3 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition cursor-pointer ${current.id === tab.id ? th.segmentActive : th.segmentIdle}`}
                 >
                   {tab.short}
                 </button>
@@ -487,17 +471,8 @@ export default function LegalAndFaqModal({
               </div>
             )}
 
-            {/* ---------- CGU ---------- */}
-            {current.id === "cgu" && renderLegal(
-              "Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme web « The Box - Zone de décision tactique », éditée par la société PixUp.",
-              cguSections
-            )}
-
-            {/* ---------- CGV ---------- */}
-            {current.id === "cgv" && renderLegal(
-              "Les présentes Conditions Générales de Vente (CGV) s'appliquent à toutes les souscriptions d'abonnements payants sur la plateforme The Box, éditée et commercialisée par la société PixUp.",
-              cgvSections
-            )}
+            {/* ---------- Documents légaux (modifiables dans la console admin) ---------- */}
+            {current.id !== "faq" && renderLegal(legalDoc)}
           </div>
         </main>
       </div>

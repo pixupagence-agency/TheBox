@@ -26,7 +26,8 @@ export async function login(page: Page, creds: { email: string; password: string
   await loginForm.locator('input[type="password"]').fill(creds.password);
   await loginForm.locator('button[type="submit"]').click();
 
-  await expect(page.locator(`#pitch-${pitch}`)).toBeVisible({ timeout: 20000 });
+  // Premier test d'une série à ouvrir le tableau : le serveur de développement le compile (12 à 15 s, plus sur disque lent)
+  await expect(page.locator(`#pitch-${pitch}`)).toBeVisible({ timeout: 45000 });
 }
 
 /** Ouvre le menu « Plus d'outils » de la barre d'outils s'il est replié (écrans étroits). */

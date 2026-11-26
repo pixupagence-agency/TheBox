@@ -329,6 +329,31 @@ service cloud.firestore {
       }
     }
 
+    // --- Documents légaux (lib/legal) : lecture publique, publication par le super admin ---
+    function validLegalDoc(d) {
+      return d.keys().hasOnly(['intro', 'sections', 'updatedAt', 'updatedBy', 'version']) &&
+        d.keys().hasAll(['intro', 'sections', 'updatedAt', 'version']) &&
+        d.intro is string && d.intro.size() <= 4000 &&
+        d.sections is list && d.sections.size() >= 1 && d.sections.size() <= 60 &&
+        d.updatedAt is string && d.version is int && d.version >= 1 &&
+        (!('updatedBy' in d) || d.updatedBy == null || d.updatedBy is string);
+    }
+
+    match /legalDocs/{docId} {
+      allow read: if true;
+      allow create, update: if isSuperAdmin() &&
+        docId in ['cgu', 'cgv', 'mentions', 'privacy', 'dpa'] &&
+        validLegalDoc(incoming()) &&
+        ((resource == null && incoming().version == 1) ||
+          (resource != null && incoming().version == existing().get('version', 0) + 1));
+
+      // Versions publiées, conservées telles quelles (preuve du texte en vigueur à une date)
+      match /history/{version} {
+        allow read: if isSuperAdmin();
+        allow create: if isSuperAdmin() && validLegalDoc(incoming()) && version == string(incoming().version);
+      }
+    }
+
     // --- Global App Config (Admin Managed) ---
     match /app_config/{configId} {
       allow read: if true;

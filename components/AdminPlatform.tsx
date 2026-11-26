@@ -25,9 +25,11 @@ import {
   Trash2,
   Zap,
   ExternalLink,
-  Wrench
+  Wrench,
+  Scale
 } from "lucide-react";
 import { confirmAction } from "@/components/ConfirmDialog";
+import LegalDocsEditor from "@/components/admin/LegalDocsEditor";
 import {
   DEFAULT_MAINTENANCE_MESSAGE,
   MAINTENANCE_MESSAGE_MAX,
@@ -101,7 +103,7 @@ interface AdminPlatformProps {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-type AdminTab = "subscriptions" | "sports" | "privileges" | "maintenance";
+type AdminTab = "subscriptions" | "sports" | "legal" | "privileges" | "maintenance";
 
 /** Fin d'essai enregistrée en base (Timestamp Firestore ou ISO) au format ISO, sinon undefined. */
 const trialEndIso = (p: FirebaseCoachProfile): string | undefined => {
@@ -654,6 +656,7 @@ export default function AdminPlatform({
   const tabMeta = {
     subscriptions: { title: "Abonnements & coachs", desc: "Suivez les formules, les périodes d'essai et gérez les comptes de la plateforme." },
     sports: { title: "Accès aux sports", desc: "Ouvrez ou verrouillez chaque sport pour le grand public." },
+    legal: { title: "Documents légaux", desc: "Modifiez et publiez les CGU, CGV, mentions légales, la politique de confidentialité et l'accord de sous-traitance." },
     privileges: { title: "Privilèges administrateur", desc: "Ce que votre compte administrateur débloque sur The Box." },
     maintenance: { title: "Mode maintenance", desc: "Fermez temporairement l'application au public pendant une mise à jour." },
   } as const;
@@ -661,6 +664,7 @@ export default function AdminPlatform({
   const navItems: { id: AdminTab; label: string; icon: React.ElementType; badge?: string; warn?: boolean }[] = [
     { id: "subscriptions", label: "Abonnements & coachs", icon: Users, badge: String(totalCoaches) },
     { id: "sports", label: "Accès aux sports", icon: Layers, badge: blockedSportsCount > 0 ? `${blockedSportsCount} verrouillé${blockedSportsCount > 1 ? "s" : ""}` : undefined, warn: true },
+    { id: "legal", label: "Documents légaux", icon: Scale },
     { id: "privileges", label: "Privilèges admin", icon: Crown },
     ...(canManageMaintenance
       ? [{ id: "maintenance" as const, label: "Maintenance", icon: Wrench, badge: maintenance.enabled ? "Active" : undefined, warn: true }]
@@ -1158,6 +1162,11 @@ export default function AdminPlatform({
                   })}
                 </div>
               </>
+            )}
+
+            {/* ---------- DOCUMENTS LÉGAUX ---------- */}
+            {activeTab === "legal" && (
+              <LegalDocsEditor th={th} isModernSleek={isModernSleek} inputBase={inputBase} labelBase={labelBase} />
             )}
 
             {/* ---------- MAINTENANCE (super admin uniquement) ---------- */}

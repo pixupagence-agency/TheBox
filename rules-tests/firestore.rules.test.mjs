@@ -392,3 +392,47 @@ describe("Live : structure des documents publics", () => {
     await assertFails(setDoc(doc(db(), "liveEditorKeys/m1"), { ...key, expiresAt: 9e15 }));
   });
 });
+
+describe("legalDocs : documents légaux", () => {
+  const published = (version, extra = {}) => ({
+    intro: "Introduction",
+    sections: [{ id: "s1", title: "Éditeur", body: "PixUp" }],
+    updatedAt: "2026-11-26T20:00:00.000Z",
+    updatedBy: SUPER_ADMIN_EMAIL,
+    version,
+    ...extra,
+  });
+
+  test("lecture publique, même sans compte", async () => {
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), "legalDocs/cgu"), published(1)));
+    await assertSucceeds(getDoc(doc(anon(), "legalDocs/cgu")));
+    await assertSucceeds(getDoc(doc(as("trial"), "legalDocs/cgu")));
+  });
+
+  test("publication réservée aux super admins, versions qui se suivent", async () => {
+    await assertFails(setDoc(doc(as("pro"), "legalDocs/cgu"), published(1)));
+    await assertFails(setDoc(doc(anon(), "legalDocs/cgu"), published(1)));
+    await assertFails(setDoc(doc(superAdmin(), "legalDocs/cgu"), published(2))); // première version : 1
+    await assertSucceeds(setDoc(doc(superAdmin(), "legalDocs/cgu"), published(1)));
+    await assertFails(setDoc(doc(superAdmin(), "legalDocs/cgu"), published(1))); // pas de retour en arrière
+    await assertSucceeds(setDoc(doc(as("listedAdmin"), "legalDocs/cgu"), published(2)));
+    await assertFails(deleteDoc(doc(superAdmin(), "legalDocs/cgu")));
+  });
+
+  test("identifiants, champs et tailles imposés", async () => {
+    await assertFails(setDoc(doc(superAdmin(), "legalDocs/autre"), published(1)));
+    await assertFails(setDoc(doc(superAdmin(), "legalDocs/mentions"), published(1, { html: "<script>" })));
+    await assertFails(setDoc(doc(superAdmin(), "legalDocs/mentions"), published(1, { sections: [] })));
+    await assertFails(setDoc(doc(superAdmin(), "legalDocs/mentions"), published(1, { intro: "x".repeat(4001) })));
+    await assertSucceeds(setDoc(doc(superAdmin(), "legalDocs/mentions"), published(1)));
+  });
+
+  test("historique : versions ajoutées par les super admins, ni modifiées ni lisibles par le public", async () => {
+    await assertSucceeds(setDoc(doc(superAdmin(), "legalDocs/dpa/history/1"), published(1)));
+    await assertFails(setDoc(doc(superAdmin(), "legalDocs/dpa/history/1"), published(1, { intro: "modifié" })));
+    await assertFails(setDoc(doc(superAdmin(), "legalDocs/dpa/history/5"), published(1))); // numéro ≠ version
+    await assertFails(setDoc(doc(as("pro"), "legalDocs/dpa/history/2"), published(2)));
+    await assertFails(getDoc(doc(anon(), "legalDocs/dpa/history/1")));
+    await assertSucceeds(getDoc(doc(superAdmin(), "legalDocs/dpa/history/1")));
+  });
+});
