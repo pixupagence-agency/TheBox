@@ -55,7 +55,7 @@ import {
 // Types, utilitaires et petits composants du tableau (étape 1 du découpage de ce fichier)
 import { type Token, type DrawingAction, type SetPieceRoleConfig, defaultSetPieceRoles, type CoachProfile, type TeamCategory, type TeamRosterPlayer } from "@/lib/tactics/types";
 import { TOOLBAR_GROUP_KEYS, COACH_NOTE_MAX, LINK_COLORS, GIF_EXPORT_WIDTH } from "@/lib/tactics/constants";
-import { HALFTIME_BREAK_SECONDS, type LivePeriod, getLivePeriodConfig } from "@/lib/tactics/livePeriods";
+import { HALFTIME_BREAK_SECONDS } from "@/lib/tactics/livePeriods";
 import { BALL_MAGNET_PX, detachBall, isCurveTool, ZONE_FILL_ALPHA, type Pt, curvePointsPx, bezierAt, strokeCurveArrow, getSportRatioNum } from "@/lib/tactics/pitchGeometry";
 import { type NewTeamPlayerEdit, MAX_TEAM_SQUAD_SIZE, standardDefaultRoles26, defaultManagedTeamRosters, generateDefaultRosterForCustomTeam, makeDefaultSubstitutes, readStoredBench, type TeamRosterStatus, TEAM_PLAYER_STATUS_OPTIONS, isUnavailableStatus, toTeamStatusOption, toGroupStatus, toRosterStatus, rosterPlayerToSub, buildMatchGroupFromRoster, applyRosterIdentity, isGenericGroup, defaultTeams } from "@/lib/tactics/roster";
 import { safeLocalStorageSetItem } from "@/lib/tactics/storage";
@@ -105,7 +105,10 @@ import { handleCreateNewTeam as handleCreateNewTeamImpl } from "@/lib/tactics/ac
 import { handleShareMatchWhatsApp as handleShareMatchWhatsAppImpl } from "@/lib/tactics/actions/handleShareMatchWhatsApp";
 import { handleAssignUniqueNumber as handleAssignUniqueNumberImpl } from "@/lib/tactics/actions/handleAssignUniqueNumber";
 import { handleAddNewSubstitute as handleAddNewSubstituteImpl } from "@/lib/tactics/actions/handleAddNewSubstitute";
-import { handleToggleMicRecording as handleToggleMicRecordingImpl } from "@/lib/tactics/actions/handleToggleMicRecording";
+import { useVoiceNotes } from "@/lib/tactics/hooks/useVoiceNotes";
+import { useLiveMatchClock, formatLiveTime } from "@/lib/tactics/hooks/useLiveMatchClock";
+import { useRightSidebar } from "@/lib/tactics/hooks/useRightSidebar";
+import { useStoredState, parseStoredBoolean } from "@/lib/useStoredState";
 import WallSettingsPanel from "@/components/tactics/board/WallSettingsPanel";
 import PlayerLinkToolbar from "@/components/tactics/board/PlayerLinkToolbar";
 import TacticalNotesSection from "@/components/tactics/board/TacticalNotesSection";
@@ -544,58 +547,20 @@ export default function TacticsBoard({
   const tokensLayerRef = useRef<HTMLDivElement>(null);
   /** Rôles réellement attribués (hors composition du mur) */
   const countSportRoles = (roles: SetPieceRoleConfig) => getSportRoles(activeSport).roles.filter((r) => roles[r.key]).length;
-  const [showPlayerNames, setShowPlayerNames] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("thebox_show_player_names");
-      if (saved !== null) {
-        return saved === "true";
-      }
-    }
-    return true;
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("thebox_show_player_names", String(showPlayerNames));
-    }
-  }, [showPlayerNames]);
+  const [showPlayerNames, setShowPlayerNames] = useStoredState("thebox_show_player_names", true, parseStoredBoolean);
 
   // Rôles des joueurs sur le terrain (« C » du capitaine, CF, PK, CK…) : masquables depuis la barre d'outils
-  const [showPlayerRoles, setShowPlayerRoles] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("thebox_show_player_roles");
-        if (saved !== null) return saved === "true";
-      } catch { }
-    }
-    return true;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("thebox_show_player_roles", String(showPlayerRoles));
-    } catch { }
-  }, [showPlayerRoles]);
+  const [showPlayerRoles, setShowPlayerRoles] = useStoredState("thebox_show_player_roles", true, parseStoredBoolean);
   const playerRolesToggleLabel = showPlayerRoles
     ? (currentLang === "en" ? "Hide player roles (captain, set pieces)" : "Masquer les rôles des joueurs (capitaine, coups de pied arrêtés)")
     : (currentLang === "en" ? "Show player roles (captain, set pieces)" : "Afficher les rôles des joueurs (capitaine, coups de pied arrêtés)");
 
   // Choix de la représentation des joueurs : Pastille ("dot"), Buste ("jersey") ou Tête ("head")
-  const [playerRepresentation, setPlayerRepresentation] = useState<"dot" | "jersey" | "head">(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("thebox_player_representation");
-      if (saved === "dot" || saved === "jersey" || saved === "head") {
-        return saved;
-      }
-    }
-    return "head";
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("thebox_player_representation", playerRepresentation);
-    }
-  }, [playerRepresentation]);
+  const [playerRepresentation, setPlayerRepresentation] = useStoredState<"dot" | "jersey" | "head">(
+    "thebox_player_representation",
+    "head",
+    (raw) => (raw === "dot" || raw === "jersey" || raw === "head" ? raw : undefined)
+  );
 
   // Flanking Panels Collapse States (for iPad & small screens)
   const [isTeamAPanelCollapsed, setIsTeamAPanelCollapsed] = useState<boolean>(() => {
@@ -682,22 +647,6 @@ export default function TacticsBoard({
   const [isSchemasSectionCollapsed, setIsSchemasSectionCollapsed] = useState(false);
   const [isMatchSectionCollapsed, setIsMatchSectionCollapsed] = useState(false);
   const [isNotesSectionCollapsed, setIsNotesSectionCollapsed] = useState(false);
-  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
-  const [speechError, setSpeechError] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null);
-
-  useEffect(() => {
-    return () => {
-      // Voulu : au démontage, on arrête la reconnaissance vocale en cours (créée après le montage)
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- ref d'objet, pas de nœud DOM
-      const recognition = recognitionRef.current;
-      if (recognition) {
-        try {
-          recognition.stop();
-        } catch (e) { }
-      }
-    };
-  }, []);
 
   // Set-Piece Roles & Captain designations (persisted per active match)
   const [setPieceRoles, setSetPieceRoles] = useState<SetPieceRoleConfig>(() => {
@@ -988,140 +937,35 @@ export default function TacticsBoard({
     }
   };
 
-  // Sidebar Toggles & Resizing State
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("thebox_right_sidebar_open");
-      if (saved !== null) {
-        return saved === "true";
-      }
-    }
-    // Ouverte par défaut sur grand écran ; en dessous de xl, elle reste un tiroir à la demande
-    return typeof window !== "undefined" && window.innerWidth >= 1280;
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("thebox_right_sidebar_open", String(isRightSidebarOpen));
-    }
-  }, [isRightSidebarOpen]);
-  const [rightSidebarWidth, setRightSidebarWidth] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("thebox_right_sidebar_width");
-      if (saved) {
-        const parsed = parseInt(saved, 10);
-        if (!isNaN(parsed) && parsed >= 170 && parsed <= 700) {
-          return parsed;
-        }
-      }
-    }
-    return 300;
-  });
-  const [isResizingRightSidebar, setIsResizingRightSidebar] = useState<boolean>(false);
-  const resizingStartXRef = useRef<number>(0);
-  const resizingStartWidthRef = useRef<number>(300);
-
-  // Save right sidebar width to localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("thebox_right_sidebar_width", rightSidebarWidth.toString());
-    }
-  }, [rightSidebarWidth]);
-
-  // Window drag listeners for smooth right sidebar resizing
-  useEffect(() => {
-    if (!isResizingRightSidebar) return;
-
-    const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-      const deltaX = resizingStartXRef.current - clientX;
-      const maxAllowed = typeof window !== "undefined" ? Math.min(650, Math.floor(window.innerWidth * 0.45)) : 500;
-      const newWidth = Math.min(
-        Math.max(170, resizingStartWidthRef.current + deltaX),
-        maxAllowed
-      );
-      setRightSidebarWidth(newWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsResizingRightSidebar(false);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    window.addEventListener("touchmove", handleMouseMove);
-    window.addEventListener("touchend", handleMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-      window.removeEventListener("touchmove", handleMouseMove);
-      window.removeEventListener("touchend", handleMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-  }, [isResizingRightSidebar]);
-
-  const handleRightSidebarResizeStart = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    setIsResizingRightSidebar(true);
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    resizingStartXRef.current = clientX;
-    resizingStartWidthRef.current = rightSidebarWidth;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  };
+  // Panneau latéral droit : ouverture, largeur réglable, mémorisés sur l'appareil
+  const {
+    isRightSidebarOpen, setIsRightSidebarOpen,
+    rightSidebarWidth, setRightSidebarWidth,
+    isResizingRightSidebar,
+    handleRightSidebarResizeStart,
+  } = useRightSidebar();
 
   // Compact / Simplified UI Mode State
-  const [isCompactUI, setIsCompactUI] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("thebox_compact_ui") === "true";
-    }
-    return false;
-  });
-
-  const toggleCompactUI = () => {
-    setIsCompactUI((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        localStorage.setItem("thebox_compact_ui", String(next));
-      }
-      return next;
-    });
-  };
+  const [isCompactUI, setIsCompactUI] = useStoredState("thebox_compact_ui", false, parseStoredBoolean);
+  const toggleCompactUI = () => setIsCompactUI((prev) => !prev);
 
   // Ultra-Sleek Modern UI Mode State (persisted in localStorage, proposed active by default)
-  const [isModernSleek, setIsModernSleek] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("thebox_modern_sleek");
-      if (saved !== null) return saved === "true";
-    }
-    return false; // Le design sombre « cockpit » est le thème par défaut
-  });
+  // Le design sombre « cockpit » est le thème par défaut
+  const [isModernSleek, setIsModernSleek] = useStoredState("thebox_modern_sleek", false, parseStoredBoolean);
 
   const [sleekToastMessage, setSleekToastMessage] = useState<string | null>(null);
 
+  // (effets de bord hors de la fonction de mise à jour : elle peut être rejouée par React)
   const toggleModernSleek = () => {
-    setIsModernSleek((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        localStorage.setItem("thebox_modern_sleek", String(next));
-      }
-      if (next && rightSidebarWidth < 260) {
-        setRightSidebarWidth(260);
-      }
-      setSleekToastMessage(
-        next
-          ? "✨ Mode Design Épuré (Clair) activé : couleurs lumineuses, interface aérée et contrastes optimisés."
-          : "🌙 Mode Design Sombre Classique réactivé."
-      );
-      setTimeout(() => {
-        setSleekToastMessage(null);
-      }, 3500);
-      return next;
-    });
+    const next = !isModernSleek;
+    setIsModernSleek(next);
+    if (next && rightSidebarWidth < 260) setRightSidebarWidth(260);
+    setSleekToastMessage(
+      next
+        ? "✨ Mode Design Épuré (Clair) activé : couleurs lumineuses, interface aérée et contrastes optimisés."
+        : "🌙 Mode Design Sombre Classique réactivé."
+    );
+    setTimeout(() => setSleekToastMessage(null), 3500);
   };
 
   // Subscription Checkout Modal
@@ -1324,80 +1168,27 @@ export default function TacticsBoard({
 
   // LIVE MATCH Mode State
   const [isLiveMatchMode, setIsLiveMatchMode] = useState<boolean>(false);
-  const [isLiveTimerRunning, setIsLiveTimerRunning] = useState<boolean>(false);
   const [isMatchFinishedModalOpen, setIsMatchFinishedModalOpen] = useState<boolean>(false);
 
-  // Périodes de jeu du sport actif (football : 2 MT de 45 min ; basket : 4 QT de 20 min)
-  const livePeriodConfig = useMemo(() => getLivePeriodConfig(activeSport, activeFormat), [activeSport, activeFormat]);
-  const firstLivePeriod = livePeriodConfig.periods[0];
-
-  const [currentPeriod, setCurrentPeriod] = useState<LivePeriod>(() => {
-    const first = getLivePeriodConfig(activeSport, activeFormat).periods[0];
-    if (typeof window !== "undefined") {
-      const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
-      const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
-      if (saved) {
-        try { return JSON.parse(saved).currentPeriod || first; } catch (e) { }
-      }
-    }
-    return first;
-  });
-
-  // Si la période enregistrée appartient à un autre sport (ex. "1MT" en basket), on la convertit
-  // (ajusté pendant le rendu, sans effet)
-  if (currentPeriod !== "MI-TEMPS" && currentPeriod !== "FIN" && !livePeriodConfig.periods.includes(currentPeriod)) {
-    const secondHalf = currentPeriod === "2MT" || currentPeriod === "QT3" || currentPeriod === "QT4";
-    const converted = livePeriodConfig.periods[secondHalf ? livePeriodConfig.breakAfterIndex + 1 : 0];
-    if (converted) setCurrentPeriod(converted);
-  }
-
-  const [liveTimerSeconds, setLiveTimerSeconds] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
-      const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
-      if (saved) {
-        try { return JSON.parse(saved).liveTimerSeconds || 0; } catch (e) { }
-      }
-    }
-    return 0;
-  });
-
-  // Mi-temps : compte à rebours de 15 minutes lancé au clic sur PAUSE
-  const [halftimeSecondsLeft, setHalftimeSecondsLeft] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
-      const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
-      if (saved) {
-        try {
-          const value = JSON.parse(saved).halftimeSecondsLeft;
-          if (typeof value === "number") return value;
-        } catch (e) { }
-      }
-    }
-    return HALFTIME_BREAK_SECONDS;
-  });
-  const [isHalftimeRunning, setIsHalftimeRunning] = useState<boolean>(false);
-
-  const [homeScore, setHomeScore] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
-      const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
-      if (saved) {
-        try { return JSON.parse(saved).homeScore || 0; } catch (e) { }
-      }
-    }
-    return 0;
-  });
-
-  const [awayScore, setAwayScore] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const initialMatchId = localStorage.getItem("thebox_active_match_id") || "match_1";
-      const saved = localStorage.getItem(`thebox_match_state_${initialMatchId}`);
-      if (saved) {
-        try { return JSON.parse(saved).awayScore || 0; } catch (e) { }
-      }
-    }
-    return 0;
+  // Périodes, chrono, pause et score du match (mémorisés par match sur l'appareil)
+  const {
+    livePeriodConfig, firstLivePeriod, livePeriodButtons,
+    isLiveTimerRunning, setIsLiveTimerRunning,
+    currentPeriod, setCurrentPeriod, isPeriodOvertime, isHalftime, eventPeriodLabel,
+    liveTimerSeconds, setLiveTimerSeconds,
+    halftimeSecondsLeft, setHalftimeSecondsLeft, isHalftimeRunning, setIsHalftimeRunning,
+    homeScore, setHomeScore, awayScore, setAwayScore,
+    breakShortLabel, breakLongLabel,
+    handleSelectLivePeriod,
+  } = useLiveMatchClock({
+    activeSport,
+    activeFormat,
+    activeMatchId,
+    isLiveMatchMode,
+    onBreakEnd: (nextPeriod) => {
+      setSleekToastMessage(`⏱️ Fin de la pause (15:00) ! Cliquez sur ${nextPeriod} pour relancer le match.`);
+      setTimeout(() => setSleekToastMessage(null), 4500);
+    },
   });
 
   const [matchEvents, setMatchEvents] = useState<Array<{
@@ -1439,16 +1230,6 @@ export default function TacticsBoard({
       safeLocalStorageSetItem(`thebox_match_events_${activeMatchId}`, JSON.stringify(matchEvents));
     }
   }, [matchEvents, activeMatchId]);
-
-  // Persist match state (scores, timer & period) per match
-  useEffect(() => {
-    if (typeof window !== "undefined" && activeMatchId) {
-      safeLocalStorageSetItem(
-        `thebox_match_state_${activeMatchId}`,
-        JSON.stringify({ homeScore, awayScore, liveTimerSeconds, currentPeriod, halftimeSecondsLeft })
-      );
-    }
-  }, [homeScore, awayScore, liveTimerSeconds, currentPeriod, halftimeSecondsLeft, activeMatchId]);
 
   // Persist active match pitch state (keyframes and drawings) per match
   useEffect(() => {
@@ -1511,85 +1292,6 @@ export default function TacticsBoard({
         : `🏁 Match terminé ! Score final : ${scoreFormatted} enregistré.`
     );
     setTimeout(() => setSleekToastMessage(null), 4500);
-  };
-
-  // Chrono du match : il continue au-delà de la durée de la période (temps additionnel),
-  // l'affichage passe alors en rouge (ex. football 1MT : après 45:00 ; basket QT1 : après 20:00).
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isLiveMatchMode && isLiveTimerRunning) {
-      interval = setInterval(() => {
-        setLiveTimerSeconds((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isLiveMatchMode, isLiveTimerRunning]);
-
-  // Compte à rebours de la mi-temps (15 minutes)
-  // Chaque seconde : une seconde de moins ; à zéro, la pause s'arrête et le coach est prévenu
-  const tickHalftime = useEffectEvent(() => {
-    if (halftimeSecondsLeft > 1) {
-      setHalftimeSecondsLeft(halftimeSecondsLeft - 1);
-      return;
-    }
-    setHalftimeSecondsLeft(0);
-    setIsHalftimeRunning(false);
-    const nextPeriod = livePeriodConfig.periods[livePeriodConfig.breakAfterIndex + 1];
-    setSleekToastMessage(`⏱️ Fin de la pause (15:00) ! Cliquez sur ${nextPeriod} pour relancer le match.`);
-    setTimeout(() => setSleekToastMessage(null), 4500);
-  });
-  useEffect(() => {
-    if (!isLiveMatchMode || !isHalftimeRunning || currentPeriod !== "MI-TEMPS") return;
-    const interval = setInterval(() => tickHalftime(), 1000);
-    return () => clearInterval(interval);
-  }, [isLiveMatchMode, isHalftimeRunning, currentPeriod]);
-
-  const formatLiveTime = (totalSecs: number) => {
-    const m = Math.floor(totalSecs / 60);
-    const s = totalSecs % 60;
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
-
-  // Temps réglementaire de la période en cours dépassé (affichage en rouge)
-  const currentPeriodIndex = livePeriodConfig.periods.indexOf(currentPeriod);
-  const isPeriodOvertime =
-    currentPeriodIndex >= 0 &&
-    liveTimerSeconds > (currentPeriodIndex + 1) * livePeriodConfig.periodSeconds;
-  const isHalftime = currentPeriod === "MI-TEMPS";
-
-  // Libellés de la pause : en basket on parle de « PAUSE » (pas de mi-temps), sinon de mi-temps
-  const isBasketLive = activeSport === "basketball";
-  const breakShortLabel = isBasketLive ? "PAUSE" : "MT";
-  const breakLongLabel = isBasketLive ? "Pause" : "Mi-temps";
-  // Période inscrite sur les événements du match (buts, cartons, remplacements…)
-  const eventPeriodLabel = isHalftime && isBasketLive ? "PAUSE" : currentPeriod;
-
-  // Boutons de période affichés : périodes de jeu avec la pause insérée au bon endroit
-  // (football : 1MT | PAUSE | 2MT ; basket : QT1 | QT2 | PAUSE | QT3 | QT4)
-  const livePeriodButtons: LivePeriod[] = [
-    ...livePeriodConfig.periods.slice(0, livePeriodConfig.breakAfterIndex + 1),
-    "MI-TEMPS",
-    ...livePeriodConfig.periods.slice(livePeriodConfig.breakAfterIndex + 1),
-  ];
-
-  // Changement de période depuis les boutons de période
-  const handleSelectLivePeriod = (period: LivePeriod) => {
-    if (period === "MI-TEMPS") {
-      // Pause : le chrono du match s'arrête et le compte à rebours de 15 minutes démarre
-      setIsLiveTimerRunning(false);
-      if (currentPeriod !== "MI-TEMPS") setHalftimeSecondsLeft(HALFTIME_BREAK_SECONDS);
-      setIsHalftimeRunning(true);
-    } else {
-      setIsHalftimeRunning(false);
-      // Chaque nouvelle période repart de son début théorique (ex. 2MT à 45:00, QT3 à 40:00),
-      // quel que soit le temps additionnel de la précédente
-      const index = livePeriodConfig.periods.indexOf(period);
-      if (index > 0 && period !== currentPeriod) setLiveTimerSeconds(index * livePeriodConfig.periodSeconds);
-      setIsLiveTimerRunning(true);
-    }
-    setCurrentPeriod(period);
   };
 
   const handleDeleteMatchEvent = (eventId: string) => {
@@ -4162,9 +3864,10 @@ export default function TacticsBoard({
   const handleShareMatchWhatsApp = () =>
     handleShareMatchWhatsAppImpl({ activeMatch, activeSport, awayScore, formatLiveTime, homeScore, liveTimerSeconds, matchEvents, tacticalNotes });
 
-  // Mic dictation implementation using browser Web Speech API
-  const handleToggleMicRecording = () =>
-    handleToggleMicRecordingImpl({ isProOrAdmin, isRecordingVoice, recognitionRef, setIsCheckoutOpen, setIsRecordingVoice, setSleekToastMessage, setSpeechError, setTacticalNotes });
+  // Dictée vocale des notes (Web Speech API du navigateur, formules PRO)
+  const { isRecordingVoice, speechError, setSpeechError, handleToggleMicRecording } = useVoiceNotes({
+    isProOrAdmin, setIsCheckoutOpen, setSleekToastMessage, setTacticalNotes,
+  });
 
   const renderPlayerEditPanel = () => (
     <PlayerEditPanel
