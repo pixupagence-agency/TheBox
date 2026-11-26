@@ -15,8 +15,21 @@ export default defineConfig([
       "react-hooks/preserve-manual-memoization": "warn",
     },
   },
+  {
+    // Photos de joueurs, logos de club, QR codes et médias du guide : images en mémoire (data:, blob:)
+    // ou saisies par le coach, souvent capturées par html-to-image pour les exports. next/image
+    // n'optimise pas ces sources et gênerait les captures : <img> est voulu ici.
+    files: [
+      "components/tactics/**",
+      "components/live/**",
+      "components/GuideMediaViewer.tsx",
+    ],
+    rules: { "@next/next/no-img-element": "off" },
+  },
   globalIgnores([
     ".next/**",
+    ".next-*/**",
+    "backups/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

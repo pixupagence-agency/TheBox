@@ -57,6 +57,8 @@ export default function SessionsPanel({ diagram, activeExerciseId, onActiveExerc
   // Enregistrement (puis synchronisation en ligne) à chaque modification
   useEffect(() => {
     if (firstSave.current) { firstSave.current = false; return; }
+    // Effet voulu : l'enregistrement sur l'appareil est une synchronisation externe ; son échec est signalé
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- message de résultat de l'enregistrement
     if (!saveSessions(sessions)) flash("⚠️ Enregistrement impossible : stockage de l'appareil plein.");
     else { const warning = nearQuotaWarning(); if (warning) flash(warning); }
   }, [sessions]);

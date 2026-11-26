@@ -92,18 +92,17 @@ export default function AdminGuideEditor({
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
 
-  // Load sections on mount
-  useEffect(() => {
+  // Sections chargées à l'ouverture de l'éditeur et à chaque section demandée (ajusté pendant le rendu, sans effet)
+  const requested = initialSectionId ?? "";
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  if (loadedFor !== requested) {
+    setLoadedFor(requested);
     const loaded = loadGuideSections();
     setSections(loaded);
     if (loaded.length > 0) {
-      if (initialSectionId && loaded.some((s) => s.id === initialSectionId)) {
-        setSelectedId(initialSectionId);
-      } else {
-        setSelectedId(loaded[0].id);
-      }
+      setSelectedId(initialSectionId && loaded.some((s) => s.id === initialSectionId) ? initialSectionId : loaded[0].id);
     }
-  }, [initialSectionId]);
+  }
 
   const currentSection = sections.find((s) => s.id === selectedId) || sections[0];
 

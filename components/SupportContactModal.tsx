@@ -63,8 +63,12 @@ export default function SupportContactModal({
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Sync props when modal opens or props change
-  useEffect(() => {
+  // À l'ouverture (ou si le compte change) : champs vides pré-remplis, message d'état effacé
+  // (ajusté pendant le rendu, sans effet ; ce que le coach a saisi n'est pas écrasé)
+  const openKey = isOpen ? `${userName}|${userEmail}|${initialSubject}` : null;
+  const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null);
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
     if (isOpen) {
       if (userName && !name) setName(userName);
       if (userEmail && !email) setEmail(userEmail);
@@ -72,7 +76,7 @@ export default function SupportContactModal({
       setErrorMessage(null);
       setSubmitSuccess(false);
     }
-  }, [isOpen, userName, userEmail, initialSubject]);
+  }
 
   // Handle escape key
   useEffect(() => {

@@ -90,23 +90,20 @@ export default function UserGuideModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"reader" | "editor">(initialMode);
 
-  // Load sections on open
-  useEffect(() => {
-    if (!isOpen) return;
-    const loaded = loadGuideSections();
-    setSections(loaded);
-    if (loaded.length > 0 && !loaded.some((s) => s.id === selectedSectionId)) {
-      setSelectedSectionId(loaded[0].id);
-    }
-  }, [isOpen]);
-
-  // Sync mode and section when opened
-  useEffect(() => {
+  // À l'ouverture : sections relues, mode et section demandés (ajusté pendant le rendu, sans effet).
+  // Une section demandée qui n'existe plus laisse place à la première.
+  const openKey = isOpen ? `${initialMode}|${initialSectionId}` : null;
+  const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null);
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
     if (isOpen) {
+      const loaded = loadGuideSections();
+      const wanted = initialSectionId || selectedSectionId;
+      setSections(loaded);
       if (initialMode) setViewMode(initialMode);
-      if (initialSectionId) setSelectedSectionId(initialSectionId);
+      setSelectedSectionId(loaded.length > 0 && !loaded.some((s) => s.id === wanted) ? loaded[0].id : wanted);
     }
-  }, [isOpen, initialMode, initialSectionId]);
+  }
 
   // Listen to external updates
   useEffect(() => {

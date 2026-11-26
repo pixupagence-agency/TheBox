@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Copy, Check, Download, Maximize2, Printer, RefreshCw, Share2, ShieldOff, X, Radio, Lock, Globe } from "lucide-react";
+import { useClientValue } from "@/lib/useClientValue";
 import { hasLiveAttestation, liveUrls, recordLiveAttestation, type EditorAccess } from "@/lib/live/client";
 
 interface Props {
@@ -21,17 +22,35 @@ interface Props {
 }
 
 const useQr = (text: string, dark = "#0b1220") => {
-  const [src, setSrc] = useState("");
+  // QR mémorisé avec son texte : un ancien QR n'est jamais affiché pour un nouveau lien
+  const [qr, setQr] = useState<{ text: string; src: string }>({ text: "", src: "" });
   useEffect(() => {
-    if (!text) { setSrc(""); return; }
+    if (!text) return;
     let alive = true;
     QRCode.toDataURL(text, { margin: 1, width: 360, errorCorrectionLevel: "M", color: { dark, light: "#ffffff" } })
-      .then((url) => { if (alive) setSrc(url); })
-      .catch(() => { if (alive) setSrc(""); });
+      .then((src) => { if (alive) setQr({ text, src }); })
+      .catch(() => { if (alive) setQr({ text, src: "" }); });
     return () => { alive = false; };
   }, [text, dark]);
-  return src;
+  return text && qr.text === text ? qr.src : "";
 };
+
+const QrBox = ({ src, alt }: { src: string; alt: string }) => (
+  <div className="w-40 h-40 mx-auto rounded-xl bg-white p-2 border border-slate-200 flex items-center justify-center">
+    {src ? <img src={src} alt={alt} className="w-full h-full" /> : <span className="text-[11px] text-slate-400">QR…</span>}
+  </div>
+);
+
+const Badge = ({ kind, isLight }: { kind: "public" | "private"; isLight: boolean }) => (
+  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${kind === "public"
+    ? isLight ? "bg-emerald-100 text-emerald-700" : "bg-[#00E599]/15 text-[#00E599]"
+    : isLight ? "bg-amber-100 text-amber-700" : "bg-amber-400/15 text-amber-300"}`}>
+    {kind === "public" ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+    {kind === "public" ? "PUBLIC" : "PRIVÉ"}
+  </span>
+);
+
+const readOrigin = () => window.location.origin;
 
 const shareLink = async (title: string, url: string) => {
   const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
@@ -65,25 +84,27 @@ h1{font-size:34px;margin:10mm 0 4mm}p{font-size:18px;margin:2mm 0}img{width:120m
 
 export default function LiveShareModal(props: Props) {
   const { open, onClose, isLight, matchTitle, clubName, publicId, clubSlug, editor, busy, error } = props;
-  const [origin, setOrigin] = useState("");
+  const origin = useClientValue(readOrigin, "");
   const [copied, setCopied] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
-  // RGPD : attestation de l'accord des joueurs / parents, demandée une fois avant la 1re publication
-  const [attested, setAttested] = useState(false);
   const [attestChecked, setAttestChecked] = useState(false);
-  useEffect(() => { setOrigin(window.location.origin); }, []);
-  useEffect(() => { if (open) setAttested(hasLiveAttestation()); }, [open]);
+  // Fenêtre refermée : le QR plein écran se referme avec elle (ajusté pendant le rendu, sans effet)
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    setWasOpen(open);
+    if (!open) setFullscreen(false);
+  }
 
   const urls = publicId ? liveUrls(origin, publicId, clubSlug || undefined, editor && !editor.revoked ? editor.token : undefined) : null;
   const matchQr = useQr(urls?.match || "");
   const remoteQr = useQr(urls?.remote || "");
   const clubQr = useQr(urls?.club || "");
 
-  useEffect(() => {
-    if (!open) setFullscreen(false);
-  }, [open]);
-
   if (!open) return null;
+
+  // RGPD : attestation de l'accord des joueurs / parents, demandée une fois avant la 1re publication
+  // (relue à chaque rendu de la fenêtre ouverte : simple lecture du stockage de l'appareil)
+  const attested = hasLiveAttestation();
 
   const copy = async (key: string, text: string) => {
     try {
@@ -99,21 +120,6 @@ export default function LiveShareModal(props: Props) {
   const ghost = isLight ? "bg-white border-slate-200 text-slate-700 hover:bg-slate-100" : "bg-white/[0.04] border-white/10 text-slate-200 hover:bg-white/[0.08]";
   const primary = isLight ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600" : "bg-[#00E599] hover:bg-[#33ebad] text-slate-950 border-[#00E599]";
   const btn = "h-9 px-3 rounded-lg border text-[12px] font-bold inline-flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed";
-
-  const QrBox = ({ src, alt }: { src: string; alt: string }) => (
-    <div className="w-40 h-40 mx-auto rounded-xl bg-white p-2 border border-slate-200 flex items-center justify-center">
-      {src ? <img src={src} alt={alt} className="w-full h-full" /> : <span className="text-[11px] text-slate-400">QR…</span>}
-    </div>
-  );
-
-  const Badge = ({ kind }: { kind: "public" | "private" }) => (
-    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${kind === "public"
-      ? isLight ? "bg-emerald-100 text-emerald-700" : "bg-[#00E599]/15 text-[#00E599]"
-      : isLight ? "bg-amber-100 text-amber-700" : "bg-amber-400/15 text-amber-300"}`}>
-      {kind === "public" ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-      {kind === "public" ? "PUBLIC" : "PRIVÉ"}
-    </span>
-  );
 
   return (
     <div className="fixed inset-0 z-[160] flex items-center justify-center p-3 bg-black/60 backdrop-blur-sm" onClick={onClose}>
@@ -172,7 +178,7 @@ export default function LiveShareModal(props: Props) {
           <div className="grid gap-3 md:grid-cols-3">
             {/* QR du match */}
             <div className={`rounded-xl border p-3.5 flex flex-col gap-2.5 ${card}`}>
-              <div className="flex items-center justify-between"><p className="text-[13px] font-black">QR de ce match</p><Badge kind="public" /></div>
+              <div className="flex items-center justify-between"><p className="text-[13px] font-black">QR de ce match</p><Badge kind="public" isLight={isLight} /></div>
               <p className={`text-[11.5px] leading-snug ${sub}`}>Le live en lecture seule : compo avant le match, direct pendant, résumé après.</p>
               <QrBox src={matchQr} alt="QR du match" />
               <div className="grid grid-cols-2 gap-1.5 mt-auto">
@@ -190,7 +196,7 @@ export default function LiveShareModal(props: Props) {
 
             {/* QR adjoint */}
             <div className={`rounded-xl border p-3.5 flex flex-col gap-2.5 ${card}`}>
-              <div className="flex items-center justify-between"><p className="text-[13px] font-black">QR adjoint (éditeur)</p><Badge kind="private" /></div>
+              <div className="flex items-center justify-between"><p className="text-[13px] font-black">QR adjoint (éditeur)</p><Badge kind="private" isLight={isLight} /></div>
               <p className={`text-[11.5px] leading-snug ${sub}`}>La télécommande de saisie. Ne le partagez qu’avec votre adjoint : il se ferme à la fin du match.</p>
               {editor && !editor.revoked ? (
                 <>
@@ -229,7 +235,7 @@ export default function LiveShareModal(props: Props) {
 
             {/* QR général du club */}
             <div className={`rounded-xl border p-3.5 flex flex-col gap-2.5 ${card}`}>
-              <div className="flex items-center justify-between"><p className="text-[13px] font-black">QR général du club</p><Badge kind="public" /></div>
+              <div className="flex items-center justify-between"><p className="text-[13px] font-black">QR général du club</p><Badge kind="public" isLight={isLight} /></div>
               <p className={`text-[11.5px] leading-snug ${sub}`}>Tous vos matchs : en direct, à venir et terminés. Permanent, à afficher au club-house.</p>
               <QrBox src={clubQr} alt="QR du club" />
               <div className="grid grid-cols-2 gap-1.5 mt-auto">

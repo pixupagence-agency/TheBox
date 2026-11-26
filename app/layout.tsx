@@ -44,7 +44,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* crossOrigin : permet à html-to-image (captures PNG / vue 3D) de lire les règles @font-face sans SecurityError */}
+        {/* crossOrigin : permet à html-to-image (captures PNG / vue 3D) de lire les règles @font-face sans SecurityError.
+            Pas de next/font : les dessins canvas désignent les polices par leur nom exact (« Inter »…), que next/font renomme.
+            La règle vise l'ancien routeur pages/ ; ici le layout racine charge la police pour toute l'application. */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" crossOrigin="anonymous" />
       </head>
       <body suppressHydrationWarning>

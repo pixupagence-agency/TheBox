@@ -151,7 +151,6 @@ export default function ConvocationsModule({
     if (firstSave.current) { firstSave.current = false; return; }
     if (!saveConvocations(list)) flash("⚠️ Enregistrement impossible : stockage de l'appareil plein.");
     else { const warning = nearQuotaWarning(); if (warning) flash(warning); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list]);
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);

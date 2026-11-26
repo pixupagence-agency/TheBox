@@ -110,6 +110,20 @@ const trialEndIso = (p: FirebaseCoachProfile): string | undefined => {
   return date && !isNaN(date.getTime()) ? date.toISOString() : undefined;
 };
 
+/**
+ * Nouvelle fin d'essai après ajout de jours : à partir de la fin d'essai actuelle (fixée par le serveur,
+ * sinon déduite de la création + jours offerts), ou d'aujourd'hui si l'essai est déjà terminé.
+ */
+const extendedTrialEnd = (p: FirebaseCoachProfile, daysToAdd: number): Date => {
+  const now = Date.now();
+  const iso = trialEndIso(p);
+  const start = new Date(p.createdAt || "").getTime();
+  const currentEnd = iso
+    ? new Date(iso).getTime()
+    : (isNaN(start) ? now : start) + (TRIAL_DURATION_DAYS + (p.trialBonusDays || 0)) * DAY_MS;
+  return new Date(Math.max(currentEnd, now) + daysToAdd * DAY_MS);
+};
+
 export default function AdminPlatform({
   isOpen,
   onClose,
@@ -132,9 +146,12 @@ export default function AdminPlatform({
   const [maintenanceDraft, setMaintenanceDraft] = useState(maintenance.message);
   const [isSavingMaintenance, setIsSavingMaintenance] = useState(false);
   const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
-  React.useEffect(() => {
+  // Message modifié ailleurs (temps réel) : le brouillon reprend la version enregistrée (ajusté pendant le rendu)
+  const [savedMaintenanceMessage, setSavedMaintenanceMessage] = useState(maintenance.message);
+  if (maintenance.message !== savedMaintenanceMessage) {
+    setSavedMaintenanceMessage(maintenance.message);
     setMaintenanceDraft(maintenance.message);
-  }, [maintenance.message]);
+  }
   const handleSaveMaintenance = async (enabled: boolean) => {
     if (isSavingMaintenance) return;
     if (
@@ -202,27 +219,46 @@ export default function AdminPlatform({
   const [remoteStatus, setRemoteStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [remoteError, setRemoteError] = useState<string | null>(null);
 
-  const loadRemoteProfiles = React.useCallback(async () => {
+  // Requête seule : l'état « chargement » est posé par l'appelant (ouverture ou bouton Actualiser)
+  // (l'état n'est modifié qu'à l'arrivée de la réponse)
+  const fetchRemoteProfiles = React.useCallback(
+    () =>
+      listAllUserProfiles().then(
+        (list) => {
+          setRemoteProfiles(list);
+          setRemoteStatus("ok");
+        },
+        (e: any) => {
+          console.error("Chargement des comptes impossible", e);
+          setRemoteError(
+            String(e?.message || "").includes("permission")
+              ? "Accès refusé par Firestore : connectez-vous avec le compte super admin."
+              : "Impossible de charger les comptes en ligne."
+          );
+          setRemoteStatus("error");
+        }
+      ),
+    []
+  );
+
+  const loadRemoteProfiles = () => {
     setRemoteStatus("loading");
     setRemoteError(null);
-    try {
-      const list = await listAllUserProfiles();
-      setRemoteProfiles(list);
-      setRemoteStatus("ok");
-    } catch (e: any) {
-      console.error("Chargement des comptes impossible", e);
-      setRemoteError(
-        String(e?.message || "").includes("permission")
-          ? "Accès refusé par Firestore : connectez-vous avec le compte super admin."
-          : "Impossible de charger les comptes en ligne."
-      );
-      setRemoteStatus("error");
-    }
-  }, []);
+    void fetchRemoteProfiles();
+  };
 
+  // À chaque ouverture : « chargement » affiché tout de suite (ajusté pendant le rendu), puis requête
+  const [wasOpen, setWasOpen] = useState(false);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) {
+      setRemoteStatus("loading");
+      setRemoteError(null);
+    }
+  }
   React.useEffect(() => {
-    if (isOpen) void loadRemoteProfiles();
-  }, [isOpen, loadRemoteProfiles]);
+    if (isOpen) void fetchRemoteProfiles();
+  }, [isOpen, fetchRemoteProfiles]);
 
   const remoteById = React.useMemo(() => new Map(remoteProfiles.map((p) => [p.id, p])), [remoteProfiles]);
   const isRemoteCoach = (coachId: string) => remoteById.has(coachId);
@@ -263,14 +299,6 @@ export default function AdminPlatform({
     );
   };
 
-  /** Fin d'essai actuelle d'un compte en base (fixée par le serveur), sinon déduite de la création + jours offerts */
-  const currentTrialEndMs = (p: FirebaseCoachProfile): number => {
-    const iso = trialEndIso(p);
-    if (iso) return new Date(iso).getTime();
-    const start = new Date(p.createdAt || "").getTime();
-    return (isNaN(start) ? Date.now() : start) + (TRIAL_DURATION_DAYS + (p.trialBonusDays || 0)) * DAY_MS;
-  };
-
   // Handle plan change for a specific coach
   const handleChangeUserPlan = async (coachId: string, plan: string) => {
     if (isRemoteCoach(coachId)) {
@@ -302,10 +330,9 @@ export default function AdminPlatform({
     const remote = remoteById.get(coachId);
     if (remote) {
       try {
-        // Jours ajoutés à la fin d'essai actuelle, ou à partir d'aujourd'hui si l'essai est déjà terminé
         await patchRemote(coachId, {
           trialBonusDays: (remote.trialBonusDays || 0) + daysToAdd,
-          trialEndsAt: new Date(Math.max(currentTrialEndMs(remote), Date.now()) + daysToAdd * DAY_MS),
+          trialEndsAt: extendedTrialEnd(remote, daysToAdd),
         });
       } catch (e) {
         console.error(e);
@@ -392,23 +419,21 @@ export default function AdminPlatform({
   const cleanBlockedSports = blockedSports.filter((id) => supportedSportIds.includes(id));
   const blockedSportsCount = cleanBlockedSports.length;
 
+  // À l'ouverture : sports non pris en charge retirés de la configuration enregistrée sur l'appareil
   React.useEffect(() => {
     if (!isOpen) return;
-    const hasUnsupported = sportsConfig.some((s) => !supportedSportIds.includes(s.id)) || sportsConfig.length !== defaultSportsConfig.length;
-    if (hasUnsupported) {
-      setSportsConfig(activeSportsConfig);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("thebox_sports_config", JSON.stringify(activeSportsConfig));
-      }
+    const supported = defaultSportsConfig.map((s) => s.id);
+    if (sportsConfig.some((s) => !supported.includes(s.id)) || sportsConfig.length !== defaultSportsConfig.length) {
+      const normalized = defaultSportsConfig.map((def) => ({ ...def, ...sportsConfig.find((s) => s.id === def.id) }));
+      setSportsConfig(normalized);
+      localStorage.setItem("thebox_sports_config", JSON.stringify(normalized));
     }
-    const hasUnsupportedBlocked = blockedSports.some((id) => !supportedSportIds.includes(id));
-    if (hasUnsupportedBlocked) {
-      setBlockedSports(cleanBlockedSports);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("thebox_blocked_sports", JSON.stringify(cleanBlockedSports));
-      }
+    if (blockedSports.some((id) => !supported.includes(id))) {
+      const cleaned = blockedSports.filter((id) => supported.includes(id));
+      setBlockedSports(cleaned);
+      localStorage.setItem("thebox_blocked_sports", JSON.stringify(cleaned));
     }
-  }, [isOpen, sportsConfig, blockedSports]);
+  }, [isOpen, sportsConfig, blockedSports, setSportsConfig, setBlockedSports]);
 
   // Toggle sport blockage
   const handleToggleSportBlock = (sportId: string) => {
@@ -1053,7 +1078,7 @@ export default function AdminPlatform({
                       {remoteStatus === "error" && <span className="text-rose-400">⚠️ {remoteError}</span>}
                       <button
                         type="button"
-                        onClick={() => void loadRemoteProfiles()}
+                        onClick={loadRemoteProfiles}
                         disabled={remoteStatus === "loading"}
                         className={`px-2 py-1 rounded-lg border inline-flex items-center gap-1 transition cursor-pointer disabled:opacity-50 ${th.ghostBtn}`}
                       >

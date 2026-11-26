@@ -56,6 +56,18 @@ export interface CoachProfile {
 
 const defaultCoaches: CoachProfile[] = [];
 
+/** Profil affiché tant qu'aucun coach n'est chargé (constante : ne relance pas les effets à chaque rendu) */
+const FALLBACK_COACH: CoachProfile = {
+  id: "",
+  firstName: "Coach",
+  lastName: "Principal",
+  club: "The Box FC",
+  role: "Coach Principal",
+  preferredSport: "football",
+  email: "",
+  isAdmin: false
+};
+
 export default function Home() {
   // App unified states & Plans
   const [activePlan, setActivePlan] = useState<string>("free");
@@ -134,16 +146,7 @@ export default function Home() {
   const [newConfirmPassword, setNewConfirmPassword] = useState("");
 
   // Derived active state - compute admin status with safe fallback
-  const activeCoach = coaches.find(c => c.id === activeCoachId) || coaches[0] || {
-    id: "",
-    firstName: "Coach",
-    lastName: "Principal",
-    club: "The Box FC",
-    role: "Coach Principal",
-    preferredSport: "football",
-    email: "",
-    isAdmin: false
-  };
+  const activeCoach = coaches.find(c => c.id === activeCoachId) || coaches[0] || FALLBACK_COACH;
   const isAdmin = Boolean(
     activeCoach && (
       activeCoach.isAdmin ||
@@ -254,6 +257,7 @@ export default function Home() {
   }, []);
 
   // Handle Stripe Checkout return parameters (?stripe_status=success/cancel&plan=...)
+  // Effet voulu : lecture de l'adresse de retour de Stripe, message, puis nettoyage de la barre d'adresse
   useEffect(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
@@ -261,6 +265,7 @@ export default function Home() {
       const plan = urlParams.get("plan");
 
       if (stripeStatus === "success" && plan) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- retour de paiement lu dans l'adresse
         setActivePlan(plan);
         if (activeCoachId) {
           const savedPlans = localStorage.getItem("thebox_admin_user_plans");
@@ -624,15 +629,16 @@ export default function Home() {
     }
   }, [hasLoaded, isLoggedIn, isAdmin, activeCoachId, isFirstLogin]);
 
-  // Auto-detect if current active coach needs first connection team config
-  useEffect(() => {
-    if (hasLoaded && isLoggedIn && activeCoachId && typeof window !== "undefined") {
-      const isConfigured = localStorage.getItem(`thebox_team_config_done_${activeCoachId}`);
-      if (!isConfigured) {
-        setIsFirstLogin(true);
-      }
+  // Coach actif dont l'équipe n'est pas encore configurée : première connexion (ajusté pendant le rendu ;
+  // hasLoaded garantit qu'on est dans le navigateur)
+  const firstLoginKey = hasLoaded && isLoggedIn && activeCoachId ? activeCoachId : null;
+  const [checkedFirstLoginKey, setCheckedFirstLoginKey] = useState<string | null>(null);
+  if (firstLoginKey !== checkedFirstLoginKey) {
+    setCheckedFirstLoginKey(firstLoginKey);
+    if (firstLoginKey && !localStorage.getItem(`thebox_team_config_done_${firstLoginKey}`)) {
+      setIsFirstLogin(true);
     }
-  }, [hasLoaded, isLoggedIn, activeCoachId]);
+  }
 
   const handleRegisterCoach = async (e: React.FormEvent) => {
     e.preventDefault();

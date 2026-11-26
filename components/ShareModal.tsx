@@ -224,25 +224,39 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
   const videoRunIdRef = useRef<number>(0);
 
   // Nouvelle animation partagée : on repart de zéro pour ne pas afficher le GIF/la vidéo de la précédente
+  // (états ajustés pendant le rendu ; l'enregistrement vidéo en cours est abandonné par l'effet ci-dessous)
   const renderAnimationFrame = data?.renderAnimationFrame;
-  useEffect(() => {
-    videoRunIdRef.current += 1;
+  // (fonction enveloppée : useState prendrait sinon la fonction pour un initialiseur)
+  const [prevAnimationFrame, setPrevAnimationFrame] = useState(() => renderAnimationFrame);
+  if (renderAnimationFrame !== prevAnimationFrame) {
+    setPrevAnimationFrame(() => renderAnimationFrame);
     setIsRecordingVideo(false);
     setVideoProgress(0);
-    setRecordedVideoUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
+    setRecordedVideoUrl(null);
     setDynamicGifUrl(null);
     setActiveMediaTab("gif");
+  }
+  useEffect(() => {
+    videoRunIdRef.current += 1;
   }, [renderAnimationFrame]);
 
+  // Vidéo remplacée, abandonnée ou fenêtre démontée : le fichier en mémoire est libéré
   useEffect(() => {
-    if (!isOpen || !data) return;
-    if (data.gifUrl) {
-      setDynamicGifUrl(data.gifUrl);
+    if (!recordedVideoUrl) return;
+    return () => URL.revokeObjectURL(recordedVideoUrl);
+  }, [recordedVideoUrl]);
+
+  // Partage ouvert ou contenu changé : GIF déjà généré et note du coach repris (ajusté pendant le rendu)
+  const [prevShare, setPrevShare] = useState<{ isOpen: boolean; data: ShareData | null } | null>(null);
+  if (!prevShare || prevShare.isOpen !== isOpen || prevShare.data !== data) {
+    setPrevShare({ isOpen, data });
+    if (isOpen && data) {
+      if (data.gifUrl) setDynamicGifUrl(data.gifUrl);
+      if (data.notes && data.notes !== "Composition officielle transmise pour la rencontre." && data.notes !== "Schéma de jeu préparé pour l'équipe.") {
+        setCustomCoachNote(data.notes);
+      }
     }
-  }, [isOpen, data]);
+  }
 
   // Capture 3D card asynchronously if needed
   useEffect(() => {
@@ -266,37 +280,26 @@ export default function ShareModal({ isOpen, onClose, data, userEmail, userName,
     }
   }, [isOpen, data]);
 
-  // Pre-fill coach notes from active tactical notes if present
-  useEffect(() => {
-    if (isOpen && data) {
-      if (data.notes && data.notes !== "Composition officielle transmise pour la rencontre." && data.notes !== "Schéma de jeu préparé pour l'équipe.") {
-        setCustomCoachNote(data.notes);
-      }
-    }
-  }, [isOpen, data]);
-
-  // Pre-fill coach's email address from props or localStorage
-  useEffect(() => {
+  // Adresse du coach pré-remplie à l'ouverture : celle du compte, sinon celle du profil de l'appareil
+  // (ajusté pendant le rendu ; la fenêtre ne s'affiche que dans le navigateur)
+  const emailKey = `${isOpen}|${userEmail || ""}`;
+  const [prevEmailKey, setPrevEmailKey] = useState<string | null>(null);
+  if (emailKey !== prevEmailKey) {
+    setPrevEmailKey(emailKey);
     if (userEmail) {
       setRecipientEmail(userEmail);
     } else if (typeof window !== "undefined") {
       try {
         const savedCoaches = localStorage.getItem("thebox_coaches");
         const activeId = localStorage.getItem("thebox_active_coach_id");
-        if (savedCoaches) {
-          const parsed = JSON.parse(savedCoaches);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const found = parsed.find((c: any) => c.id === activeId) || parsed[0];
-            if (found && found.email) {
-              setRecipientEmail(found.email);
-            }
-          }
-        }
+        const parsed = savedCoaches ? JSON.parse(savedCoaches) : null;
+        const found = Array.isArray(parsed) && parsed.length > 0 ? parsed.find((c: any) => c.id === activeId) || parsed[0] : null;
+        if (found?.email) setRecipientEmail(found.email);
       } catch (e) {
         console.warn(e);
       }
     }
-  }, [userEmail, isOpen]);
+  }
 
   if (!isOpen || !data) return null;
 

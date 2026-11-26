@@ -1,7 +1,7 @@
 "use client";
 // App tactique = hôte du live : applique les actions de la télécommande à son état local,
 // puis publie l'état (score, chrono, événements, compo) dans le document public du match.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   markCommandApplied,
   publishLiveState,
@@ -28,16 +28,24 @@ const stateKey = (s: LiveState) =>
   });
 
 export function useLiveHost({ publicId, clubSlug, enabled, state, onCommand }: Options) {
-  const [ready, setReady] = useState(false);
-  const onCommandRef = useRef(onCommand);
-  onCommandRef.current = onCommand;
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  // « Prêt » vaut pour un match donné : changer de match ou couper le live le remet à faux sans effet
+  const session = enabled && publicId ? publicId : null;
+  const [readyFor, setReadyFor] = useState<string | null>(null);
+  // Live coupé puis relancé sur le même match : on attend de nouveau les actions en attente avant de publier
+  const [prevSession, setPrevSession] = useState(session);
+  if (session !== prevSession) {
+    setPrevSession(session);
+    setReadyFor(null);
+  }
+  const ready = session !== null && readyFor === session;
   const lastKeyRef = useRef<string | null>(null);
+
+  // Toujours la dernière version du gestionnaire et de l'état, sans relancer les abonnements
+  const applyCommand = useEffectEvent((cmdId: string, cmd: LiveCommand) => onCommand(cmdId, cmd));
+  const publishCurrentState = useEffectEvent((id: string, slug: string) => publishLiveState(id, state, slug));
 
   // Actions de la télécommande en attente : appliquées une à une, dans l'ordre de saisie
   useEffect(() => {
-    setReady(false);
     lastKeyRef.current = null;
     if (!enabled || !publicId) return;
     let cancelled = false;
@@ -53,7 +61,7 @@ export function useLiveHost({ publicId, clubSlug, enabled, state, onCommand }: O
         for (const c of fresh) {
           if (cancelled) return;
           try {
-            onCommandRef.current(c.id, c);
+            applyCommand(c.id, c);
           } catch (err) {
             console.warn("[Live] action non appliquée :", err);
           }
@@ -61,10 +69,10 @@ export function useLiveHost({ publicId, clubSlug, enabled, state, onCommand }: O
           await new Promise((r) => setTimeout(r, 120));
           markCommandApplied(publicId, c.id).catch((err) => console.warn("[Live] marquage :", err?.message));
         }
-        if (isFirst && !cancelled) setReady(true);
+        if (isFirst && !cancelled) setReadyFor(publicId);
       });
     }, () => {
-      if (!cancelled) setReady(true);
+      if (!cancelled) setReadyFor(publicId);
     });
     return () => {
       cancelled = true;
@@ -79,7 +87,7 @@ export function useLiveHost({ publicId, clubSlug, enabled, state, onCommand }: O
     if (key === lastKeyRef.current) return;
     const timer = setTimeout(() => {
       lastKeyRef.current = key;
-      publishLiveState(publicId, stateRef.current, clubSlug).catch((err) => {
+      publishCurrentState(publicId, clubSlug).catch((err) => {
         lastKeyRef.current = null;
         console.warn("[Live] publication :", err?.message);
       });

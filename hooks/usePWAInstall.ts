@@ -1,39 +1,43 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useClientValue } from '@/lib/useClientValue';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
+const STANDALONE_QUERY = '(display-mode: standalone)';
+
+/** Application ouverte depuis l'écran d'accueil (déjà installée) */
+const readStandalone = () =>
+  window.matchMedia(STANDALONE_QUERY).matches ||
+  (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+
+const subscribeStandalone = (onChange: () => void) => {
+  const query = window.matchMedia(STANDALONE_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+};
+
+const readIsIOS = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+
 export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [justInstalled, setJustInstalled] = useState(false);
+  // Lus dans le navigateur sans effet (false au rendu serveur et à l'hydratation)
+  const isStandalone = useClientValue(readStandalone, false, subscribeStandalone);
+  const isIOS = useClientValue(readIsIOS, false);
 
   useEffect(() => {
-    // Detect standalone mode (already installed)
-    const isStandalone =
-      typeof window !== 'undefined' &&
-      (window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as unknown as { standalone?: boolean }).standalone === true);
-    setIsInstalled(isStandalone);
-
-    // Detect iOS devices
-    if (typeof window !== 'undefined') {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-      setIsIOS(isIOSDevice);
-    }
-
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
     const handleAppInstalled = () => {
-      setIsInstalled(true);
+      setJustInstalled(true);
       setDeferredPrompt(null);
     };
 
@@ -51,7 +55,7 @@ export function usePWAInstall() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
-      setIsInstalled(true);
+      setJustInstalled(true);
       setDeferredPrompt(null);
       return true;
     }
@@ -60,7 +64,7 @@ export function usePWAInstall() {
 
   return {
     isInstallable: !!deferredPrompt,
-    isInstalled,
+    isInstalled: isStandalone || justInstalled,
     isIOS,
     install,
   };

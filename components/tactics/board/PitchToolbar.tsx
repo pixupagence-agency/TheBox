@@ -70,7 +70,8 @@ export interface PitchToolbarProps {
   showPlayerRoles: boolean;
   t: (typeof translations)[Language];
   terrainComplet: boolean;
-  toolbarScroll: { scrollerRef: React.RefObject<HTMLDivElement | null>; canScrollLeft: boolean; canScrollRight: boolean; scrollByPage: (direction: 1 | -1) => void; onWheel: (e: React.WheelEvent<HTMLDivElement>) => void; };
+  toolbarScrollerRef: React.RefObject<HTMLDivElement | null>;
+  toolbarScroll: { canScrollLeft: boolean; canScrollRight: boolean; scrollByPage: (direction: 1 | -1) => void; onWheel: (e: React.WheelEvent<HTMLDivElement>) => void; };
   topToolBtnClass: (isActive: boolean) => string;
   topToolGroupClass: string;
   wallPopover: { team: WallTeam; left: number; top: number; } | null;
@@ -138,6 +139,7 @@ export default function PitchToolbar({
   t,
   terrainComplet,
   toolbarScroll,
+  toolbarScrollerRef,
   topToolBtnClass,
   topToolGroupClass,
   wallPopover,
@@ -157,7 +159,7 @@ export default function PitchToolbar({
               {renderToolbarScrollArrow("left")}
               {/* Zone des groupes : défilement au doigt, à la molette ou par les flèches de bord */}
               <div
-                ref={toolbarScroll.scrollerRef}
+                ref={toolbarScrollerRef}
                 onWheel={toolbarScroll.onWheel}
                 className="flex items-center flex-nowrap gap-[inherit] flex-1 min-w-0 py-1 -my-1 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               >

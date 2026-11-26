@@ -2,7 +2,7 @@
 
 // Module Recording (phase 1) : import d'une séquence vidéo, analyse image par image, consignes dessinées
 // sur des arrêts sur image, bibliothèque taguée enregistrée sur l'appareil et export d'image annotée.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowUpRight, ChevronsLeft, Circle, Crosshair, Download, Eraser, Film, Focus, Link2, Moon, MousePointer2, PenTool, Plus, Save,
@@ -129,6 +129,12 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
   const [calibrating, setCalibrating] = useState(false);
   type Snapshot = { freezes: Freeze[]; tracks: Track[] };
   const history = useRef<Snapshot[]>([]);
+  // Taille de l'historique, en état : le bouton « Annuler » se met à jour avec lui
+  const [historySize, setHistorySize] = useState(0);
+  const pushHistory = useCallback((snap: Snapshot) => {
+    history.current = [...history.current.slice(-49), snap];
+    setHistorySize(history.current.length);
+  }, []);
   const moveSnapshot = useRef<Snapshot | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   /** Glissé en cours sur un joueur suivi : point d'appui, pour ignorer les micro-mouvements du doigt */
@@ -159,16 +165,19 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
     toastTimer.current = msg ? window.setTimeout(() => setToast(null), 2600) : null;
   };
 
-  const refreshLibrary = useCallback(async () => {
-    try {
-      const [sequences, stills] = await Promise.all([listSequences(), listImages()]);
-      setLibrary(sequences);
-      setImages(stills);
-      setStorage(await storageEstimate());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Bibliothèque indisponible.");
-    }
-  }, []);
+  // (l'état n'est modifié qu'à l'arrivée des données)
+  const refreshLibrary = useCallback(
+    () =>
+      Promise.all([listSequences(), listImages(), storageEstimate()]).then(
+        ([sequences, stills, estimate]) => {
+          setLibrary(sequences);
+          setImages(stills);
+          setStorage(estimate);
+        },
+        (e) => setError(e instanceof Error ? e.message : "Bibliothèque indisponible.")
+      ),
+    []
+  );
 
   useEffect(() => {
     void refreshLibrary();
@@ -202,12 +211,19 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
   }, [seq, paused, time, tolerance]);
 
   // Lecture : suivi de la position, pause automatique sur les arrêts sur image, boucle du clip
+  // Dernières valeurs pour la boucle de lecture et les gestionnaires (mises à jour après chaque rendu validé)
   const seqRef = useRef(seq);
-  seqRef.current = seq;
-  // Une autre séquence (ou aucune) : le calage en cours se referme
-  useEffect(() => { setCalibrating(false); }, [seq?.id]);
   const loopRef = useRef(loop);
-  loopRef.current = loop;
+  useLayoutEffect(() => {
+    seqRef.current = seq;
+    loopRef.current = loop;
+  });
+  // Une autre séquence (ou aucune) : le calage en cours se referme (ajusté pendant le rendu, sans effet)
+  const [calibratedSeqId, setCalibratedSeqId] = useState(seq?.id);
+  if (calibratedSeqId !== seq?.id) {
+    setCalibratedSeqId(seq?.id);
+    setCalibrating(false);
+  }
   useEffect(() => {
     let raf = 0;
     let prev = 0;
@@ -269,17 +285,17 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
   const setFreezes = useCallback((fn: (f: Freeze[]) => Freeze[], recordHistory = true) => {
     // Historique enregistré hors du « updater » (exécuté deux fois en mode strict)
     const current = seqRef.current;
-    if (recordHistory && current) history.current = [...history.current.slice(-49), { freezes: current.freezes, tracks: current.tracks || [] }];
+    if (recordHistory && current) pushHistory({ freezes: current.freezes, tracks: current.tracks || [] });
     setSeq((s) => (s ? { ...s, freezes: fn(s.freezes) } : s));
     setDirty(true);
-  }, []);
+  }, [pushHistory]);
 
   const setTracks = useCallback((fn: (t: Track[]) => Track[], recordHistory = true) => {
     const current = seqRef.current;
-    if (recordHistory && current) history.current = [...history.current.slice(-49), { freezes: current.freezes, tracks: current.tracks || [] }];
+    if (recordHistory && current) pushHistory({ freezes: current.freezes, tracks: current.tracks || [] });
     setSeq((s) => (s ? { ...s, tracks: fn(s.tracks || []) } : s));
     setDirty(true);
-  }, []);
+  }, [pushHistory]);
 
   const confirmLeave = async () => {
     if (!dirty) return true;
@@ -304,6 +320,7 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
     setTracking(null);
     setError(null);
     history.current = [];
+    setHistorySize(0);
   };
 
   const startSequence = (s: Sequence, src: StageSource, blob: Blob | null) => {
@@ -504,7 +521,7 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
 
   const onMoveShape = (id: string, dx: number, dy: number, commit: boolean) => {
     if (commit) {
-      if (moveSnapshot.current) history.current = [...history.current.slice(-49), moveSnapshot.current];
+      if (moveSnapshot.current) pushHistory(moveSnapshot.current);
       moveSnapshot.current = null;
       return;
     }
@@ -526,6 +543,7 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
 
   const undo = () => {
     const last = history.current.pop();
+    setHistorySize(history.current.length);
     if (!last) return;
     setSeq((s) => (s ? { ...s, freezes: last.freezes, tracks: last.tracks } : s));
     setDirty(true);
@@ -566,7 +584,7 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
         // Appui sur un joueur suivi : sélection, et glisser corrige sa position à cet instant
         setSelectedTrackId(hitId);
         trackDrag.current = { id: hitId, t, x: p.x, y: p.y, moved: false };
-        history.current = [...history.current.slice(-49), { freezes: seq.freezes, tracks }];
+        pushHistory({ freezes: seq.freezes, tracks });
         return;
       }
       const selected = tracks.find((tr) => tr.id === selectedTrackId);
@@ -634,7 +652,7 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
     const seqId = seq.id;
     const tol = 0.5 / fps;
     const original = tr.keys;
-    history.current = [...history.current.slice(-49), { freezes: seq.freezes, tracks }];
+    pushHistory({ freezes: seq.freezes, tracks });
     // Les positions situées au-delà du point de départ (dans le sens du suivi) sont recalculées
     const kept = (keys: TrackKey[]) => insertKey(keys.filter((k) => (direction > 0 ? k.t < from.t - tol : k.t > from.t + tol)), { t: from.t, x: from.x, y: from.y });
     setTracks((list) => list.map((x) => (x.id === trackId ? { ...x, keys: kept(x.keys) } : x)), false);
@@ -1078,7 +1096,7 @@ export default function RecordingEditor({ teamId, matchId }: { teamId?: string; 
           </div>
           {separator}
           <div className={`flex items-center gap-1 h-8 shrink-0 ${th.toolGroup}`}>
-            <button type="button" disabled={!seq || Boolean(tracking) || history.current.length === 0} className={`${barBtn} ${toolIdle}`} onClick={undo} title="Annuler (Ctrl+Z)" aria-label="Annuler"><Undo2 className="h-[18px] w-[18px] shrink-0" /></button>
+            <button type="button" disabled={!seq || Boolean(tracking) || historySize === 0} className={`${barBtn} ${toolIdle}`} onClick={undo} title="Annuler (Ctrl+Z)" aria-label="Annuler"><Undo2 className="h-[18px] w-[18px] shrink-0" /></button>
             <button type="button" disabled={!activeFreeze} className={`${barBtn} ${toolIdle}`} onClick={clearFreeze} title="Effacer les consignes de cette image" aria-label="Effacer l'image"><Eraser className="h-[18px] w-[18px] shrink-0" /></button>
           </div>
           {separator}

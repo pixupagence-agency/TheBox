@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { 
   Users, ArrowRight, Zap, Activity, LogIn, UserPlus, 
   Trophy, Target, Check, Share2, HelpCircle, FileText, Scale, Mail,
@@ -40,10 +41,12 @@ export default function LandingPage({
   language: propLang
 }: LandingPageProps) {
   const [currentLang, setCurrentLang] = React.useState<Language>(() => propLang || getStoredLanguage());
-
-  React.useEffect(() => {
+  // Langue imposée par le parent : reprise dès qu'elle change (ajusté pendant le rendu, sans effet)
+  const [prevPropLang, setPrevPropLang] = React.useState(propLang);
+  if (propLang !== prevPropLang) {
+    setPrevPropLang(propLang);
     if (propLang) setCurrentLang(propLang);
-  }, [propLang]);
+  }
 
   React.useEffect(() => {
     const handleLangChange = (e: any) => {
@@ -248,11 +251,13 @@ export default function LandingPage({
         
         {/* Grass Turf Background Image (Displayed Crisp & Pure with Official Logo Watermark) */}
         <div className="absolute inset-0 z-0 select-none overflow-hidden flex items-center justify-center">
-          <img
+          <Image
             src="/landing-bg.jpg"
             alt="The Box"
-            className="w-full h-full object-cover object-center transform filter brightness-105 contrast-105"
-            referrerPolicy="no-referrer"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center transform filter brightness-105 contrast-105"
           />
 
           {/* Official 'The Box' Tactical Logo Emblem chalked on the lawn */}
@@ -448,10 +453,12 @@ export default function LandingPage({
                 >
                   {/* Image container with badges and overlay */}
                   <div className="relative aspect-[16/11] w-full overflow-hidden bg-slate-900">
-                    <img
+                    <Image
                       src={uc.image}
                       alt={uc.title}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#11141a] via-transparent to-black/40 opacity-90" />
                     

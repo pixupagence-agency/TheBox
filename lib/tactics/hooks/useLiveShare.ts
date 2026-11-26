@@ -112,7 +112,9 @@ const liveLineupFrame = keyframes[0];
     .filter((s) => s.type !== "player_b" && s.removalReason !== "red_card")
     .map((s) => ({ id: String(s.id), n: s.number, name: s.name || "" })),
 }), [currentTokens, substitutes, liveLineupFrame, activeSport]);
+  // Chrono public ancré sur l'heure réelle : recalculé à chaque seconde du chrono local (rendu voulu impur)
   const liveClock = liveRunning
+  // eslint-disable-next-line react-hooks/purity -- instant de départ déduit de l'heure courante
   ? { elapsed: 0, runningSince: Date.now() - liveTimerSeconds * 1000 }
   : { elapsed: liveTimerSeconds, runningSince: null };
   const liveState: LiveState = {

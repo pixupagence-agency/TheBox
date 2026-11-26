@@ -88,6 +88,8 @@ export default function LiveRemote({ id }: { id: string }) {
       // Le jeton ne reste pas dans la barre d'adresse (captures d'écran, historique partagé)
       window.history.replaceState(null, "", window.location.pathname);
     }
+    // Effet voulu : adresse, historique et stockage n'existent que dans le navigateur, après l'hydratation
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronisation avec le navigateur au montage
     setQueue(readJson<Queued[]>(queueKey(id), []));
     setOnline(navigator.onLine);
     if (c && (c.token || c.code)) {

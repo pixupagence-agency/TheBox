@@ -28,10 +28,12 @@ interface LandingContactSectionProps {
 
 export default function LandingContactSection({ isAdmin = false, language: propLang }: LandingContactSectionProps) {
   const [currentLang, setCurrentLang] = useState<Language>(() => propLang || getStoredLanguage());
-
-  useEffect(() => {
+  // Langue imposée par le parent : reprise dès qu'elle change (ajusté pendant le rendu, sans effet)
+  const [prevPropLang, setPrevPropLang] = useState(propLang);
+  if (propLang !== prevPropLang) {
+    setPrevPropLang(propLang);
     if (propLang) setCurrentLang(propLang);
-  }, [propLang]);
+  }
 
   useEffect(() => {
     const handleLangChange = (e: any) => {

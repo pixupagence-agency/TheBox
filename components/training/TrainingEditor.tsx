@@ -67,10 +67,12 @@ export default function TrainingEditor() {
     return () => clearTimeout(t);
   }, [state.diagram]);
 
-  // Une sélection ouvre le panneau des propriétés sur petit écran
-  useEffect(() => {
+  // Une sélection ouvre le panneau des propriétés sur petit écran (ajusté pendant le rendu, sans effet)
+  const [prevSelection, setPrevSelection] = useState({ ids: state.selectedIds, armed });
+  if (prevSelection.ids !== state.selectedIds || prevSelection.armed !== armed) {
+    setPrevSelection({ ids: state.selectedIds, armed });
     if (state.selectedIds.length > 0 && !armed) setPanelOpen(true);
-  }, [state.selectedIds, armed]);
+  }
 
   const placeItem = useCallback((item: PaletteItem, x: number, y: number) => {
     if (!item.template) return;

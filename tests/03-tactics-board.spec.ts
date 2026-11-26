@@ -17,8 +17,9 @@ async function connectToTacticsBoard(page: any) {
   await loginForm.locator('input[type="password"]').fill(COACH.password);
   await loginForm.locator('button[type="submit"]').click();
 
-  // Attente de l'affichage du terrain de football
-  await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 15000 });
+  // Attente de l'affichage du terrain de football. Le premier test du fichier ouvre le tableau pour la
+  // première fois : le serveur de développement le compile alors (12 à 15 s mesurées), d'où une marge large.
+  await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 45000 });
 }
 
 test.describe('Section 3 : Tableau Tactique 2D & Manipulation des Éléments (FT-TAC)', () => {

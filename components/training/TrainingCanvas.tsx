@@ -2,7 +2,7 @@
 
 // Module Training : canevas Konva de l'éditeur (vue de dessus).
 // Unités du monde = mètres. La scène porte l'échelle (pixels par mètre) et le décalage de la vue.
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useEffectEvent, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Konva from "konva";
 import { Circle, Group, Layer, Line, Rect, Shape, Stage, Transformer } from "react-konva";
 import { ElementShape, ZoneBody, arrowPath, boostFor } from "./ElementShape";
@@ -232,10 +232,13 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
   const trRef = useRef<Konva.Transformer>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [view, setView] = useState({ scale: 8, x: 0, y: 0 });
+  // Dernières valeurs pour les gestionnaires d'événements natifs (mises à jour après chaque rendu validé)
   const viewRef = useRef(view);
-  viewRef.current = view;
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useLayoutEffect(() => {
+    viewRef.current = view;
+    stateRef.current = state;
+  });
 
   const gesture = useRef<Gesture>({ type: "none" });
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -269,8 +272,15 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
     setView({ scale: s, x: (size.w - pitch.length * s) / 2, y: (size.h - pitch.width * s) / 2 });
   }, [fitScale, size.w, size.h, pitch.length, pitch.width]);
 
-  // Recadrage quand le terrain ou la taille de l'écran change
-  useEffect(() => { fit(); }, [fit]);
+  // Recadrage quand le terrain ou la taille de l'écran change (ajusté pendant le rendu, sans effet)
+  const fitKey = `${size.w}|${size.h}|${pitch.length}|${pitch.width}`;
+  const [prevFitKey, setPrevFitKey] = useState(fitKey);
+  if (fitKey !== prevFitKey) {
+    setPrevFitKey(fitKey);
+    if (size.w && size.h) {
+      setView({ scale: fitScale, x: (size.w - pitch.length * fitScale) / 2, y: (size.h - pitch.width * fitScale) / 2 });
+    }
+  }
 
   const clampScale = useCallback((s: number) => Math.min(150, Math.max(fitScale * 0.4, s)), [fitScale]);
 
@@ -419,15 +429,27 @@ const TrainingCanvas = forwardRef<TrainingCanvasHandle, Props>(function Training
     onPolygonProgress?.(0);
   }, [armed, dispatch, onPolygonProgress]);
 
-  useEffect(() => {
-    if (!polygonCommand) return;
-    if (polygonCommand.action === "finish") finishPolygon(polygon);
+  // Commande « Terminer / Annuler le polygone » venue de la barre d'outils : traitée une fois par commande,
+  // avec le polygone en cours au moment où elle arrive
+  const runPolygonCommand = useEffectEvent((command: NonNullable<typeof polygonCommand>) => {
+    if (command.action === "finish") finishPolygon(polygon);
     else { setPolygon([]); onPolygonProgress?.(0); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => {
+    // Effet voulu : la commande arrive du parent comme un événement (nouvel objet à chaque clic)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- réaction à une commande du parent
+    if (polygonCommand) runPolygonCommand(polygonCommand);
   }, [polygonCommand]);
 
-  // Changement d'outil : on abandonne le polygone en cours
-  useEffect(() => { setPolygon([]); onPolygonProgress?.(0); setDraft(null); }, [armed, onPolygonProgress]);
+  // Changement d'outil : on abandonne le polygone et le tracé en cours (ajusté pendant le rendu),
+  // puis le parent est prévenu que le polygone est vide
+  const [prevArmed, setPrevArmed] = useState(armed);
+  if (prevArmed !== armed) {
+    setPrevArmed(armed);
+    setPolygon([]);
+    setDraft(null);
+  }
+  useEffect(() => { onPolygonProgress?.(0); }, [armed, onPolygonProgress]);
 
   // --- Interactions sur la scène ---
   const pointerPos = () => stageRef.current?.getPointerPosition() || { x: 0, y: 0 };

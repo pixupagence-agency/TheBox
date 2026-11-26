@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useEffectEvent, useRef, useCallback, useMemo } from "react";
 import html2canvas from "html2canvas";
 import { toPng } from "html-to-image";
 import Pitch from "./Pitch";
@@ -167,6 +167,9 @@ interface TacticsBoardProps {
   onOpenSupportModal?: () => void;
 }
 
+/** Étape vide (constante : une liste neuve à chaque rendu relancerait les effets qui en dépendent) */
+const NO_TOKENS: Token[] = [];
+
 export default function TacticsBoard({
   coaches,
   setCoaches,
@@ -195,7 +198,8 @@ export default function TacticsBoard({
 
   // Barre d'outils du terrain sur une seule ligne : tous les outils sont affichés d'emblée
   // et la ligne défile horizontalement quand l'écran est trop étroit (doigt, molette ou flèches de bord).
-  const toolbarScroll = useHorizontalScroll<HTMLDivElement>();
+  // La ref est séparée du reste : le compilateur React ne lit pas un objet qui contient une ref pendant le rendu
+  const { scrollerRef: toolbarScrollerRef, ...toolbarScroll } = useHorizontalScroll<HTMLDivElement>();
 
   // Active coach helper & live trial calculation
   const activeCoach = coaches.find(c => c.id === activeCoachId) || coaches[0];
@@ -241,13 +245,10 @@ export default function TacticsBoard({
     return isPaidSubscriber;
   });
 
+  // Abonnement payant constaté : retenu tout de suite (ajusté pendant le rendu), puis mémorisé sur l'appareil
+  if (isPaidSubscriber && !hasHadPaidSubscription) setHasHadPaidSubscription(true);
   useEffect(() => {
-    if (isPaidSubscriber) {
-      setHasHadPaidSubscription(true);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(`thebox_has_had_subscription_${coachId}`, "true");
-      }
-    }
+    if (isPaidSubscriber) localStorage.setItem(`thebox_has_had_subscription_${coachId}`, "true");
   }, [isPaidSubscriber, coachId]);
 
   // Internationalization (i18n) state: French (default) or English
@@ -257,12 +258,16 @@ export default function TacticsBoard({
   });
   const t = translations[currentLang];
 
+  // Langue du profil du coach : reprise quand elle change (ajusté pendant le rendu), puis mémorisée sur l'appareil
+  const coachLanguage = activeCoach?.language;
+  const [prevCoachLanguage, setPrevCoachLanguage] = useState(coachLanguage);
+  if (coachLanguage !== prevCoachLanguage) {
+    setPrevCoachLanguage(coachLanguage);
+    if (coachLanguage && coachLanguage !== currentLang) setCurrentLang(coachLanguage);
+  }
   useEffect(() => {
-    if (activeCoach?.language && activeCoach.language !== currentLang) {
-      setCurrentLang(activeCoach.language);
-      setStoredLanguage(activeCoach.language);
-    }
-  }, [activeCoach?.language]);
+    if (coachLanguage && coachLanguage !== getStoredLanguage()) setStoredLanguage(coachLanguage);
+  }, [coachLanguage]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -301,9 +306,13 @@ export default function TacticsBoard({
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
   const [scheduledDeletionAt, setScheduledDeletionAt] = useState<string | null>(activeCoach?.deletionScheduledAt ?? null);
-  useEffect(() => {
-    setScheduledDeletionAt(activeCoach?.deletionScheduledAt ?? null);
-  }, [activeCoach?.deletionScheduledAt]);
+  // Date reçue du serveur : reprise quand elle change (ajusté pendant le rendu, sans effet)
+  const serverDeletionAt = activeCoach?.deletionScheduledAt ?? null;
+  const [prevServerDeletionAt, setPrevServerDeletionAt] = useState(serverDeletionAt);
+  if (serverDeletionAt !== prevServerDeletionAt) {
+    setPrevServerDeletionAt(serverDeletionAt);
+    setScheduledDeletionAt(serverDeletionAt);
+  }
   const handleDeleteOwnAccount = async () => {
     if (deleteAccountConfirm.trim().toUpperCase() !== "SUPPRIMER" || isDeletingAccount) return;
     const user = auth.currentUser;
@@ -679,9 +688,12 @@ export default function TacticsBoard({
 
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
+      // Voulu : au démontage, on arrête la reconnaissance vocale en cours (créée après le montage)
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- ref d'objet, pas de nœud DOM
+      const recognition = recognitionRef.current;
+      if (recognition) {
         try {
-          recognitionRef.current.stop();
+          recognition.stop();
         } catch (e) { }
       }
     };
@@ -1332,12 +1344,12 @@ export default function TacticsBoard({
   });
 
   // Si la période enregistrée appartient à un autre sport (ex. "1MT" en basket), on la convertit
-  useEffect(() => {
-    if (currentPeriod === "MI-TEMPS" || currentPeriod === "FIN") return;
-    if (livePeriodConfig.periods.includes(currentPeriod)) return;
+  // (ajusté pendant le rendu, sans effet)
+  if (currentPeriod !== "MI-TEMPS" && currentPeriod !== "FIN" && !livePeriodConfig.periods.includes(currentPeriod)) {
     const secondHalf = currentPeriod === "2MT" || currentPeriod === "QT3" || currentPeriod === "QT4";
-    setCurrentPeriod(livePeriodConfig.periods[secondHalf ? livePeriodConfig.breakAfterIndex + 1 : 0]);
-  }, [currentPeriod, livePeriodConfig]);
+    const converted = livePeriodConfig.periods[secondHalf ? livePeriodConfig.breakAfterIndex + 1 : 0];
+    if (converted) setCurrentPeriod(converted);
+  }
 
   const [liveTimerSeconds, setLiveTimerSeconds] = useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -1470,6 +1482,7 @@ export default function TacticsBoard({
       awayScore,
       score: scoreFormatted,
       isFinished: true,
+      // eslint-disable-next-line react-hooks/purity -- action du coach (fin de match), jamais pendant le rendu
       finishedAtMs: Date.now(),
       status: `Terminé (${scoreFormatted})`,
       finishedAt: new Date().toLocaleDateString(undefined, {
@@ -1515,22 +1528,23 @@ export default function TacticsBoard({
   }, [isLiveMatchMode, isLiveTimerRunning]);
 
   // Compte à rebours de la mi-temps (15 minutes)
+  // Chaque seconde : une seconde de moins ; à zéro, la pause s'arrête et le coach est prévenu
+  const tickHalftime = useEffectEvent(() => {
+    if (halftimeSecondsLeft > 1) {
+      setHalftimeSecondsLeft(halftimeSecondsLeft - 1);
+      return;
+    }
+    setHalftimeSecondsLeft(0);
+    setIsHalftimeRunning(false);
+    const nextPeriod = livePeriodConfig.periods[livePeriodConfig.breakAfterIndex + 1];
+    setSleekToastMessage(`⏱️ Fin de la pause (15:00) ! Cliquez sur ${nextPeriod} pour relancer le match.`);
+    setTimeout(() => setSleekToastMessage(null), 4500);
+  });
   useEffect(() => {
     if (!isLiveMatchMode || !isHalftimeRunning || currentPeriod !== "MI-TEMPS") return;
-    const interval = setInterval(() => {
-      setHalftimeSecondsLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
+    const interval = setInterval(() => tickHalftime(), 1000);
     return () => clearInterval(interval);
   }, [isLiveMatchMode, isHalftimeRunning, currentPeriod]);
-
-  useEffect(() => {
-    if (halftimeSecondsLeft === 0 && isHalftimeRunning) {
-      setIsHalftimeRunning(false);
-      const nextPeriod = livePeriodConfig.periods[livePeriodConfig.breakAfterIndex + 1];
-      setSleekToastMessage(`⏱️ Fin de la pause (15:00) ! Cliquez sur ${nextPeriod} pour relancer le match.`);
-      setTimeout(() => setSleekToastMessage(null), 4500);
-    }
-  }, [halftimeSecondsLeft, isHalftimeRunning, livePeriodConfig]);
 
   const formatLiveTime = (totalSecs: number) => {
     const m = Math.floor(totalSecs / 60);
@@ -1679,6 +1693,7 @@ export default function TacticsBoard({
       setIsMultiTeamModalOpen(true);
       return;
     }
+    // eslint-disable-next-line react-hooks/purity -- action du coach (nouveau match), jamais pendant le rendu
     const newId = `match_${Date.now()}`;
     const newM = {
       id: newId,
@@ -1756,21 +1771,21 @@ export default function TacticsBoard({
   };
 
   // Re-initialize pitch tokens when activeSport changes
-  const prevSportRef = useRef(activeSport);
-  useEffect(() => {
-    if (prevSportRef.current !== activeSport) {
-      prevSportRef.current = activeSport;
-      const defaultTokens = getDefaultPlayersForSport(activeSport);
-      setKeyframes([defaultTokens]);
-      setCurrentFrameIdx(0);
-      setDrawingActions([]);
-    }
-  }, [activeSport]);
+  // (ajusté pendant le rendu, sans effet)
+  const [prevSport, setPrevSport] = useState(activeSport);
+  if (prevSport !== activeSport) {
+    setPrevSport(activeSport);
+    setKeyframes([getDefaultPlayersForSport(activeSport)]);
+    setCurrentFrameIdx(0);
+    setDrawingActions([]);
+  }
 
   // Changement d'équipe : le format de l'équipe reprend la main sur celui d'un schéma chargé
-  useEffect(() => {
+  const [prevTeamId, setPrevTeamId] = useState(activeTeamId);
+  if (prevTeamId !== activeTeamId) {
+    setPrevTeamId(activeTeamId);
     setSchemaFormatOverride(null);
-  }, [activeTeamId]);
+  }
 
   // Changement de format (autre équipe, format modifié) : effectif de départ du nouveau format,
   // sauf si le terrain affiche déjà un effectif de la bonne taille (match ou schéma rechargé)
@@ -1795,11 +1810,8 @@ export default function TacticsBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFormat]);
 
-  // L'étape affichée reste dans les bornes de l'animation (après une remise à zéro du terrain)
-  useEffect(() => {
-    if (currentFrameIdx > keyframes.length - 1) setCurrentFrameIdx(Math.max(0, keyframes.length - 1));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyframes.length]);
+  // L'étape affichée reste dans les bornes de l'animation (après une remise à zéro du terrain ; pendant le rendu)
+  if (currentFrameIdx > keyframes.length - 1) setCurrentFrameIdx(Math.max(0, keyframes.length - 1));
 
   // Synchronize matches list and active match when activeTeamId changes
   useEffect(() => {
@@ -1886,12 +1898,18 @@ export default function TacticsBoard({
     }
   };
 
-  useEffect(() => {
-    // Réinitialiser automatiquement l'échelle et la position du terrain et des joueurs à 100% lors du changement de mode (plein écran ou normal, vue terrain, ratio, mode live)
+  // Changement de mode (plein écran ou normal, vue terrain, ratio, mode live) : échelle et position du terrain
+  // et des joueurs remises à 100 % (ajusté pendant le rendu, sans effet)
+  const displayModeKey = `${isPitchFullscreen}|${isBoardFullscreen}|${terrainComplet}|${aspectRatioMode}|${isLiveMatchMode}`;
+  const [prevDisplayModeKey, setPrevDisplayModeKey] = useState(displayModeKey);
+  if (prevDisplayModeKey !== displayModeKey) {
+    setPrevDisplayModeKey(displayModeKey);
     setZoomScale(100);
     setPitchPan({ x: 0, y: 0 });
     setPlayerScale(100);
+  }
 
+  useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && isPitchFullscreen) {
         setIsPitchFullscreen(false);
@@ -1908,16 +1926,17 @@ export default function TacticsBoard({
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isPitchFullscreen, isBoardFullscreen, terrainComplet, aspectRatioMode, isLiveMatchMode]);
+  }, [isPitchFullscreen]);
 
-  const currentTokens = keyframes[currentFrameIdx] || [];
+  const currentTokens = keyframes[currentFrameIdx] ?? NO_TOKENS;
 
   // Numéros du banc : les remplaçants générés (« Joueur 12 », « Joueur 12 Adv ») suivent directement
   // le dernier numéro des titulaires (foot à 8 : 9, 10… ; foot à 11 : 12, 13…).
   // Les remplaçants renommés par le coach gardent leur numéro.
   const starterNumbersKeyA = currentTokens.filter((t) => t.type === "player_a").map((t) => t.number || 0).join(",");
   const starterNumbersKeyB = currentTokens.filter((t) => t.type === "player_b").map((t) => t.number || 0).join(",");
-  useEffect(() => {
+  // (calculé pendant le rendu, sans effet : l'état n'est modifié que si un numéro doit changer)
+  {
     const renumber = (bench: any[], starterKey: string, isAway: boolean) => {
       const starterNums = starterKey ? starterKey.split(",").map(Number).filter((n) => n > 0) : [];
       // Remplaçant du banc par défaut (identifiant s1… / opp_s1…) dont le nom n'a pas été personnalisé
@@ -1955,8 +1974,7 @@ export default function TacticsBoard({
       setOpponentSubstitutes(away.updated);
       setOpponentSetPieceRoles((prev) => renameRoles(prev, away.renames));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [starterNumbersKeyA, starterNumbersKeyB, substitutes, opponentSubstitutes]);
+  }
 
   // Cache et nettoyage automatique systématique du fond des photos de joueurs (de base, sans bouton requis)
   const [autoTransparentCache, setAutoTransparentCache] = useState<Record<string, string>>({});
@@ -2074,9 +2092,12 @@ export default function TacticsBoard({
   const drawAllStrokes = () =>
     drawAllStrokesImpl({ activeTool, aspectRatioMode, brushPointsRef, canvasRef, currentActionPoints, curveHandleIdx, drawArrowhead, drawColor, drawingActions, drawingTool, drawSize, isDrawing, selectedStrokeIndex });
 
+  // Toujours la dernière version du dessin (réglages de trait compris), sans en faire une dépendance
+  const redrawStrokes = useEffectEvent(() => drawAllStrokes());
+
   // Render canvas drawings
   useEffect(() => {
-    drawAllStrokes();
+    redrawStrokes();
   }, [drawingActions, currentActionPoints, currentFrameIdx, selectedStrokeIndex, activeTool]);
 
   // Adjust canvas size to match layout bounding box
@@ -2088,7 +2109,7 @@ export default function TacticsBoard({
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width;
       canvas.height = rect.height;
-      drawAllStrokes();
+      redrawStrokes();
     };
 
     handleResize();
@@ -2794,13 +2815,6 @@ export default function TacticsBoard({
   const sanitizeSquadNumbers = (targetTeam: "home" | "away") =>
     sanitizeSquadNumbersImpl({ currentTokens, opponentSubstitutes, setKeyframes, setOpponentSubstitutes, setSubstitutes, substitutes }, targetTeam);
 
-  // Automatically sanitize squad numbers on modal open
-  useEffect(() => {
-    if (isSetPiecesOpen) {
-      sanitizeSquadNumbers("home");
-      sanitizeSquadNumbers("away");
-    }
-  }, [isSetPiecesOpen]);
 
   // Assign Unique Number to a player without duplicates (atomic swap if conflict)
   const handleAssignUniqueNumber = (targetId: string, isStarter: boolean, rawValue: string | number, targetTeam?: "home" | "away") =>
@@ -2951,20 +2965,27 @@ export default function TacticsBoard({
     if (ok) applyTeamRosterToGroup();
   };
 
-  // PRO : à l'ouverture de la fenêtre Effectif, un groupe encore vierge (Joueur 1… 26) reprend
-  // automatiquement l'effectif de l'équipe, pour n'afficher que ses joueurs
-  useEffect(() => {
-    if (!isSetPiecesOpen || !isProOrAdmin) return;
-    const roster = teamRostersMap[activeTeamId] || [];
-    if (roster.length === 0) return;
-    const rosterIds = new Set(roster.map((p) => p.id));
-    const group: { name?: string; rosterId?: string }[] = [...currentTokens.filter((t) => t.type === "player_a"), ...substitutes];
-    const linkedHere = group.some((p) => p.rosterId && rosterIds.has(p.rosterId));
-    // Groupe vierge, ou entièrement composé des joueurs d'une autre équipe (changement d'équipe sans match)
-    const fromOtherTeam = group.length > 0 && group.every((p) => p.rosterId && !rosterIds.has(p.rosterId));
-    if (group.length > 0 && !linkedHere && (isGenericGroup(group) || fromOtherTeam)) applyTeamRosterToGroup();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSetPiecesOpen]);
+  // À l'ouverture de la fenêtre Effectif (ajusté pendant le rendu, sans effet) :
+  // - numéros en double nettoyés dans les deux équipes ;
+  // - PRO : un groupe encore vierge (Joueur 1… 26) reprend automatiquement l'effectif de l'équipe,
+  //   pour n'afficher que ses joueurs.
+  const [wasSetPiecesOpen, setWasSetPiecesOpen] = useState(isSetPiecesOpen);
+  if (wasSetPiecesOpen !== isSetPiecesOpen) {
+    setWasSetPiecesOpen(isSetPiecesOpen);
+    if (isSetPiecesOpen) {
+      sanitizeSquadNumbers("home");
+      sanitizeSquadNumbers("away");
+      const roster = isProOrAdmin ? teamRostersMap[activeTeamId] || [] : [];
+      if (roster.length > 0) {
+        const rosterIds = new Set(roster.map((p) => p.id));
+        const group: { name?: string; rosterId?: string }[] = [...currentTokens.filter((t) => t.type === "player_a"), ...substitutes];
+        const linkedHere = group.some((p) => p.rosterId && rosterIds.has(p.rosterId));
+        // Groupe vierge, ou entièrement composé des joueurs d'une autre équipe (changement d'équipe sans match)
+        const fromOtherTeam = group.length > 0 && group.every((p) => p.rosterId && !rosterIds.has(p.rosterId));
+        if (group.length > 0 && !linkedHere && (isGenericGroup(group) || fromOtherTeam)) applyTeamRosterToGroup();
+      }
+    }
+  }
 
   /** Enregistre le groupe actuel du match (terrain + banc) comme effectif de l'équipe. */
   const handleSaveGroupAsTeamRoster = () => {
@@ -3247,10 +3268,9 @@ export default function TacticsBoard({
   };
 
   // Keyboard shortcuts when live action toolbox is open (b, p, j, r, esc)
-  useEffect(() => {
-    if (!liveActionToken || !isLiveMatchMode) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
+  // (gestionnaire toujours à jour : joueur ciblé et actions du match, sans réabonnement)
+  const handleLiveShortcut = useEffectEvent((e: KeyboardEvent) => {
+      if (!liveActionToken) return;
       const activeEl = document.activeElement as HTMLElement | null;
       if (activeEl && ["INPUT", "TEXTAREA", "SELECT"].includes(activeEl.tagName)) {
         return;
@@ -3278,11 +3298,14 @@ export default function TacticsBoard({
       } else if (key === "escape") {
         setLiveActionToken(null);
       }
-    };
-
+  });
+  const liveShortcutsActive = Boolean(liveActionToken) && isLiveMatchMode;
+  useEffect(() => {
+    if (!liveShortcutsActive) return;
+    const handleKeyDown = (e: KeyboardEvent) => handleLiveShortcut(e);
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [liveActionToken, isLiveMatchMode, currentTokens]);
+  }, [liveShortcutsActive]);
 
   // Add a bench substitute to the pitch
   const handleAddSubToPitch = (sub: any) => {
@@ -3483,10 +3506,14 @@ export default function TacticsBoard({
   };
 
   // En quittant l'outil « Lier », la chaîne en cours est validée (2 joueurs ou plus)
+  const onToolChange = useEffectEvent((tool: typeof activeTool) => {
+    if (tool !== "link" && linkDraft.length > 0) commitLink(linkDraft);
+    if (tool !== "select") setSelectedLinkId(null);
+  });
   useEffect(() => {
-    if (activeTool !== "link" && linkDraft.length > 0) commitLink(linkDraft);
-    if (activeTool !== "select") setSelectedLinkId(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Effet voulu : la liaison créée reçoit un identifiant unique (horodatage), à ne pas produire pendant le rendu
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- validation de la chaîne au changement d'outil
+    onToolChange(activeTool);
   }, [activeTool]);
 
   // Clavier : Entrée valide la chaîne, Échap l'annule ; Suppr efface la liaison sélectionnée
@@ -3711,18 +3738,19 @@ export default function TacticsBoard({
       ? `Courbe fléchée ${drawingTool === "curve-arrow-dashed" ? "en pointillé" : "pleine"} : glissez pour tracer, puis déplacez les poignées pour la cintrer. Recliquez pour passer en ${drawingTool === "curve-arrow-dashed" ? "trait plein" : "pointillé"}`
       : "Courbe fléchée : glissez pour tracer, puis déplacez les poignées pour la cintrer (recliquez pour le pointillé)";
 
-  // Keyboard shortcuts for drawing undo (Ctrl+Z / Cmd+Z)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
-        if (drawingActions.length > 0 || drawingHistory.length > 0) {
-          handleUndo();
-        }
+  // Keyboard shortcuts for drawing undo (Ctrl+Z / Cmd+Z) — gestionnaire toujours à jour, abonné une seule fois
+  const handleUndoShortcut = useEffectEvent((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
+      if (drawingActions.length > 0 || drawingHistory.length > 0) {
+        handleUndo();
       }
-    };
+    }
+  });
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => handleUndoShortcut(e);
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [drawingActions, drawingHistory]);
+  }, []);
 
   const handleResetBoard = async () => {
     if (
@@ -4032,9 +4060,10 @@ export default function TacticsBoard({
   };
 
   // Garde les portraits du terrain prêts pour les exports immédiats (image PNG, aperçu d'enregistrement)
+  const preloadPortraits = useEffectEvent((tokens: any[], sport: string) => preloadExportPortraits(tokens, sport));
   useEffect(() => {
     if (playerRepresentation === "jersey") return;
-    preloadExportPortraits(
+    void preloadPortraits(
       playerRepresentation === "head" ? currentTokens : currentTokens.filter((token: any) => token.photo),
       activeSport
     );
@@ -4596,6 +4625,7 @@ export default function TacticsBoard({
             t={t}
             terrainComplet={terrainComplet}
             toolbarScroll={toolbarScroll}
+            toolbarScrollerRef={toolbarScrollerRef}
             topToolBtnClass={topToolBtnClass}
             topToolGroupClass={topToolGroupClass}
             wallPopover={wallPopover}

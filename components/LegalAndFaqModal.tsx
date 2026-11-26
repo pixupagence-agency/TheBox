@@ -161,11 +161,15 @@ export default function LegalAndFaqModal({
   const [faqSearch, setFaqSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("Toutes");
 
-  // Ouvre sur l'onglet demandé à chaque ouverture + fermeture au clavier (Échap)
-  useEffect(() => {
-    if (isOpen) setActiveTab(defaultTab);
-  }, [isOpen, defaultTab]);
+  // Ouvre sur l'onglet demandé à chaque ouverture (ajusté pendant le rendu, sans effet)
+  const openKey = isOpen ? defaultTab : null;
+  const [prevOpenKey, setPrevOpenKey] = useState(openKey);
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
+    if (openKey) setActiveTab(openKey);
+  }
 
+  // Fermeture au clavier (Échap)
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
