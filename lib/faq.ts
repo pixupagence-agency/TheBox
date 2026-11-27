@@ -144,7 +144,7 @@ export const DEFAULT_FAQ: FaqItem[] = [
     id: "f8",
     category: "Utilisation & Fonctionnalités",
     question: "Comment générer la Vue Carte 3D de mon équipe ?",
-    answer: "Cliquez sur le bouton étoiles du groupe Export de la barre d'outils. Présentez votre équipe en cartes ou en têtes, choisissez le style des cartes (Or, Onyx, Argent, Émeraude) et le format (paysage 16:9 ou portrait 9:16, idéal pour les stories et les téléphones), réglez la taille du terrain et des joueurs, puis téléchargez l'image en PNG HD."
+    answer: "Cliquez sur le bouton étoiles du groupe Export de la barre d'outils. Présentez votre équipe en cartes ou en têtes, choisissez le style des cartes (Or, Onyx, Argent, Émeraude) et le format (paysage 16:9 ou portrait 9:16, idéal pour les stories et les téléphones), réglez la taille du terrain et des joueurs, puis téléchargez l'image en PNG HD. Vous pouvez aussi glisser chaque carte pour la placer (« Replacer » les remet en place) et tourner autour du terrain en faisant glisser le fond de la scène ou avec les réglages Rotation et Inclinaison (« Vue de face » pour revenir). Ces réglages ne modifient pas votre terrain tactique."
   },
   {
     id: "f9",

@@ -399,6 +399,7 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
         bullets: [
           "Export PNG HD (bouton jaune) : image nette du terrain avec les joueurs et les tracés. Choisissez le format smartphone avant l'export pour une image adaptée aux téléphones.",
           "Vue Carte 3D (bouton étoiles) : présentation de votre équipe en cartes (thèmes Or, Onyx, Argent, Émeraude) ou en têtes, au format paysage ou portrait, avec réglage de la taille du terrain et des joueurs.",
+          "Vue Carte 3D, mise en scène : glissez une carte (ou utilisez les flèches du clavier) pour la placer ; « Replacer » les remet à la position des joueurs. Faites glisser le fond de la scène, ou réglez « Rotation » et « Inclinaison », pour tourner autour du terrain ; « Vue de face » revient à la vue d’origine. L’image exportée reprend exactement la vue choisie, sans modifier votre terrain tactique.",
           "Partage d'un schéma (PRO) : image, ou GIF et vidéo pour une animation.",
           "WhatsApp : envoi direct dans le groupe de l'équipe.",
           "E-mail : envoi du schéma à l'adresse de votre choix depuis l'application."

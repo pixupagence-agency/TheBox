@@ -5,21 +5,87 @@ import React, { useRef, useState } from "react";
 import Pitch from "../../Pitch";
 import { getSmallPitchSpec } from "@/lib/gameFormats";
 import { type Token } from "@/lib/tactics/types";
-import { Box, CreditCard, Download, Hand, Laptop, Maximize2, RotateCcw, Share2, Shield, Smartphone, User, X } from "lucide-react";
+import { Box, CreditCard, Download, Hand, Laptop, Maximize2, Orbit, RotateCcw, Share2, Shield, Smartphone, User, X } from "lucide-react";
 
 type Orientation = "landscape" | "portrait";
 type PitchPoint = { x: number; y: number };
 const clamp = (v: number) => Math.min(100, Math.max(0, v));
 
-/** Position d'un joueur du terrain (x, y en %) dans le calque des cartes de la vue 3D */
+/** Position d'un joueur du terrain (x, y en %) sur la pelouse de la vue 3D (en portrait, le jeu monte vers le haut) */
 function toStage(p: PitchPoint, o: Orientation): PitchPoint {
-  return o === "portrait" ? { x: 12 + p.y * 0.76, y: 14 + (100 - p.x) * 0.72 } : { x: p.x, y: p.y };
+  return o === "portrait" ? { x: p.y, y: 100 - p.x } : { x: p.x, y: p.y };
 }
-/** Inverse de toStage : point du calque des cartes ramené en coordonnées du terrain */
+/** Inverse de toStage : point de la pelouse ramené en coordonnées du terrain */
 function fromStage(s: PitchPoint, o: Orientation): PitchPoint {
-  return o === "portrait"
-    ? { x: clamp(100 - (s.y - 14) / 0.72), y: clamp((s.x - 12) / 0.76) }
-    : { x: clamp(s.x), y: clamp(s.y) };
+  return o === "portrait" ? { x: clamp(100 - s.y), y: clamp(s.x) } : { x: clamp(s.x), y: clamp(s.y) };
+}
+
+/** Caméra de la vue 3D : inclinaison (0° = vue de dessus) et rotation autour du terrain */
+const DEFAULT_TILT: Record<Orientation, number> = { landscape: 42, portrait: 30 };
+const PERSPECTIVE: Record<Orientation, { distance: number; originY: number; base: number }> = {
+  landscape: { distance: 1100, originY: 0.2, base: 0.92 },
+  portrait: { distance: 1200, originY: 0.35, base: 0.96 },
+};
+export const TILT_RANGE = { min: 0, max: 70 } as const;
+/**
+ * Les cartes reposent sur la pelouse par leur bord inférieur, légèrement surélevées (en px) : aucune partie
+ * ne passe sous le plan du terrain, qui la masquerait (nom des joueurs coupé en bas de la carte).
+ */
+const CARD_LIFT = 2;
+const normalizeOrbit = (deg: number) => ((((deg + 180) % 360) + 360) % 360) - 180;
+/** Largeur / hauteur approximative de la scène, par format */
+const SCENE_ASPECT: Record<Orientation, number> = { landscape: 1.8, portrait: 0.75 };
+
+/**
+ * Réduction automatique du terrain quand on tourne autour : le rectangle tourné doit tenir dans la scène
+ * (largeur, et hauteur une fois incliné). Vaut 1 en vue de face.
+ */
+function cameraFit(orbit: number, tilt: number, o: Orientation): number {
+  const a = SCENE_ASPECT[o];
+  const c = Math.abs(Math.cos((orbit * Math.PI) / 180));
+  const s = Math.abs(Math.sin((orbit * Math.PI) / 180));
+  const widthFit = a / (a * c + s);
+  const heightFit = 1 / ((a * s + c) * Math.cos((tilt * Math.PI) / 180));
+  return Math.min(1, widthFit, heightFit) * (1 - 0.08 * s);
+}
+
+/**
+ * Point de l'écran ramené sur la pelouse (en % de sa largeur et de sa hauteur), quelle que soit la caméra :
+ * on refait la projection CSS (perspective du conteneur × transformation de la pelouse), puis on inverse
+ * l'homographie du plan z = 0.
+ */
+function screenToStage(
+  scene: HTMLElement,
+  clientX: number,
+  clientY: number,
+  cam: { tilt: number; orbit: number; scale: number },
+  o: Orientation
+): PitchPoint | null {
+  const r = scene.getBoundingClientRect();
+  const W = scene.offsetWidth, H = scene.offsetHeight;
+  if (!W || !H) return null;
+  const { distance, originY } = PERSPECTIVE[o];
+  const persp = new DOMMatrix([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -1 / distance, 0, 0, 0, 1]);
+  const m = new DOMMatrix()
+    .translate(W / 2, H * originY)
+    .multiply(persp)
+    .translate(-W / 2, -H * originY)
+    .translate(W / 2, H / 2)
+    .rotateAxisAngle(1, 0, 0, cam.tilt)
+    .rotateAxisAngle(0, 0, 1, cam.orbit)
+    .scale(cam.scale)
+    .translate(-W / 2, -H / 2);
+  // Homographie (u, v, 1) → (x·w, y·w, w) du plan de la pelouse, puis son inverse
+  const [a, b, c, d, e, f, g, h, i] = [m.m11, m.m21, m.m41, m.m12, m.m22, m.m42, m.m14, m.m24, m.m44];
+  const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g;
+  const det = a * A + b * B + c * C;
+  if (Math.abs(det) < 1e-12) return null;
+  const x = clientX - r.left, y = clientY - r.top;
+  const u = (A * x + (c * h - b * i) * y + (b * f - c * e)) / det;
+  const v = (B * x + (a * i - c * g) * y + (c * d - a * f)) / det;
+  const w = (C * x + (b * g - a * h) * y + (a * e - b * d)) / det;
+  if (Math.abs(w) < 1e-12) return null;
+  return { x: (u / w / W) * 100, y: (v / w / H) * 100 };
 }
 
 export interface Squad3DExportModalProps {
@@ -79,13 +145,41 @@ export default function Squad3DExportModal({
   // tactique n'est pas modifié. Gardées tant que l'application est ouverte, « Replacer » les remet en place.
   const [movedCards, setMovedCards] = useState<Record<string, PitchPoint>>({});
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
   const grabRef = useRef<{ id: string; dx: number; dy: number } | null>(null);
 
-  const pointerToStage = (e: React.PointerEvent): PitchPoint | null => {
-    const r = overlayRef.current?.getBoundingClientRect();
-    if (!r || !r.width || !r.height) return null;
-    return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
+  // Caméra : rotation autour du terrain et inclinaison (null = inclinaison d'origine du format)
+  const [orbit, setOrbit] = useState(0);
+  const [tiltOverride, setTiltOverride] = useState<number | null>(null);
+  const tilt = tiltOverride ?? DEFAULT_TILT[squad3DOrientation];
+  const stageScale = (PERSPECTIVE[squad3DOrientation].base * squad3DPitchScale * cameraFit(orbit, tilt, squad3DOrientation)) / 100;
+  const isDefaultCamera = orbit === 0 && tiltOverride === null;
+  const orbitDragRef = useRef<{ x: number; y: number; orbit: number; tilt: number } | null>(null);
+  const [isOrbiting, setIsOrbiting] = useState(false);
+
+  const pointerToStage = (e: React.PointerEvent): PitchPoint | null =>
+    sceneRef.current ? screenToStage(sceneRef.current, e.clientX, e.clientY, { tilt, orbit, scale: stageScale }, squad3DOrientation) : null;
+
+  /** Glisser le fond de la scène : horizontalement pour tourner autour, verticalement pour incliner */
+  const startOrbit = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || (e.target as HTMLElement).closest("[data-squad3d-card]")) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    orbitDragRef.current = { x: e.clientX, y: e.clientY, orbit, tilt };
+    setIsOrbiting(true);
+  };
+  const moveOrbit = (e: React.PointerEvent<HTMLDivElement>) => {
+    const s = orbitDragRef.current;
+    if (!s) return;
+    setOrbit(Math.round(normalizeOrbit(s.orbit + (e.clientX - s.x) * 0.4)));
+    setTiltOverride(Math.round(Math.min(TILT_RANGE.max, Math.max(TILT_RANGE.min, s.tilt - (e.clientY - s.y) * 0.25))));
+  };
+  const endOrbit = () => {
+    orbitDragRef.current = null;
+    setIsOrbiting(false);
+  };
+  const resetCamera = () => {
+    setOrbit(0);
+    setTiltOverride(null);
   };
   const startCardDrag = (e: React.PointerEvent<HTMLDivElement>, id: string, stagePos: PitchPoint) => {
     if (e.button !== 0) return;
@@ -375,6 +469,53 @@ export default function Squad3DExportModal({
                       </button>
                     )}
                   </div>
+
+                  {/* 7. Caméra : tourner autour du terrain et l'incliner (aussi en faisant glisser le fond de la scène) */}
+                  <div
+                    className={`flex flex-wrap items-center gap-2 px-2.5 py-1.5 rounded-xl border ${isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"}`}
+                    data-testid="squad3d-camera"
+                  >
+                    <label className={`text-[11px] font-bold uppercase flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                      <Orbit className="w-3.5 h-3.5 text-[#00E599]" />
+                      <span>Rotation :</span>
+                      <input
+                        type="range"
+                        min="-180"
+                        max="180"
+                        step="5"
+                        value={orbit}
+                        onChange={(e) => setOrbit(Number(e.target.value))}
+                        className="w-16 sm:w-20 accent-[#00E599] cursor-pointer"
+                        aria-label="Rotation autour du terrain"
+                      />
+                    </label>
+                    <span className="text-xs font-mono font-bold text-emerald-400 w-10 text-right">{orbit}°</span>
+                    <label className={`text-[11px] font-bold uppercase flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                      <span>Inclinaison :</span>
+                      <input
+                        type="range"
+                        min={TILT_RANGE.min}
+                        max={TILT_RANGE.max}
+                        step="1"
+                        value={tilt}
+                        onChange={(e) => setTiltOverride(Number(e.target.value))}
+                        className="w-14 sm:w-16 accent-[#00E599] cursor-pointer"
+                        aria-label="Inclinaison de la caméra (0° : vue de dessus)"
+                      />
+                    </label>
+                    <span className="text-xs font-mono font-bold text-emerald-400 w-8 text-right">{tilt}°</span>
+                    {!isDefaultCamera && (
+                      <button
+                        type="button"
+                        onClick={resetCamera}
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold transition cursor-pointer inline-flex items-center gap-1 ${isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800" : "bg-[#1f293d] hover:bg-[#2c3b55] text-slate-300"}`}
+                        title="Revenir à la vue d'origine, de face"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Vue de face
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Right Controls: Share & Download Buttons */}
@@ -436,21 +577,32 @@ export default function Squad3DExportModal({
 
                   {/* Perspective wrapper */}
                   <div
-                    className={`relative ${squad3DOrientation === "portrait" ? "w-[96%] h-[100%]" : "w-[92%] h-[100%]"}`}
+                    ref={sceneRef}
+                    data-testid="squad3d-scene"
+                    onPointerDown={startOrbit}
+                    onPointerMove={moveOrbit}
+                    onPointerUp={endOrbit}
+                    onPointerCancel={endOrbit}
+                    title="Glissez le fond pour tourner autour du terrain (gauche / droite) ou l'incliner (haut / bas)"
+                    className={`relative touch-none ${isOrbiting ? "cursor-grabbing" : "cursor-grab"} ${squad3DOrientation === "portrait" ? "w-[96%] h-[100%]" : "w-[92%] h-[100%]"}`}
                     style={{
-                      perspective: squad3DOrientation === "portrait" ? "1200px" : "1100px",
-                      perspectiveOrigin: squad3DOrientation === "portrait" ? "50% 35%" : "50% 20%",
+                      perspective: `${PERSPECTIVE[squad3DOrientation].distance}px`,
+                      perspectiveOrigin: `50% ${PERSPECTIVE[squad3DOrientation].originY * 100}%`,
                     }}
                   >
-                    {/* Rotated Pitch Surface */}
+                    {/* Scène 3D : pelouse et joueurs tournent ensemble (inclinaison, puis rotation autour du terrain) */}
                     <div
-                      className="w-full h-full relative rounded-2xl border-4 border-white/40 shadow-[0_30px_60px_rgba(0,0,0,0.95)] overflow-hidden bg-emerald-950 transition-transform duration-200"
+                      data-testid="squad3d-stage"
+                      className="absolute inset-0"
                       style={{
-                        transform: squad3DOrientation === "portrait"
-                          ? `rotateX(30deg) rotateZ(0deg) scale(${(0.96 * squad3DPitchScale) / 100})`
-                          : `rotateX(42deg) rotateZ(0deg) scale(${(0.92 * squad3DPitchScale) / 100})`,
+                        transform: `rotateX(${tilt}deg) rotateZ(${orbit}deg) scale(${stageScale})`,
                         transformStyle: "preserve-3d",
+                        transition: isOrbiting ? "none" : "transform 200ms ease-out",
                       }}
+                    >
+                    {/* Pelouse */}
+                    <div
+                      className="w-full h-full relative rounded-2xl border-4 border-white/40 shadow-[0_30px_60px_rgba(0,0,0,0.95)] overflow-hidden bg-emerald-950"
                     >
                       {/* Terrain du sport de l'utilisateur : rendu 3D détaillé pour le football, tracés officiels du sport sinon */}
                       {activeSport === "basketball" || activeSport === "rugby" || activeSport === "handball" || getSmallPitchSpec(activeSport, activeFormat) ? (
@@ -677,14 +829,7 @@ export default function Squad3DExportModal({
                     </div>
 
                     {/* Player Overlay (Cards or 3D Heads) */}
-                    <div
-                      ref={overlayRef}
-                      className="absolute inset-0 z-20 pointer-events-none transition-transform duration-200"
-                      style={{
-                        transform: `scale(${squad3DPitchScale / 100})`,
-                        transformOrigin: "center center",
-                      }}
-                    >
+                    <div className="absolute inset-0 pointer-events-none" style={{ transformStyle: "preserve-3d" }}>
                       {currentTokens
                         .filter(t => t.type === "player_a")
                         .map(p => {
@@ -719,12 +864,15 @@ export default function Squad3DExportModal({
                               onPointerUp={endCardDrag}
                               onPointerCancel={endCardDrag}
                               onKeyDown={(e) => nudgeCard(e, p.id, pitchPos)}
-                              className={`absolute pointer-events-auto touch-none outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-[#00E599] ${isDragging ? "cursor-grabbing z-30" : "cursor-grab transition-all duration-300"}`}
+                              className={`absolute pointer-events-auto touch-none outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-[#00E599] ${isDragging ? "cursor-grabbing" : "cursor-grab transition-[left,top] duration-300"}`}
                               style={{
                                 left: `${posX}%`,
                                 top: `${posY}%`,
-                                transform: `translate(-50%, -50%) scale(${(squad3DPlayerScale / 100) * (isDragging ? 1.08 : 1)})`,
-                                transformOrigin: "center center",
+                                // Debout sur la pelouse (pied de la carte sur la position du joueur) et toujours face à la caméra :
+                                // on annule la rotation puis l'inclinaison de la scène
+                                transform: `translate(-50%, -100%) translateZ(${CARD_LIFT}px) rotateZ(${-orbit}deg) rotateX(${-tilt}deg) scale(${((squad3DPlayerScale / 100) * (isDragging ? 1.08 : 1)) / PERSPECTIVE[squad3DOrientation].base})`,
+                                transformOrigin: "50% 100%",
+                                transition: isOrbiting ? "none" : undefined,
                               }}
                             >
                               {squad3DPlayerStyle === "head" ? (
@@ -750,7 +898,7 @@ export default function Squad3DExportModal({
                                     <span className="text-[8.5px] font-black px-1.5 py-0.2 rounded-full leading-tight bg-[#00E599] text-slate-950">
                                       #{p.number || 1}
                                     </span>
-                                    <span className="text-[8px] font-bold uppercase tracking-tight truncate max-w-[65px]">
+                                    <span className="text-[8px] font-bold uppercase tracking-tight whitespace-nowrap" data-squad3d-name>
                                       {p.name || role}
                                     </span>
                                   </div>
@@ -760,7 +908,7 @@ export default function Squad3DExportModal({
                                 /* VUE 2 : CARTE DU JOUEUR (STYLE SQUAD CARD)               */
                                 /* ========================================================= */
                                 <div
-                                  className={`${squad3DOrientation === "portrait" ? "w-13 sm:w-15 p-1" : "w-15 sm:w-18 p-1.5"
+                                  className={`${squad3DOrientation === "portrait" ? "w-max min-w-13 sm:min-w-15 max-w-20 sm:max-w-22 p-1" : "w-max min-w-15 sm:min-w-18 max-w-22 sm:max-w-26 p-1.5"
                                     } rounded-xl shadow-2xl text-center border-2 flex flex-col items-center justify-between transition-all ${cardTheme === "gold"
                                       ? "bg-gradient-to-b from-amber-300 via-amber-500 to-amber-700 border-amber-200 text-amber-950 shadow-amber-950/60"
                                       : cardTheme === "silver"
@@ -788,7 +936,8 @@ export default function Squad3DExportModal({
 
                                   {/* Player Name Banner */}
                                   <div className="w-full bg-black/85 mt-0.5 py-0.5 px-0.5 rounded border border-white/20 text-center">
-                                    <p className="text-[7px] sm:text-[8px] font-black uppercase tracking-tight text-white truncate">
+                                    {/* Nom complet : passe à la ligne au lieu d'être coupé */}
+                                    <p className="text-[7px] sm:text-[8px] font-black uppercase tracking-tight leading-[1.15] text-white break-words" data-squad3d-name>
                                       {p.name || `JOUEUR #${p.number}`}
                                     </p>
                                   </div>
@@ -797,6 +946,7 @@ export default function Squad3DExportModal({
                             </div>
                           );
                         })}
+                    </div>
                     </div>
 
                   </div>
