@@ -1,11 +1,26 @@
 "use client";
 
 // Tableau tactique : fenêtre sortie de components/TacticsBoard.tsx (code d'affichage inchangé).
-import React from "react";
+import React, { useRef, useState } from "react";
 import Pitch from "../../Pitch";
 import { getSmallPitchSpec } from "@/lib/gameFormats";
 import { type Token } from "@/lib/tactics/types";
-import { Box, CreditCard, Download, Laptop, Maximize2, Share2, Shield, Smartphone, User, X } from "lucide-react";
+import { Box, CreditCard, Download, Hand, Laptop, Maximize2, RotateCcw, Share2, Shield, Smartphone, User, X } from "lucide-react";
+
+type Orientation = "landscape" | "portrait";
+type PitchPoint = { x: number; y: number };
+const clamp = (v: number) => Math.min(100, Math.max(0, v));
+
+/** Position d'un joueur du terrain (x, y en %) dans le calque des cartes de la vue 3D */
+function toStage(p: PitchPoint, o: Orientation): PitchPoint {
+  return o === "portrait" ? { x: 12 + p.y * 0.76, y: 14 + (100 - p.x) * 0.72 } : { x: p.x, y: p.y };
+}
+/** Inverse de toStage : point du calque des cartes ramené en coordonnées du terrain */
+function fromStage(s: PitchPoint, o: Orientation): PitchPoint {
+  return o === "portrait"
+    ? { x: clamp(100 - (s.y - 14) / 0.72), y: clamp((s.x - 12) / 0.76) }
+    : { x: clamp(s.x), y: clamp(s.y) };
+}
 
 export interface Squad3DExportModalProps {
   activeFormat: string;
@@ -60,6 +75,49 @@ export default function Squad3DExportModal({
   squad3DPlayerStyle,
   squad3DRef,
 }: Squad3DExportModalProps) {
+  // Cartes déplacées dans la vue 3D (coordonnées du terrain, par joueur) : propres à cette vue, le terrain
+  // tactique n'est pas modifié. Gardées tant que l'application est ouverte, « Replacer » les remet en place.
+  const [movedCards, setMovedCards] = useState<Record<string, PitchPoint>>({});
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const grabRef = useRef<{ id: string; dx: number; dy: number } | null>(null);
+
+  const pointerToStage = (e: React.PointerEvent): PitchPoint | null => {
+    const r = overlayRef.current?.getBoundingClientRect();
+    if (!r || !r.width || !r.height) return null;
+    return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
+  };
+  const startCardDrag = (e: React.PointerEvent<HTMLDivElement>, id: string, stagePos: PitchPoint) => {
+    if (e.button !== 0) return;
+    const at = pointerToStage(e);
+    if (!at) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    grabRef.current = { id, dx: stagePos.x - at.x, dy: stagePos.y - at.y };
+    setDraggingId(id);
+  };
+  const moveCardDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const g = grabRef.current;
+    const at = g && pointerToStage(e);
+    if (!g || !at) return;
+    const point = fromStage({ x: at.x + g.dx, y: at.y + g.dy }, squad3DOrientation);
+    setMovedCards((prev) => ({ ...prev, [g.id]: point }));
+  };
+  const endCardDrag = () => {
+    grabRef.current = null;
+    setDraggingId(null);
+  };
+  /** Flèches du clavier : déplace la carte sélectionnée de 1 % (5 % avec Maj) */
+  const nudgeCard = (e: React.KeyboardEvent, id: string, current: PitchPoint) => {
+    const step = e.shiftKey ? 5 : 1;
+    const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    const s = toStage(current, squad3DOrientation);
+    setMovedCards((prev) => ({ ...prev, [id]: fromStage({ x: s.x + d[0], y: s.y + d[1] }, squad3DOrientation) }));
+  };
+  const movedCount = currentTokens.filter((t) => t.type === "player_a" && movedCards[t.id]).length;
+
   return (
     <>
         {/* MODAL : VUE EXPORT 3D (COMPOSITION & TÊTES 3D) */}
@@ -292,6 +350,28 @@ export default function Squad3DExportModal({
                         title="Réinitialiser"
                       >
                         100%
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 6. Placement des cartes : glisser-déposer dans la vue, « Replacer » pour revenir au terrain */}
+                  <div
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${isModernSleek ? "bg-white border-slate-200 shadow-2xs" : "bg-[#131b29] border-[#1f293d]"}`}
+                    data-testid="squad3d-placement"
+                  >
+                    <span className={`text-[11px] font-bold flex items-center gap-1 ${isModernSleek ? "text-slate-600" : "text-slate-400"}`}>
+                      <Hand className="w-3.5 h-3.5 text-[#00E599]" />
+                      <span>{movedCount > 0 ? `${movedCount} carte${movedCount > 1 ? "s" : ""} déplacée${movedCount > 1 ? "s" : ""}` : "Glissez les cartes pour les placer"}</span>
+                    </span>
+                    {movedCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setMovedCards({})}
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold transition cursor-pointer inline-flex items-center gap-1 ${isModernSleek ? "bg-slate-200 hover:bg-slate-300 text-slate-800" : "bg-[#1f293d] hover:bg-[#2c3b55] text-slate-300"}`}
+                        title="Remettre chaque carte à la position du joueur sur le terrain tactique"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Replacer
                       </button>
                     )}
                   </div>
@@ -598,6 +678,7 @@ export default function Squad3DExportModal({
 
                     {/* Player Overlay (Cards or 3D Heads) */}
                     <div
+                      ref={overlayRef}
                       className="absolute inset-0 z-20 pointer-events-none transition-transform duration-200"
                       style={{
                         transform: `scale(${squad3DPitchScale / 100})`,
@@ -607,9 +688,10 @@ export default function Squad3DExportModal({
                       {currentTokens
                         .filter(t => t.type === "player_a")
                         .map(p => {
-                          // Position calculation based on orientation - safely mapped within visible 3D turf
-                          const posX = squad3DOrientation === "portrait" ? (12 + (p.y * 0.76)) : p.x;
-                          const posY = squad3DOrientation === "portrait" ? (14 + ((100 - p.x) * 0.72)) : p.y;
+                          // Position sur la vue 3D : celle du terrain tactique, ou celle choisie en déplaçant la carte
+                          const pitchPos = movedCards[p.id] ?? { x: p.x, y: p.y };
+                          const { x: posX, y: posY } = toStage(pitchPos, squad3DOrientation);
+                          const isDragging = draggingId === p.id;
                           const role = p.role || "ST";
                           const isGK = activeSport !== "basketball" && activeSport !== "rugby" && (p.role === "G" || p.role === "GK" || p.role === "GB" || p.role === "Gardien" || p.number === 1);
                           const defaultHeadSrc = activeSport === "basketball"
@@ -628,11 +710,20 @@ export default function Squad3DExportModal({
                           return (
                             <div
                               key={p.id}
-                              className="absolute transition-all duration-300"
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Déplacer ${p.name || `le joueur n° ${p.number ?? ""}`} (glisser, ou flèches du clavier)`}
+                              data-squad3d-card={p.id}
+                              onPointerDown={(e) => startCardDrag(e, p.id, { x: posX, y: posY })}
+                              onPointerMove={moveCardDrag}
+                              onPointerUp={endCardDrag}
+                              onPointerCancel={endCardDrag}
+                              onKeyDown={(e) => nudgeCard(e, p.id, pitchPos)}
+                              className={`absolute pointer-events-auto touch-none outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-[#00E599] ${isDragging ? "cursor-grabbing z-30" : "cursor-grab transition-all duration-300"}`}
                               style={{
                                 left: `${posX}%`,
                                 top: `${posY}%`,
-                                transform: `translate(-50%, -50%) scale(${squad3DPlayerScale / 100})`,
+                                transform: `translate(-50%, -50%) scale(${(squad3DPlayerScale / 100) * (isDragging ? 1.08 : 1)})`,
                                 transformOrigin: "center center",
                               }}
                             >
