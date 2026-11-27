@@ -4,12 +4,10 @@ import React, { useState, useEffect } from "react";
 import {
   GuideSectionItem,
   GuideSectionContentBlock,
-  loadGuideSections,
-  saveGuideSections,
-  resetGuideSections,
   DEFAULT_GUIDE_SECTIONS,
   getMediaType
 } from "@/lib/userGuideData";
+import { GUIDE_MAX_UPLOAD_BYTES, publishGuide, subscribeGuide, type PublishedGuide } from "@/lib/guide/store";
 import GuideMediaViewer from "./GuideMediaViewer";
 import {
   BookOpen,
@@ -89,19 +87,26 @@ export default function AdminGuideEditor({
   const [sections, setSections] = useState<GuideSectionItem[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [searchFilter, setSearchFilter] = useState<string>("");
-  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
 
-  // Sections chargées à l'ouverture de l'éditeur et à chaque section demandée (ajusté pendant le rendu, sans effet)
-  const requested = initialSectionId ?? "";
-  const [loadedFor, setLoadedFor] = useState<string | null>(null);
-  if (loadedFor !== requested) {
-    setLoadedFor(requested);
-    const loaded = loadGuideSections();
-    setSections(loaded);
-    if (loaded.length > 0) {
-      setSelectedId(initialSectionId && loaded.some((s) => s.id === initialSectionId) ? initialSectionId : loaded[0].id);
-    }
+  // Guide publié (app_config/guide), suivi en direct
+  const [published, setPublished] = useState<PublishedGuide | null>(null);
+  useEffect(() => subscribeGuide(setPublished), []);
+
+  // Brouillon : repart de la version publiée à son arrivée et à chaque nouvelle publication, sauf s'il
+  // contient des modifications non publiées (ajusté pendant le rendu, sans effet)
+  const [basis, setBasis] = useState<GuideSectionItem[] | null>(null);
+  const isDirty = basis !== null && JSON.stringify(sections) !== JSON.stringify(basis);
+  const publishedKey = published ? published.updatedAt ?? "défaut" : null;
+  const [syncedKey, setSyncedKey] = useState<string | null>(null);
+  if (published && publishedKey !== syncedKey && !isDirty) {
+    setSyncedKey(publishedKey);
+    setBasis(published.sections);
+    setSections(published.sections);
+    const keep = selectedId || initialSectionId;
+    setSelectedId(keep && published.sections.some((s) => s.id === keep) ? keep : published.sections[0]?.id ?? "");
   }
 
   const currentSection = sections.find((s) => s.id === selectedId) || sections[0];
@@ -151,11 +156,32 @@ export default function AdminGuideEditor({
     handleUpdateCurrentSection("content", newContent);
   };
 
-  // Save all to localStorage
-  const handleSaveAll = () => {
-    saveGuideSections(sections);
-    setSaveStatus("Guide sauvegardé avec succès ! Tous les utilisateurs verront cette version.");
-    setTimeout(() => setSaveStatus(null), 4000);
+  // Publication pour tous les utilisateurs (app_config/guide)
+  const handleSaveAll = async () => {
+    if (
+      !(await confirmAction({
+        title: "Publier le guide ?",
+        message: "Cette version du guide sera immédiatement visible par tous les coachs.",
+        confirmLabel: "Publier",
+        tone: "warning",
+      }))
+    ) {
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await publishGuide(sections);
+      setBasis(sections);
+      setSaveStatus({ ok: true, text: "Guide publié : tous les coachs voient cette version." });
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      setSaveStatus({
+        ok: false,
+        text: code === "permission-denied" ? "Publication refusée : réservée aux super administrateurs." : (err as Error)?.message || "Publication impossible, réessayez.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Reset to default sections
@@ -163,15 +189,14 @@ export default function AdminGuideEditor({
     if (
       await confirmAction({
         title: "Réinitialiser le guide ?",
-        message: "Le guide reviendra aux 11 articles d'origine de TheBox. Toutes vos modifications personnalisées seront effacées.",
+        message: "Le brouillon reprend les articles d'origine de The Box. Rien n'est publié tant que vous ne cliquez pas sur « Publier le guide ».",
         confirmLabel: "Réinitialiser",
       })
     ) {
-      const def = resetGuideSections();
+      const def = DEFAULT_GUIDE_SECTIONS.map((sec) => ({ ...sec, content: sec.content.map((b) => ({ ...b })) }));
       setSections(def);
       setSelectedId(def[0].id);
-      setSaveStatus("Le guide a été réinitialisé aux valeurs officielles !");
-      setTimeout(() => setSaveStatus(null), 4000);
+      setSaveStatus({ ok: true, text: "Guide d'origine chargé : cliquez sur « Publier le guide » pour l'appliquer." });
     }
   };
 
@@ -244,8 +269,13 @@ export default function AdminGuideEditor({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 25 * 1024 * 1024) {
-      alert("Le fichier sélectionné dépasse 25 Mo. Pour les vidéos volumineuses, privilégiez un lien direct MP4 ou YouTube.");
+    // Le fichier est intégré au guide publié (document Firestore limité à 1 Mo) : petites images uniquement
+    if (!file.type.startsWith("image/") || file.size > GUIDE_MAX_UPLOAD_BYTES) {
+      setSaveStatus({
+        ok: false,
+        text: `Import limité aux images de ${Math.round(GUIDE_MAX_UPLOAD_BYTES / 1000)} Ko au maximum. Pour une vidéo ou une image plus lourde, collez un lien (YouTube, Vimeo, MP4, image en ligne).`,
+      });
+      e.target.value = "";
       return;
     }
 
@@ -488,7 +518,7 @@ export default function AdminGuideEditor({
                     <label className={`px-3 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 transition ${th.ghostBtn}`}>
                       <Upload className="w-3.5 h-3.5" />
                       Importer
-                      <input type="file" accept="video/*,image/*" onChange={handleFileUpload} className="hidden" />
+                      <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                     </label>
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -607,13 +637,16 @@ export default function AdminGuideEditor({
         {/* Pied : enregistrement */}
         <footer className={`px-5 sm:px-8 py-3.5 border-t flex items-center justify-between gap-3 ${th.border}`}>
           {saveStatus ? (
-            <p className={`text-[11px] font-bold flex items-center gap-1.5 ${th.accent}`}>
-              <CheckCircle2 className="w-4 h-4" />
-              {saveStatus}
+            <p className={`text-[11px] font-bold flex items-center gap-1.5 ${saveStatus.ok ? th.accent : "text-rose-400"}`} role="status">
+              {saveStatus.ok && <CheckCircle2 className="w-4 h-4 shrink-0" />}
+              {saveStatus.text}
             </p>
           ) : (
             <p className={`text-[11px] truncate ${th.sub}`}>
-              Les modifications sont visibles par tous les coachs après l&apos;enregistrement.
+              {isDirty ? "● Modifications non publiées. " : ""}
+              {published?.updatedAt
+                ? `Version publiée le ${new Date(published.updatedAt).toLocaleString("fr-FR")}.`
+                : "Guide d'origine, jamais publié : publiez-le pour en faire la version officielle."}
             </p>
           )}
           <div className="flex items-center gap-2 shrink-0">
@@ -629,11 +662,12 @@ export default function AdminGuideEditor({
             )}
             <button
               type="button"
-              onClick={handleSaveAll}
-              className={`h-10 px-5 rounded-xl text-xs font-black inline-flex items-center gap-2 transition cursor-pointer ${th.primaryBtn}`}
+              onClick={() => void handleSaveAll()}
+              disabled={isSaving || !published}
+              className={`h-10 px-5 rounded-xl text-xs font-black inline-flex items-center gap-2 transition cursor-pointer disabled:opacity-50 ${th.primaryBtn}`}
             >
               <Save className="w-4 h-4" />
-              Enregistrer le guide
+              {isSaving ? "Publication…" : "Publier le guide"}
             </button>
           </div>
         </footer>

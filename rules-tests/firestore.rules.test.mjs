@@ -436,3 +436,16 @@ describe("legalDocs : documents légaux", () => {
     await assertSucceeds(getDoc(doc(superAdmin(), "legalDocs/dpa/history/1")));
   });
 });
+
+describe("app_config : contenus et réglages publiés par les super admins", () => {
+  for (const id of ["sports", "guide", "faq"]) {
+    test(`${id} : lecture publique, écriture réservée aux super admins`, async () => {
+      const data = { updatedAt: "2026-11-26T20:00:00.000Z", items: [] };
+      await assertSucceeds(getDoc(doc(anon(), `app_config/${id}`)));
+      await assertFails(setDoc(doc(as("pro"), `app_config/${id}`), data));
+      await assertFails(setDoc(doc(anon(), `app_config/${id}`), data));
+      await assertSucceeds(setDoc(doc(superAdmin(), `app_config/${id}`), data));
+      await assertSucceeds(setDoc(doc(as("listedAdmin"), `app_config/${id}`), data));
+    });
+  }
+});

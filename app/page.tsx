@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import TacticsBoard from "@/components/TacticsBoard";
 import LandingPage from "@/components/LandingPage";
-import AdminPlatform, { defaultSportsConfig, defaultBlockedSports, SportAccessConfig } from "@/components/AdminPlatform";
+import { DEFAULT_SPORTS_ACCESS, subscribeSportsAccess } from "@/lib/sportsAccess";
 import TrialCountdownModal, { calculateTrialRemaining } from "@/components/TrialCountdownModal";
 import OnboardingTutorialModal from "@/components/OnboardingTutorialModal";
 import LegalAndFaqModal, { LegalTab } from "@/components/LegalAndFaqModal";
@@ -92,17 +93,20 @@ export default function Home() {
   const [hasLoaded, setHasLoaded] = useState(false);
 
   // Admin platform & Sports access control states - only football is enabled by default
-  const [blockedSports, setBlockedSports] = useState<string[]>(defaultBlockedSports);
-  const [sportsConfig, setSportsConfig] = useState<SportAccessConfig[]>(defaultSportsConfig);
-  const [isAdminPlatformOpen, setIsAdminPlatformOpen] = useState<boolean>(false);
+  // Sports ouverts ou verrouillés par l'administrateur (app_config/sports, suivi en direct pour tous)
+  const [sportsAccess, setSportsAccess] = useState(DEFAULT_SPORTS_ACCESS);
+  useEffect(() => subscribeSportsAccess(setSportsAccess), []);
+  const { blockedSports, sportsConfig } = sportsAccess;
   const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
 
   // Mode maintenance (activé par le super admin), suivi en direct pour tous les visiteurs
   const [maintenance, setMaintenanceState] = useState<MaintenanceState>(MAINTENANCE_OFF);
   useEffect(() => subscribeMaintenance(setMaintenanceState), []);
 
+  // Console d'administration : page dédiée /admin (réservée aux super admins)
+  const router = useRouter();
   const handleOpenAdminPlatform = () => {
-    setIsAdminPlatformOpen(true);
+    router.push("/admin");
   };
 
   // Legal & FAQ Modal state
@@ -192,43 +196,6 @@ export default function Home() {
             }
           } catch (e) {
             console.error(e);
-          }
-        }
-
-        const validSportIds = defaultSportsConfig.map(s => s.id);
-        const hasInitSportsV2 = localStorage.getItem("thebox_sports_default_v2");
-        if (!hasInitSportsV2) {
-          localStorage.setItem("thebox_sports_default_v2", "true");
-          setBlockedSports(defaultBlockedSports);
-          localStorage.setItem("thebox_blocked_sports", JSON.stringify(defaultBlockedSports));
-          setSportsConfig(defaultSportsConfig);
-          localStorage.setItem("thebox_sports_config", JSON.stringify(defaultSportsConfig));
-        } else {
-          const savedBlocked = localStorage.getItem("thebox_blocked_sports");
-          if (savedBlocked) {
-            try {
-              const parsed = JSON.parse(savedBlocked);
-              if (Array.isArray(parsed)) {
-                const clean = parsed.filter((id: string) => validSportIds.includes(id));
-                setBlockedSports(clean);
-                localStorage.setItem("thebox_blocked_sports", JSON.stringify(clean));
-              }
-            } catch (e) { console.error(e); }
-          }
-
-          const savedConfig = localStorage.getItem("thebox_sports_config");
-          if (savedConfig) {
-            try {
-              const parsed = JSON.parse(savedConfig);
-              if (Array.isArray(parsed)) {
-                const clean = defaultSportsConfig.map((def) => {
-                  const existing = parsed.find((s: any) => s.id === def.id);
-                  return existing ? { ...def, ...existing } : def;
-                });
-                setSportsConfig(clean);
-                localStorage.setItem("thebox_sports_config", JSON.stringify(clean));
-              }
-            } catch (e) { console.error(e); }
           }
         }
 
@@ -959,23 +926,6 @@ export default function Home() {
           setIsTrialModalOpen(false);
           setCheckoutRequest((n) => n + 1);
         }}
-      />
-
-      {/* ADMIN PLATFORM MODAL */}
-      <AdminPlatform
-        isOpen={isAdminPlatformOpen}
-        onClose={() => setIsAdminPlatformOpen(false)}
-        coaches={coaches}
-        setCoaches={setCoaches}
-        activeCoach={activeCoach}
-        blockedSports={blockedSports}
-        setBlockedSports={setBlockedSports}
-        sportsConfig={sportsConfig}
-        setSportsConfig={setSportsConfig}
-        activePlan={activePlan}
-        setActivePlan={setActivePlan}
-        isModernSleek={isModernSleek}
-        maintenance={maintenance}
       />
 
       {/* SUPPORT CONTACT MODAL */}

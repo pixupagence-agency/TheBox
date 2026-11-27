@@ -21,26 +21,20 @@ import {
   Sparkles,
   Edit3,
   ShieldCheck,
-  Eye,
   Film,
   Plus
 } from "lucide-react";
 import GuideMediaViewer from "./GuideMediaViewer";
-import AdminGuideEditor from "./AdminGuideEditor";
-import {
-  GuideSectionItem,
-  loadGuideSections,
-  GUIDE_UPDATED_EVENT,
-  getMediaType
-} from "@/lib/userGuideData";
+import { getMediaType } from "@/lib/userGuideData";
+import { subscribeGuide, type PublishedGuide } from "@/lib/guide/store";
 import { getPremiumTheme, premiumOverlay, premiumShell } from "@/lib/premiumModalTheme";
 
 export interface UserGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
   isModernSleek?: boolean;
+  /** Administrateur : lien vers l'édition du guide dans la console /admin */
   isAdmin?: boolean;
-  initialMode?: "reader" | "editor";
   initialSectionId?: string;
 }
 
@@ -82,46 +76,26 @@ export default function UserGuideModal({
   onClose,
   isModernSleek = false,
   isAdmin = false,
-  initialMode = "reader",
   initialSectionId = "section-1"
 }: UserGuideModalProps) {
-  const [sections, setSections] = useState<GuideSectionItem[]>([]);
   const [selectedSectionId, setSelectedSectionId] = useState<string>(initialSectionId);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"reader" | "editor">(initialMode);
 
-  // À l'ouverture : sections relues, mode et section demandés (ajusté pendant le rendu, sans effet).
-  // Une section demandée qui n'existe plus laisse place à la première.
-  const openKey = isOpen ? `${initialMode}|${initialSectionId}` : null;
+  // Guide publié par l'administrateur (app_config/guide), suivi en direct pendant l'ouverture
+  const [guide, setGuide] = useState<PublishedGuide | null>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    return subscribeGuide(setGuide);
+  }, [isOpen]);
+  const sections = guide?.sections ?? [];
+
+  // À l'ouverture : article demandé (ajusté pendant le rendu, sans effet)
+  const openKey = isOpen ? initialSectionId : null;
   const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null);
   if (openKey !== prevOpenKey) {
     setPrevOpenKey(openKey);
-    if (isOpen) {
-      const loaded = loadGuideSections();
-      const wanted = initialSectionId || selectedSectionId;
-      setSections(loaded);
-      if (initialMode) setViewMode(initialMode);
-      setSelectedSectionId(loaded.length > 0 && !loaded.some((s) => s.id === wanted) ? loaded[0].id : wanted);
-    }
+    if (openKey) setSelectedSectionId(openKey);
   }
-
-  // Listen to external updates
-  useEffect(() => {
-    const handleUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<GuideSectionItem[]>;
-      if (customEvent.detail) {
-        setSections(customEvent.detail);
-      } else {
-        setSections(loadGuideSections());
-      }
-    };
-    if (typeof window !== "undefined") {
-      window.addEventListener(GUIDE_UPDATED_EVENT, handleUpdate);
-      return () => {
-        window.removeEventListener(GUIDE_UPDATED_EVENT, handleUpdate);
-      };
-    }
-  }, []);
 
   // Fermeture au clavier (Échap)
   useEffect(() => {
@@ -136,8 +110,6 @@ export default function UserGuideModal({
   if (!isOpen) return null;
 
   const th = getPremiumTheme(isModernSleek);
-  const canEdit = isAdmin;
-  const isEditor = canEdit && viewMode === "editor";
 
   const filteredSections = sections.filter((sec) => {
     const query = searchQuery.toLowerCase();
@@ -170,13 +142,6 @@ export default function UserGuideModal({
       <header className={`px-5 sm:px-8 pt-5 sm:pt-6 pb-4 border-b ${th.border}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            {isEditor ? (
-              <>
-                <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${th.gold}`}>Mode édition</p>
-                <h2 className={`text-lg sm:text-xl font-black tracking-tight ${th.text}`}>Modifier le guide</h2>
-                <p className={`text-xs mt-1 ${th.sub}`}>Textes, astuces et vidéos de démonstration de chaque article.</p>
-              </>
-            ) : (
               <>
                 <div className="flex items-center gap-2 mb-1">
                   <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${th.accent}`}>Section {activeSection.number}</p>
@@ -187,29 +152,18 @@ export default function UserGuideModal({
                 <h2 className={`text-xl sm:text-2xl font-black tracking-tight ${th.text}`}>{activeSection.title}</h2>
                 {activeSection.summary && <p className={`text-sm mt-1 ${th.sub}`}>{activeSection.summary}</p>}
               </>
-            )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {canEdit && (
-              <div className={`hidden sm:flex items-center gap-0.5 p-1 rounded-xl border ${th.segment}`}>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("reader")}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer ${!isEditor ? th.segmentActive : th.segmentIdle}`}
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  Lecture
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("editor")}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer ${isEditor ? th.segmentActive : th.segmentIdle}`}
-                >
-                  <Edit3 className={`w-3.5 h-3.5 ${th.gold}`} />
-                  Édition
-                </button>
-              </div>
+            {isAdmin && (
+              <a
+                href="/admin?tab=guide"
+                className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition ${th.ghostBtn}`}
+                title="Modifier le guide dans la console d'administration"
+              >
+                <Edit3 className={`w-3.5 h-3.5 ${th.gold}`} />
+                Modifier
+              </a>
             )}
             <button
               type="button"
@@ -224,7 +178,7 @@ export default function UserGuideModal({
         </div>
 
         {/* Sommaire mobile */}
-        {!isEditor && (
+        {(
           <select
             value={activeSection.id}
             onChange={(e) => setSelectedSectionId(e.target.value)}
@@ -247,7 +201,7 @@ export default function UserGuideModal({
         )}
 
         {/* ================= SIDEBAR : SOMMAIRE ================= */}
-        {!isEditor && (
+        {(
           <aside className={`hidden md:flex w-80 shrink-0 flex-col border-r relative z-10 ${th.sidebar}`}>
             <div className="px-5 pt-6 pb-4">
               <div className="flex items-center gap-3">
@@ -310,15 +264,6 @@ export default function UserGuideModal({
         )}
 
         {/* ================= MAIN ================= */}
-        {isEditor ? (
-          <AdminGuideEditor
-            isModernSleek={isModernSleek}
-            initialSectionId={selectedSectionId}
-            onSelectSection={setSelectedSectionId}
-            onPreviewGuide={() => setViewMode("reader")}
-            header={headerEl}
-          />
-        ) : (
         <main className="flex-1 min-w-0 flex flex-col relative z-10">
           {headerEl}
 
@@ -416,7 +361,6 @@ export default function UserGuideModal({
               </article>
             </div>
         </main>
-        )}
       </div>
     </div>
   );

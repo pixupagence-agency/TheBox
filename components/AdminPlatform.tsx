@@ -26,10 +26,18 @@ import {
   Zap,
   ExternalLink,
   Wrench,
-  Scale
+  Scale,
+  LayoutDashboard,
+  BookOpen,
+  HelpCircle,
+  ArrowLeft
 } from "lucide-react";
 import { confirmAction } from "@/components/ConfirmDialog";
 import LegalDocsEditor from "@/components/admin/LegalDocsEditor";
+import FaqEditor from "@/components/admin/FaqEditor";
+import AdminDashboard from "@/components/admin/AdminDashboard";
+import AdminGuideEditor from "@/components/AdminGuideEditor";
+import { saveSportsAccess, defaultSportsConfig, type SportAccessConfig } from "@/lib/sportsAccess";
 import {
   DEFAULT_MAINTENANCE_MESSAGE,
   MAINTENANCE_MESSAGE_MAX,
@@ -38,51 +46,7 @@ import {
   setMaintenance,
 } from "@/lib/maintenance";
 
-export interface SportAccessConfig {
-  id: string;
-  name: string;
-  icon: string;
-  isBlocked: boolean;
-  statusNote: string;
-  category: string;
-}
-
-export const defaultBlockedSports: string[] = ["basketball", "rugby", "handball"];
-
-export const defaultSportsConfig: SportAccessConfig[] = [
-  {
-    id: "football",
-    name: "Football",
-    icon: "⚽",
-    isBlocked: false,
-    statusNote: "Totalement opérationnel (11v11, 8v8, 5v5)",
-    category: "Outdoor"
-  },
-  {
-    id: "basketball",
-    name: "Basketball",
-    icon: "🏀",
-    isBlocked: true,
-    statusNote: "Disponible sur activation administrateur",
-    category: "Indoor"
-  },
-  {
-    id: "rugby",
-    name: "Rugby",
-    icon: "🏉",
-    isBlocked: true,
-    statusNote: "Disponible sur activation administrateur",
-    category: "Outdoor"
-  },
-  {
-    id: "handball",
-    name: "Handball",
-    icon: "🤾",
-    isBlocked: true,
-    statusNote: "Disponible sur activation administrateur",
-    category: "Indoor"
-  }
-];
+export { defaultSportsConfig, defaultBlockedSports, type SportAccessConfig } from "@/lib/sportsAccess";
 
 interface AdminPlatformProps {
   isOpen: boolean;
@@ -99,11 +63,16 @@ interface AdminPlatformProps {
   isModernSleek?: boolean;
   /** État du mode maintenance, suivi en direct par la page */
   maintenance: MaintenanceState;
+  /** Onglet affiché à l'ouverture (adresse /admin?tab=…) */
+  initialTab?: AdminTab;
+  /** Changement d'onglet (mise à jour de l'adresse) */
+  onTabChange?: (tab: AdminTab) => void;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-type AdminTab = "subscriptions" | "sports" | "legal" | "privileges" | "maintenance";
+export type AdminTab = "dashboard" | "subscriptions" | "sports" | "maintenance" | "privileges" | "legal" | "guide" | "faq";
+export const ADMIN_TABS: AdminTab[] = ["dashboard", "subscriptions", "sports", "maintenance", "privileges", "legal", "guide", "faq"];
 
 /** Fin d'essai enregistrée en base (Timestamp Firestore ou ISO) au format ISO, sinon undefined. */
 const trialEndIso = (p: FirebaseCoachProfile): string | undefined => {
@@ -139,9 +108,15 @@ export default function AdminPlatform({
   activePlan,
   setActivePlan,
   isModernSleek = false,
-  maintenance
+  maintenance,
+  initialTab = "dashboard",
+  onTabChange
 }: AdminPlatformProps) {
-  const [activeTab, setActiveTab] = useState<AdminTab>("subscriptions");
+  const [activeTab, setActiveTabState] = useState<AdminTab>(initialTab);
+  const setActiveTab = (tab: AdminTab) => {
+    setActiveTabState(tab);
+    onTabChange?.(tab);
+  };
 
   // Mode maintenance : réservé au super admin (adresse confirmée, comme l'exigent les règles Firestore)
   const canManageMaintenance = isOpen && isCurrentUserSuperAdmin();
@@ -180,7 +155,7 @@ export default function AdminPlatform({
   };
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPlan, setFilterPlan] = useState("all");
-  
+
   // State for user creation in admin
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [newFirstName, setNewFirstName] = useState("");
@@ -421,22 +396,6 @@ export default function AdminPlatform({
   const cleanBlockedSports = blockedSports.filter((id) => supportedSportIds.includes(id));
   const blockedSportsCount = cleanBlockedSports.length;
 
-  // À l'ouverture : sports non pris en charge retirés de la configuration enregistrée sur l'appareil
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const supported = defaultSportsConfig.map((s) => s.id);
-    if (sportsConfig.some((s) => !supported.includes(s.id)) || sportsConfig.length !== defaultSportsConfig.length) {
-      const normalized = defaultSportsConfig.map((def) => ({ ...def, ...sportsConfig.find((s) => s.id === def.id) }));
-      setSportsConfig(normalized);
-      localStorage.setItem("thebox_sports_config", JSON.stringify(normalized));
-    }
-    if (blockedSports.some((id) => !supported.includes(id))) {
-      const cleaned = blockedSports.filter((id) => supported.includes(id));
-      setBlockedSports(cleaned);
-      localStorage.setItem("thebox_blocked_sports", JSON.stringify(cleaned));
-    }
-  }, [isOpen, sportsConfig, blockedSports, setSportsConfig, setBlockedSports]);
-
   // Toggle sport blockage
   const handleToggleSportBlock = (sportId: string) => {
     let newBlocked: string[];
@@ -445,29 +404,45 @@ export default function AdminPlatform({
     } else {
       newBlocked = [...cleanBlockedSports, sportId];
     }
-    setBlockedSports(newBlocked);
-
-    // Update config state as well
-    const updatedConfig = activeSportsConfig.map((s) => 
+    const updatedConfig = activeSportsConfig.map((s) =>
       s.id === sportId ? { ...s, isBlocked: newBlocked.includes(sportId) } : s
     );
+    // Affichage immédiat, puis enregistrement pour toute la plateforme (retour arrière en cas de refus)
+    const previous = { blocked: blockedSports, config: sportsConfig };
+    setBlockedSports(newBlocked);
     setSportsConfig(updatedConfig);
+    void persistSports(newBlocked, updatedConfig, previous);
+  };
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem("thebox_blocked_sports", JSON.stringify(newBlocked));
-      localStorage.setItem("thebox_sports_config", JSON.stringify(updatedConfig));
+  const [sportsError, setSportsError] = useState<string | null>(null);
+  const persistSports = async (blocked: string[], config: SportAccessConfig[], previous: { blocked: string[]; config: SportAccessConfig[] }) => {
+    setSportsError(null);
+    try {
+      await saveSportsAccess(blocked, config);
+    } catch (err) {
+      setBlockedSports(previous.blocked);
+      setSportsConfig(previous.config);
+      const code = (err as { code?: string })?.code;
+      setSportsError(code === "permission-denied" ? "Enregistrement refusé : réservé aux super administrateurs." : "Enregistrement impossible, réessayez.");
     }
   };
 
-  // Update sport status note
+  // Messages des sports : modifiés localement, enregistrés en quittant le champ
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+
+  // Message d'un sport : enregistré pour toute la plateforme en quittant le champ
   const handleUpdateSportNote = (sportId: string, note: string) => {
-    const updatedConfig = activeSportsConfig.map((s) => 
-      s.id === sportId ? { ...s, statusNote: note } : s
-    );
+    setNoteDrafts((d) => {
+      const next = { ...d };
+      delete next[sportId];
+      return next;
+    });
+    const current = activeSportsConfig.find((s) => s.id === sportId);
+    if (!current || current.statusNote === note) return;
+    const updatedConfig = activeSportsConfig.map((s) => (s.id === sportId ? { ...s, statusNote: note.slice(0, 200) } : s));
+    const previous = { blocked: blockedSports, config: sportsConfig };
     setSportsConfig(updatedConfig);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("thebox_sports_config", JSON.stringify(updatedConfig));
-    }
+    void persistSports(cleanBlockedSports, updatedConfig, previous);
   };
 
   // Add new user from admin
@@ -580,11 +555,10 @@ export default function AdminPlatform({
       if (e.key !== "Escape") return;
       if (isAddUserOpen) setIsAddUserOpen(false);
       else if (selectedCoachForExtend) setSelectedCoachForExtend(null);
-      else onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen, isAddUserOpen, selectedCoachForExtend, onClose]);
+  }, [isOpen, isAddUserOpen, selectedCoachForExtend]);
 
   if (!isOpen) return null;
 
@@ -654,6 +628,9 @@ export default function AdminPlatform({
         : th.chip;
 
   const tabMeta = {
+    dashboard: { title: "Tableau de bord", desc: "Indicateurs clés de la plateforme : coachs, abonnements, inscriptions et contenus publiés." },
+    guide: { title: "Guide d'utilisation", desc: "Articles, astuces et médias du guide affiché aux coachs." },
+    faq: { title: "Foire aux questions", desc: "Questions et réponses affichées dans « Aide & informations »." },
     subscriptions: { title: "Abonnements & coachs", desc: "Suivez les formules, les périodes d'essai et gérez les comptes de la plateforme." },
     sports: { title: "Accès aux sports", desc: "Ouvrez ou verrouillez chaque sport pour le grand public." },
     legal: { title: "Documents légaux", desc: "Modifiez et publiez les CGU, CGV, mentions légales, la politique de confidentialité et l'accord de sous-traitance." },
@@ -661,15 +638,30 @@ export default function AdminPlatform({
     maintenance: { title: "Mode maintenance", desc: "Fermez temporairement l'application au public pendant une mise à jour." },
   } as const;
 
-  const navItems: { id: AdminTab; label: string; icon: React.ElementType; badge?: string; warn?: boolean }[] = [
-    { id: "subscriptions", label: "Abonnements & coachs", icon: Users, badge: String(totalCoaches) },
-    { id: "sports", label: "Accès aux sports", icon: Layers, badge: blockedSportsCount > 0 ? `${blockedSportsCount} verrouillé${blockedSportsCount > 1 ? "s" : ""}` : undefined, warn: true },
-    { id: "legal", label: "Documents légaux", icon: Scale },
-    { id: "privileges", label: "Privilèges admin", icon: Crown },
-    ...(canManageMaintenance
-      ? [{ id: "maintenance" as const, label: "Maintenance", icon: Wrench, badge: maintenance.enabled ? "Active" : undefined, warn: true }]
-      : []),
+  type NavItem = { id: AdminTab; label: string; icon: React.ElementType; badge?: string; warn?: boolean };
+  const navGroups: { label: string; items: NavItem[] }[] = [
+    { label: "Pilotage", items: [{ id: "dashboard", label: "Tableau de bord", icon: LayoutDashboard }] },
+    {
+      label: "Gestion",
+      items: [
+        { id: "subscriptions", label: "Abonnements & coachs", icon: Users, badge: String(totalCoaches) },
+        { id: "sports", label: "Accès aux sports", icon: Layers, badge: blockedSportsCount > 0 ? `${blockedSportsCount} verrouillé${blockedSportsCount > 1 ? "s" : ""}` : undefined, warn: true },
+        ...(canManageMaintenance
+          ? [{ id: "maintenance" as const, label: "Maintenance", icon: Wrench, badge: maintenance.enabled ? "Active" : undefined, warn: true }]
+          : []),
+        { id: "privileges", label: "Privilèges admin", icon: Crown },
+      ],
+    },
+    {
+      label: "Contenus",
+      items: [
+        { id: "legal", label: "Documents légaux", icon: Scale },
+        { id: "guide", label: "Guide d'utilisation", icon: BookOpen },
+        { id: "faq", label: "FAQ", icon: HelpCircle },
+      ],
+    },
   ];
+  const navItems = navGroups.flatMap((g) => g.items);
 
   const adminInitials = `${activeCoach.firstName?.charAt(0) || ""}${activeCoach.lastName?.charAt(0) || ""}`.toUpperCase() || "AD";
   const inputBase = `w-full rounded-xl px-3 py-2 text-xs border outline-none transition ${th.input}`;
@@ -683,8 +675,8 @@ export default function AdminPlatform({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-2 sm:p-6 z-50 animate-fade-in backdrop-blur-md">
-      <div className={`w-full max-w-7xl h-[94vh] sm:h-[90vh] rounded-[28px] border shadow-[0_40px_120px_-20px_rgba(0,0,0,0.6)] flex flex-col md:flex-row overflow-hidden relative ${th.panel}`}>
+    <div className={`min-h-[100dvh] flex items-stretch justify-center sm:p-4 ${isModernSleek ? "bg-slate-100" : "bg-[#05070b]"}`}>
+      <div className={`w-full max-w-[1600px] h-[100dvh] sm:h-[calc(100dvh-2rem)] sm:rounded-[28px] border shadow-[0_40px_120px_-20px_rgba(0,0,0,0.6)] flex flex-col md:flex-row overflow-hidden relative ${th.panel}`}>
         {/* Halo doré discret */}
         {!isModernSleek && (
           <div className="absolute -top-40 left-40 w-[520px] h-[320px] bg-[#d4af37]/[0.07] rounded-full blur-3xl pointer-events-none" />
@@ -704,31 +696,37 @@ export default function AdminPlatform({
             </div>
           </div>
 
-          <nav className="px-3 space-y-1">
-            <p className={`px-3 pb-2 text-[10px] font-black uppercase tracking-[0.18em] ${th.faint}`}>Gestion</p>
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${isActive ? th.navActive : th.navIdle}`}
-                >
-                  {isActive && <span className={`absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full ${isModernSleek ? "bg-emerald-500" : "bg-[#00E599]"}`} />}
-                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? th.accent : ""}`} />
-                  <span className="flex-1 text-left">{item.label}</span>
-                  {item.badge && (
-                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md border ${item.warn
-                      ? isModernSleek ? "bg-rose-50 text-rose-600 border-rose-200" : "bg-rose-500/10 text-rose-300 border-rose-500/25"
-                      : th.chip
-                      }`}>
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          <nav className="px-3 space-y-4 overflow-y-auto scrollbar-thin" aria-label="Rubriques de la console">
+            {navGroups.map((group) => (
+              <div key={group.label} className="space-y-1">
+                <p className={`px-3 pb-1 text-[10px] font-black uppercase tracking-[0.18em] ${th.faint}`}>{group.label}</p>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setActiveTab(item.id)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${isActive ? th.navActive : th.navIdle}`}
+                    >
+                      {isActive && <span className={`absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full ${isModernSleek ? "bg-emerald-500" : "bg-[#00E599]"}`} />}
+                      <Icon className={`h-4 w-4 shrink-0 ${isActive ? th.accent : ""}`} />
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.badge && (
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md border ${item.warn
+                          ? isModernSleek ? "bg-rose-50 text-rose-600 border-rose-200" : "bg-rose-500/10 text-rose-300 border-rose-500/25"
+                          : th.chip
+                          }`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           <div className="mt-auto p-3">
@@ -760,12 +758,13 @@ export default function AdminPlatform({
                 <p className={`text-xs mt-1 ${th.sub}`}>{tabMeta[activeTab].desc}</p>
               </div>
               <button
+                type="button"
                 onClick={onClose}
-                className={`p-2 rounded-xl border transition cursor-pointer shrink-0 ${th.ghostBtn}`}
-                title="Fermer la console (Échap)"
-                aria-label="Fermer la console"
+                className={`px-3 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer shrink-0 ${th.ghostBtn}`}
+                title="Retour au tableau tactique"
               >
-                <X className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Retour à l&apos;application</span>
               </button>
             </div>
 
@@ -1097,6 +1096,9 @@ export default function AdminPlatform({
             {/* ---------- TAB 2 : SPORTS ---------- */}
             {activeTab === "sports" && (
               <>
+                {sportsError && (
+                  <p className="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-xs font-semibold text-rose-400" role="alert">{sportsError}</p>
+                )}
                 <div className={`p-4 rounded-2xl border flex items-start gap-3 ${th.card}`}>
                   <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${th.goldTile}`}>
                     <ShieldCheck className="h-4 w-4" />
@@ -1152,8 +1154,10 @@ export default function AdminPlatform({
                           <label className={labelBase}>Message affiché aux coachs</label>
                           <input
                             type="text"
-                            value={sport.statusNote}
-                            onChange={(e) => handleUpdateSportNote(sport.id, e.target.value)}
+                            value={noteDrafts[sport.id] ?? sport.statusNote}
+                            maxLength={200}
+                            onChange={(e) => setNoteDrafts((d) => ({ ...d, [sport.id]: e.target.value }))}
+                            onBlur={(e) => handleUpdateSportNote(sport.id, e.target.value)}
                             className={inputBase}
                           />
                         </div>
@@ -1162,6 +1166,32 @@ export default function AdminPlatform({
                   })}
                 </div>
               </>
+            )}
+
+            {/* ---------- TABLEAU DE BORD ---------- */}
+            {activeTab === "dashboard" && (
+              <AdminDashboard
+                th={th}
+                isModernSleek={isModernSleek}
+                profiles={remoteProfiles}
+                status={remoteStatus === "idle" ? "loading" : remoteStatus}
+                maintenanceEnabled={maintenance.enabled}
+                blockedSportsCount={blockedSportsCount}
+                sportsCount={activeSportsConfig.length}
+                onNavigate={setActiveTab}
+              />
+            )}
+
+            {/* ---------- GUIDE D'UTILISATION ---------- */}
+            {activeTab === "guide" && (
+              <div className={`h-[calc(100dvh-13rem)] min-h-[560px] flex rounded-2xl border overflow-hidden ${th.border}`}>
+                <AdminGuideEditor isModernSleek={isModernSleek} />
+              </div>
+            )}
+
+            {/* ---------- FAQ ---------- */}
+            {activeTab === "faq" && (
+              <FaqEditor th={th} isModernSleek={isModernSleek} inputBase={inputBase} labelBase={labelBase} />
             )}
 
             {/* ---------- DOCUMENTS LÉGAUX ---------- */}
