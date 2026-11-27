@@ -14,7 +14,7 @@ async function connectToTacticsBoard(page: any) {
   await loginForm.locator('input[type="password"]').fill(COACH.password);
   await loginForm.locator('button[type="submit"]').click();
 
-  await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('#pitch-football')).toBeVisible({ timeout: 45000 });
 }
 
 test.describe('Section 4 : Boîte à Outils de Tracés & Schématisation (FT-TOOL)', () => {

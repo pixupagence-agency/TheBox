@@ -166,7 +166,7 @@ export default function PitchToolbar({
 
               {/* GROUP 1: Vue du terrain (complet / demi-terrain, paysage / portrait) */}
               {renderToolbarGroup("view", false,
-              <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
+              <div id="tour-view-tools" className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                 <button
                   type="button"
                   onClick={() => setTerrainComplet(true)}
@@ -178,7 +178,7 @@ export default function PitchToolbar({
                       ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
-                  title={t.tactics.pitchModes.fullPitch}
+                  data-tour-btn="full" title={t.tactics.pitchModes.fullPitch}
                   aria-label={t.tactics.pitchModes.fullPitch}
                 >
                   <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -198,7 +198,7 @@ export default function PitchToolbar({
                       ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
-                  title={t.tactics.pitchModes.halfPitch}
+                  data-tour-btn="half" title={t.tactics.pitchModes.halfPitch}
                   aria-label={t.tactics.pitchModes.halfPitch}
                 >
                   <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -222,7 +222,7 @@ export default function PitchToolbar({
                       ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
-                  title={t.tactics.pitchModes.aspectDesktop}
+                  data-tour-btn="landscape" title={t.tactics.pitchModes.aspectDesktop}
                   aria-label={t.tactics.pitchModes.aspectDesktop}
                 >
                   <Laptop className="h-[18px] w-[18px] shrink-0" />
@@ -238,7 +238,7 @@ export default function PitchToolbar({
                       ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
-                  title={t.tactics.pitchModes.aspectMobile}
+                  data-tour-btn="portrait" title={t.tactics.pitchModes.aspectMobile}
                   aria-label={t.tactics.pitchModes.aspectMobile}
                 >
                   <Smartphone className="h-[18px] w-[18px] shrink-0" />
@@ -251,7 +251,7 @@ export default function PitchToolbar({
                     <div className={`h-4 w-px mx-0.5 ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
                     <div
                       role="group"
-                      aria-label={currentLang === "en" ? "Game format" : "Format de jeu"}
+                      data-tour-btn="format" aria-label={currentLang === "en" ? "Game format" : "Format de jeu"}
                       className="flex items-center gap-1"
                     >
                       <Users className={`h-3.5 w-3.5 shrink-0 mx-0.5 ${isModernSleek ? "text-slate-500" : "text-[#6c7d99]"}`} aria-hidden="true" />
@@ -286,7 +286,7 @@ export default function PitchToolbar({
 
               {/* GROUP 2: Affichage (ballon, adversaires, noms, volets, représentation des joueurs) */}
               {renderToolbarGroup("display", true,
-              <div className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
+              <div id="tour-display-tools" className={`flex items-center gap-1 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                 <button
                   type="button"
                   onClick={() => setShowBall(!showBall)}
@@ -302,7 +302,7 @@ export default function PitchToolbar({
                     ? (activeSport === "rugby" ? "Masquer le ballon de rugby" : activeSport === "basketball" ? "Masquer le ballon de basketball" : activeSport === "handball" ? "Masquer le ballon de handball" : t.tactics.pitchModes.ballHide)
                     : (activeSport === "rugby" ? "Afficher le ballon de rugby" : activeSport === "basketball" ? "Afficher le ballon de basketball" : activeSport === "handball" ? "Afficher le ballon de handball" : t.tactics.pitchModes.ballShow)
                   }
-                  aria-label={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
+                  data-tour-btn="ball" aria-label={showBall ? t.tactics.pitchModes.ballHide : t.tactics.pitchModes.ballShow}
                 >
                   <span className="text-base leading-none shrink-0" aria-hidden="true">
                     {getSportBallInfo(activeSport).emoji}
@@ -325,7 +325,7 @@ export default function PitchToolbar({
                     title={showPitchZones
                       ? (currentLang === "en" ? "Hide the 5 pitch lanes" : "Masquer les 5 couloirs du terrain")
                       : (currentLang === "en" ? "Show the 5 pitch lanes" : "Afficher les 5 couloirs du terrain")}
-                    aria-label={currentLang === "en" ? "5 pitch lanes" : "5 couloirs du terrain"}
+                    data-tour-btn="lanes" aria-label={currentLang === "en" ? "5 pitch lanes" : "5 couloirs du terrain"}
                   >
                     <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -353,7 +353,7 @@ export default function PitchToolbar({
                     title={showPitchThirds
                       ? (currentLang === "en" ? "Hide the 3 zones (defence, midfield, attack)" : "Masquer les 3 zones (défense, milieu, attaque)")
                       : (currentLang === "en" ? "Show the 3 zones (defence, midfield, attack)" : "Afficher les 3 zones (défense, milieu, attaque)")}
-                    aria-label={currentLang === "en" ? "3 pitch zones" : "3 zones du terrain"}
+                    data-tour-btn="thirds" aria-label={currentLang === "en" ? "3 pitch zones" : "3 zones du terrain"}
                   >
                     <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -385,7 +385,7 @@ export default function PitchToolbar({
                           ? "bg-slate-200/80 border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-300/80"
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                         }`}
-                      data-wall-button="true"
+                      data-tour-btn="wall" data-wall-button="true"
                       title={currentLang === "en" ? "Free-kick wall" : "Mur (coup franc)"}
                       aria-label={currentLang === "en" ? "Free-kick wall" : "Mur (coup franc)"}
                     >
@@ -405,7 +405,7 @@ export default function PitchToolbar({
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
                   title={showOpponents ? t.tactics.pitchModes.opponentsHide : t.tactics.pitchModes.opponentsShow}
-                  aria-label={showOpponents ? t.tactics.pitchModes.opponentsHide : t.tactics.pitchModes.opponentsShow}
+                  data-tour-btn="opponents" aria-label={showOpponents ? t.tactics.pitchModes.opponentsHide : t.tactics.pitchModes.opponentsShow}
                 >
                   <Users className="h-[18px] w-[18px] shrink-0" />
                 </button>
@@ -421,7 +421,7 @@ export default function PitchToolbar({
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
                   title={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
-                  aria-label={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
+                  data-tour-btn="names" aria-label={showPlayerNames ? t.tactics.pitchModes.namesHide : t.tactics.pitchModes.namesShow}
                 >
                   <Hash className="h-[18px] w-[18px] shrink-0" />
                 </button>
@@ -439,7 +439,7 @@ export default function PitchToolbar({
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
                   title={playerRolesToggleLabel}
-                  aria-label={playerRolesToggleLabel}
+                  data-tour-btn="roles" aria-label={playerRolesToggleLabel}
                 >
                   <Tag className="h-[18px] w-[18px] shrink-0" />
                 </button>
@@ -458,7 +458,7 @@ export default function PitchToolbar({
                       ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
-                  title={
+                  data-tour-btn="panels" title={
                     isTeamAPanelCollapsed && isTeamBPanelCollapsed
                       ? t.tactics.pitchModes.panelsUnfold
                       : t.tactics.pitchModes.panelsCollapse
@@ -487,7 +487,7 @@ export default function PitchToolbar({
                       ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
-                  title={t.tactics.pitchModes.repPastille}
+                  data-tour-btn="dot" title={t.tactics.pitchModes.repPastille}
                   aria-label={t.tactics.pitchModes.repPastille}
                 >
                   <Circle className="h-[18px] w-[18px] shrink-0" />
@@ -504,7 +504,7 @@ export default function PitchToolbar({
                       ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
-                  title={t.tactics.pitchModes.repBuste}
+                  data-tour-btn="jersey" title={t.tactics.pitchModes.repBuste}
                   aria-label={t.tactics.pitchModes.repBuste}
                 >
                   <Shirt className="h-[18px] w-[18px] shrink-0" />
@@ -521,7 +521,7 @@ export default function PitchToolbar({
                       ? "bg-slate-200/80 border border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-300/80"
                       : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d]"
                     }`}
-                  title={t.tactics.pitchModes.repTete}
+                  data-tour-btn="head" title={t.tactics.pitchModes.repTete}
                   aria-label={t.tactics.pitchModes.repTete}
                 >
                   <User className="h-[18px] w-[18px] shrink-0" />
@@ -537,7 +537,7 @@ export default function PitchToolbar({
                   type="button"
                   onClick={() => { setActiveTool("select"); setDrawingTool("brush"); }}
                   className={topToolBtnClass(activeTool === "select")}
-                  title={t.tactics.tools.select}
+                  data-tour-btn="select" title={t.tactics.tools.select}
                   aria-label={t.tactics.tools.select}
                 >
                   <MousePointer className="h-[18px] w-[18px] shrink-0" />
@@ -546,7 +546,7 @@ export default function PitchToolbar({
                   type="button"
                   onClick={() => { setActiveTool("move"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
                   className={topToolBtnClass(activeTool === "move")}
-                  title={t.tactics.tools.move}
+                  data-tour-btn="move" title={t.tactics.tools.move}
                   aria-label={t.tactics.tools.move}
                 >
                   <Move className="h-[18px] w-[18px] shrink-0" />
@@ -563,7 +563,7 @@ export default function PitchToolbar({
                         : t.tactics.tools.lineTooltipSolidActive
                       : t.tactics.tools.lineTooltipDefault
                   }
-                  aria-label={t.tactics.tools.line}
+                  data-tour-btn="line" aria-label={t.tactics.tools.line}
                 >
                   {activeTool === "line" && drawingTool === "shape-dashed-line" ? (
                     <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -581,7 +581,7 @@ export default function PitchToolbar({
                   onClick={() => { setActiveTool(activeTool === "link" ? "select" : "link"); setSelectedStrokeIndex(null); }}
                   className={topToolBtnClass(activeTool === "link")}
                   title="Lier des joueurs : touchez les joueurs un à un pour les relier par une ligne qui les suit"
-                  aria-label="Lier des joueurs"
+                  data-tour-btn="link" aria-label="Lier des joueurs"
                   aria-pressed={activeTool === "link"}
                 >
                   <PlayerLinkIcon className="h-[18px] w-[18px] shrink-0" />
@@ -590,7 +590,7 @@ export default function PitchToolbar({
                   type="button"
                   onClick={() => { setActiveTool("arrow"); setDrawingTool("arrow-direct"); setSelectedStrokeIndex(null); }}
                   className={topToolBtnClass(activeTool === "arrow")}
-                  title={t.tactics.tools.arrow}
+                  data-tour-btn="arrow" title={t.tactics.tools.arrow}
                   aria-label={t.tactics.tools.arrow}
                 >
                   <ArrowUpRight className="h-[18px] w-[18px] shrink-0" />
@@ -601,7 +601,7 @@ export default function PitchToolbar({
                   onClick={handleToggleCurveTool}
                   className={topToolBtnClass(activeTool === "curve")}
                   title={curveToolTitle}
-                  aria-label="Courbe fléchée"
+                  data-tour-btn="curve" aria-label="Courbe fléchée"
                   aria-pressed={activeTool === "curve"}
                 >
                   <CurveArrowIcon dashed={activeTool === "curve" && drawingTool === "curve-arrow-dashed"} className="h-[18px] w-[18px] shrink-0" />
@@ -610,7 +610,7 @@ export default function PitchToolbar({
                   type="button"
                   onClick={() => { setActiveTool("draw"); setDrawingTool("shape-rect"); setSelectedStrokeIndex(null); }}
                   className={topToolBtnClass(activeTool === "draw" && drawingTool === "shape-rect")}
-                  title={t.tactics.tools.zoneTooltip}
+                  data-tour-btn="zone" title={t.tactics.tools.zoneTooltip}
                   aria-label={t.tactics.tools.zoneTooltip}
                 >
                   <Scan className="h-[18px] w-[18px] shrink-0" />
@@ -619,7 +619,7 @@ export default function PitchToolbar({
                   type="button"
                   onClick={() => { setActiveTool("draw"); setDrawingTool("brush"); setSelectedStrokeIndex(null); }}
                   className={topToolBtnClass(activeTool === "draw" && drawingTool !== "shape-rect")}
-                  title={t.tactics.tools.draw}
+                  data-tour-btn="draw" title={t.tactics.tools.draw}
                   aria-label={t.tactics.tools.draw}
                 >
                   <Pencil className="h-[18px] w-[18px] shrink-0" />
@@ -636,7 +636,7 @@ export default function PitchToolbar({
                       ? "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed"
                       : "bg-[#0c1017] border-[#1e293b] text-slate-600 cursor-not-allowed"
                     }`}
-                  title={t.tactics.tools.clearDrawings}
+                  data-tour-btn="clear" title={t.tactics.tools.clearDrawings}
                   aria-label={t.tactics.tools.clearDrawings}
                 >
                   <Trash2 className="h-[18px] w-[18px] shrink-0" />
@@ -646,7 +646,7 @@ export default function PitchToolbar({
 
               {/* GROUP 7: Couleur du tracé */}
               {renderToolbarGroup("color", false,
-              <div className={`${topToolGroupClass} px-1.5 gap-1.5`} title={t.tactics.tools.strokeOptions}>
+              <div id="tour-color-tools" className={`${topToolGroupClass} px-1.5 gap-1.5`} title={t.tactics.tools.strokeOptions}>
                 {["#00E599", "#ef4444", "#3b82f6", "#1e293b", "#eab308"].map((c) => (
                   <button
                     key={c}
@@ -671,7 +671,7 @@ export default function PitchToolbar({
                     ? "bg-amber-400 hover:bg-amber-300 border-amber-400 text-amber-950"
                     : "bg-[#e9c349] hover:bg-[#f2d469] border-[#e9c349] text-[#241a00]"
                     }`}
-                  title={t.tactics.tools.exportPng}
+                  data-tour-btn="export" title={t.tactics.tools.exportPng}
                   aria-label={t.tactics.tools.exportPng}
                 >
                   <Download className="h-[18px] w-[18px] shrink-0" />
@@ -683,7 +683,7 @@ export default function PitchToolbar({
                     ? "bg-slate-200/80 border-slate-300 text-amber-600 hover:bg-slate-300/80"
                     : "bg-[#0c1017] border-[#1e293b] text-[#e9c349] hover:bg-[#151e2d]"
                     }`}
-                  title={t.tactics.tools.cardView3D}
+                  data-tour-btn="card3d" title={t.tactics.tools.cardView3D}
                   aria-label={t.tactics.tools.cardView3D}
                 >
                   <Sparkles className="h-[18px] w-[18px] shrink-0" />
@@ -693,9 +693,9 @@ export default function PitchToolbar({
 
               {/* GROUP 4: Zooms (Échelle Terrain & Taille Joueurs) — calés à droite, collés au bouton Animation */}
               {renderToolbarGroup("zoom", false,
-              <div className={`flex items-center gap-2 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 px-2 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]"}`}>
+              <div id="tour-zoom-tools" className={`flex items-center gap-2 h-8 ${isModernSleek ? "bg-slate-100 p-0.5 px-2 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 px-2 rounded-lg border border-[#1a2130]"}`}>
                 {/* Pitch Zoom */}
-                <div title={t.tactics.pitchModes.pitchZoom} className="flex items-center gap-1">
+                <div data-tour-btn="pitchZoom" title={t.tactics.pitchModes.pitchZoom} className="flex items-center gap-1">
                   <ZoomIn className={`h-[18px] w-[18px] shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
                   <button
                     type="button"
@@ -747,7 +747,7 @@ export default function PitchToolbar({
                 <div className={`h-4 w-px ${isModernSleek ? "bg-slate-300" : "bg-[#1a2130]"}`} />
 
                 {/* Players Scale */}
-                <div title={t.tactics.pitchModes.playerZoom} className="flex items-center gap-1">
+                <div data-tour-btn="playerZoom" title={t.tactics.pitchModes.playerZoom} className="flex items-center gap-1">
                   <User className={`h-[18px] w-[18px] shrink-0 ${isModernSleek ? "text-slate-600" : "text-[#718096]"}`} />
                   <button
                     type="button"
@@ -781,7 +781,7 @@ export default function PitchToolbar({
               </div>
 
               {/* GROUP 5: Animation (ouvre les contrôles en seconde ligne) — reste à droite, ouvert ou fermé */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div id="tour-animation-tool" className="flex items-center gap-1.5 shrink-0">
                 <div className={`flex items-center h-8 ${isModernSleek ? "bg-slate-100 p-0.5 rounded-xl border border-slate-200" : "bg-[#090d14] p-0.5 rounded-lg border border-[#1a2130]"}`}>
                   <button
                     type="button"
@@ -810,7 +810,7 @@ export default function PitchToolbar({
                           : "bg-[#0c1017] border border-[#1e293b] text-[#6c7d99] hover:text-white hover:bg-[#151e2d] cursor-pointer"
                       }`}
                     title={isLiveMatchMode ? t.tactics.pitchModes.animationLiveDisabled : (isAnimationCreatorOpen ? t.tactics.pitchModes.animationVideoActive : t.tactics.pitchModes.animationVideoInactive)}
-                    aria-label={t.tactics.pitchModes.animationVideoInactive}
+                    data-tour-btn="animation" aria-label={t.tactics.pitchModes.animationVideoInactive}
                   >
                     <Video className="h-[18px] w-[18px] shrink-0" />
                     {/* Libellé masqué sur smartphone pour laisser la place aux outils */}
