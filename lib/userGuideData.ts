@@ -21,7 +21,7 @@ export const GUIDE_UPDATED_EVENT = "thebox_guide_updated";
 
 // Version du contenu par défaut : à incrémenter à chaque refonte du guide pour remplacer
 // les anciennes copies enregistrées dans le navigateur.
-export const GUIDE_CONTENT_VERSION = "2026-11-guide-v2";
+export const GUIDE_CONTENT_VERSION = "2026-11-guide-v3";
 const GUIDE_VERSION_KEY = "thebox_guide_version";
 
 export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
@@ -52,12 +52,14 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
       {
         subtitle: "1.2 La barre supérieure",
         paragraphs: [
-          "Une fois connecté, la barre du haut donne accès à votre formule, à l'aide et à votre compte :"
+          "Une fois connecté, la barre du haut donne accès à votre formule, à l'aide, au plein écran et à votre compte, de gauche à droite :"
         ],
         bullets: [
           "Badge de formule : Gratuite, Essai PRO+ (avec le compte à rebours des jours restants), PRO ou PRO+. Un clic ouvre les offres.",
-          "🎓 Tuto Coach : relance la visite guidée de l'interface en 7 étapes.",
-          "Installer l'application : ajoute TheBox sur votre ordinateur ou votre écran d'accueil.",
+          "🎓 Tuto Coach : relance la visite guidée de l'interface en 12 étapes, dont une fiche pour chaque bouton de la barre d'outils.",
+          "Plein écran : le terrain occupe tout l'écran avec sa propre barre d'outils (voir « Affichage & Zoom »). Le même bouton, ou la touche Échap, permet d'en sortir.",
+          "Panneau de droite : affiche ou masque le panneau des schémas, matchs et notes.",
+          "Installer l'application : ajoute TheBox sur votre ordinateur ou votre écran d'accueil (affiché quand votre navigateur le permet).",
           "Votre profil (en haut à droite) : ouvre le menu utilisateur avec le Tutoriel, le Guide d'Utilisation, la FAQ, le contact du Support, la Configuration Profil & Sport et la Déconnexion."
         ],
         tip: "Configuration Profil & Sport : modifiez vos informations, la langue (français / anglais), le thème clair ou sombre, votre sport et votre abonnement."
@@ -123,8 +125,9 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
           "Le terrain s'adapte au format de jeu choisi (football à 5, 8 ou 11) avec ses dimensions et ses formations."
         ],
         bullets: [
-          "Glisser-déposer : déplacez joueurs et ballon à la souris ou au doigt.",
+          "Glisser-déposer : déplacez joueurs et ballon à la souris ou au doigt, avec l'outil Sélecteur actif (outil par défaut).",
           "Double-clic sur un joueur : ouvre sa fiche pour modifier son nom, son numéro, son poste ou sa photo.",
+          "Clic droit (appui long sur écran tactile) : ouvre directement la fiche du joueur.",
           "État de forme : excellente forme, en forme, fatigué, blessé ou suspendu, affiché sur le joueur.",
           "Remplacement : faites entrer un remplaçant du banc à la place d'un joueur du terrain."
         ]
@@ -136,26 +139,61 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
     number: "04",
     title: "Les Outils de Tracé",
     iconName: "pentool",
-    summary: "Lignes, flèches, zones, dessin libre, couleurs et suppression des tracés.",
+    summary: "Chaque bouton de tracé, la liaison entre joueurs, les couleurs, l'épaisseur et la suppression des tracés.",
     badge: "Dessin",
     videoUrl: "/images/guide/capture-terrain-et-outils.webp",
     content: [
       {
-        subtitle: "La barre d'outils au-dessus du terrain",
+        subtitle: "4.1 La barre d'outils au-dessus du terrain",
         paragraphs: [
-          "Les tracés se dessinent par-dessus le terrain, sans déplacer les joueurs."
+          "Tous les réglages tiennent sur une seule ligne au-dessus du terrain, rangés en groupes de gauche à droite : Vue, Affichage, Tracés, Couleurs, Export, Zoom, puis Animation tout à droite.",
+          "Survolez un bouton pour afficher son nom. Un bouton encadré de couleur est actif : recliquez pour le désactiver."
         ],
         bullets: [
-          "Ligne : ligne pleine ; un nouveau clic sur le bouton la transforme en ligne pointillée (et inversement).",
-          "Flèche : déplacement, course ou passe.",
-          "Zone : rectangle pour matérialiser une zone de pressing, de surnombre ou de couverture.",
-          "Dessin libre (pinceau) : annotations à main levée.",
-          "Sélecteur : cliquez sur un tracé pour le sélectionner puis le supprimer.",
-          "Déplacer : faites glisser le terrain lorsqu'il est zoomé.",
-          "TRAIT : couleur et épaisseur (fin, moyen, épais) du prochain tracé.",
-          "Corbeille : efface tous les tracés d'un coup."
+          "Écran étroit (tablette, smartphone) : la barre défile au doigt, à la molette, ou avec les flèches ‹ › qui apparaissent sur ses bords quand des outils sont masqués.",
+          "Le Tuto Coach présente chaque bouton et le repère sur la barre : pratique pour une première prise en main."
+        ]
+      },
+      {
+        subtitle: "4.2 Les boutons de tracé",
+        paragraphs: [
+          "Choisissez un outil, puis glissez sur le terrain pour dessiner. L'outil reste actif jusqu'à ce que vous en choisissiez un autre. Les tracés se posent par-dessus le terrain, sans déplacer les joueurs."
         ],
-        tip: "Ctrl + Z (Cmd + Z sur Mac) annule le dernier tracé."
+        bullets: [
+          "Sélecteur (flèche) : outil par défaut, pour déplacer joueurs et ballon. Cliquez sur un tracé pour le sélectionner : une barre apparaît pour le supprimer, annuler ou tout effacer.",
+          "Déplacer (croix fléchée) : quand le terrain est zoomé, faites-le glisser pour en voir une autre partie.",
+          "Ligne : ligne droite pleine ; recliquez sur le bouton pour passer en pointillé (et inversement). Idéal pour une ligne défensive ou un marquage.",
+          "Lier des joueurs : voir « 4.3 Relier des joueurs ».",
+          "Flèche de course : glissez du point de départ au point d'arrivée pour montrer un déplacement ou une passe.",
+          "Courbe fléchée : tracez-la, puis déplacez ses poignées pour la cintrer (appel en courbe, centre brossé). Recliquez sur le bouton pour le pointillé.",
+          "Zone : rectangle pour délimiter une zone de pressing, de surnombre ou de couverture.",
+          "Dessin libre (crayon) : annotations à main levée, comme au feutre sur un tableau.",
+          "Tout effacer (corbeille rouge) : supprime tous les tracés d'un coup ; grisée quand le terrain n'en a aucun."
+        ],
+        tip: "Ctrl + Z (Cmd + Z sur Mac) annule le dernier tracé. Pensez à revenir au Sélecteur pour déplacer à nouveau vos joueurs."
+      },
+      {
+        subtitle: "4.3 Relier des joueurs",
+        paragraphs: [
+          "L'outil « Lier des joueurs » trace une ligne entre plusieurs joueurs. Contrairement à une ligne dessinée, elle suit les joueurs quand vous les déplacez, et pendant les animations."
+        ],
+        bullets: [
+          "Touchez les joueurs à relier, un par un : une petite barre au-dessus du terrain vous guide.",
+          "Choisissez la couleur de la liaison et son style (plein ou pointillé) dans cette barre.",
+          "Pour terminer, touchez à nouveau le dernier joueur ou le terrain. À partir de 3 joueurs, touchez le premier pour fermer la forme (bloc, triangle de passes).",
+          "Supprimer une liaison : avec le Sélecteur, cliquez sur la ligne puis sur le bouton de suppression."
+        ]
+      },
+      {
+        subtitle: "4.4 Couleur et épaisseur du trait",
+        paragraphs: [
+          "Les cinq pastilles du groupe Couleurs (vert, rouge, bleu, noir, jaune) règlent la couleur des prochains tracés ; la pastille choisie est entourée."
+        ],
+        bullets: [
+          "Exemple de code couleur : vert pour les courses, jaune pour les passes, rouge pour le pressing.",
+          "Épaisseur (fin, moyen, épais) : réglable dans la barre d'outils du mode Plein écran."
+        ],
+        tip: "Gardez le même code couleur d'une séance à l'autre : vos joueurs le liront d'un coup d'œil."
       }
     ]
   },
@@ -164,22 +202,60 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
     number: "05",
     title: "Affichage & Zoom",
     iconName: "sliders",
-    summary: "Terrain complet ou demi-terrain, format, représentation des joueurs et plein écran.",
+    summary: "Chaque bouton des groupes Vue, Affichage et Zoom, et le mode plein écran.",
     badge: "Vue",
     videoUrl: "/images/guide/session-complete-navigation.webp",
     content: [
       {
-        subtitle: "Adapter la vue",
+        subtitle: "5.1 Vue du terrain",
         paragraphs: [
-          "Les réglages d'affichage se trouvent dans la barre au-dessus du terrain. Quand la place manque, certains groupes passent dans le menu chevron (»)."
+          "Le premier groupe de la barre choisit la portion du terrain affichée et son orientation."
         ],
         bullets: [
-          "Terrain complet ou Demi-terrain : idéal pour détailler corners, coups francs et attaques placées.",
-          "Format Paysage ou Portrait : selon l'orientation de votre écran.",
-          "Représentation des joueurs : Pastille, Buste ou Tête.",
-          "Afficher / masquer : noms des joueurs (pour ne garder que les numéros), adversaires et ballon.",
-          "Échelle du terrain et taille des joueurs : boutons + / −, et retour à 100 %.",
-          "Plein écran : pour les causeries sur grand écran ; touche Échap pour en sortir."
+          "Terrain complet : les deux moitiés, pour l'organisation générale et les transitions.",
+          "Demi-terrain : agrandit une moitié, idéal pour les phases offensives, corners et coups francs.",
+          "Format ordinateur (paysage) : pour un grand écran ou un vidéoprojecteur.",
+          "Format smartphone (portrait) : pour un téléphone, ou un export lisible sur mobile.",
+          "Format de jeu (formule Gratuite) : foot à 11, 8 ou 5. En PRO et PRO+, le format est celui de l'équipe, choisi à sa création."
+        ]
+      },
+      {
+        subtitle: "5.2 Affichage des éléments",
+        paragraphs: [
+          "Le groupe Affichage montre ou masque les éléments du terrain, dans l'ordre des boutons :"
+        ],
+        bullets: [
+          "Ballon : affiche ou masque le ballon.",
+          "5 couloirs : trace les couloirs dans la longueur du terrain (largeur, demi-espaces, axe).",
+          "3 zones : découpe le terrain en zones de défense, de milieu et d'attaque.",
+          "Mur (coup franc) : place et compose un mur (voir « Rôles Tactiques & Coups de Pied Arrêtés »).",
+          "Adversaires : affiche ou masque l'équipe adverse (bouton rouge quand elle est visible).",
+          "Noms (#) : masque les noms pour ne garder que les numéros (bouton orange quand ils sont masqués).",
+          "Rôles (étiquette) : masque ou affiche les badges capitaine et tireurs (orange quand masqués).",
+          "Panneaux d'équipe (colonnes) : replie ou déplie Mon Équipe et Mon Adversaire pour agrandir le terrain.",
+          "Pastille, Buste ou Tête : représentation des joueurs, en rond numéroté, en maillot ou avec leur visage (photo quand vous l'avez ajoutée)."
+        ],
+        tip: "Masquez les noms pour un affichage épuré en séance vidéo, ou les adversaires pour vous concentrer sur votre organisation."
+      },
+      {
+        subtitle: "5.3 Zoom du terrain et taille des joueurs",
+        paragraphs: [
+          "Le groupe Zoom, à droite de la barre, propose deux réglages indépendants avec – et + de part et d'autre du pourcentage."
+        ],
+        bullets: [
+          "Échelle du terrain (loupe) : de 70 % à 150 %. Cliquez sur le pourcentage pour revenir à 100 % et recentrer le terrain.",
+          "Taille des joueurs (silhouette) : de 20 % à 130 %. Réduisez-la en football à 11 ou sur petit écran pour laisser de la place aux tracés.",
+          "Terrain zoomé : prenez l'outil Déplacer pour faire glisser le terrain."
+        ]
+      },
+      {
+        subtitle: "5.4 Plein écran",
+        paragraphs: [
+          "Le bouton « Plein écran » de la barre supérieure affiche le terrain sur tout l'écran, idéal pour les causeries sur grand écran ou tablette."
+        ],
+        bullets: [
+          "Barre d'outils du plein écran : représentation des joueurs, outils de tracé, couleurs, épaisseur du trait (fin, moyen, épais) et zoom.",
+          "Quitter : bouton rouge « Quitter plein écran » ou touche Échap."
         ]
       }
     ]
@@ -196,7 +272,7 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
       {
         subtitle: "Animer une combinaison",
         paragraphs: [
-          "Le créateur d'animation enchaîne plusieurs positions du terrain pour montrer le déroulement d'une action."
+          "Le créateur d'animation enchaîne plusieurs positions du terrain pour montrer le déroulement d'une action. Le bouton « Animation », tout à droite de la barre d'outils, ouvre ses commandes sous la barre ; un nouveau clic les referme."
         ],
         bullets: [
           "Étape 1 : placez les joueurs et le ballon dans leur position de départ.",
@@ -206,7 +282,7 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
           "Supprimer une étape ou réinitialiser toute l'animation.",
           "Enregistrer l'animation : elle rejoint vos schémas et peut être partagée en GIF ou en vidéo (PRO)."
         ],
-        tip: "Le créateur d'animation n'est pas disponible pendant le Mode Live Match."
+        tip: "Le créateur d'animation n'est pas disponible pendant le Mode Live Match. Les joueurs reliés par l'outil « Lier des joueurs » gardent leur liaison pendant l'animation."
       }
     ]
   },
@@ -231,6 +307,19 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
           "🚩 Tireurs de corners"
         ],
         tip: "Les rôles apparaissent sous forme de badges sur les joueurs du terrain. Les rôles de l'adversaire sont disponibles avec les formules PRO et PRO+."
+      },
+      {
+        subtitle: "Mur sur coup franc (football)",
+        paragraphs: [
+          "Le bouton « Mur » du groupe Affichage ouvre le réglage du mur. Un appui sur un mur déjà posé l'ouvre aussi."
+        ],
+        bullets: [
+          "Équipe : choisissez l'équipe qui forme le mur.",
+          "Places dans le mur : de 1 à 7, avec les boutons – et +.",
+          "Placer le mur : il se pose à la distance réglementaire du ballon, entre le ballon et le but défendu.",
+          "Composition : glissez les joueurs du terrain sur le mur. Chaque joueur peut ensuite être remplacé ou sorti du mur ; il revient alors sur le terrain."
+        ],
+        tip: "Associez le mur au demi-terrain et aux rôles de tireurs pour préparer chaque coup franc."
       }
     ]
   },
@@ -305,11 +394,11 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
       {
         subtitle: "Diffuser vos plans de jeu",
         paragraphs: [
-          "Le groupe EXPORT de la barre d'outils et le partage des schémas enregistrés permettent d'envoyer vos consignes à vos joueurs et à votre staff."
+          "Le groupe Export de la barre d'outils (bouton jaune et bouton étoiles) et le partage des schémas enregistrés permettent d'envoyer vos consignes à vos joueurs et à votre staff."
         ],
         bullets: [
-          "Export PNG HD : image nette du terrain avec les joueurs et les tracés.",
-          "Vue Carte 3D : présentation de votre équipe en cartes (thèmes Or, Onyx, Argent, Émeraude) ou en têtes, au format paysage ou portrait, avec réglage de la taille du terrain et des joueurs.",
+          "Export PNG HD (bouton jaune) : image nette du terrain avec les joueurs et les tracés. Choisissez le format smartphone avant l'export pour une image adaptée aux téléphones.",
+          "Vue Carte 3D (bouton étoiles) : présentation de votre équipe en cartes (thèmes Or, Onyx, Argent, Émeraude) ou en têtes, au format paysage ou portrait, avec réglage de la taille du terrain et des joueurs.",
           "Partage d'un schéma (PRO) : image, ou GIF et vidéo pour une animation.",
           "WhatsApp : envoi direct dans le groupe de l'équipe.",
           "E-mail : envoi du schéma à l'adresse de votre choix depuis l'application."
@@ -393,7 +482,7 @@ export const DEFAULT_GUIDE_SECTIONS: GuideSectionItem[] = [
           "Ctrl + Z (Cmd + Z sur Mac) : annuler le dernier tracé.",
           "Échap : quitter le plein écran, fermer une fenêtre ou les actions d'un joueur.",
           "Mode Live, actions d'un joueur ouvertes : B (but), P (passe décisive), J (carton jaune), R (carton rouge).",
-          "Tuto Coach : flèches ← / → pour passer d'une étape à l'autre."
+          "Tuto Coach : flèches ← / → pour passer d'une étape à l'autre, Échap pour le fermer."
         ]
       }
     ]
