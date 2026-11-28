@@ -11,7 +11,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "The Box - Zone de décision tactique",
+  title: "TheBox FC - Zone de décision tactique",
   description: "Application professionnelle de coaching et tableau blanc tactique.",
   appleWebApp: {
     capable: true,
@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "The Box - Zone de décision tactique",
+    title: "TheBox FC - Zone de décision tactique",
     description: "Application professionnelle de coaching et tableau blanc tactique.",
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: "The Box - Zone de décision tactique",
+    title: "TheBox FC - Zone de décision tactique",
     description: "Application professionnelle de coaching et tableau blanc tactique.",
   },
 };
@@ -48,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             Pas de next/font : les dessins canvas désignent les polices par leur nom exact (« Inter »…), que next/font renomme.
             La règle vise l'ancien routeur pages/ ; ici le layout racine charge la police pour toute l'application. */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" crossOrigin="anonymous" />
       </head>
       <body suppressHydrationWarning>
         <PWARegister />

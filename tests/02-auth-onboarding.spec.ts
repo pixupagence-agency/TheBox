@@ -7,7 +7,7 @@ test.describe('Section 2 : Authentification, Onboarding & Profil Coach (FT-AUTH)
 
   test('FT-AUTH-01 : Validation du formulaire d\'inscription Coach', async ({ page }) => {
     // 1. Ouvrir la modale d'inscription
-    const registerBtn = page.getByRole('button', { name: /créer un compte/i }).first();
+    const registerBtn = page.getByRole('button', { name: /Essai gratuit 14 jours/i }).first();
     await registerBtn.click();
     await expect(page.locator('text=Créer un Compte Coach').first()).toBeVisible();
 
